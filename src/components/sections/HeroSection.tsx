@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, X } from 'lucide-react';
-import renaissanceHero from '@/assets/renaissance-hero.jpg';
+import heroSea from '@/assets/hero-sea.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
@@ -29,18 +29,16 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [expandedCard]);
 
-  
-
   return (
     <section className="relative flex flex-col bg-background">
-      {/* ===== SPLIT HERO — GIANT TEXT + IMAGE ===== */}
-      <div className="relative w-full overflow-hidden">
+      {/* ===== HERO — BLUE MAGAZINE STYLE ===== */}
+      <div className="relative w-full">
         {/* Top bar */}
-        <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-5 pt-5">
+        <div className="flex items-center justify-between px-5 pt-5 pb-2">
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.3 }}
             className="text-[10px] font-medium uppercase tracking-[0.25em] text-foreground/60 font-sans"
           >
             {t(about.accreditation)}
@@ -53,29 +51,29 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
-          className="pt-16 px-4"
+          className="px-4 pb-0"
         >
           <h1
-            className="font-black uppercase leading-[0.85] tracking-tight text-foreground"
-            style={{ fontSize: 'clamp(4rem, 18vw, 10rem)' }}
+            className="font-black uppercase leading-[0.82] tracking-tight text-foreground"
+            style={{ fontSize: 'clamp(4.5rem, 20vw, 12rem)' }}
           >
             LIMASSOL<br />FITNESS
           </h1>
         </motion.div>
 
-        {/* Image strip — overlapped by text */}
+        {/* Sea image — flush against text */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.5 }}
-          className="relative w-full h-[55vh] -mt-4 overflow-hidden"
+          className="relative w-full h-[50vh] overflow-hidden"
         >
           <img
-            src={renaissanceHero}
-            alt={t(hero.trainer)}
-            className="w-full h-full object-cover object-top"
+            src={heroSea}
+            alt="Limassol sea"
+            className="w-full h-full object-cover object-bottom"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/80" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
 
           {/* Tagline + CTA over image */}
           <motion.div
@@ -84,7 +82,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
             transition={{ delay: 1.2, duration: 0.6 }}
             className="absolute bottom-8 left-0 right-0 z-10 px-6 flex flex-col items-center gap-4"
           >
-            <p className="text-xs text-white/70 leading-relaxed font-sans text-center max-w-[280px]">
+            <p className="text-xs text-white/80 leading-relaxed font-sans text-center max-w-[280px]">
               {t(hero.tagline)}
             </p>
             <a
@@ -102,26 +100,6 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
 
       {/* ===== BELOW THE FOLD ===== */}
       <div className="px-5 pt-12 pb-6">
-        {/* USPs */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          className="grid grid-cols-2 gap-px bg-border mb-10"
-        >
-          {hero.usps.map((usp, i) => (
-            <div key={i} className="bg-background p-5">
-              <span className="text-lg mb-2 block">{usp.icon}</span>
-              <h3 className="text-[10px] font-bold text-foreground mb-1 font-sans uppercase tracking-wider">
-                {t(usp.title)}
-              </h3>
-              <p className="text-[10px] text-muted-foreground leading-relaxed font-sans">
-                {t(usp.desc)}
-              </p>
-            </div>
-          ))}
-        </motion.div>
-
         {/* Certifications */}
         <motion.div
           initial={{ opacity: 0 }}
