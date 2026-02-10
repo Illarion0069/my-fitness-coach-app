@@ -1,7 +1,6 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, X, Shield, MapPin } from 'lucide-react';
-import trainerLogo from '@/assets/trainer-logo.png';
+import { X, ArrowRight } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -32,136 +31,128 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
 
   return (
     <section className="relative min-h-screen flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-            LF
-          </div>
-          <span className="text-sm font-semibold text-foreground tracking-tight">Limassol Fitness</span>
-        </div>
+      {/* Header — minimal editorial */}
+      <div className="flex items-center justify-between px-5 pt-5 pb-3">
+        <motion.span 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-[10px] font-medium uppercase tracking-[0.25em] text-muted-foreground"
+        >
+          Limassol Fitness
+        </motion.span>
         <LanguageSwitch />
       </div>
 
-      {/* Hero — trainer-centric */}
-      <div className="flex-1 flex flex-col px-5 pt-4">
-        {/* Trainer photo + name block */}
+      {/* Hero — editorial layout */}
+      <div className="flex-1 flex flex-col px-5">
+        {/* Large editorial title */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
-          className="relative mb-5"
+          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-4 mb-6"
         >
-          <div className="relative overflow-hidden rounded-3xl">
-            <img
-              src={trainerPhoto}
-              alt={t(hero.trainer)}
-              className="w-full h-64 object-cover object-top"
-            />
-            {/* Gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-            
-            {/* Name + badge overlay */}
-            <div className="absolute bottom-0 left-0 right-0 p-5">
-              <div className="flex items-center gap-2 mb-1.5">
-                <Shield className="w-4 h-4 text-primary" />
-                <span className="text-[11px] text-primary font-semibold uppercase tracking-wider">{t(about.accreditation)}</span>
-              </div>
-              <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                {t(hero.trainer)}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
-                Limassol, Cyprus
-              </p>
-            </div>
+          <div className="editorial-line mb-4" />
+          <h1 className="text-[2.75rem] leading-[1.05] font-bold text-foreground tracking-tight">
+            {t(hero.trainer)}
+          </h1>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-primary font-medium mt-3">
+            {t(about.accreditation)}
+          </p>
+        </motion.div>
+
+        {/* Trainer photo — dramatic full-width */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.98 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="relative mb-6 overflow-hidden"
+        >
+          <img
+            src={trainerPhoto}
+            alt={t(hero.trainer)}
+            className="w-full h-72 object-cover object-top grayscale-[20%] contrast-[1.1]"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 p-5">
+            <p className="text-sm text-foreground/80 italic font-light leading-relaxed max-w-[280px]">
+              {t(hero.tagline)}
+            </p>
           </div>
         </motion.div>
 
-        {/* Tagline */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.3, duration: 0.6 }}
-          className="text-lg font-bold text-foreground leading-snug mb-1"
-        >
-          {t(hero.tagline)}
-        </motion.p>
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4, duration: 0.6 }}
-          className="text-sm text-muted-foreground leading-relaxed mb-5"
-        >
-          {t(hero.subtitle)}
-        </motion.p>
-
-        {/* CTA */}
-        <motion.a
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          href="https://calendly.com/limassol-fitness/booking"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full text-center gradient-primary text-primary-foreground font-semibold py-4 rounded-2xl text-sm glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
-        >
-          {t(hero.cta)}
-        </motion.a>
-
-        {/* USP pills */}
+        {/* Subtitle + CTA */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
-          className="grid grid-cols-2 gap-2.5 mt-5"
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="mb-8"
+        >
+          <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+            {t(hero.subtitle)}
+          </p>
+          <a
+            href="https://calendly.com/limassol-fitness/booking"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-3 bg-primary text-primary-foreground font-semibold py-3.5 px-7 text-sm tracking-wide uppercase hover:opacity-90 transition-opacity active:scale-[0.98]"
+          >
+            {t(hero.cta)}
+            <ArrowRight className="w-4 h-4" />
+          </a>
+        </motion.div>
+
+        {/* USPs — editorial grid */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          className="grid grid-cols-2 gap-px bg-border mb-8"
         >
           {hero.usps.map((usp, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 + i * 0.08 }}
-              className="glass rounded-2xl p-3.5"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.7 + i * 0.1 }}
+              className="bg-background p-4"
             >
-              <span className="text-xl mb-1.5 block">{usp.icon}</span>
-              <h3 className="text-xs font-bold text-foreground mb-0.5">{t(usp.title)}</h3>
-              <p className="text-[10px] text-muted-foreground leading-relaxed">{t(usp.desc)}</p>
+              <span className="text-lg mb-2 block">{usp.icon}</span>
+              <h3 className="text-xs font-bold text-foreground mb-1 font-sans uppercase tracking-wider">{t(usp.title)}</h3>
+              <p className="text-[10px] text-muted-foreground leading-relaxed font-sans">{t(usp.desc)}</p>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* Certifications */}
+        {/* Certifications — minimal line */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ delay: 0.85, duration: 0.5 }}
-          className="mt-5"
+          className="mb-8"
         >
-          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">{t(about.certifications)}</h3>
+          <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-3 font-sans">{t(about.certifications)}</p>
           <div className="flex flex-wrap gap-2">
             {about.certs.map((cert, i) => (
-              <motion.span
+              <span
                 key={cert}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.9 + i * 0.05 }}
-                className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
+                className="px-3 py-1.5 text-[10px] font-medium uppercase tracking-wider border border-border text-muted-foreground font-sans"
               >
                 {cert}
-              </motion.span>
+              </span>
             ))}
           </div>
         </motion.div>
 
-        {/* Workout types carousel */}
+        {/* Workout types — editorial list */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.9, duration: 0.6 }}
-          className="mt-6 pb-32"
+          className="pb-32"
         >
-          <h2 className="text-lg font-bold mb-3">{t(workouts.title)}</h2>
+          <div className="editorial-line mb-4" />
+          <h2 className="text-2xl font-bold mb-5">{t(workouts.title)}</h2>
           <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
             {workouts.items.map((item, i) => (
               <motion.div
@@ -170,10 +161,10 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 1.0 + i * 0.06, duration: 0.4 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-                className="workout-card-expanded glass rounded-2xl p-4 min-w-[180px] max-w-[180px] snap-center flex-shrink-0 hover:border-primary/30 transition-all cursor-pointer select-none"
+                className="workout-card-expanded border border-border bg-background p-4 min-w-[170px] max-w-[170px] snap-center flex-shrink-0 hover:border-primary/40 transition-all cursor-pointer select-none"
               >
-                <div className="text-2xl mb-2">{item.icon}</div>
-                <h3 className="text-sm font-bold text-foreground mb-1">{t(item.name)}</h3>
+                <div className="text-xl mb-2">{item.icon}</div>
+                <h3 className="text-xs font-bold text-foreground mb-1 font-sans uppercase tracking-wider">{t(item.name)}</h3>
                 <AnimatePresence mode="wait">
                   {expandedCard === i ? (
                     <motion.div
@@ -184,9 +175,9 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <p className="text-xs text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+                      <p className="text-[10px] text-muted-foreground leading-relaxed font-sans">{t(item.desc)}</p>
                       <div className="mt-2 flex justify-end">
-                        <X className="w-3.5 h-3.5 text-muted-foreground/50" />
+                        <X className="w-3 h-3 text-muted-foreground/40" />
                       </div>
                     </motion.div>
                   ) : (
@@ -194,7 +185,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                       key="collapsed"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-xs text-muted-foreground leading-relaxed line-clamp-2"
+                      className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2 font-sans"
                     >
                       {t(item.desc)}
                     </motion.p>
@@ -205,15 +196,6 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           </div>
         </motion.div>
       </div>
-
-      {/* Scroll indicator */}
-      <motion.div
-        animate={{ y: [0, 8, 0] }}
-        transition={{ repeat: Infinity, duration: 2 }}
-        className="absolute bottom-20 left-1/2 -translate-x-1/2 text-muted-foreground/40"
-      >
-        <ChevronDown className="w-5 h-5" />
-      </motion.div>
     </section>
   );
 };
