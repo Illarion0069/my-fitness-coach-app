@@ -2,9 +2,10 @@ import { motion } from 'framer-motion';
 import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
+import type { Language } from '@/i18n/translations';
 
 const ContactSection = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const contact = translations.contact;
 
   const socials = [
@@ -38,12 +39,20 @@ const ContactSection = () => {
           <span className="text-sm font-medium">{contact.phone}</span>
         </a>
 
-        <div className="flex items-center gap-3">
+        <a
+          href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-3 hover:text-primary transition-colors"
+        >
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
             <MapPin className="w-5 h-5 text-primary" />
           </div>
-          <span className="text-sm text-muted-foreground">{t(contact.address)}</span>
-        </div>
+          <div>
+            <span className="text-sm text-muted-foreground block">{t(contact.address)}</span>
+            <span className="text-xs text-primary font-medium">{lang === 'en' ? 'Open in Google Maps →' : 'Открыть в Google Картах →'}</span>
+          </div>
+        </a>
       </motion.div>
 
       <motion.div
