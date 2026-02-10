@@ -33,64 +33,70 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
 
   return (
     <section className="relative flex flex-col bg-background">
-      {/* ===== FULL-SCREEN HERO ===== */}
-      <div className="relative h-screen w-full overflow-hidden">
-        {/* Background image */}
-        <img
-          src={renaissanceHero}
-          alt={t(hero.trainer)}
-          className="absolute inset-0 w-full h-full object-cover object-top scale-105"
-        />
-        {/* Dark cinematic overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/70" />
-
+      {/* ===== SPLIT HERO — GIANT TEXT + IMAGE ===== */}
+      <div className="relative w-full overflow-hidden">
         {/* Top bar */}
         <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-5 pt-5">
           <motion.span
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
-            className="text-[10px] font-medium uppercase tracking-[0.25em] text-white/70"
+            className="text-[10px] font-medium uppercase tracking-[0.25em] text-foreground/60 font-sans"
           >
-            Limassol Fitness
+            {t(about.accreditation)}
           </motion.span>
           <LanguageSwitch />
         </div>
 
-        {/* Hero text — bottom positioned */}
+        {/* Giant company name */}
         <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute bottom-36 left-0 right-0 z-10 px-6 text-center"
+          transition={{ duration: 1, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          className="pt-16 px-4"
         >
-          <p className="text-[10px] uppercase tracking-[0.3em] text-white/50 mb-3 font-sans">
-            {t(about.accreditation)}
-          </p>
-          <h1 className="text-4xl leading-[1.05] font-bold text-white mb-3">
-            {t(hero.trainer)}
+          <h1
+            className="font-black uppercase leading-[0.85] tracking-tight text-foreground"
+            style={{ fontSize: 'clamp(4rem, 18vw, 10rem)' }}
+          >
+            LIMASSOL<br />FITNESS
           </h1>
-          <p className="text-sm text-white/60 leading-relaxed font-sans max-w-[280px] mx-auto">
-            {t(hero.tagline)}
-          </p>
         </motion.div>
 
-        {/* Bottom CTA */}
+        {/* Image strip — overlapped by text */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.5, duration: 0.6 }}
-          className="absolute bottom-24 left-0 right-0 z-20 flex justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2, delay: 0.5 }}
+          className="relative w-full h-[55vh] -mt-4 overflow-hidden"
         >
-          <a
-            href="https://calendly.com/limassol-fitness/booking"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 border border-white/30 text-white/90 font-sans text-[11px] font-medium uppercase tracking-[0.2em] px-6 py-3 backdrop-blur-sm bg-white/5 hover:bg-white/10 transition-all"
+          <img
+            src={renaissanceHero}
+            alt={t(hero.trainer)}
+            className="w-full h-full object-cover object-top"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/20 via-transparent to-background/80" />
+
+          {/* Tagline + CTA over image */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.6 }}
+            className="absolute bottom-8 left-0 right-0 z-10 px-6 flex flex-col items-center gap-4"
           >
-            {t(hero.cta)}
-            <ArrowRight className="w-3.5 h-3.5" />
-          </a>
+            <p className="text-xs text-white/70 leading-relaxed font-sans text-center max-w-[280px]">
+              {t(hero.tagline)}
+            </p>
+            <a
+              href="https://calendly.com/limassol-fitness/booking"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 border border-white/30 text-white/90 font-sans text-[11px] font-medium uppercase tracking-[0.2em] px-6 py-3 backdrop-blur-sm bg-white/5 hover:bg-white/10 transition-all"
+            >
+              {t(hero.cta)}
+              <ArrowRight className="w-3.5 h-3.5" />
+            </a>
+          </motion.div>
         </motion.div>
       </div>
 
