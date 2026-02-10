@@ -1,5 +1,6 @@
-import { motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ChevronDown, X } from 'lucide-react';
 import trainerLogo from '@/assets/trainer-logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -13,6 +14,20 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   const { t } = useLanguage();
   const hero = translations.hero;
   const workouts = translations.workouts;
+  const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (expandedCard === null) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.workout-card-expanded')) {
+        setExpandedCard(null);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [expandedCard]);
 
   return (
     <section className="relative min-h-screen flex flex-col">
@@ -102,11 +117,37 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.9 + i * 0.08, duration: 0.4 }}
-              className="glass rounded-2xl p-4 min-w-[200px] max-w-[200px] snap-center flex-shrink-0 hover:border-primary/30 transition-colors"
+              onClick={() => setExpandedCard(expandedCard === i ? null : i)}
+              className="workout-card-expanded glass rounded-2xl p-4 min-w-[200px] max-w-[200px] snap-center flex-shrink-0 hover:border-primary/30 transition-all cursor-pointer select-none"
             >
               <div className="text-2xl mb-2">{item.icon}</div>
               <h3 className="text-sm font-bold text-foreground mb-1">{t(item.name)}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{t(item.desc)}</p>
+              <AnimatePresence mode="wait">
+                {expandedCard === i ? (
+                  <motion.div
+                    key="expanded"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="overflow-hidden"
+                  >
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+                    <div className="mt-2 flex justify-end">
+                      <X className="w-3.5 h-3.5 text-muted-foreground/50" />
+                    </div>
+                  </motion.div>
+                ) : (
+                  <motion.p
+                    key="collapsed"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-xs text-muted-foreground leading-relaxed line-clamp-2"
+                  >
+                    {t(item.desc)}
+                  </motion.p>
+                )}
+              </AnimatePresence>
             </motion.div>
           ))}
         </div>
