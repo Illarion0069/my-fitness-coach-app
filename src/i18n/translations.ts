@@ -102,8 +102,8 @@ export const translations = {
         price: 1030,
         popular: true,
         features: {
-          en: ['Personal assistance', 'Water & Towel', 'Nutritionist visit'],
-          ru: ['Персональный ассистент', 'Вода и полотенце', 'Визит нутрициолога'],
+          en: ['Personal assistance', 'Water & Towel'],
+          ru: ['Персональный ассистент', 'Вода и полотенце'],
         },
       },
       {
@@ -112,8 +112,8 @@ export const translations = {
         price: 1599,
         popular: false,
         features: {
-          en: ['Personal assistance', 'Water & Towel', 'Nutritionist visit', 'Vacation support'],
-          ru: ['Персональный ассистент', 'Вода и полотенце', 'Визит нутрициолога', 'Поддержка на каникулах'],
+          en: ['Personal assistance', 'Water & Towel', 'Vacation support'],
+          ru: ['Персональный ассистент', 'Вода и полотенце', 'Поддержка на каникулах'],
         },
       },
     ],
