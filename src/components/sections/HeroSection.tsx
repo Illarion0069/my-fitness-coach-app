@@ -122,14 +122,36 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 + i * 0.08 }}
-              onClick={() => onNavigate('about')}
-              className="glass rounded-2xl p-3.5 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.97]"
+              className="glass rounded-2xl p-3.5"
             >
               <span className="text-xl mb-1.5 block">{usp.icon}</span>
               <h3 className="text-xs font-bold text-foreground mb-0.5">{t(usp.title)}</h3>
               <p className="text-[10px] text-muted-foreground leading-relaxed">{t(usp.desc)}</p>
             </motion.div>
           ))}
+        </motion.div>
+
+        {/* Certifications */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.85, duration: 0.5 }}
+          className="mt-5"
+        >
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">{t(about.certifications)}</h3>
+          <div className="flex flex-wrap gap-2">
+            {about.certs.map((cert, i) => (
+              <motion.span
+                key={cert}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.9 + i * 0.05 }}
+                className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
+              >
+                {cert}
+              </motion.span>
+            ))}
+          </div>
         </motion.div>
 
         {/* Workout types carousel */}
