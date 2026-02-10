@@ -2,70 +2,70 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,500;1,600&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
 
 @layer base {
   :root {
-    --background: 30 15% 95%;
-    --foreground: 20 10% 10%;
-    --card: 30 10% 90%;
-    --card-foreground: 20 10% 10%;
-    --popover: 30 15% 95%;
-    --popover-foreground: 20 10% 10%;
-    --primary: 32 40% 45%;
-    --primary-foreground: 30 15% 95%;
-    --secondary: 30 8% 85%;
-    --secondary-foreground: 20 10% 15%;
-    --muted: 30 8% 88%;
-    --muted-foreground: 20 6% 45%;
-    --accent: 32 45% 50%;
-    --accent-foreground: 30 15% 95%;
+    --background: 0 0% 95%;
+    --foreground: 0 0% 12%;
+    --card: 0 0% 92%;
+    --card-foreground: 0 0% 12%;
+    --popover: 0 0% 95%;
+    --popover-foreground: 0 0% 12%;
+    --primary: 18 80% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 88%;
+    --secondary-foreground: 0 0% 15%;
+    --muted: 0 0% 90%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 18 85% 55%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 8% 82%;
-    --input: 30 8% 82%;
-    --ring: 32 40% 45%;
+    --border: 0 0% 82%;
+    --input: 0 0% 82%;
+    --ring: 18 80% 50%;
     --radius: 0rem;
 
-    --sidebar-background: 30 15% 95%;
-    --sidebar-foreground: 20 10% 10%;
-    --sidebar-primary: 32 40% 45%;
-    --sidebar-primary-foreground: 30 15% 95%;
-    --sidebar-accent: 30 8% 90%;
-    --sidebar-accent-foreground: 20 10% 10%;
-    --sidebar-border: 30 8% 82%;
-    --sidebar-ring: 32 40% 45%;
+    --sidebar-background: 0 0% 95%;
+    --sidebar-foreground: 0 0% 12%;
+    --sidebar-primary: 18 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 90%;
+    --sidebar-accent-foreground: 0 0% 12%;
+    --sidebar-border: 0 0% 82%;
+    --sidebar-ring: 18 80% 50%;
   }
 
   .dark {
-    --background: 20 12% 5%;
-    --foreground: 35 20% 90%;
-    --card: 20 10% 9%;
-    --card-foreground: 35 20% 90%;
-    --popover: 20 10% 9%;
-    --popover-foreground: 35 20% 90%;
-    --primary: 35 45% 65%;
-    --primary-foreground: 20 12% 5%;
-    --secondary: 20 6% 14%;
-    --secondary-foreground: 35 15% 80%;
-    --muted: 20 6% 14%;
-    --muted-foreground: 30 8% 50%;
-    --accent: 35 50% 58%;
-    --accent-foreground: 20 12% 5%;
+    --background: 0 0% 7%;
+    --foreground: 0 0% 92%;
+    --card: 0 0% 10%;
+    --card-foreground: 0 0% 92%;
+    --popover: 0 0% 10%;
+    --popover-foreground: 0 0% 92%;
+    --primary: 18 80% 55%;
+    --primary-foreground: 0 0% 7%;
+    --secondary: 0 0% 14%;
+    --secondary-foreground: 0 0% 80%;
+    --muted: 0 0% 14%;
+    --muted-foreground: 0 0% 50%;
+    --accent: 18 85% 58%;
+    --accent-foreground: 0 0% 7%;
     --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 35 20% 90%;
-    --border: 20 6% 16%;
-    --input: 20 6% 16%;
-    --ring: 35 45% 65%;
+    --destructive-foreground: 0 0% 92%;
+    --border: 0 0% 16%;
+    --input: 0 0% 16%;
+    --ring: 18 80% 55%;
 
-    --sidebar-background: 20 12% 5%;
-    --sidebar-foreground: 35 20% 90%;
-    --sidebar-primary: 35 45% 65%;
-    --sidebar-primary-foreground: 20 12% 5%;
-    --sidebar-accent: 20 6% 12%;
-    --sidebar-accent-foreground: 35 20% 90%;
-    --sidebar-border: 20 6% 16%;
-    --sidebar-ring: 35 45% 65%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 92%;
+    --sidebar-primary: 18 80% 55%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 92%;
+    --sidebar-border: 0 0% 16%;
+    --sidebar-ring: 18 80% 55%;
   }
 }
 
@@ -79,8 +79,9 @@
     letter-spacing: -0.01em;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
-    letter-spacing: -0.02em;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.03em;
   }
 }
 
