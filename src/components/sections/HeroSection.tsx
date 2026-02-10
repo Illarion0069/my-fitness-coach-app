@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ArrowRight, X } from 'lucide-react';
-import trainerPhoto from '@/assets/trainer-photo.jpg';
+import renaissanceHero from '@/assets/renaissance-hero.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
@@ -37,7 +37,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
       <div className="relative h-screen w-full overflow-hidden">
         {/* Background image */}
         <img
-          src={trainerPhoto}
+          src={renaissanceHero}
           alt={t(hero.trainer)}
           className="absolute inset-0 w-full h-full object-cover object-top scale-105"
         />
