@@ -5,7 +5,7 @@ export const translations = {
     home: { en: 'Home', ru: 'Главная' },
     test: { en: 'Test', ru: 'Тест' },
     pricing: { en: 'Pricing', ru: 'Цены' },
-    about: { en: 'About', ru: 'Обо мне' },
+    reviews: { en: 'Reviews', ru: 'Отзывы' },
     contact: { en: 'Contact', ru: 'Контакты' },
   },
   hero: {

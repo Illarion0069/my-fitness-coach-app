@@ -1,4 +1,4 @@
-import { Home, ClipboardCheck, CreditCard, User, MessageCircle } from 'lucide-react';
+import { Home, ClipboardCheck, CreditCard, Star, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -15,7 +15,7 @@ const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
     { id: 'home', icon: Home, label: t(nav.home) },
     { id: 'test', icon: ClipboardCheck, label: t(nav.test) },
     { id: 'pricing', icon: CreditCard, label: t(nav.pricing) },
-    { id: 'about', icon: User, label: t(nav.about) },
+    { id: 'reviews', icon: Star, label: t(nav.reviews) },
     { id: 'contact', icon: MessageCircle, label: t(nav.contact) },
   ];
 
