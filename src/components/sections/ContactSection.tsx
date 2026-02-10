@@ -1,57 +1,56 @@
 import { motion } from 'framer-motion';
-import { Phone, MapPin, ArrowUpRight } from 'lucide-react';
+import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
+import type { Language } from '@/i18n/translations';
 
 const ContactSection = () => {
   const { t, lang } = useLanguage();
   const contact = translations.contact;
 
   const socials = [
-    { label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
-    { label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
-    { label: 'Telegram', href: 'https://t.me/Illarion_Ientin' },
-    { label: 'WhatsApp', href: 'https://wa.me/35795144819' },
+    { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
+    { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
+    { icon: Send, label: 'Telegram', href: 'https://t.me/Illarion_Ientin' },
+    { icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/35795144819' },
   ];
 
   return (
-    <section className="min-h-screen px-5 pt-8 pb-24">
-      <motion.div
+    <section className="px-4 pt-6 pb-24">
+      <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
+        className="text-2xl font-bold mb-6"
       >
-        <div className="editorial-line mb-4" />
-        <h2 className="text-3xl font-bold mb-8">{t(contact.title)}</h2>
-      </motion.div>
+        {t(contact.title)}
+      </motion.h2>
 
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="space-y-6 mb-10"
+        className="glass rounded-2xl p-5 space-y-4 mb-6"
       >
-        <a href="tel:+35795144819" className="flex items-center gap-4 group">
-          <div className="w-10 h-10 border border-border flex items-center justify-center group-hover:border-primary transition-colors">
-            <Phone className="w-4 h-4 text-primary" />
+        <a href="tel:+35795144819" className="flex items-center gap-3 hover:text-primary transition-colors">
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <Phone className="w-5 h-5 text-primary" />
           </div>
-          <span className="text-sm font-medium font-sans">{contact.phone}</span>
+          <span className="text-sm font-medium">{contact.phone}</span>
         </a>
 
         <a
           href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-4 group"
+          className="flex items-center gap-3 hover:text-primary transition-colors"
         >
-          <div className="w-10 h-10 border border-border flex items-center justify-center group-hover:border-primary transition-colors">
-            <MapPin className="w-4 h-4 text-primary" />
+          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <span className="text-sm font-sans block">{t(contact.address)}</span>
-            <span className="text-[10px] text-primary font-medium font-sans uppercase tracking-wider">
-              {lang === 'en' ? 'Open in Maps' : 'Открыть карту'} →
-            </span>
+            <span className="text-sm text-muted-foreground block">{t(contact.address)}</span>
+            <span className="text-xs text-primary font-medium">{lang === 'en' ? 'Open in Google Maps →' : 'Открыть в Google Картах →'}</span>
           </div>
         </a>
       </motion.div>
@@ -61,19 +60,18 @@ const ContactSection = () => {
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ delay: 0.1 }}
-        className="space-y-px"
+        className="grid grid-cols-2 gap-3"
       >
-        <p className="text-[10px] uppercase tracking-[0.25em] text-muted-foreground mb-4 font-sans">Social</p>
         {socials.map((s, i) => (
           <a
             key={i}
             href={s.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-between py-4 border-t border-border group hover:text-primary transition-colors"
+            className="glass rounded-2xl p-4 flex items-center gap-3 hover:border-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
-            <span className="text-sm font-medium font-sans">{s.label}</span>
-            <ArrowUpRight className="w-4 h-4 text-muted-foreground group-hover:text-primary transition-colors" />
+            <s.icon className="w-5 h-5 text-primary" />
+            <span className="text-sm font-medium">{s.label}</span>
           </a>
         ))}
       </motion.div>

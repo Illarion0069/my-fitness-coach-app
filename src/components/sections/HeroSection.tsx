@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowUpRight, X } from 'lucide-react';
+import { ChevronDown, X, Shield, MapPin } from 'lucide-react';
+import trainerLogo from '@/assets/trainer-logo.png';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -30,154 +31,149 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   }, [expandedCard]);
 
   return (
-    <section className="relative min-h-screen flex flex-col bg-background">
+    <section className="relative min-h-screen flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-5 pb-3">
-        <motion.span 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="text-xs font-bold uppercase tracking-[0.2em] text-foreground"
-        >
-          LF
-        </motion.span>
+      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+            LF
+          </div>
+          <span className="text-sm font-semibold text-foreground tracking-tight">Limassol Fitness</span>
+        </div>
         <LanguageSwitch />
       </div>
 
-      <div className="flex-1 flex flex-col px-4">
-        {/* Giant title */}
+      {/* Hero — trainer-centric */}
+      <div className="flex-1 flex flex-col px-5 pt-4">
+        {/* Trainer photo + name block */}
         <motion.div
-          initial={{ opacity: 0, y: 40 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-2 mb-5"
+          transition={{ duration: 0.7 }}
+          className="relative mb-5"
         >
-          <h1 className="text-[2.8rem] leading-[0.95] font-extrabold text-foreground uppercase">
-            {t(hero.trainer)}
-          </h1>
-          <p className="text-xs uppercase tracking-[0.2em] text-primary font-semibold mt-2">
-            {t(about.accreditation)}
-          </p>
-        </motion.div>
-
-        {/* Bento grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15 }}
-          className="grid grid-cols-2 gap-2.5 mb-5"
-        >
-          {/* Large trainer card — spans 2 cols */}
-          <div className="col-span-2 bento-card group h-64 relative">
+          <div className="relative overflow-hidden rounded-3xl">
             <img
               src={trainerPhoto}
               alt={t(hero.trainer)}
-              className="absolute inset-0 w-full h-full object-cover object-top"
+              className="w-full h-64 object-cover object-top"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-foreground/80 via-foreground/20 to-transparent" />
-            <div className="bento-arrow z-10">
-              <ArrowUpRight className="w-4 h-4" />
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-              <p className="text-sm text-background/80 font-medium leading-relaxed max-w-[280px]">
-                {t(hero.tagline)}
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+            
+            {/* Name + badge overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-[11px] text-primary font-semibold uppercase tracking-wider">{t(about.accreditation)}</span>
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                {t(hero.trainer)}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                Limassol, Cyprus
               </p>
             </div>
           </div>
+        </motion.div>
 
-          {/* USP cards */}
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="text-lg font-bold text-foreground leading-snug mb-1"
+        >
+          {t(hero.tagline)}
+        </motion.p>
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+          className="text-sm text-muted-foreground leading-relaxed mb-5"
+        >
+          {t(hero.subtitle)}
+        </motion.p>
+
+        {/* CTA */}
+        <motion.a
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          href="https://calendly.com/limassol-fitness/booking"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full text-center gradient-primary text-primary-foreground font-semibold py-4 rounded-2xl text-sm glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+        >
+          {t(hero.cta)}
+        </motion.a>
+
+        {/* USP pills */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="grid grid-cols-2 gap-2.5 mt-5"
+        >
           {hero.usps.map((usp, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 + i * 0.08 }}
-              className="bento-card group p-4 flex flex-col justify-between min-h-[140px]"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 + i * 0.08 }}
+              className="glass rounded-2xl p-3.5"
             >
-              <div className="flex items-start justify-between">
-                <span className="text-2xl">{usp.icon}</span>
-                <div className="bento-arrow !relative !top-0 !right-0 w-7 h-7">
-                  <ArrowUpRight className="w-3.5 h-3.5" />
-                </div>
-              </div>
-              <div>
-                <h3 className="text-[11px] font-bold text-foreground uppercase tracking-wider leading-tight mb-1">
-                  {t(usp.title)}
-                </h3>
-                <p className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2">
-                  {t(usp.desc)}
-                </p>
-              </div>
+              <span className="text-xl mb-1.5 block">{usp.icon}</span>
+              <h3 className="text-xs font-bold text-foreground mb-0.5">{t(usp.title)}</h3>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">{t(usp.desc)}</p>
             </motion.div>
           ))}
         </motion.div>
 
-        {/* CTA */}
+        {/* Certifications */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55, duration: 0.5 }}
-          className="mb-6"
+          transition={{ delay: 0.85, duration: 0.5 }}
+          className="mt-5"
         >
-          <a
-            href="https://calendly.com/limassol-fitness/booking"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center justify-center gap-3 w-full bg-primary text-primary-foreground font-bold py-4 text-sm tracking-wide uppercase rounded-xl hover:opacity-90 transition-all active:scale-[0.98]"
-          >
-            {t(hero.cta)}
-            <ArrowUpRight className="w-4 h-4" />
-          </a>
-        </motion.div>
-
-        {/* Certifications — pill row */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.65 }}
-          className="mb-6"
-        >
-          <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground mb-2.5 font-medium">
-            {t(about.certifications)}
-          </p>
-          <div className="flex flex-wrap gap-1.5">
-            {about.certs.map((cert) => (
-              <span
+          <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2.5">{t(about.certifications)}</h3>
+          <div className="flex flex-wrap gap-2">
+            {about.certs.map((cert, i) => (
+              <motion.span
                 key={cert}
-                className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider bg-primary/10 text-primary rounded-full"
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.9 + i * 0.05 }}
+                className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
               >
                 {cert}
-              </span>
+              </motion.span>
             ))}
           </div>
         </motion.div>
 
-        {/* Workout types — horizontal scroll bento */}
+        {/* Workout types carousel */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.75, duration: 0.5 }}
-          className="pb-24"
+          transition={{ delay: 0.9, duration: 0.6 }}
+          className="mt-6 pb-32"
         >
-          <h2 className="text-2xl font-extrabold uppercase mb-4">{t(workouts.title)}</h2>
-          <div className="flex gap-2.5 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
+          <h2 className="text-lg font-bold mb-3">{t(workouts.title)}</h2>
+          <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
             {workouts.items.map((item, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.85 + i * 0.05 }}
+                transition={{ delay: 1.0 + i * 0.06, duration: 0.4 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-                className="workout-card-expanded bento-card group p-4 min-w-[160px] max-w-[160px] snap-center flex-shrink-0 cursor-pointer select-none"
+                className="workout-card-expanded glass rounded-2xl p-4 min-w-[180px] max-w-[180px] snap-center flex-shrink-0 hover:border-primary/30 transition-all cursor-pointer select-none"
               >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="text-xl">{item.icon}</div>
-                  <div className="w-6 h-6 rounded-full bg-foreground/10 flex items-center justify-center">
-                    <ArrowUpRight className="w-3 h-3 text-muted-foreground" />
-                  </div>
-                </div>
-                <h3 className="text-xs font-bold text-foreground uppercase tracking-wider mb-1.5">
-                  {t(item.name)}
-                </h3>
+                <div className="text-2xl mb-2">{item.icon}</div>
+                <h3 className="text-sm font-bold text-foreground mb-1">{t(item.name)}</h3>
                 <AnimatePresence mode="wait">
                   {expandedCard === i ? (
                     <motion.div
@@ -188,9 +184,9 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                       transition={{ duration: 0.25 }}
                       className="overflow-hidden"
                     >
-                      <p className="text-[10px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t(item.desc)}</p>
                       <div className="mt-2 flex justify-end">
-                        <X className="w-3 h-3 text-muted-foreground/40" />
+                        <X className="w-3.5 h-3.5 text-muted-foreground/50" />
                       </div>
                     </motion.div>
                   ) : (
@@ -198,7 +194,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                       key="collapsed"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-[10px] text-muted-foreground leading-relaxed line-clamp-2"
+                      className="text-xs text-muted-foreground leading-relaxed line-clamp-2"
                     >
                       {t(item.desc)}
                     </motion.p>
@@ -208,24 +204,16 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
             ))}
           </div>
         </motion.div>
-
-        {/* Service ticker */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1 }}
-          className="fixed bottom-14 left-0 right-0 z-40 overflow-hidden border-t border-border bg-background/90 backdrop-blur-sm"
-        >
-          <div className="flex animate-[scroll_20s_linear_infinite] whitespace-nowrap py-2.5">
-            {[...about.certs, ...about.certs, ...about.certs].map((cert, i) => (
-              <span key={i} className="flex items-center gap-3 px-4 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                {cert}
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/60" />
-              </span>
-            ))}
-          </div>
-        </motion.div>
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        animate={{ y: [0, 8, 0] }}
+        transition={{ repeat: Infinity, duration: 2 }}
+        className="absolute bottom-20 left-1/2 -translate-x-1/2 text-muted-foreground/40"
+      >
+        <ChevronDown className="w-5 h-5" />
+      </motion.div>
     </section>
   );
 };
