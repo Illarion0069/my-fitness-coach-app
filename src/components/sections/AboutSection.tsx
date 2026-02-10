@@ -1,4 +1,5 @@
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Award, Shield } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -7,6 +8,7 @@ import trainerPhoto from '@/assets/trainer-photo.jpg';
 const AboutSection = () => {
   const { t } = useLanguage();
   const about = translations.about;
+  const [photoExpanded, setPhotoExpanded] = useState(false);
 
   return (
     <section className="min-h-screen px-4 pt-6 pb-24">
@@ -30,7 +32,8 @@ const AboutSection = () => {
           <img
             src={trainerPhoto}
             alt="Illarion Ientin"
-            className="w-16 h-16 rounded-2xl object-cover"
+            onClick={() => setPhotoExpanded(true)}
+            className="w-16 h-16 rounded-2xl object-cover cursor-pointer hover:scale-105 transition-transform"
           />
           <div>
             <h3 className="text-lg font-bold">{t(about.name)}</h3>
@@ -97,6 +100,29 @@ const AboutSection = () => {
           </div>
         ))}
       </motion.div>
+
+      {/* Photo lightbox */}
+      <AnimatePresence>
+        {photoExpanded && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPhotoExpanded(false)}
+            className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8"
+          >
+            <motion.img
+              src={trainerPhoto}
+              alt="Illarion Ientin"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25 }}
+              className="max-w-full max-h-[70vh] rounded-2xl object-cover shadow-2xl"
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
