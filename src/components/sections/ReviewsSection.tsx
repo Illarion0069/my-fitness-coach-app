@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion';
-import { Star } from 'lucide-react';
+import { Star, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
 const ReviewsSection = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const reviews = translations.reviews;
 
   return (
@@ -17,7 +17,19 @@ const ReviewsSection = () => {
       >
         {t(reviews.title)}
       </motion.h2>
-      <p className="text-sm text-muted-foreground mb-6">{t(reviews.subtitle)}</p>
+      <div className="flex items-center gap-2 mb-6">
+        <p className="text-sm text-muted-foreground">{t(reviews.subtitle)}</p>
+        <a
+          href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-1 text-xs text-primary font-medium hover:underline"
+        >
+          <Star className="w-3 h-3 fill-primary text-primary" />
+          5.0 Google
+          <ExternalLink className="w-3 h-3" />
+        </a>
+      </div>
 
       <div className="space-y-4">
         {reviews.items.map((review, i) => (
@@ -35,10 +47,13 @@ const ReviewsSection = () => {
               </div>
               <div>
                 <h4 className="text-sm font-bold">{t(review.name)}</h4>
-                <div className="flex gap-0.5 mt-0.5">
-                  {Array.from({ length: review.rating }).map((_, j) => (
-                    <Star key={j} className="w-3 h-3 fill-primary text-primary" />
-                  ))}
+                <div className="flex items-center gap-1 mt-0.5">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: review.rating }).map((_, j) => (
+                      <Star key={j} className="w-3 h-3 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground ml-1">Google</span>
                 </div>
               </div>
             </div>
@@ -46,6 +61,19 @@ const ReviewsSection = () => {
           </motion.div>
         ))}
       </div>
+
+      <motion.a
+        href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        viewport={{ once: true }}
+        className="mt-4 flex items-center justify-center gap-2 text-sm text-primary font-medium hover:underline"
+      >
+        {lang === 'en' ? 'See all reviews on Google Maps' : 'Все отзывы на Google Картах'}
+        <ExternalLink className="w-4 h-4" />
+      </motion.a>
     </section>
   );
 };

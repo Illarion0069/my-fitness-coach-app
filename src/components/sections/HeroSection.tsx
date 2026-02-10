@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
+import trainerLogo from '@/assets/trainer-logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
@@ -28,6 +29,19 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
 
       {/* Hero content */}
       <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="mb-6"
+        >
+          <img
+            src={trainerLogo}
+            alt="Illarion Ientin — Personal Fitness Trainer"
+            className="w-28 h-28 rounded-full object-cover border-2 border-primary/30 shadow-lg shadow-primary/20"
+          />
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}

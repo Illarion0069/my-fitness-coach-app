@@ -3,7 +3,25 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, ArrowRight, CheckCircle2, Activity } from 'lucide-react';
+import { ArrowLeft, Activity, Heart, Apple, ChevronDown } from 'lucide-react';
+import PhoneInput from '@/components/PhoneInput';
+
+const COUNTRY_CODES = [
+  { code: '+357', country: '🇨🇾', label: 'Cyprus' },
+  { code: '+7', country: '🇷🇺', label: 'Russia' },
+  { code: '+380', country: '🇺🇦', label: 'Ukraine' },
+  { code: '+44', country: '🇬🇧', label: 'UK' },
+  { code: '+49', country: '🇩🇪', label: 'Germany' },
+  { code: '+30', country: '🇬🇷', label: 'Greece' },
+  { code: '+1', country: '🇺🇸', label: 'USA' },
+  { code: '+972', country: '🇮🇱', label: 'Israel' },
+  { code: '+971', country: '🇦🇪', label: 'UAE' },
+  { code: '+33', country: '🇫🇷', label: 'France' },
+];
+
+// Questions split into nutrition (0-4) and health (5-9)
+const NUTRITION_INDICES = [0, 1, 2, 3, 4];
+const HEALTH_INDICES = [5, 6, 7, 8, 9];
 
 const TestSection = () => {
   const { t, lang } = useLanguage();
@@ -11,11 +29,11 @@ const TestSection = () => {
   const [step, setStep] = useState<'intro' | 'info' | 'quiz' | 'result'>('intro');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [countryCode, setCountryCode] = useState('+357');
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
 
   const totalQuestions = test.questions.length;
-  const maxScore = totalQuestions * 4;
 
   const handleAnswer = (scoreIndex: number) => {
     const score = test.questions[currentQ].scores[scoreIndex];
@@ -26,25 +44,95 @@ const TestSection = () => {
       setCurrentQ(currentQ + 1);
     } else {
       setStep('result');
-      // Send via WhatsApp
-      const total = newAnswers.reduce((a, b) => a + b, 0);
-      const pct = Math.round((total / maxScore) * 100);
-      const msg = `New Health Test Result:\nName: ${name}\nPhone: ${phone}\nScore: ${pct}%\nTotal: ${total}/${maxScore}`;
+      // Send via Telegram (WhatsApp as fallback)
+      const { nutritionScore, nutritionMax, healthScore, healthMax } = calculateScores(newAnswers);
+      const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
+      const healthPct = Math.round((healthScore / healthMax) * 100);
+      const overallPct = Math.round(((nutritionScore + healthScore) / (nutritionMax + healthMax)) * 100);
+      const msg = `🏋️ New Health Test:\n👤 ${name}\n📱 ${countryCode}${phone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%`;
+      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(msg)}&to=+35795144819`;
       const waUrl = `https://wa.me/35795144819?text=${encodeURIComponent(msg)}`;
-      // Open in background
       window.open(waUrl, '_blank');
     }
   };
 
-  const totalScore = answers.reduce((a, b) => a + b, 0);
-  const percentage = Math.round((totalScore / maxScore) * 100);
-
-  const getHealthLevel = () => {
-    if (percentage >= 80) return { en: 'Excellent! Your lifestyle aligns well with WHO healthy living standards. Keep it up!', ru: 'Отлично! Ваш образ жизни соответствует стандартам ВОЗ. Так держать!' };
-    if (percentage >= 60) return { en: 'Good! You have a solid foundation but there is room for improvement in nutrition and activity.', ru: 'Хорошо! У вас хорошая база, но есть возможности для улучшения питания и активности.' };
-    if (percentage >= 40) return { en: 'Average. WHO recommends improving your diet, sleep and physical activity for better health outcomes.', ru: 'Средне. ВОЗ рекомендует улучшить питание, сон и физическую активность для лучших результатов.' };
-    return { en: 'Needs attention. Your current lifestyle significantly differs from WHO standards. A personal trainer can help you transform.', ru: 'Требует внимания. Ваш текущий образ жизни значительно отличается от стандартов ВОЗ. Персональный тренер поможет вам измениться.' };
+  const calculateScores = (ans: number[]) => {
+    const nutritionScore = NUTRITION_INDICES.reduce((sum, i) => sum + (ans[i] || 0), 0);
+    const healthScore = HEALTH_INDICES.reduce((sum, i) => sum + (ans[i] || 0), 0);
+    const nutritionMax = NUTRITION_INDICES.length * 4;
+    const healthMax = HEALTH_INDICES.length * 4;
+    return { nutritionScore, nutritionMax, healthScore, healthMax };
   };
+
+  const { nutritionScore, nutritionMax, healthScore, healthMax } = calculateScores(answers);
+  const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
+  const healthPct = Math.round((healthScore / healthMax) * 100);
+  const overallPct = Math.round(((nutritionScore + healthScore) / (nutritionMax + healthMax)) * 100);
+
+  const getLevel = (pct: number) => {
+    if (pct >= 80) return { en: 'Excellent', ru: 'Отлично' };
+    if (pct >= 60) return { en: 'Good', ru: 'Хорошо' };
+    if (pct >= 40) return { en: 'Average', ru: 'Средне' };
+    return { en: 'Needs improvement', ru: 'Нужно улучшить' };
+  };
+
+  const getWhoComparison = (pct: number, type: 'nutrition' | 'health') => {
+    const whoTarget = 80; // WHO recommended target
+    const diff = whoTarget - pct;
+    if (diff <= 0) {
+      return type === 'nutrition'
+        ? { en: 'Your nutrition meets WHO healthy eating standards. Keep balanced meals!', ru: 'Ваше питание соответствует стандартам здорового питания ВОЗ. Продолжайте!' }
+        : { en: 'Your lifestyle aligns with WHO physical activity and health guidelines.', ru: 'Ваш образ жизни соответствует рекомендациям ВОЗ по физической активности.' };
+    }
+    return type === 'nutrition'
+      ? { en: `Your nutrition is ${diff}% below WHO standards. Focus on more fruits, vegetables, and hydration.`, ru: `Ваше питание на ${diff}% ниже стандартов ВОЗ. Больше фруктов, овощей и воды.` }
+      : { en: `Your health habits are ${diff}% below WHO standards. More exercise, better sleep and stress management needed.`, ru: `Ваши привычки здоровья на ${diff}% ниже стандартов ВОЗ. Нужно больше упражнений, сна и управления стрессом.` };
+  };
+
+  const ScoreRing = ({ percentage, label, icon: Icon, color }: { percentage: number; label: string; icon: React.ElementType; color: string }) => (
+    <div className="flex flex-col items-center gap-2">
+      <div className="relative w-28 h-28">
+        <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
+          <circle cx="60" cy="60" r="50" fill="none" stroke="hsl(var(--secondary))" strokeWidth="8" />
+          <circle
+            cx="60" cy="60" r="50" fill="none"
+            stroke={color}
+            strokeWidth="8"
+            strokeLinecap="round"
+            strokeDasharray={`${percentage * 3.14} 314`}
+            className="transition-all duration-1000"
+          />
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <Icon className="w-4 h-4 mb-1" style={{ color }} />
+          <span className="text-2xl font-bold" style={{ color }}>{percentage}%</span>
+        </div>
+      </div>
+      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+    </div>
+  );
+
+  const WhoBar = ({ percentage, label }: { percentage: number; label: string }) => (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="font-medium text-foreground">{percentage}%</span>
+      </div>
+      <div className="relative h-2.5 rounded-full bg-secondary overflow-hidden">
+        <div
+          className="absolute h-full rounded-full gradient-primary transition-all duration-1000"
+          style={{ width: `${percentage}%` }}
+        />
+        {/* WHO norm marker at 80% */}
+        <div className="absolute top-0 h-full w-0.5 bg-foreground/50" style={{ left: '80%' }} />
+      </div>
+      <div className="flex justify-end">
+        <span className="text-[10px] text-muted-foreground/60" style={{ marginRight: '16%' }}>
+          {lang === 'en' ? 'WHO norm' : 'Норма ВОЗ'}
+        </span>
+      </div>
+    </div>
+  );
 
   return (
     <section className="min-h-screen px-4 pt-6 pb-24">
@@ -90,11 +178,12 @@ const TestSection = () => {
               </div>
               <div>
                 <label className="text-xs text-muted-foreground mb-1 block">{t(test.phoneLabel)}</label>
-                <Input
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+357..."
-                  className="glass"
+                <PhoneInput
+                  countryCode={countryCode}
+                  onCountryCodeChange={setCountryCode}
+                  phone={phone}
+                  onPhoneChange={setPhone}
+                  countryCodes={COUNTRY_CODES}
                 />
               </div>
               <button
@@ -116,6 +205,15 @@ const TestSection = () => {
             exit={{ opacity: 0, x: -40 }}
             className="flex flex-col min-h-[70vh]"
           >
+            {/* Category label */}
+            <div className="flex items-center gap-2 mb-3">
+              {NUTRITION_INDICES.includes(currentQ) ? (
+                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
+              ) : (
+                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span></>
+              )}
+            </div>
+
             {/* Progress */}
             <div className="flex items-center gap-3 mb-6">
               <button
@@ -161,30 +259,69 @@ const TestSection = () => {
             key="result"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center min-h-[70vh] text-center"
+            className="flex flex-col items-center min-h-[70vh] pt-4"
           >
-            <CheckCircle2 className="w-16 h-16 text-primary mb-4" />
-            <h2 className="text-2xl font-bold mb-2">{t(test.resultTitle)}</h2>
+            <h2 className="text-2xl font-bold mb-6">{t(test.resultTitle)}</h2>
 
-            <div className="relative w-32 h-32 my-6">
-              <svg className="w-full h-full -rotate-90" viewBox="0 0 120 120">
-                <circle cx="60" cy="60" r="50" fill="none" stroke="hsl(var(--secondary))" strokeWidth="8" />
-                <circle
-                  cx="60" cy="60" r="50" fill="none"
-                  stroke="hsl(var(--primary))"
-                  strokeWidth="8"
-                  strokeLinecap="round"
-                  strokeDasharray={`${percentage * 3.14} 314`}
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-3xl font-bold text-gradient">{percentage}%</span>
+            {/* Dual score rings */}
+            <div className="flex gap-8 mb-6">
+              <ScoreRing
+                percentage={nutritionPct}
+                label={lang === 'en' ? 'Nutrition' : 'Питание'}
+                icon={Apple}
+                color="hsl(142, 71%, 45%)"
+              />
+              <ScoreRing
+                percentage={healthPct}
+                label={lang === 'en' ? 'Health' : 'Здоровье'}
+                icon={Heart}
+                color="hsl(var(--primary))"
+              />
+            </div>
+
+            {/* Overall score */}
+            <div className="glass rounded-2xl p-4 w-full max-w-sm mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-bold">{lang === 'en' ? 'Overall Score' : 'Общая оценка'}</span>
+                <span className="text-lg font-bold text-gradient">{overallPct}%</span>
+              </div>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                overallPct >= 80 ? 'bg-green-500/20 text-green-400' :
+                overallPct >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
+                overallPct >= 40 ? 'bg-orange-500/20 text-orange-400' :
+                'bg-red-500/20 text-red-400'
+              }`}>{t(getLevel(overallPct))}</span>
+            </div>
+
+            {/* WHO comparison bars */}
+            <div className="glass rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4">
+              <h4 className="text-sm font-bold flex items-center gap-2">
+                📊 {lang === 'en' ? 'Compared to WHO Standards' : 'Сравнение со стандартами ВОЗ'}
+              </h4>
+              <WhoBar percentage={nutritionPct} label={lang === 'en' ? 'Nutrition' : 'Питание'} />
+              <WhoBar percentage={healthPct} label={lang === 'en' ? 'Health & Activity' : 'Здоровье и активность'} />
+            </div>
+
+            {/* Detailed feedback */}
+            <div className="w-full max-w-sm space-y-3 mb-4">
+              <div className="glass rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Apple className="w-4 h-4 text-green-400" />
+                  <span className="text-sm font-bold">{lang === 'en' ? 'Nutrition' : 'Питание'}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
+              </div>
+              <div className="glass rounded-2xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-bold">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(healthPct, 'health'))}</p>
               </div>
             </div>
 
-            <p className="text-sm text-muted-foreground max-w-xs mb-2">{t(getHealthLevel())}</p>
-            <p className="text-xs text-muted-foreground/60">{t(test.whoStandards)}</p>
-            <p className="text-xs text-primary mt-4">{t(test.sendResults)}</p>
+            <p className="text-xs text-muted-foreground/60 mb-1">{t(test.whoStandards)}</p>
+            <p className="text-xs text-primary">{t(test.sendResults)}</p>
 
             <button
               onClick={() => { setStep('intro'); setCurrentQ(0); setAnswers([]); setName(''); setPhone(''); }}
