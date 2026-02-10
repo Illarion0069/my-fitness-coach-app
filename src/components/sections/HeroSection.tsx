@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, X } from 'lucide-react';
 import trainerLogo from '@/assets/trainer-logo.png';
+import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
@@ -13,6 +14,7 @@ interface HeroSectionProps {
 const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   const { t } = useLanguage();
   const hero = translations.hero;
+  const about = translations.about;
   const workouts = translations.workouts;
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -80,14 +82,25 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           {t(hero.subtitle)}
         </motion.p>
 
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5, duration: 0.6 }}
-          className="mt-2 text-xs text-muted-foreground/70"
+        {/* Trainer intro card */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          onClick={() => onNavigate('about')}
+          className="mt-5 glass rounded-2xl p-4 flex items-center gap-3 max-w-xs w-full cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
         >
-          — {t(hero.trainer)}
-        </motion.p>
+          <img
+            src={trainerPhoto}
+            alt={t(hero.trainer)}
+            className="w-12 h-12 rounded-xl object-cover border border-primary/20"
+          />
+          <div className="text-left flex-1">
+            <p className="text-sm font-bold text-foreground">{t(hero.trainer)}</p>
+            <p className="text-[10px] text-primary font-medium">{t(about.accreditation)}</p>
+          </div>
+          <ChevronDown className="w-4 h-4 text-muted-foreground/50 -rotate-90" />
+        </motion.div>
 
         <motion.a
           initial={{ opacity: 0, y: 20 }}
@@ -96,7 +109,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           href="https://calendly.com/limassol-fitness/booking"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-8 inline-block gradient-primary text-primary-foreground font-semibold px-8 py-3.5 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform active:scale-95"
+          className="mt-6 inline-block gradient-primary text-primary-foreground font-semibold px-8 py-3.5 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform active:scale-95"
         >
           {t(hero.cta)}
         </motion.a>
@@ -107,7 +120,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.8, duration: 0.6 }}
-        className="px-4 pb-24"
+        className="px-4 pb-32"
       >
         <h2 className="text-lg font-bold mb-3 px-2">{t(workouts.title)}</h2>
         <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
