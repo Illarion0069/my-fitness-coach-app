@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, Crown, AlertCircle } from 'lucide-react';
+import { Check, Crown, AlertCircle, ArrowRight } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -13,7 +13,7 @@ const PricingSection = () => {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="font-display text-4xl tracking-wide mb-2"
+        className="text-2xl font-extrabold uppercase tracking-tight mb-2"
       >
         {t(pricing.title)}
       </motion.h2>
@@ -22,7 +22,7 @@ const PricingSection = () => {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="flex items-start gap-2 bg-card rounded-xl p-3.5 mb-7 border border-border/50"
+        className="flex items-start gap-2.5 bg-card rounded-xl p-3.5 mb-6 border border-border/50"
       >
         <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <p className="text-xs text-muted-foreground">{t(pricing.gymNote)}</p>
@@ -36,32 +36,37 @@ const PricingSection = () => {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: i * 0.1 }}
-            className={`bg-card rounded-2xl p-6 relative overflow-hidden border ${
+            className={`bg-card rounded-2xl p-5 relative overflow-hidden border ${
               pkg.popular ? 'border-primary/50 glow-primary' : 'border-border/50'
             }`}
           >
             {pkg.popular && (
-              <div className="absolute top-4 right-4">
-                <Crown className="w-5 h-5 text-primary" />
+              <div className="absolute top-0 right-0 gradient-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl">
+                <Crown className="w-3 h-3 inline mr-1" />
+                {lang === 'en' ? 'Popular' : 'Популярно'}
               </div>
             )}
 
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="font-display text-5xl text-gradient">{pkg.sessions}</span>
-              <span className="text-sm text-muted-foreground">
-                {lang === 'en' ? 'sessions' : 'тренировок'}
-              </span>
+            <div className="flex items-end justify-between mb-4">
+              <div>
+                <span className="text-4xl font-extrabold text-gradient">{pkg.sessions}</span>
+                <span className="text-sm text-muted-foreground ml-2">
+                  {lang === 'en' ? 'sessions' : 'тренировок'}
+                </span>
+                <p className="text-xs text-muted-foreground mt-0.5">{t(pkg.period)}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-extrabold text-foreground">{pkg.price}€</div>
+                <div className="text-[10px] text-muted-foreground">
+                  {Math.round(pkg.price / pkg.sessions)}€/{lang === 'en' ? 'session' : 'трен.'}
+                </div>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">{t(pkg.period)}</p>
 
-            <div className="font-display text-3xl text-foreground mb-5">
-              {pkg.price}€
-            </div>
-
-            <div className="space-y-2.5 mb-6">
+            <div className="space-y-2 mb-5">
               {pkg.features[lang].map((feature, j) => (
                 <div key={j} className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full bg-primary/15 flex items-center justify-center">
+                  <div className="w-5 h-5 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
                     <Check className="w-3 h-3 text-primary" />
                   </div>
                   <span className="text-xs text-muted-foreground">{feature}</span>
@@ -73,13 +78,14 @@ const PricingSection = () => {
               href="https://revolut.me/illarion"
               target="_blank"
               rel="noopener noreferrer"
-              className={`block w-full text-center py-3.5 rounded-xl text-sm font-bold uppercase tracking-wider transition-all ${
+              className={`group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold transition-all ${
                 pkg.popular
                   ? 'gradient-primary text-primary-foreground glow-primary hover:scale-[1.02]'
                   : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
               }`}
             >
               {t(pricing.buy)}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </a>
           </motion.div>
         ))}
