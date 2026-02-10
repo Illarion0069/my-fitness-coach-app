@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, X } from 'lucide-react';
+import { ChevronDown, X, Shield, MapPin } from 'lucide-react';
 import trainerLogo from '@/assets/trainer-logo.png';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -17,7 +17,6 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   const about = translations.about;
   const workouts = translations.workouts;
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
-  const carouselRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (expandedCard === null) return;
@@ -44,127 +43,146 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
         <LanguageSwitch />
       </div>
 
-      {/* Hero content */}
-      <div className="flex-1 flex flex-col items-center justify-center px-6 text-center">
+      {/* Hero — trainer-centric */}
+      <div className="flex-1 flex flex-col px-5 pt-4">
+        {/* Trainer photo + name block */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="mb-6"
-        >
-          <img
-            src={trainerLogo}
-            alt="Illarion Ientin — Personal Fitness Trainer"
-            className="w-28 h-28 rounded-full object-cover border-2 border-primary/30 shadow-lg shadow-primary/20"
-          />
-        </motion.div>
-
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
+          transition={{ duration: 0.7 }}
+          className="relative mb-5"
         >
-          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-tight">
-            <span className="text-gradient">PERSONAL</span>
-            <br />
-            <span className="text-foreground">FITNESS</span>
-            <br />
-            <span className="text-gradient">ASSISTANT</span>
-          </h1>
+          <div className="relative overflow-hidden rounded-3xl">
+            <img
+              src={trainerPhoto}
+              alt={t(hero.trainer)}
+              className="w-full h-64 object-cover object-top"
+            />
+            {/* Gradient overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+            
+            {/* Name + badge overlay */}
+            <div className="absolute bottom-0 left-0 right-0 p-5">
+              <div className="flex items-center gap-2 mb-1.5">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-[11px] text-primary font-semibold uppercase tracking-wider">{t(about.accreditation)}</span>
+              </div>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                {t(hero.trainer)}
+              </h1>
+              <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5" />
+                Limassol, Cyprus
+              </p>
+            </div>
+          </div>
         </motion.div>
 
+        {/* Tagline */}
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+          className="text-lg font-bold text-foreground leading-snug mb-1"
+        >
+          {t(hero.tagline)}
+        </motion.p>
         <motion.p
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4, duration: 0.6 }}
-          className="mt-4 text-muted-foreground text-sm max-w-xs"
+          className="text-sm text-muted-foreground leading-relaxed mb-5"
         >
           {t(hero.subtitle)}
         </motion.p>
 
-        {/* Trainer intro card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
+        {/* CTA */}
+        <motion.a
+          initial={{ opacity: 0, y: 15 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          onClick={() => onNavigate('about')}
-          className="mt-5 glass rounded-2xl p-4 flex items-center gap-3 max-w-xs w-full cursor-pointer hover:border-primary/30 transition-all active:scale-[0.98]"
-        >
-          <img
-            src={trainerPhoto}
-            alt={t(hero.trainer)}
-            className="w-12 h-12 rounded-xl object-cover border border-primary/20"
-          />
-          <div className="text-left flex-1">
-            <p className="text-sm font-bold text-foreground">{t(hero.trainer)}</p>
-            <p className="text-[10px] text-primary font-medium">{t(about.accreditation)}</p>
-          </div>
-          <ChevronDown className="w-4 h-4 text-muted-foreground/50 -rotate-90" />
-        </motion.div>
-
-        <motion.a
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.5 }}
           href="https://calendly.com/limassol-fitness/booking"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-6 inline-block gradient-primary text-primary-foreground font-semibold px-8 py-3.5 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform active:scale-95"
+          className="w-full text-center gradient-primary text-primary-foreground font-semibold py-4 rounded-2xl text-sm glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
         >
           {t(hero.cta)}
         </motion.a>
-      </div>
 
-      {/* Workout types carousel */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.8, duration: 0.6 }}
-        className="px-4 pb-32"
-      >
-        <h2 className="text-lg font-bold mb-3 px-2">{t(workouts.title)}</h2>
-        <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide">
-          {workouts.items.map((item, i) => (
+        {/* USP pills */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.5 }}
+          className="grid grid-cols-2 gap-2.5 mt-5"
+        >
+          {hero.usps.map((usp, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.9 + i * 0.08, duration: 0.4 }}
-              onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-              className="workout-card-expanded glass rounded-2xl p-4 min-w-[200px] max-w-[200px] snap-center flex-shrink-0 hover:border-primary/30 transition-all cursor-pointer select-none"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.7 + i * 0.08 }}
+              onClick={() => onNavigate('about')}
+              className="glass rounded-2xl p-3.5 cursor-pointer hover:border-primary/30 transition-all active:scale-[0.97]"
             >
-              <div className="text-2xl mb-2">{item.icon}</div>
-              <h3 className="text-sm font-bold text-foreground mb-1">{t(item.name)}</h3>
-              <AnimatePresence mode="wait">
-                {expandedCard === i ? (
-                  <motion.div
-                    key="expanded"
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="overflow-hidden"
-                  >
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t(item.desc)}</p>
-                    <div className="mt-2 flex justify-end">
-                      <X className="w-3.5 h-3.5 text-muted-foreground/50" />
-                    </div>
-                  </motion.div>
-                ) : (
-                  <motion.p
-                    key="collapsed"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    className="text-xs text-muted-foreground leading-relaxed line-clamp-2"
-                  >
-                    {t(item.desc)}
-                  </motion.p>
-                )}
-              </AnimatePresence>
+              <span className="text-xl mb-1.5 block">{usp.icon}</span>
+              <h3 className="text-xs font-bold text-foreground mb-0.5">{t(usp.title)}</h3>
+              <p className="text-[10px] text-muted-foreground leading-relaxed">{t(usp.desc)}</p>
             </motion.div>
           ))}
-        </div>
-      </motion.div>
+        </motion.div>
+
+        {/* Workout types carousel */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.9, duration: 0.6 }}
+          className="mt-6 pb-32"
+        >
+          <h2 className="text-lg font-bold mb-3">{t(workouts.title)}</h2>
+          <div className="flex gap-3 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide -mx-1 px-1">
+            {workouts.items.map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 1.0 + i * 0.06, duration: 0.4 }}
+                onClick={() => setExpandedCard(expandedCard === i ? null : i)}
+                className="workout-card-expanded glass rounded-2xl p-4 min-w-[180px] max-w-[180px] snap-center flex-shrink-0 hover:border-primary/30 transition-all cursor-pointer select-none"
+              >
+                <div className="text-2xl mb-2">{item.icon}</div>
+                <h3 className="text-sm font-bold text-foreground mb-1">{t(item.name)}</h3>
+                <AnimatePresence mode="wait">
+                  {expandedCard === i ? (
+                    <motion.div
+                      key="expanded"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25 }}
+                      className="overflow-hidden"
+                    >
+                      <p className="text-xs text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+                      <div className="mt-2 flex justify-end">
+                        <X className="w-3.5 h-3.5 text-muted-foreground/50" />
+                      </div>
+                    </motion.div>
+                  ) : (
+                    <motion.p
+                      key="collapsed"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-xs text-muted-foreground leading-relaxed line-clamp-2"
+                    >
+                      {t(item.desc)}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
 
       {/* Scroll indicator */}
       <motion.div

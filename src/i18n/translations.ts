@@ -16,6 +16,32 @@ export const translations = {
     },
     cta: { en: 'Book your session', ru: 'Забронировать тренировку' },
     trainer: { en: 'Illarion Ientin', ru: 'Илларион Иентин' },
+    tagline: {
+      en: 'Your Elite Personal Trainer in Limassol',
+      ru: 'Ваш элитный персональный тренер в Лимассоле',
+    },
+    usps: [
+      {
+        icon: '🎯',
+        title: { en: 'Technique First', ru: 'Техника — прежде всего' },
+        desc: { en: 'Every rep matters. I control your form so you get results, not injuries.', ru: 'Каждое повторение важно. Я контролирую вашу технику — результат без травм.' },
+      },
+      {
+        icon: '🏠',
+        title: { en: 'Home & On-Location', ru: 'Выезд к вам' },
+        desc: { en: 'Training at the best gym in Limassol or at your villa — wherever suits you.', ru: 'Тренировки в лучшем зале Лимассола или на вашей вилле — как вам удобно.' },
+      },
+      {
+        icon: '✈️',
+        title: { en: 'Even on Your Trips', ru: 'Даже в командировке' },
+        desc: { en: 'Travelling? I stay with you online — programs, check-ins, adjustments.', ru: 'В поездке? Я на связи онлайн — программы, контроль, корректировки.' },
+      },
+      {
+        icon: '👑',
+        title: { en: 'Elite Clientele', ru: 'Элитная клиентура' },
+        desc: { en: 'I work with the most demanding clients in Limassol who expect nothing but the best.', ru: 'Я работаю с самыми требовательными клиентами Лимассола, которые принимают только лучшее.' },
+      },
+    ],
   },
   workouts: {
     title: { en: 'WORKOUTS', ru: 'ТРЕНИРОВКИ' },
