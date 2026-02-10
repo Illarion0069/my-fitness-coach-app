@@ -44,15 +44,18 @@ const TestSection = () => {
       setCurrentQ(currentQ + 1);
     } else {
       setStep('result');
-      // Send via Telegram (WhatsApp as fallback)
+      // Send results to trainer via Telegram
       const { nutritionScore, nutritionMax, healthScore, healthMax } = calculateScores(newAnswers);
       const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
       const healthPct = Math.round((healthScore / healthMax) * 100);
       const overallPct = Math.round(((nutritionScore + healthScore) / (nutritionMax + healthMax)) * 100);
-      const msg = `🏋️ New Health Test:\n👤 ${name}\n📱 ${countryCode}${phone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%`;
-      const tgUrl = `https://t.me/share/url?url=${encodeURIComponent(msg)}&to=+35795144819`;
-      const waUrl = `https://wa.me/35795144819?text=${encodeURIComponent(msg)}`;
-      window.open(waUrl, '_blank');
+      const msg = `🏋️ <b>New Health Test</b>\n👤 ${name}\n📱 ${countryCode}${phone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%`;
+      
+      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-telegram`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: msg }),
+      }).catch(err => console.error('Telegram send error:', err));
     }
   };
 
