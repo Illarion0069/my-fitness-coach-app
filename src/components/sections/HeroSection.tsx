@@ -33,12 +33,12 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   return (
     <section className="relative min-h-screen flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2">
+       <div className="flex items-center justify-between px-4 pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+          <div className="w-9 h-9 rounded-full bg-foreground flex items-center justify-center text-background font-bold text-sm">
             LF
           </div>
-          <span className="text-sm font-semibold text-foreground tracking-tight">Limassol Fitness</span>
+          <span className="text-sm font-black text-foreground tracking-tight uppercase">Limassol Fitness</span>
         </div>
         <LanguageSwitch />
       </div>
@@ -104,7 +104,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           href="https://calendly.com/limassol-fitness/booking"
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full text-center gradient-primary text-primary-foreground font-semibold py-4 rounded-2xl text-sm glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+          className="w-full text-center bg-foreground text-background font-black py-4 rounded-2xl text-sm uppercase tracking-wider hover:scale-[1.02] transition-transform active:scale-[0.98]"
         >
           {t(hero.cta)}
         </motion.a>
@@ -146,7 +146,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                 initial={{ opacity: 0, scale: 0.8 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.9 + i * 0.05 }}
-                className="px-3 py-1.5 rounded-full bg-primary/10 text-primary text-xs font-medium border border-primary/20"
+                className="px-3 py-1.5 rounded-full bg-primary/15 text-foreground text-xs font-semibold border border-primary/30"
               >
                 {cert}
               </motion.span>
@@ -170,7 +170,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 1.0 + i * 0.06, duration: 0.4 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-                className="workout-card-expanded glass rounded-2xl p-4 min-w-[180px] max-w-[180px] snap-center flex-shrink-0 hover:border-primary/30 transition-all cursor-pointer select-none"
+                className="workout-card-expanded rounded-2xl p-4 min-w-[180px] max-w-[180px] snap-center flex-shrink-0 bg-primary/10 border border-primary/20 hover:bg-primary/20 transition-all cursor-pointer select-none"
               >
                 <div className="text-2xl mb-2">{item.icon}</div>
                 <h3 className="text-sm font-bold text-foreground mb-1">{t(item.name)}</h3>
