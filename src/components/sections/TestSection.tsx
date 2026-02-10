@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Activity, Heart, Apple } from 'lucide-react';
+import { ArrowLeft, Activity, Heart, Apple, ArrowRight } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 
 const COUNTRY_CODES = [
@@ -106,7 +106,7 @@ const TestSection = () => {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <Icon className="w-4 h-4 mb-1" style={{ color }} />
-          <span className="text-2xl font-bold" style={{ color }}>{percentage}%</span>
+          <span className="text-2xl font-extrabold" style={{ color }}>{percentage}%</span>
         </div>
       </div>
       <span className="text-xs font-semibold text-muted-foreground">{label}</span>
@@ -117,7 +117,7 @@ const TestSection = () => {
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-semibold text-foreground">{percentage}%</span>
+        <span className="font-bold text-foreground">{percentage}%</span>
       </div>
       <div className="relative h-2.5 rounded-full bg-secondary overflow-hidden">
         <div
@@ -127,7 +127,7 @@ const TestSection = () => {
         <div className="absolute top-0 h-full w-0.5 bg-foreground/50" style={{ left: '80%' }} />
       </div>
       <div className="flex justify-end">
-        <span className="text-[10px] text-muted-foreground/60" style={{ marginRight: '16%' }}>
+        <span className="text-[10px] text-muted-foreground/50" style={{ marginRight: '16%' }}>
           {lang === 'en' ? 'WHO norm' : 'Норма ВОЗ'}
         </span>
       </div>
@@ -145,16 +145,17 @@ const TestSection = () => {
             exit={{ opacity: 0, y: -20 }}
             className="flex flex-col items-center justify-center min-h-[70vh] text-center"
           >
-            <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center mb-6">
+            <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center mb-6 glow-primary">
               <Activity className="w-10 h-10 text-primary-foreground" />
             </div>
-            <h2 className="font-display text-4xl tracking-wide mb-3">{t(test.title)}</h2>
+            <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-3">{t(test.title)}</h2>
             <p className="text-sm text-muted-foreground mb-8 max-w-xs">{t(test.subtitle)}</p>
             <button
               onClick={() => setStep('info')}
-              className="gradient-primary text-primary-foreground font-bold px-10 py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
+              className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-10 py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
             >
               {t(test.start)}
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
             </button>
           </motion.div>
         )}
@@ -168,18 +169,18 @@ const TestSection = () => {
             className="flex flex-col items-center justify-center min-h-[70vh]"
           >
             <div className="w-full max-w-sm space-y-5">
-              <h3 className="font-display text-3xl tracking-wide text-center mb-6">{t(test.title)}</h3>
+              <h3 className="text-xl font-extrabold uppercase tracking-tight text-center mb-6">{t(test.title)}</h3>
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-semibold">{t(test.nameLabel)}</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-bold uppercase tracking-wider">{t(test.nameLabel)}</label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t(test.nameLabel)}
-                  className="bg-card border-border/50"
+                  className="bg-card border-border/50 rounded-xl"
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-semibold">{t(test.phoneLabel)}</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-bold uppercase tracking-wider">{t(test.phoneLabel)}</label>
                 <PhoneInput
                   countryCode={countryCode}
                   onCountryCodeChange={setCountryCode}
@@ -191,7 +192,7 @@ const TestSection = () => {
               <button
                 onClick={() => name && phone && setStep('quiz')}
                 disabled={!name || !phone}
-                className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform disabled:opacity-40 disabled:hover:scale-100 mt-4"
+                className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] transition-transform disabled:opacity-40 disabled:hover:scale-100 mt-4"
               >
                 {t(test.next)} →
               </button>
@@ -209,9 +210,9 @@ const TestSection = () => {
           >
             <div className="flex items-center gap-2 mb-3">
               {NUTRITION_INDICES.includes(currentQ) ? (
-                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-semibold text-primary uppercase tracking-wider">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
+                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
               ) : (
-                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-semibold text-primary uppercase tracking-wider">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span></>
+                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье'}</span></>
               )}
             </div>
 
@@ -229,23 +230,23 @@ const TestSection = () => {
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div className="flex-1 h-1.5 rounded-full bg-secondary overflow-hidden">
+              <div className="flex-1 h-2 rounded-full bg-secondary overflow-hidden">
                 <div
                   className="h-full gradient-primary rounded-full transition-all duration-500"
                   style={{ width: `${((currentQ + 1) / totalQuestions) * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground font-semibold">{currentQ + 1}/{totalQuestions}</span>
+              <span className="text-xs text-muted-foreground font-bold">{currentQ + 1}/{totalQuestions}</span>
             </div>
 
-            <h3 className="text-lg font-bold mb-6">{t(test.questions[currentQ].q)}</h3>
+            <h3 className="text-lg font-extrabold mb-6">{t(test.questions[currentQ].q)}</h3>
 
             <div className="space-y-3">
               {test.questions[currentQ].options[lang].map((option, i) => (
                 <button
                   key={i}
                   onClick={() => handleAnswer(i)}
-                  className="w-full bg-card rounded-2xl p-4 text-left text-sm font-semibold border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
+                  className="w-full bg-card rounded-xl p-4 text-left text-sm font-bold border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
                 >
                   {option}
                 </button>
@@ -261,7 +262,7 @@ const TestSection = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center min-h-[70vh] pt-4"
           >
-            <h2 className="font-display text-3xl tracking-wide mb-6">{t(test.resultTitle)}</h2>
+            <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-6">{t(test.resultTitle)}</h2>
 
             <div className="flex gap-8 mb-6">
               <ScoreRing
@@ -274,16 +275,16 @@ const TestSection = () => {
                 percentage={healthPct}
                 label={lang === 'en' ? 'Health' : 'Здоровье'}
                 icon={Heart}
-                color="hsl(16, 90%, 55%)"
+                color="hsl(145, 65%, 42%)"
               />
             </div>
 
             <div className="bg-card rounded-2xl p-4 w-full max-w-sm mb-4 border border-border/50">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-bold">{lang === 'en' ? 'Overall Score' : 'Общая оценка'}</span>
-                <span className="font-display text-2xl text-gradient">{overallPct}%</span>
+                <span className="text-sm font-extrabold">{lang === 'en' ? 'Overall Score' : 'Общая оценка'}</span>
+                <span className="text-xl font-extrabold text-gradient">{overallPct}%</span>
               </div>
-              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${
                 overallPct >= 80 ? 'bg-green-500/20 text-green-400' :
                 overallPct >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
                 overallPct >= 40 ? 'bg-orange-500/20 text-orange-400' :
@@ -292,32 +293,32 @@ const TestSection = () => {
             </div>
 
             <div className="bg-card rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4 border border-border/50">
-              <h4 className="text-sm font-bold flex items-center gap-2">
-                📊 {lang === 'en' ? 'Compared to WHO Standards' : 'Сравнение со стандартами ВОЗ'}
+              <h4 className="text-sm font-extrabold flex items-center gap-2">
+                📊 {lang === 'en' ? 'WHO Standards' : 'Стандарты ВОЗ'}
               </h4>
               <WhoBar percentage={nutritionPct} label={lang === 'en' ? 'Nutrition' : 'Питание'} />
-              <WhoBar percentage={healthPct} label={lang === 'en' ? 'Health & Activity' : 'Здоровье и активность'} />
+              <WhoBar percentage={healthPct} label={lang === 'en' ? 'Health' : 'Здоровье'} />
             </div>
 
             <div className="w-full max-w-sm space-y-3 mb-4">
               <div className="bg-card rounded-2xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Apple className="w-4 h-4 text-green-400" />
-                  <span className="text-sm font-bold">{lang === 'en' ? 'Nutrition' : 'Питание'}</span>
+                  <span className="text-sm font-extrabold">{lang === 'en' ? 'Nutrition' : 'Питание'}</span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
               </div>
               <div className="bg-card rounded-2xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Heart className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-bold">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span>
+                  <span className="text-sm font-extrabold">{lang === 'en' ? 'Health' : 'Здоровье'}</span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(healthPct, 'health'))}</p>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground/60 mb-1">{t(test.whoStandards)}</p>
-            <p className="text-xs text-primary font-semibold">{t(test.sendResults)}</p>
+            <p className="text-xs text-muted-foreground/50 mb-1">{t(test.whoStandards)}</p>
+            <p className="text-xs text-primary font-bold">{t(test.sendResults)}</p>
 
             <button
               onClick={() => { setStep('intro'); setCurrentQ(0); setAnswers([]); setName(''); setPhone(''); }}
