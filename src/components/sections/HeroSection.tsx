@@ -29,7 +29,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [expandedCard]);
 
-  const romanNumerals = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII'];
+  
 
   return (
     <section className="relative flex flex-col bg-background">
@@ -57,52 +57,22 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           <LanguageSwitch />
         </div>
 
-        {/* Center text block — Renaissance style */}
+        {/* Hero text — bottom positioned */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1.2, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="absolute inset-0 z-10 flex items-center justify-center"
+          className="absolute bottom-36 left-0 right-0 z-10 px-6 text-center"
         >
-          <div className="border border-white/20 bg-black/20 backdrop-blur-sm px-8 py-10 max-w-[300px] text-center">
-            <p className="text-[10px] uppercase tracking-[0.3em] text-white/50 mb-4 font-sans">
-              {t(about.accreditation)}
-            </p>
-            <h1 className="text-3xl leading-[1.1] font-bold text-white mb-4">
-              {t(hero.trainer)}
-            </h1>
-            <p className="text-xs text-white/60 leading-relaxed mb-6 font-sans">
-              {t(hero.tagline)}
-            </p>
-            {/* Service list — like Renaissance Edition */}
-            <div className="text-left space-y-0.5">
-              {workouts.items.slice(0, 7).map((item, i) => (
-                <motion.p
-                  key={i}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.8 + i * 0.08 }}
-                  className="text-[11px] text-white/70 font-sans font-medium"
-                >
-                  {t(item.name)}
-                </motion.p>
-              ))}
-            </div>
-            {/* Roman numerals column */}
-            <div className="absolute right-[-40px] top-1/2 -translate-y-1/2 space-y-1">
-              {romanNumerals.map((num, i) => (
-                <motion.p
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 1.2 + i * 0.06 }}
-                  className="text-[9px] text-white/30 font-sans text-right"
-                >
-                  {num}
-                </motion.p>
-              ))}
-            </div>
-          </div>
+          <p className="text-[10px] uppercase tracking-[0.3em] text-white/50 mb-3 font-sans">
+            {t(about.accreditation)}
+          </p>
+          <h1 className="text-4xl leading-[1.05] font-bold text-white mb-3">
+            {t(hero.trainer)}
+          </h1>
+          <p className="text-sm text-white/60 leading-relaxed font-sans max-w-[280px] mx-auto">
+            {t(hero.tagline)}
+          </p>
         </motion.div>
 
         {/* Bottom CTA */}
