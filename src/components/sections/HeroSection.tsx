@@ -74,15 +74,17 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           — {t(hero.trainer)}
         </motion.p>
 
-        <motion.button
+        <motion.a
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.5 }}
-          onClick={() => onNavigate('test')}
-          className="mt-8 gradient-primary text-primary-foreground font-semibold px-8 py-3.5 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform active:scale-95"
+          href="https://calendly.com/limassol-fitness/booking"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-8 inline-block gradient-primary text-primary-foreground font-semibold px-8 py-3.5 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform active:scale-95"
         >
           {t(hero.cta)}
-        </motion.button>
+        </motion.a>
       </div>
 
       {/* Workout types carousel */}
