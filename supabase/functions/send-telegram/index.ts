@@ -11,13 +11,23 @@ serve(async (req) => {
   }
 
   try {
-    const { message } = await req.json();
+    const body = await req.json();
+    const { message, action } = body;
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     if (!TELEGRAM_BOT_TOKEN) throw new Error("TELEGRAM_BOT_TOKEN not configured");
 
     const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
     if (!TELEGRAM_CHAT_ID) throw new Error("TELEGRAM_CHAT_ID not configured");
+
+    // Debug action: get bot info
+    if (action === "getMe") {
+      const meRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
+      const meData = await meRes.json();
+      return new Response(JSON.stringify(meData), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const res = await fetch(
       `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
