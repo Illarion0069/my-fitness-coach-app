@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Activity, Heart, Apple, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Activity, Heart, Apple } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 
 const COUNTRY_CODES = [
@@ -19,7 +19,6 @@ const COUNTRY_CODES = [
   { code: '+33', country: '🇫🇷', label: 'France' },
 ];
 
-// Questions split into nutrition (0-4) and health (5-9)
 const NUTRITION_INDICES = [0, 1, 2, 3, 4];
 const HEALTH_INDICES = [5, 6, 7, 8, 9];
 
@@ -44,7 +43,6 @@ const TestSection = () => {
       setCurrentQ(currentQ + 1);
     } else {
       setStep('result');
-      // Send results to trainer via Telegram
       const { nutritionScore, nutritionMax, healthScore, healthMax } = calculateScores(newAnswers);
       const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
       const healthPct = Math.round((healthScore / healthMax) * 100);
@@ -80,7 +78,7 @@ const TestSection = () => {
   };
 
   const getWhoComparison = (pct: number, type: 'nutrition' | 'health') => {
-    const whoTarget = 80; // WHO recommended target
+    const whoTarget = 80;
     const diff = whoTarget - pct;
     if (diff <= 0) {
       return type === 'nutrition'
@@ -111,7 +109,7 @@ const TestSection = () => {
           <span className="text-2xl font-bold" style={{ color }}>{percentage}%</span>
         </div>
       </div>
-      <span className="text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
     </div>
   );
 
@@ -119,14 +117,13 @@ const TestSection = () => {
     <div className="space-y-1.5">
       <div className="flex items-center justify-between text-xs">
         <span className="text-muted-foreground">{label}</span>
-        <span className="font-medium text-foreground">{percentage}%</span>
+        <span className="font-semibold text-foreground">{percentage}%</span>
       </div>
       <div className="relative h-2.5 rounded-full bg-secondary overflow-hidden">
         <div
           className="absolute h-full rounded-full gradient-primary transition-all duration-1000"
           style={{ width: `${percentage}%` }}
         />
-        {/* WHO norm marker at 80% */}
         <div className="absolute top-0 h-full w-0.5 bg-foreground/50" style={{ left: '80%' }} />
       </div>
       <div className="flex justify-end">
@@ -138,7 +135,7 @@ const TestSection = () => {
   );
 
   return (
-    <section className="min-h-screen px-4 pt-6 pb-24">
+    <section className="min-h-screen px-5 pt-8 pb-28">
       <AnimatePresence mode="wait">
         {step === 'intro' && (
           <motion.div
@@ -148,12 +145,14 @@ const TestSection = () => {
             exit={{ opacity: 0, y: -20 }}
             className="flex flex-col items-center justify-center min-h-[70vh] text-center"
           >
-            <Activity className="w-16 h-16 text-primary mb-6" />
-            <h2 className="text-2xl font-bold mb-3">{t(test.title)}</h2>
+            <div className="w-20 h-20 rounded-2xl gradient-primary flex items-center justify-center mb-6">
+              <Activity className="w-10 h-10 text-primary-foreground" />
+            </div>
+            <h2 className="font-display text-4xl tracking-wide mb-3">{t(test.title)}</h2>
             <p className="text-sm text-muted-foreground mb-8 max-w-xs">{t(test.subtitle)}</p>
             <button
               onClick={() => setStep('info')}
-              className="gradient-primary text-primary-foreground font-semibold px-8 py-3 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform"
+              className="gradient-primary text-primary-foreground font-bold px-10 py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
             >
               {t(test.start)}
             </button>
@@ -168,19 +167,19 @@ const TestSection = () => {
             exit={{ opacity: 0, x: -40 }}
             className="flex flex-col items-center justify-center min-h-[70vh]"
           >
-            <div className="w-full max-w-sm space-y-4">
-              <h3 className="text-xl font-bold text-center mb-6">{t(test.title)}</h3>
+            <div className="w-full max-w-sm space-y-5">
+              <h3 className="font-display text-3xl tracking-wide text-center mb-6">{t(test.title)}</h3>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{t(test.nameLabel)}</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-semibold">{t(test.nameLabel)}</label>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   placeholder={t(test.nameLabel)}
-                  className="glass"
+                  className="bg-card border-border/50"
                 />
               </div>
               <div>
-                <label className="text-xs text-muted-foreground mb-1 block">{t(test.phoneLabel)}</label>
+                <label className="text-xs text-muted-foreground mb-1.5 block font-semibold">{t(test.phoneLabel)}</label>
                 <PhoneInput
                   countryCode={countryCode}
                   onCountryCodeChange={setCountryCode}
@@ -192,7 +191,7 @@ const TestSection = () => {
               <button
                 onClick={() => name && phone && setStep('quiz')}
                 disabled={!name || !phone}
-                className="w-full gradient-primary text-primary-foreground font-semibold py-3 rounded-2xl text-sm glow-primary hover:scale-105 transition-transform disabled:opacity-40 disabled:hover:scale-100 mt-4"
+                className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform disabled:opacity-40 disabled:hover:scale-100 mt-4"
               >
                 {t(test.next)} →
               </button>
@@ -208,16 +207,14 @@ const TestSection = () => {
             exit={{ opacity: 0, x: -40 }}
             className="flex flex-col min-h-[70vh]"
           >
-            {/* Category label */}
             <div className="flex items-center gap-2 mb-3">
               {NUTRITION_INDICES.includes(currentQ) ? (
-                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
+                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-semibold text-primary uppercase tracking-wider">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
               ) : (
-                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-medium text-primary">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span></>
+                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-semibold text-primary uppercase tracking-wider">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span></>
               )}
             </div>
 
-            {/* Progress */}
             <div className="flex items-center gap-3 mb-6">
               <button
                 onClick={() => {
@@ -228,7 +225,7 @@ const TestSection = () => {
                     setStep('info');
                   }
                 }}
-                className="text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 <ArrowLeft className="w-5 h-5" />
               </button>
@@ -238,7 +235,7 @@ const TestSection = () => {
                   style={{ width: `${((currentQ + 1) / totalQuestions) * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-muted-foreground">{currentQ + 1}/{totalQuestions}</span>
+              <span className="text-xs text-muted-foreground font-semibold">{currentQ + 1}/{totalQuestions}</span>
             </div>
 
             <h3 className="text-lg font-bold mb-6">{t(test.questions[currentQ].q)}</h3>
@@ -248,7 +245,7 @@ const TestSection = () => {
                 <button
                   key={i}
                   onClick={() => handleAnswer(i)}
-                  className="w-full glass rounded-2xl p-4 text-left text-sm font-medium hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
+                  className="w-full bg-card rounded-2xl p-4 text-left text-sm font-semibold border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all active:scale-[0.98]"
                 >
                   {option}
                 </button>
@@ -264,9 +261,8 @@ const TestSection = () => {
             animate={{ opacity: 1, scale: 1 }}
             className="flex flex-col items-center min-h-[70vh] pt-4"
           >
-            <h2 className="text-2xl font-bold mb-6">{t(test.resultTitle)}</h2>
+            <h2 className="font-display text-3xl tracking-wide mb-6">{t(test.resultTitle)}</h2>
 
-            {/* Dual score rings */}
             <div className="flex gap-8 mb-6">
               <ScoreRing
                 percentage={nutritionPct}
@@ -278,17 +274,16 @@ const TestSection = () => {
                 percentage={healthPct}
                 label={lang === 'en' ? 'Health' : 'Здоровье'}
                 icon={Heart}
-                color="hsl(var(--primary))"
+                color="hsl(16, 90%, 55%)"
               />
             </div>
 
-            {/* Overall score */}
-            <div className="glass rounded-2xl p-4 w-full max-w-sm mb-4">
+            <div className="bg-card rounded-2xl p-4 w-full max-w-sm mb-4 border border-border/50">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-bold">{lang === 'en' ? 'Overall Score' : 'Общая оценка'}</span>
-                <span className="text-lg font-bold text-gradient">{overallPct}%</span>
+                <span className="font-display text-2xl text-gradient">{overallPct}%</span>
               </div>
-              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
                 overallPct >= 80 ? 'bg-green-500/20 text-green-400' :
                 overallPct >= 60 ? 'bg-yellow-500/20 text-yellow-400' :
                 overallPct >= 40 ? 'bg-orange-500/20 text-orange-400' :
@@ -296,8 +291,7 @@ const TestSection = () => {
               }`}>{t(getLevel(overallPct))}</span>
             </div>
 
-            {/* WHO comparison bars */}
-            <div className="glass rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4">
+            <div className="bg-card rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4 border border-border/50">
               <h4 className="text-sm font-bold flex items-center gap-2">
                 📊 {lang === 'en' ? 'Compared to WHO Standards' : 'Сравнение со стандартами ВОЗ'}
               </h4>
@@ -305,16 +299,15 @@ const TestSection = () => {
               <WhoBar percentage={healthPct} label={lang === 'en' ? 'Health & Activity' : 'Здоровье и активность'} />
             </div>
 
-            {/* Detailed feedback */}
             <div className="w-full max-w-sm space-y-3 mb-4">
-              <div className="glass rounded-2xl p-4">
+              <div className="bg-card rounded-2xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Apple className="w-4 h-4 text-green-400" />
                   <span className="text-sm font-bold">{lang === 'en' ? 'Nutrition' : 'Питание'}</span>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
               </div>
-              <div className="glass rounded-2xl p-4">
+              <div className="bg-card rounded-2xl p-4 border border-border/50">
                 <div className="flex items-center gap-2 mb-2">
                   <Heart className="w-4 h-4 text-primary" />
                   <span className="text-sm font-bold">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье и образ жизни'}</span>
@@ -324,7 +317,7 @@ const TestSection = () => {
             </div>
 
             <p className="text-xs text-muted-foreground/60 mb-1">{t(test.whoStandards)}</p>
-            <p className="text-xs text-primary">{t(test.sendResults)}</p>
+            <p className="text-xs text-primary font-semibold">{t(test.sendResults)}</p>
 
             <button
               onClick={() => { setStep('intro'); setCurrentQ(0); setAnswers([]); setName(''); setPhone(''); }}

@@ -16,12 +16,12 @@ const ContactSection = () => {
   ];
 
   return (
-    <section className="px-4 pt-6 pb-24">
+    <section className="min-h-screen px-5 pt-8 pb-28">
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-2xl font-bold mb-6"
+        className="font-display text-4xl tracking-wide mb-7"
       >
         {t(contact.title)}
       </motion.h2>
@@ -30,27 +30,27 @@ const ContactSection = () => {
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="glass rounded-2xl p-5 space-y-4 mb-6"
+        className="bg-card rounded-2xl p-5 space-y-5 mb-6 border border-border/50"
       >
-        <a href="tel:+35795144819" className="flex items-center gap-3 hover:text-primary transition-colors">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-            <Phone className="w-5 h-5 text-primary" />
+        <a href="tel:+35795144819" className="flex items-center gap-3.5 hover:text-primary transition-colors">
+          <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center">
+            <Phone className="w-5 h-5 text-primary-foreground" />
           </div>
-          <span className="text-sm font-medium">{contact.phone}</span>
+          <span className="text-sm font-semibold">{contact.phone}</span>
         </a>
 
         <a
           href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 hover:text-primary transition-colors"
+          className="flex items-center gap-3.5 hover:text-primary transition-colors"
         >
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+          <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center">
             <MapPin className="w-5 h-5 text-primary" />
           </div>
           <div>
-            <span className="text-sm text-muted-foreground block">{t(contact.address)}</span>
-            <span className="text-xs text-primary font-medium">{lang === 'en' ? 'Open in Google Maps →' : 'Открыть в Google Картах →'}</span>
+            <span className="text-sm text-foreground block font-medium">{t(contact.address)}</span>
+            <span className="text-xs text-primary font-semibold">{lang === 'en' ? 'Open in Maps →' : 'Открыть на карте →'}</span>
           </div>
         </a>
       </motion.div>
@@ -68,10 +68,10 @@ const ContactSection = () => {
             href={s.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="glass rounded-2xl p-4 flex items-center gap-3 hover:border-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            className="bg-card rounded-2xl p-4 flex items-center gap-3 border border-border/50 hover:border-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
           >
             <s.icon className="w-5 h-5 text-primary" />
-            <span className="text-sm font-medium">{s.label}</span>
+            <span className="text-sm font-semibold">{s.label}</span>
           </a>
         ))}
       </motion.div>
