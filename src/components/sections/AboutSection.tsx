@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { Award, Shield } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
+import trainerPhoto from '@/assets/trainer-photo.jpg';
 
 const AboutSection = () => {
   const { t } = useLanguage();
@@ -26,9 +27,11 @@ const AboutSection = () => {
         className="glass rounded-2xl p-6 mb-6"
       >
         <div className="flex items-center gap-4 mb-4">
-          <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center text-primary-foreground text-2xl font-bold">
-            II
-          </div>
+          <img
+            src={trainerPhoto}
+            alt="Illarion Ientin"
+            className="w-16 h-16 rounded-2xl object-cover"
+          />
           <div>
             <h3 className="text-lg font-bold">{t(about.name)}</h3>
             <div className="flex items-center gap-1.5 mt-1">
