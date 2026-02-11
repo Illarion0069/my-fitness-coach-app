@@ -295,22 +295,34 @@ const GroupTrainingSection = () => {
                     )}
                   </div>
 
-                  {/* Fitness equipment spots */}
+                  {/* Fitness equipment spots - clickable to select */}
                   <div className="flex gap-3 mt-4">
                     {Array.from({ length: session.max_participants }, (_, i) => {
                       const booking = sBookings.find((b) => b.spot_number === i + 1);
                       const SpotIcon = spotIcons[i % spotIcons.length];
+                      const isSpotSelected = isSelected && bookingSpot === i + 1;
                       return (
-                        <div
+                        <button
                           key={i}
+                          disabled={!!booking}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (!booking) {
+                              setSelectedSession(session.id);
+                              setBookingSpot(i + 1);
+                              setBookingComplete(null);
+                            }
+                          }}
                           className={`flex-1 rounded-2xl flex flex-col items-center justify-center py-3 transition-all ${
                             booking
-                              ? 'bg-primary/15 border-2 border-primary/40'
-                              : 'bg-secondary/50 border-2 border-border/30'
+                              ? 'bg-primary/15 border-2 border-primary/40 cursor-default'
+                              : isSpotSelected
+                                ? 'bg-primary text-primary-foreground border-2 border-primary scale-105 shadow-lg shadow-primary/20'
+                                : 'bg-secondary/50 border-2 border-border/30 hover:border-primary/30 cursor-pointer'
                           }`}
                         >
                           <SpotIcon className={`w-8 h-8 mb-1.5 ${
-                            booking ? 'text-primary' : 'text-muted-foreground/40'
+                            booking ? 'text-primary' : isSpotSelected ? 'text-primary-foreground' : 'text-muted-foreground/40'
                           }`} />
                           {booking ? (
                             <div className="flex items-center gap-1">
@@ -320,11 +332,11 @@ const GroupTrainingSection = () => {
                               </span>
                             </div>
                           ) : (
-                            <span className="text-[10px] font-bold text-muted-foreground/60">
+                            <span className={`text-[10px] font-bold ${isSpotSelected ? 'text-primary-foreground' : 'text-muted-foreground/60'}`}>
                               {lang === 'en' ? `Spot ${i + 1}` : `Место ${i + 1}`}
                             </span>
                           )}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -332,7 +344,7 @@ const GroupTrainingSection = () => {
 
                 {/* Booking form */}
                 <AnimatePresence>
-                  {isSelected && !isFull && !bookingComplete && (
+                  {isSelected && !isFull && !bookingComplete && bookingSpot !== null && (
                     <motion.div
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
@@ -340,40 +352,11 @@ const GroupTrainingSection = () => {
                       className="overflow-hidden"
                     >
                       <div className="px-4 pb-4 pt-1 border-t border-border/30">
-                        <p className="text-xs font-bold text-foreground mb-3 mt-3">
-                          {lang === 'en' ? 'Choose your equipment:' : 'Выберите снаряд:'}
-                        </p>
-                        <div className="flex gap-3 mb-4">
-                          {Array.from({ length: session.max_participants }, (_, i) => {
-                            const taken = sBookings.some((b) => b.spot_number === i + 1);
-                            const SpotIcon = spotIcons[i % spotIcons.length];
-                            const spotLabel = lang === 'en' ? `Spot ${i + 1}` : `Место ${i + 1}`;
-                            return (
-                              <button
-                                key={i}
-                                disabled={taken}
-                                onClick={() => setBookingSpot(i + 1)}
-                                className={`flex-1 py-3 rounded-2xl flex flex-col items-center gap-1.5 transition-all ${
-                                  taken
-                                    ? 'bg-primary/10 text-primary/30 cursor-not-allowed'
-                                    : bookingSpot === i + 1
-                                      ? 'bg-primary text-primary-foreground scale-105 shadow-lg shadow-primary/20'
-                                      : 'bg-secondary hover:bg-secondary/80 text-secondary-foreground'
-                                }`}
-                              >
-                                <SpotIcon className="w-7 h-7" />
-                                <span className="text-[10px] font-bold">{taken ? '✓' : spotLabel}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-
-                        {bookingSpot !== null && (
-                          <motion.div
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="space-y-3"
-                          >
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="space-y-3 mt-3"
+                        >
                             <input
                               type="text"
                               placeholder={lang === 'en' ? 'Your name' : 'Ваше имя'}
@@ -428,7 +411,6 @@ const GroupTrainingSection = () => {
                               )}
                             </button>
                           </motion.div>
-                        )}
                       </div>
                     </motion.div>
                   )}
