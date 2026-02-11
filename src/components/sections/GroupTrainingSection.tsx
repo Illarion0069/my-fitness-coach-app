@@ -22,9 +22,9 @@ interface GroupBooking {
   spot_number: number;
 }
 
-// Fitness equipment SVG icons for spots
-const DumbbellIcon = ({ className = '' }: { className?: string }) => (
-  <svg viewBox="0 0 48 48" className={className} fill="currentColor">
+// Dumbbell icon rotated 45 degrees for all spots
+const SpotDumbbellIcon = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 48 48" className={className} fill="currentColor" style={{ transform: 'rotate(-45deg)' }}>
     <rect x="4" y="18" width="6" height="12" rx="2" />
     <rect x="10" y="20" width="4" height="8" rx="1" />
     <rect x="34" y="20" width="4" height="8" rx="1" />
@@ -32,26 +32,6 @@ const DumbbellIcon = ({ className = '' }: { className?: string }) => (
     <rect x="14" y="22" width="20" height="4" rx="1" />
   </svg>
 );
-
-const KettlebellIcon = ({ className = '' }: { className?: string }) => (
-  <svg viewBox="0 0 48 48" className={className} fill="currentColor">
-    <path d="M24 8c-4 0-7 2-8 5h16c-1-3-4-5-8-5zm-6 6c-1 1-1 3 0 4h12c1-1 1-3 0-4H18z" opacity="0.7" />
-    <ellipse cx="24" cy="30" rx="10" ry="12" />
-    <ellipse cx="24" cy="30" rx="4" ry="5" fill="currentColor" opacity="0.3" />
-  </svg>
-);
-
-const BarbellIcon = ({ className = '' }: { className?: string }) => (
-  <svg viewBox="0 0 48 48" className={className} fill="currentColor">
-    <rect x="2" y="16" width="5" height="16" rx="2" />
-    <rect x="7" y="19" width="3" height="10" rx="1" />
-    <rect x="38" y="19" width="3" height="10" rx="1" />
-    <rect x="41" y="16" width="5" height="16" rx="2" />
-    <rect x="10" y="22" width="28" height="4" rx="1" />
-  </svg>
-);
-
-const spotIcons = [DumbbellIcon, KettlebellIcon, BarbellIcon];
 
 const REVOLUT_LINK = ''; // TODO: Replace with your revolut.me link
 const TELEGRAM_BOT_USERNAME = 'LimassolFitness_bot';
@@ -299,7 +279,6 @@ const GroupTrainingSection = () => {
                   <div className="flex gap-3 mt-4">
                     {Array.from({ length: session.max_participants }, (_, i) => {
                       const booking = sBookings.find((b) => b.spot_number === i + 1);
-                      const SpotIcon = spotIcons[i % spotIcons.length];
                       const isSpotSelected = isSelected && bookingSpot === i + 1;
                       return (
                         <button
@@ -321,7 +300,7 @@ const GroupTrainingSection = () => {
                                 : 'bg-secondary/50 border-2 border-border/30 hover:border-primary/30 cursor-pointer'
                           }`}
                         >
-                          <SpotIcon className={`w-8 h-8 mb-1.5 ${
+                          <SpotDumbbellIcon className={`w-8 h-8 mb-1.5 ${
                             booking ? 'text-primary' : isSpotSelected ? 'text-primary-foreground' : 'text-muted-foreground/40'
                           }`} />
                           {booking ? (
