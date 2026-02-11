@@ -269,13 +269,13 @@ const TestSection = () => {
                 percentage={nutritionPct}
                 label={lang === 'en' ? 'Nutrition' : 'Питание'}
                 icon={Apple}
-                color="hsl(142, 71%, 45%)"
+                color="hsl(8, 85%, 58%)"
               />
               <ScoreRing
                 percentage={healthPct}
                 label={lang === 'en' ? 'Health' : 'Здоровье'}
                 icon={Heart}
-                color="hsl(145, 65%, 42%)"
+                color="hsl(8, 85%, 58%)"
               />
             </div>
 
