@@ -347,9 +347,7 @@ const GroupTrainingSection = () => {
                           {Array.from({ length: session.max_participants }, (_, i) => {
                             const taken = sBookings.some((b) => b.spot_number === i + 1);
                             const SpotIcon = spotIcons[i % spotIcons.length];
-                            const spotLabels = lang === 'en'
-                              ? ['Dumbbells', 'Kettlebell', 'Barbell']
-                              : ['Гантели', 'Гиря', 'Штанга'];
+                            const spotLabel = lang === 'en' ? `Spot ${i + 1}` : `Место ${i + 1}`;
                             return (
                               <button
                                 key={i}
@@ -364,7 +362,7 @@ const GroupTrainingSection = () => {
                                 }`}
                               >
                                 <SpotIcon className="w-7 h-7" />
-                                <span className="text-[10px] font-bold">{taken ? '✓' : spotLabels[i]}</span>
+                                <span className="text-[10px] font-bold">{taken ? '✓' : spotLabel}</span>
                               </button>
                             );
                           })}
