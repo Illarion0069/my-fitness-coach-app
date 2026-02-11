@@ -22,14 +22,11 @@ interface GroupBooking {
   spot_number: number;
 }
 
-// Dumbbell icon rotated 45 degrees for all spots
-const SpotDumbbellIcon = ({ className = '' }: { className?: string }) => (
-  <svg viewBox="0 0 48 48" className={className} fill="currentColor" style={{ transform: 'rotate(-45deg)' }}>
-    <rect x="4" y="18" width="6" height="12" rx="2" />
-    <rect x="10" y="20" width="4" height="8" rx="1" />
-    <rect x="34" y="20" width="4" height="8" rx="1" />
-    <rect x="38" y="18" width="6" height="12" rx="2" />
-    <rect x="14" y="22" width="20" height="4" rx="1" />
+// Person icon for spots
+const SpotPersonIcon = ({ className = '' }: { className?: string }) => (
+  <svg viewBox="0 0 48 48" className={className} fill="currentColor">
+    <circle cx="24" cy="14" r="7" />
+    <path d="M12 40c0-6.627 5.373-12 12-12s12 5.373 12 12H12z" />
   </svg>
 );
 
@@ -300,7 +297,7 @@ const GroupTrainingSection = () => {
                                 : 'bg-secondary/50 border-2 border-border/30 hover:border-primary/30 cursor-pointer'
                           }`}
                         >
-                          <SpotDumbbellIcon className={`w-8 h-8 mb-1.5 ${
+                          <SpotPersonIcon className={`w-8 h-8 mb-1.5 ${
                             booking ? 'text-primary' : isSpotSelected ? 'text-primary-foreground' : 'text-muted-foreground/40'
                           }`} />
                           {booking ? (
