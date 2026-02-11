@@ -14,7 +14,83 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      group_bookings: {
+        Row: {
+          created_at: string
+          id: string
+          participant_name: string
+          participant_phone: string
+          session_id: string
+          spot_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          participant_name: string
+          participant_phone: string
+          session_id: string
+          spot_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          participant_name?: string
+          participant_phone?: string
+          session_id?: string
+          spot_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_bookings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_sessions: {
+        Row: {
+          created_at: string
+          end_time: string
+          id: string
+          is_active: boolean
+          location: string | null
+          max_participants: number
+          notes: string | null
+          price_per_person: number
+          session_date: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          end_time: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          max_participants?: number
+          notes?: string | null
+          price_per_person?: number
+          session_date: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          location?: string | null
+          max_participants?: number
+          notes?: string | null
+          price_per_person?: number
+          session_date?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
