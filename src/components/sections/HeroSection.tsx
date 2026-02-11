@@ -22,6 +22,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   const about = translations.about;
   const workouts = translations.workouts;
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [expandedUsp, setExpandedUsp] = useState<number | null>(null);
 
   useEffect(() => {
     if (expandedCard === null) return;
@@ -117,34 +118,82 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
           ))}
         </motion.div>
 
-        {/* USPs — horizontal scrollable chips */}
+        {/* WHY ME — interactive animated cards */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.45 }}
           className="mb-6"
         >
-          <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3">
-            {lang === 'en' ? 'Why me' : 'Почему я'}
-          </h2>
-          <div className="space-y-2.5">
-            {hero.usps.map((usp, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -15 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.5 + i * 0.07 }}
-                className="flex items-start gap-3 bg-card rounded-xl p-3.5 border border-border/50"
-              >
-                <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center text-lg shrink-0">
-                  {usp.icon}
-                </div>
-                <div className="min-w-0">
-                  <h3 className="text-[13px] font-bold text-foreground">{t(usp.title)}</h3>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed mt-0.5">{t(usp.desc)}</p>
-                </div>
-              </motion.div>
-            ))}
+          <div className="flex items-center gap-2 mb-4">
+            <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center">
+              <Trophy className="w-4 h-4 text-primary-foreground" />
+            </div>
+            <h2 className="text-base font-extrabold text-foreground uppercase tracking-wider font-heading">
+              {lang === 'en' ? 'Why me' : 'Почему я'}
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {hero.usps.map((usp, i) => {
+              const isUspExpanded = expandedUsp === i;
+              return (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -15 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + i * 0.07 }}
+                  onClick={() => setExpandedUsp(isUspExpanded ? null : i)}
+                  className={`relative overflow-hidden rounded-2xl p-4 border cursor-pointer transition-all duration-300 ${
+                    isUspExpanded
+                      ? 'bg-primary/10 border-primary/40 shadow-lg shadow-primary/5'
+                      : 'bg-card border-border/50 hover:border-primary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 transition-all duration-300 ${
+                      isUspExpanded ? 'bg-primary text-primary-foreground scale-110' : 'bg-primary/15'
+                    }`}>
+                      {usp.icon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-sm font-bold text-foreground">{t(usp.title)}</h3>
+                      <AnimatePresence mode="wait">
+                        {isUspExpanded ? (
+                          <motion.p
+                            key="full"
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            transition={{ duration: 0.25 }}
+                            className="text-xs text-muted-foreground leading-relaxed mt-1 overflow-hidden"
+                          >
+                            {t(usp.desc)}
+                          </motion.p>
+                        ) : (
+                          <motion.p
+                            key="short"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5"
+                          >
+                            {t(usp.desc)}
+                          </motion.p>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                    <ArrowRight className={`w-4 h-4 text-muted-foreground/40 shrink-0 transition-transform duration-300 ${isUspExpanded ? 'rotate-90' : ''}`} />
+                  </div>
+                  {/* Decorative glow on expanded */}
+                  {isUspExpanded && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-primary/10 blur-2xl"
+                    />
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
         </motion.div>
 

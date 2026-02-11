@@ -20,6 +20,8 @@ export type Database = {
           id: string
           participant_name: string
           participant_phone: string
+          participant_telegram: string | null
+          payment_status: string
           session_id: string
           spot_number: number
         }
@@ -28,6 +30,8 @@ export type Database = {
           id?: string
           participant_name: string
           participant_phone: string
+          participant_telegram?: string | null
+          payment_status?: string
           session_id: string
           spot_number: number
         }
@@ -36,6 +40,8 @@ export type Database = {
           id?: string
           participant_name?: string
           participant_phone?: string
+          participant_telegram?: string | null
+          payment_status?: string
           session_id?: string
           spot_number?: number
         }
