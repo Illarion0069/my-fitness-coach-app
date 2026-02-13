@@ -4,6 +4,7 @@ import { X, Activity, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import WhoopWidget from './WhoopWidget';
 
 interface ClientPackage {
   id: string;
@@ -158,10 +159,13 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                 ))}
               </div>
               <p className="text-[10px] text-muted-foreground/60 mt-2 text-center">
-                {lang === 'en'
+              {lang === 'en'
                   ? 'Payment via Revolut. Gym membership 150€/month paid separately.'
                   : 'Оплата через Revolut. Абонемент зала 150€/мес оплачивается отдельно.'}
               </p>
+
+              {/* Whoop Integration */}
+              <WhoopWidget />
             </div>
 
             {/* Sign out */}
