@@ -9,10 +9,13 @@ import AboutSection from '@/components/sections/AboutSection';
 import ContactSection from '@/components/sections/ContactSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
-import SessionWidget from '@/components/SessionWidget';
+import { useToast } from '@/hooks/use-toast';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const AppContent = () => {
-  const { user, isTrainer, loading } = useAuth();
+  const { user, isTrainer, loading, profile } = useAuth();
+  const { lang } = useLanguage();
+  const { toast } = useToast();
   const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -22,7 +25,7 @@ const AppContent = () => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isAuthenticated = !!user;
+  
 
   return (
     <div className="dark min-h-screen bg-background text-foreground">
@@ -31,8 +34,11 @@ const AppContent = () => {
           <HeroSection onNavigate={handleNavigate} onProfileClick={() => {
             if (isTrainer) {
               handleNavigate('admin');
-            } else if (isAuthenticated) {
-              handleNavigate('home');
+            } else if (!!user) {
+              toast({
+                title: lang === 'en' ? `Welcome back, ${profile?.full_name || ''}!` : `С возвращением, ${profile?.full_name || ''}!`,
+                duration: 2000,
+              });
             } else {
               setShowWelcome(true);
             }
