@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { motion, Reorder } from 'framer-motion';
 import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -41,24 +41,55 @@ const AdminSection = () => {
   const [inviting, setInviting] = useState(false);
 
   const fetchData = async () => {
-    const { data: profileData } = await supabase.from('profiles').select('*');
-    const fetched = profileData || [];
+    const [{ data: profileData }, { data: pkgData }, { data: orderData }] = await Promise.all([
+      supabase.from('profiles').select('*'),
+      supabase.from('client_packages').select('*').order('created_at', { ascending: false }),
+      supabase.from('trainer_client_order').select('*').limit(1).maybeSingle(),
+    ]);
+
+    const fetched = (profileData || []) as Profile[];
     setClients(fetched);
-    // Preserve existing order, append new clients
-    setClientOrder(prev => {
-      const existingIds = new Set(prev);
-      const newIds = fetched.map(c => c.user_id).filter(id => !existingIds.has(id));
-      const validIds = prev.filter(id => fetched.some(c => c.user_id === id));
-      return [...validIds, ...newIds];
-    });
-    const { data: pkgData } = await supabase.from('client_packages').select('*').order('created_at', { ascending: false });
+
+    const savedOrder: string[] = (orderData as any)?.client_order || [];
+    const existingIds = new Set(savedOrder);
+    const newIds = fetched.map(c => c.user_id).filter(id => !existingIds.has(id));
+    const validIds = savedOrder.filter(id => fetched.some(c => c.user_id === id));
+    setClientOrder([...validIds, ...newIds]);
+
     const grouped: Record<string, ClientPackage[]> = {};
-    (pkgData || []).forEach((p: ClientPackage) => {
+    ((pkgData || []) as ClientPackage[]).forEach((p) => {
       if (!grouped[p.user_id]) grouped[p.user_id] = [];
       grouped[p.user_id].push(p);
     });
     setPackages(grouped);
     setLoading(false);
+  };
+
+  const saveClientOrder = useCallback(async (order: string[]) => {
+    const { data: existing } = await supabase
+      .from('trainer_client_order')
+      .select('id')
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from('trainer_client_order')
+        .update({ client_order: order, updated_at: new Date().toISOString() })
+        .eq('id', (existing as any).id);
+    } else {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('trainer_client_order')
+          .insert({ trainer_user_id: user.id, client_order: order });
+      }
+    }
+  }, []);
+
+  const handleReorder = (newOrder: string[]) => {
+    setClientOrder(newOrder);
+    saveClientOrder(newOrder);
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -230,7 +261,7 @@ const AdminSection = () => {
         {clients.length === 0 ? (
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
-          <Reorder.Group axis="y" values={clientOrder} onReorder={setClientOrder} className="space-y-3">
+          <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-3">
             {clientOrder.map((userId) => {
               const client = clients.find(c => c.user_id === userId);
               if (!client) return null;

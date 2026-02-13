@@ -89,6 +89,27 @@ export type Database = {
         }
         Relationships: []
       }
+      trainer_client_order: {
+        Row: {
+          client_order: string[]
+          id: string
+          trainer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_order?: string[]
+          id?: string
+          trainer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_order?: string[]
+          id?: string
+          trainer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
