@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, LogIn, X, Loader2, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -19,6 +19,13 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { refreshProfile } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('welcome');
+
+  // Reset step when modal opens
+  useEffect(() => {
+    if (open) {
+      setStep('welcome');
+    }
+  }, [open]);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
