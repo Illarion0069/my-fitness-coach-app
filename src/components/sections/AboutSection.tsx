@@ -58,7 +58,7 @@ const AboutSection = () => {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-5">
           <h2 className="text-2xl font-extrabold uppercase tracking-tight font-heading">
-            {lang === 'en' ? 'ILLARION IENTIN' : 'ИЛЛАРИОН ИЕНТИН'}
+            {lang === 'en' ? 'ILLARION IENTIN' : 'ИЛЛАРИОН ЕНТИН'}
           </h2>
           <div className="flex items-center gap-1.5 mt-1">
             <Shield className="w-3.5 h-3.5 text-primary" />
