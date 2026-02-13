@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical, Pencil, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, addDays, addMonths, startOfWeek, isSameDay, isToday } from 'date-fns';
+import { format, addDays, addMonths, startOfWeek, startOfMonth, endOfMonth, isSameDay, isToday, isSameMonth, eachDayOfInterval, getDay } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 
 interface Profile {
@@ -40,12 +40,16 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
   const { toast } = useToast();
   const locale = lang === 'en' ? enUS : ru;
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const touchStartX = useRef<number | null>(null);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [showAddForm, setShowAddForm] = useState<number | null>(null);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [addTime, setAddTime] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Long-press context menu state
+  const [contextMenuSessionId, setContextMenuSessionId] = useState<string | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Edit state
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -58,10 +62,15 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
   const dragStartY = useRef<number>(0);
   const dragStartMinutes = useRef<number>(0);
 
-  const weekDays = useMemo(() =>
-    Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
-    [weekStart]
-  );
+  // Generate all days for the month for smooth scrolling
+  const monthDays = useMemo(() => {
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(currentMonth);
+    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+    // Extend to fill complete weeks
+    const endDay = addDays(monthEnd, (7 - getDay(monthEnd) + 1) % 7 || 0);
+    return eachDayOfInterval({ start, end: endDay > monthEnd ? endDay : monthEnd });
+  }, [currentMonth]);
 
   const fetchSessions = async () => {
     const { data } = await supabase
@@ -73,31 +82,21 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
 
   useEffect(() => { fetchSessions(); }, []);
 
-  const navigateWeek = (dir: number) => {
-    const newStart = addDays(weekStart, dir * 7);
-    setWeekStart(newStart);
-    if (dir === 1) setSelectedDate(newStart);
-    else setSelectedDate(addDays(newStart, 6));
-  };
-
   const navigateMonth = (dir: number) => {
-    const newDate = addMonths(selectedDate, dir);
-    setSelectedDate(newDate);
-    setWeekStart(startOfWeek(newDate, { weekStartsOn: 1 }));
+    const newDate = addMonths(currentMonth, dir);
+    setCurrentMonth(newDate);
+    setSelectedDate(startOfMonth(newDate));
   };
 
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const diff = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(diff) > 50) {
-      navigateWeek(diff < 0 ? 1 : -1);
+  // Scroll selected date into view
+  useEffect(() => {
+    if (scrollRef.current) {
+      const el = scrollRef.current.querySelector('[data-selected="true"]');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      }
     }
-    touchStartX.current = null;
-  };
+  }, [selectedDate]);
 
   const dayOfWeek = selectedDate.getDay();
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -285,29 +284,47 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
       );
     }
 
+    const handleLongPressStart = () => {
+      longPressTimer.current = setTimeout(() => {
+        setContextMenuSessionId(s.id);
+      }, 500);
+    };
+
+    const handleLongPressEnd = () => {
+      if (longPressTimer.current) {
+        clearTimeout(longPressTimer.current);
+        longPressTimer.current = null;
+      }
+    };
+
     return (
       <div
         key={s.id}
-        className={`flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 mb-1 mt-1 transition-all ${
+        className={`relative flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 mb-1 mt-1 transition-all select-none ${
           isDragging ? 'opacity-60 scale-95 shadow-lg ring-2 ring-primary/40' : ''
-        }`}
+        } ${contextMenuSessionId === s.id ? 'ring-2 ring-primary/60' : ''}`}
+        onTouchStart={handleLongPressStart}
+        onTouchEnd={handleLongPressEnd}
+        onTouchMove={handleLongPressEnd}
+        onMouseDown={handleLongPressStart}
+        onMouseUp={handleLongPressEnd}
+        onMouseLeave={handleLongPressEnd}
       >
         {/* Drag handle */}
         <div
           className="touch-none cursor-grab active:cursor-grabbing shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-          onTouchStart={(e) => onSessionTouchStart(s.id, timeStr, e)}
+          onTouchStart={(e) => { handleLongPressEnd(); onSessionTouchStart(s.id, timeStr, e); }}
           onMouseDown={(e) => {
+            handleLongPressEnd();
             e.preventDefault();
+            e.stopPropagation();
             handleDragStart(s.id, timeStr, e.clientY);
           }}
         >
           <GripVertical className="w-3.5 h-3.5" />
         </div>
         <div className="w-1 h-5 rounded-full bg-primary shrink-0" />
-        <div
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={() => startEditing(s)}
-        >
+        <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold truncate">{s.clientName}</p>
           <p className="text-[10px] text-muted-foreground">
             {isDragging && dragPreviewTime
@@ -317,9 +334,33 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
           </p>
         </div>
         {s.is_deducted && <span className="text-[10px] text-primary">✓</span>}
-        <button onClick={() => deleteSession(s.id)} className="text-destructive/60 hover:text-destructive">
-          <X className="w-3 h-3" />
-        </button>
+
+        {/* Context menu overlay */}
+        {contextMenuSessionId === s.id && (
+          <div className="absolute inset-0 z-20 flex items-center justify-end gap-2 bg-card/95 backdrop-blur-sm rounded-lg px-3 animate-scale-in">
+            <p className="flex-1 text-xs font-semibold truncate">{s.clientName}</p>
+            <button
+              onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); startEditing(s); }}
+              className="flex items-center gap-1.5 bg-primary/15 text-primary text-[11px] font-semibold px-3 py-1.5 rounded-lg"
+            >
+              <Pencil className="w-3 h-3" />
+              {lang === 'en' ? 'Edit' : 'Изменить'}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); deleteSession(s.id); }}
+              className="flex items-center gap-1.5 bg-destructive/15 text-destructive text-[11px] font-semibold px-3 py-1.5 rounded-lg"
+            >
+              <Trash2 className="w-3 h-3" />
+              {lang === 'en' ? 'Delete' : 'Удалить'}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); }}
+              className="text-muted-foreground"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -332,32 +373,36 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h2 className="text-base font-bold capitalize">
-          {format(selectedDate, 'LLLL yyyy', { locale })}
+          {format(currentMonth, 'LLLL yyyy', { locale })}
         </h2>
         <button onClick={() => navigateMonth(1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Week strip — swipeable */}
+      {/* Scrollable day strip */}
       <div
-        className="grid grid-cols-7 gap-1 mb-4 touch-pan-y"
-        onTouchStart={handleTouchStart}
-        onTouchEnd={handleTouchEnd}
+        ref={scrollRef}
+        className="flex gap-1 mb-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1 -mx-1 px-1"
+        style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
-        {weekDays.map(day => {
+        {monthDays.map(day => {
           const active = isSameDay(day, selectedDate);
           const today = isToday(day);
+          const inMonth = isSameMonth(day, currentMonth);
           return (
             <button
               key={day.toISOString()}
+              data-selected={active ? 'true' : undefined}
               onClick={() => setSelectedDate(day)}
-              className={`flex flex-col items-center py-2 rounded-xl transition-all ${
+              className={`flex flex-col items-center py-2 px-2.5 rounded-xl transition-all snap-center shrink-0 min-w-[44px] ${
                 active
                   ? 'bg-primary text-primary-foreground shadow-md'
                   : today
                     ? 'bg-primary/10 text-primary'
-                    : 'hover:bg-secondary text-foreground'
+                    : inMonth
+                      ? 'hover:bg-secondary text-foreground'
+                      : 'hover:bg-secondary text-muted-foreground/40'
               }`}
             >
               <span className="text-[10px] font-medium uppercase opacity-70">
