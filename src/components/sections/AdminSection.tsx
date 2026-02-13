@@ -284,15 +284,14 @@ const AdminSection = () => {
                           className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
                         />
                         <div className="flex gap-2">
-                          <select
+                          <input
+                            type="number"
+                            min={1}
                             value={newPkgTotal}
-                            onChange={(e) => setNewPkgTotal(Number(e.target.value))}
-                            className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none"
-                          >
-                            <option value={8}>8 {lang === 'en' ? 'sessions' : 'занятий'}</option>
-                            <option value={12}>12 {lang === 'en' ? 'sessions' : 'занятий'}</option>
-                            <option value={20}>20 {lang === 'en' ? 'sessions' : 'занятий'}</option>
-                          </select>
+                            onChange={(e) => setNewPkgTotal(Math.max(1, Number(e.target.value)))}
+                            placeholder={lang === 'en' ? 'Sessions' : 'Занятий'}
+                            className="w-20 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50 text-center"
+                          />
                           <button
                             onClick={() => createPackage(client.user_id)}
                             disabled={!newPkgName.trim()}
