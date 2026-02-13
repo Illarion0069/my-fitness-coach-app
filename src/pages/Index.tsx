@@ -31,7 +31,7 @@ const AppContent = () => {
       <div ref={containerRef} className="h-screen overflow-y-auto scroll-smooth">
         {activeSection === 'home' && (
           <>
-            <HeroSection onNavigate={handleNavigate} />
+            <HeroSection onNavigate={handleNavigate} onOpenAuth={() => setShowWelcome(true)} />
             {isAuthenticated && (
               <div className="px-5 -mt-24 relative z-10 max-w-lg mx-auto">
                 <SessionWidget />
