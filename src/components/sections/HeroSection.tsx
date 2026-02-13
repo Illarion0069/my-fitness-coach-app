@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ArrowRight, Calendar, Trophy, Users, Clock, Zap } from 'lucide-react';
+import { X, ChevronDown } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -10,19 +10,11 @@ interface HeroSectionProps {
   onNavigate: (section: string) => void;
 }
 
-const stats = [
-  { value: '8+', labelEn: 'Years', labelRu: 'Лет', icon: Clock },
-  { value: '200+', labelEn: 'Clients', labelRu: 'Клиентов', icon: Users },
-  { value: 'EQF 4', labelEn: 'Level', labelRu: 'Уровень', icon: Trophy },
-];
-
 const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   const { t, lang } = useLanguage();
   const hero = translations.hero;
-  const about = translations.about;
   const workouts = translations.workouts;
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
-  const [expandedUsp, setExpandedUsp] = useState<number | null>(null);
 
   useEffect(() => {
     if (expandedCard === null) return;
@@ -36,209 +28,91 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
 
   return (
     <section className="relative min-h-screen flex flex-col bg-background">
-      {/* Top bar — minimal */}
+      {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-extrabold text-[11px]">
             LF
           </div>
+          <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         </div>
         <LanguageSwitch />
       </div>
 
-      <div className="flex-1 flex flex-col px-5">
-        {/* Trainer card — compact horizontal */}
+      <div className="flex-1 flex flex-col items-center px-5">
+        {/* Circular trainer photo with glow */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="flex items-center gap-4 mb-5"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.6 }}
+          className="mt-6 mb-6 relative"
         >
-          <img
-            src={trainerPhoto}
-            alt={t(hero.trainer)}
-            className="w-16 h-16 rounded-2xl object-cover object-top ring-2 ring-primary/30"
-          />
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-extrabold text-foreground tracking-tight truncate">
-              {t(hero.trainer)}
-            </h1>
-            <p className="text-xs text-primary font-semibold uppercase tracking-wider">
-              {t(about.accreditation)}
-            </p>
-            <p className="text-xs text-muted-foreground mt-0.5">Limassol, Cyprus</p>
+          <div className="w-40 h-40 rounded-full p-1 bg-gradient-to-b from-primary/60 via-primary/20 to-transparent shadow-[0_8px_40px_-8px_hsl(var(--primary)/0.4)]">
+            <img
+              src={trainerPhoto}
+              alt={t(hero.trainer)}
+              className="w-full h-full rounded-full object-cover object-top bg-card border-4 border-card"
+            />
           </div>
         </motion.div>
 
-        {/* Main CTA — big and bold */}
-        <motion.a
-          initial={{ opacity: 0, y: 15 }}
+        {/* Title */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
+          className="text-center mb-4"
+        >
+          <h1 className="text-4xl font-extrabold uppercase tracking-tight font-heading leading-[1.1]">
+            <span className="text-primary">{lang === 'en' ? 'PERSONAL' : 'ПЕРСОНАЛЬНЫЙ'}</span>
+            <br />
+            <span className="text-foreground">{lang === 'en' ? 'FITNESS' : 'ФИТНЕС'}</span>
+            <br />
+            <span className="text-primary">{lang === 'en' ? 'ASSISTANT' : 'АССИСТЕНТ'}</span>
+          </h1>
+        </motion.div>
+
+        {/* Subtitle */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.5 }}
+          className="text-center mb-6"
+        >
+          <p className="text-sm text-muted-foreground">{t(hero.subtitle)}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">— {t(hero.trainer)}</p>
+        </motion.div>
+
+        {/* CTA Button */}
+        <motion.a
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
           href="https://calendly.com/limassol-fitness/booking"
           target="_blank"
           rel="noopener noreferrer"
-          className="group relative overflow-hidden gradient-primary text-primary-foreground rounded-2xl p-5 mb-5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
+          className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-10"
         >
-          <div className="flex items-center justify-between relative z-10">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-wider opacity-80 mb-1">
-                {lang === 'en' ? 'Ready to start?' : 'Готовы начать?'}
-              </p>
-              <p className="text-xl font-extrabold">{t(hero.cta)}</p>
-            </div>
-            <div className="w-12 h-12 rounded-xl bg-primary-foreground/20 flex items-center justify-center">
-              <Calendar className="w-6 h-6" />
-            </div>
-          </div>
-          <ArrowRight className="absolute right-5 bottom-3 w-4 h-4 opacity-40 group-hover:translate-x-1 transition-transform" />
+          {t(hero.cta)}
         </motion.a>
 
-        {/* Stats bar */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3, duration: 0.5 }}
-          className="grid grid-cols-3 gap-3 mb-6"
-        >
-          {stats.map((stat, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.35 + i * 0.08 }}
-              className="bg-card rounded-2xl p-3.5 text-center border border-border/50"
-            >
-              <stat.icon className="w-4 h-4 text-primary mx-auto mb-1.5" />
-              <p className="text-lg font-extrabold text-foreground leading-none">{stat.value}</p>
-              <p className="text-[10px] text-muted-foreground mt-1 font-medium">
-                {lang === 'en' ? stat.labelEn : stat.labelRu}
-              </p>
-            </motion.div>
-          ))}
-        </motion.div>
-
-        {/* WHY ME — interactive animated cards */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.45 }}
-          className="mb-6"
-        >
-          <div className="flex items-center gap-2 mb-4">
-            <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <h2 className="text-base font-extrabold text-foreground uppercase tracking-wider font-heading">
-              {lang === 'en' ? 'Why me' : 'Почему я'}
-            </h2>
-          </div>
-          <div className="space-y-3">
-            {hero.usps.map((usp, i) => {
-              const isUspExpanded = expandedUsp === i;
-              return (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, x: -15 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 0.5 + i * 0.07 }}
-                  onClick={() => setExpandedUsp(isUspExpanded ? null : i)}
-                  className={`relative overflow-hidden rounded-2xl p-4 border cursor-pointer transition-all duration-300 ${
-                    isUspExpanded
-                      ? 'bg-primary/10 border-primary/40 shadow-lg shadow-primary/5'
-                      : 'bg-card border-border/50 hover:border-primary/20'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 transition-all duration-300 ${
-                      isUspExpanded ? 'bg-primary text-primary-foreground scale-110' : 'bg-primary/15'
-                    }`}>
-                      {usp.icon}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="text-sm font-bold text-foreground">{t(usp.title)}</h3>
-                      <AnimatePresence mode="wait">
-                        {isUspExpanded ? (
-                          <motion.p
-                            key="full"
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: 'auto', opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            transition={{ duration: 0.25 }}
-                            className="text-xs text-muted-foreground leading-relaxed mt-1 overflow-hidden"
-                          >
-                            {t(usp.desc)}
-                          </motion.p>
-                        ) : (
-                          <motion.p
-                            key="short"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5"
-                          >
-                            {t(usp.desc)}
-                          </motion.p>
-                        )}
-                      </AnimatePresence>
-                    </div>
-                    <ArrowRight className={`w-4 h-4 text-muted-foreground/40 shrink-0 transition-transform duration-300 ${isUspExpanded ? 'rotate-90' : ''}`} />
-                  </div>
-                  {/* Decorative glow on expanded */}
-                  {isUspExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      className="absolute -top-6 -right-6 w-20 h-20 rounded-full bg-primary/10 blur-2xl"
-                    />
-                  )}
-                </motion.div>
-              );
-            })}
-          </div>
-        </motion.div>
-
-        {/* Certifications — inline tags */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="mb-6"
-        >
-          <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-2.5">
-            {t(about.certifications)}
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {about.certs.map((cert, i) => (
-              <span
-                key={cert}
-                className="px-3 py-1.5 rounded-xl bg-secondary text-secondary-foreground text-[11px] font-semibold"
-              >
-                {cert}
-              </span>
-            ))}
-          </div>
-        </motion.div>
-
-        {/* Workout types — large cards */}
+        {/* Workouts section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.8, duration: 0.5 }}
-          className="pb-28"
+          transition={{ delay: 0.65, duration: 0.5 }}
+          className="w-full pb-28"
         >
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider">
-              {t(workouts.title)}
-            </h2>
-            <Zap className="w-4 h-4 text-primary" />
-          </div>
+          <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3">
+            {t(workouts.title)}
+          </h2>
           <div className="grid grid-cols-2 gap-3">
             {workouts.items.slice(0, 6).map((item, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.85 + i * 0.05 }}
+                transition={{ delay: 0.7 + i * 0.05 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
                 className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none"
               >
@@ -276,7 +150,7 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.15 }}
+              transition={{ delay: 1.0 }}
               onClick={() => setExpandedCard(expandedCard === 6 ? null : 6)}
               className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
             >
@@ -305,6 +179,11 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
               </div>
             </motion.div>
           )}
+
+          {/* Scroll hint */}
+          <div className="flex justify-center mt-4">
+            <ChevronDown className="w-5 h-5 text-muted-foreground/30 animate-bounce" />
+          </div>
         </motion.div>
       </div>
     </section>

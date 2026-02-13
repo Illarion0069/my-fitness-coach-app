@@ -1,4 +1,4 @@
-import { Home, ClipboardCheck, CreditCard, Star, MessageCircle, Users } from 'lucide-react';
+import { Home, ClipboardCheck, CreditCard, User, MessageCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -8,15 +8,14 @@ interface BottomNavProps {
 }
 
 const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const nav = translations.nav;
 
   const items = [
     { id: 'home', icon: Home, label: t(nav.home) },
     { id: 'test', icon: ClipboardCheck, label: t(nav.test) },
     { id: 'pricing', icon: CreditCard, label: t(nav.pricing) },
-    { id: 'group', icon: Users, label: t(nav.group) },
-    { id: 'reviews', icon: Star, label: t(nav.reviews) },
+    { id: 'about', icon: User, label: lang === 'en' ? 'About' : 'Обо мне' },
     { id: 'contact', icon: MessageCircle, label: t(nav.contact) },
   ];
 
@@ -33,7 +32,7 @@ const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
                 : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            <div className={`relative ${active === item.id ? '' : ''}`}>
+            <div className="relative">
               <item.icon className="w-5 h-5" />
               {active === item.id && (
                 <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
