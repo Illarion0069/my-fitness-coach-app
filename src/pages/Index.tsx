@@ -14,7 +14,7 @@ import RegistrationBanner from '@/components/RegistrationBanner';
 import SessionWidget from '@/components/SessionWidget';
 
 const AppContent = () => {
-  const { user, profile, loading } = useAuth();
+  const { user, isTrainer, loading } = useAuth();
   const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -25,7 +25,6 @@ const AppContent = () => {
   };
 
   const isAuthenticated = !!user;
-  const isTrainer = profile?.is_trainer === true;
 
   return (
     <div className="dark min-h-screen bg-background text-foreground">
