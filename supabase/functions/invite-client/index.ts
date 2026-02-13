@@ -53,7 +53,7 @@ serve(async (req) => {
       });
     }
 
-    const { full_name, email } = await req.json();
+    const { full_name, email, phone } = await req.json();
 
     if (!full_name || !email) {
       return new Response(JSON.stringify({ error: "full_name and email are required" }), {
@@ -64,7 +64,7 @@ serve(async (req) => {
 
     // Create user with magic link (inviteUserByEmail generates a magic link)
     const { data: inviteData, error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(email, {
-      data: { full_name },
+      data: { full_name, phone: phone || '' },
     });
 
     if (inviteError) {
