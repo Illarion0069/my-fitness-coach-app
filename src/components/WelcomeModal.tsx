@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, LogIn, X, Loader2, Bot, Mail } from 'lucide-react';
+import { UserPlus, LogIn, X, Loader2, Bot, Eye, EyeOff } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,7 +8,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 
-type Step = 'welcome' | 'register' | 'login' | 'check-email' | 'telegram';
+type Step = 'welcome' | 'register' | 'login' | 'telegram';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -26,20 +26,43 @@ const InlineMessage = ({ message, variant = 'error' }: { message: string | null;
   );
 };
 
+const PasswordInput = ({ value, onChange, placeholder, className }: {
+  value: string; onChange: (v: string) => void; placeholder: string; className: string;
+}) => {
+  const [show, setShow] = useState(false);
+  return (
+    <div className="relative">
+      <input
+        type={show ? 'text' : 'password'}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={className}
+        maxLength={128}
+        autoComplete="current-password"
+      />
+      <button type="button" onClick={() => setShow(!show)} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+      </button>
+    </div>
+  );
+};
+
 const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { lang } = useLanguage();
-  const { refreshProfile, profile } = useAuth();
+  const { refreshProfile } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('welcome');
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [countryCode, setCountryCode] = useState('+357');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const [emailFlow, setEmailFlow] = useState<'register' | 'login'>('register');
 
   useEffect(() => {
     if (open) {
@@ -48,29 +71,13 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     }
   }, [open]);
 
-  // Listen for auth state change (magic link click) to auto-close modal
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      if (event === 'SIGNED_IN' && open) {
-        await refreshProfile();
-        if (emailFlow === 'register') {
-          toast({ title: t('Registration successful!', 'Регистрация успешна!') });
-          setStep('telegram');
-        } else {
-          toast({ title: t('Welcome back!', 'С возвращением!') });
-          onClose();
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [open, emailFlow]);
-
   const t = (en: string, ru: string) => lang === 'en' ? en : ru;
   const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
   const getRegisterErrors = (): string | null => {
     if (!name.trim()) return t('Please enter your name', 'Введите ваше имя');
     if (!email.trim() || !validateEmail(email)) return t('Please enter a valid email', 'Введите корректный email');
+    if (password.length < 6) return t('Password must be at least 6 characters', 'Пароль минимум 6 символов');
     if (!phoneNumber.trim() || phoneNumber.length < 5) return t('Please enter a valid phone number', 'Введите корректный номер телефона');
     return null;
   };
@@ -85,27 +92,24 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     setSubmitting(false);
   };
 
-  // Send magic link for registration
-  const handleRegisterSendLink = async () => {
+  const handleRegister = async () => {
     setFormError(null);
     const validationError = getRegisterErrors();
-    if (validationError) {
-      setFormError(validationError);
-      return;
-    }
+    if (validationError) { setFormError(validationError); return; }
     setSubmitting(true);
     try {
       const fullPhone = `${countryCode}${phoneNumber}`;
-      const { error } = await supabase.auth.signInWithOtp({
+      const { error } = await supabase.auth.signUp({
         email: email.trim(),
+        password,
         options: {
           data: { full_name: name.trim(), phone: fullPhone },
           emailRedirectTo: window.location.origin,
         },
       });
       if (error) throw error;
-      setEmailFlow('register');
-      setStep('check-email');
+      await refreshProfile();
+      toast({ title: t('Registration successful!', 'Регистрация успешна!') });
 
       // Non-blocking trainer notification
       supabase.functions.invoke('send-telegram', {
@@ -114,48 +118,40 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
           message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${email.trim()}\n📱 ${fullPhone}`,
         },
       }).catch(() => {});
+
+      setStep('telegram');
     } catch (err: any) {
       setFormError(err.message);
     }
     setSubmitting(false);
   };
 
-  // Send magic link for login
-  const handleLoginSendLink = async () => {
+  const handleLogin = async () => {
     setFormError(null);
     if (!loginEmail.trim() || !validateEmail(loginEmail)) {
       setFormError(t('Please enter a valid email', 'Введите корректный email'));
       return;
     }
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: loginEmail.trim(),
-        options: { emailRedirectTo: window.location.origin },
-      });
-      if (error) throw error;
-      setEmailFlow('login');
-      setStep('check-email');
-    } catch (err: any) {
-      setFormError(err.message);
+    if (!loginPassword) {
+      setFormError(t('Please enter your password', 'Введите пароль'));
+      return;
     }
-    setSubmitting(false);
-  };
-
-  // Resend magic link
-  const handleResendLink = async () => {
-    setFormError(null);
     setSubmitting(true);
-    const targetEmail = emailFlow === 'register' ? email.trim() : loginEmail.trim();
     try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email: targetEmail,
-        options: { emailRedirectTo: window.location.origin },
+      const { error } = await supabase.auth.signInWithPassword({
+        email: loginEmail.trim(),
+        password: loginPassword,
       });
       if (error) throw error;
-      toast({ title: t('Link resent!', 'Ссылка отправлена повторно!'), description: t('Check your email.', 'Проверьте почту.') });
+      await refreshProfile();
+      toast({ title: t('Welcome back!', 'С возвращением!') });
+      onClose();
     } catch (err: any) {
-      setFormError(err.message);
+      if (err.message?.includes('Invalid login credentials')) {
+        setFormError(t('Wrong email or password', 'Неверный email или пароль'));
+      } else {
+        setFormError(err.message);
+      }
     }
     setSubmitting(false);
   };
@@ -163,7 +159,6 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   if (!open) return null;
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
-  const sentEmail = emailFlow === 'register' ? email.trim() : loginEmail.trim();
 
   const googleButton = (
     <button
@@ -216,7 +211,6 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
             <h3 className="text-lg font-extrabold font-heading uppercase tracking-tight">
               {step === 'welcome' ? t('Welcome!', 'Добро пожаловать!')
                 : step === 'register' ? t('New Client', 'Новый клиент')
-                : step === 'check-email' ? t('Check Your Email', 'Проверьте почту')
                 : step === 'telegram' ? t('Stay Connected', 'Будьте на связи')
                 : t('Welcome Back', 'С возвращением')}
             </h3>
@@ -238,7 +232,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm a new client", 'Я новый клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Quick signup — no password needed', 'Быстрая регистрация — без пароля')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Quick signup with email & password', 'Быстрая регистрация по email и паролю')}</p>
                     </div>
                   </button>
                   <button onClick={() => { setStep('login'); setFormError(null); }} className="w-full bg-secondary/50 border border-border/50 rounded-2xl p-4 flex items-center gap-3 hover:bg-secondary transition-all text-left">
@@ -247,7 +241,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm already a client", 'Я уже клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Sign in with email link', 'Войти по ссылке из email')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Sign in with email & password', 'Войти по email и паролю')}</p>
                     </div>
                   </button>
                 </motion.div>
@@ -258,6 +252,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                 <motion.div key="register" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
                   <input type="text" placeholder={t('Full name', 'Полное имя')} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} maxLength={100} />
                   <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} maxLength={255} />
+                  <PasswordInput value={password} onChange={setPassword} placeholder={t('Password (min 6 chars)', 'Пароль (мин 6 символов)')} className={inputClass} />
                   <CountryCodeSelect
                     value={countryCode}
                     onChange={setCountryCode}
@@ -269,14 +264,14 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                   <InlineMessage message={formError} variant="error" />
 
                   <button
-                    onClick={handleRegisterSendLink}
+                    onClick={handleRegister}
                     disabled={submitting}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <>
-                        <Mail className="w-4 h-4" />
-                        {t('Send Login Link', 'Отправить ссылку')}
+                        <UserPlus className="w-4 h-4" />
+                        {t('Sign Up', 'Зарегистрироваться')}
                       </>
                     )}
                   </button>
@@ -293,22 +288,20 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {/* Step: Login */}
               {step === 'login' && (
                 <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('Enter your email and we\'ll send you a login link', 'Введите email — мы отправим ссылку для входа')}
-                  </p>
                   <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputClass} maxLength={255} />
+                  <PasswordInput value={loginPassword} onChange={setLoginPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
 
                   <InlineMessage message={formError} variant="error" />
 
                   <button
-                    onClick={handleLoginSendLink}
+                    onClick={handleLogin}
                     disabled={submitting}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <>
-                        <Mail className="w-4 h-4" />
-                        {t('Send Login Link', 'Отправить ссылку')}
+                        <LogIn className="w-4 h-4" />
+                        {t('Sign In', 'Войти')}
                       </>
                     )}
                   </button>
@@ -318,41 +311,6 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
 
                   <button onClick={() => { setStep('welcome'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
                     ← {t('Back', 'Назад')}
-                  </button>
-                </motion.div>
-              )}
-
-              {/* Step: Check Email */}
-              {step === 'check-email' && (
-                <motion.div key="check-email" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
-                    <Mail className="w-8 h-8 text-primary" />
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm text-foreground">
-                      {t('We sent a login link to:', 'Мы отправили ссылку для входа на:')}
-                    </p>
-                    <p className="text-sm font-bold text-primary">{sentEmail}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t(
-                        'Open your email and click "Log In" to continue. Check spam if you don\'t see it.',
-                        'Откройте почту и нажмите "Log In" для входа. Проверьте спам, если не видите письмо.'
-                      )}
-                    </p>
-                  </div>
-
-                  <InlineMessage message={formError} variant="error" />
-
-                  <button
-                    onClick={handleResendLink}
-                    disabled={submitting}
-                    className="w-full bg-secondary/50 border border-border/50 text-foreground font-semibold py-3 rounded-xl disabled:opacity-50 transition-all hover:bg-secondary flex items-center justify-center gap-2"
-                  >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Resend Link', 'Отправить повторно')}
-                  </button>
-
-                  <button onClick={() => { setStep(emailFlow === 'register' ? 'register' : 'login'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
-                    ← {t('Change email', 'Изменить email')}
                   </button>
                 </motion.div>
               )}
@@ -370,7 +328,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     )}
                   </p>
                   <a
-                    href={`https://t.me/LimassolFitness_bot?start=${profile?.telegram_link_code || ''}`}
+                    href={`https://t.me/LimassolFitness_bot?start=`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
