@@ -34,6 +34,7 @@ const AdminSection = () => {
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
   const [newClientEmail, setNewClientEmail] = useState('');
+  const [newClientPhone, setNewClientPhone] = useState('');
   const [inviting, setInviting] = useState(false);
 
   const fetchData = async () => {
@@ -96,7 +97,7 @@ const AdminSection = () => {
     setInviting(true);
     try {
       const { data, error } = await supabase.functions.invoke('invite-client', {
-        body: { full_name: newClientName.trim(), email: newClientEmail.trim() },
+        body: { full_name: newClientName.trim(), email: newClientEmail.trim(), phone: newClientPhone.trim() },
       });
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
@@ -106,6 +107,7 @@ const AdminSection = () => {
       });
       setNewClientName('');
       setNewClientEmail('');
+      setNewClientPhone('');
       setShowAddClient(false);
       fetchData();
     } catch (e: any) {
@@ -157,6 +159,13 @@ const AdminSection = () => {
               placeholder="Email"
               value={newClientEmail}
               onChange={(e) => setNewClientEmail(e.target.value)}
+              className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+            />
+            <input
+              type="tel"
+              placeholder={lang === 'en' ? 'Phone number' : 'Номер телефона'}
+              value={newClientPhone}
+              onChange={(e) => setNewClientPhone(e.target.value)}
               className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
             />
             <button
