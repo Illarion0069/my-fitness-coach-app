@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
@@ -26,7 +26,13 @@ const AppContent = () => {
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  
+  // Auto-close welcome modal when user logs in
+  useEffect(() => {
+    if (user) {
+      setShowWelcome(false);
+      setShowProfileMenu(false);
+    }
+  }, [user]);
 
   return (
     <div className="dark min-h-screen bg-background text-foreground">
