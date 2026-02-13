@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2 } from 'lucide-react';
+import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +29,7 @@ const AdminSection = () => {
   const { signOut } = useAuth();
   const { toast } = useToast();
   const [clients, setClients] = useState<Profile[]>([]);
+  const [clientOrder, setClientOrder] = useState<string[]>([]);
   const [packages, setPackages] = useState<Record<string, ClientPackage[]>>({});
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [newPkgName, setNewPkgName] = useState('');
@@ -41,8 +42,15 @@ const AdminSection = () => {
 
   const fetchData = async () => {
     const { data: profileData } = await supabase.from('profiles').select('*');
-    setClients(profileData || []);
-
+    const fetched = profileData || [];
+    setClients(fetched);
+    // Preserve existing order, append new clients
+    setClientOrder(prev => {
+      const existingIds = new Set(prev);
+      const newIds = fetched.map(c => c.user_id).filter(id => !existingIds.has(id));
+      const validIds = prev.filter(id => fetched.some(c => c.user_id === id));
+      return [...validIds, ...newIds];
+    });
     const { data: pkgData } = await supabase.from('client_packages').select('*').order('created_at', { ascending: false });
     const grouped: Record<string, ClientPackage[]> = {};
     (pkgData || []).forEach((p: ClientPackage) => {
@@ -94,6 +102,18 @@ const AdminSection = () => {
     await supabase.from('profiles').delete().eq('user_id', client.user_id);
     fetchData();
     toast({ title: lang === 'en' ? 'Client deleted' : 'Клиент удалён', description: client.full_name });
+  };
+
+  const moveClient = (userId: string, direction: 'up' | 'down') => {
+    setClientOrder(prev => {
+      const idx = prev.indexOf(userId);
+      if (idx < 0) return prev;
+      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= prev.length) return prev;
+      const next = [...prev];
+      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
+      return next;
+    });
   };
 
   const sendNotification = async (client: Profile, message: string) => {
@@ -222,27 +242,47 @@ const AdminSection = () => {
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
           <div className="space-y-3">
-            {clients.map((client) => {
+            {clientOrder.map((userId, idx) => {
+              const client = clients.find(c => c.user_id === userId);
+              if (!client) return null;
               const isOpen = selectedClient === client.user_id;
               const clientPkgs = packages[client.user_id] || [];
 
               return (
                 <SwipeableClientCard key={client.id} onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
                 <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
-                  <button
-                    onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
-                    className="w-full p-4 text-left flex items-center justify-between"
-                  >
-                    <div>
-                      <p className="font-bold text-sm">{client.full_name}</p>
-                      <p className="text-[11px] text-muted-foreground">{client.email} · {client.phone}</p>
+                  <div className="w-full p-4 flex items-center gap-2">
+                    <div className="flex flex-col gap-0.5 shrink-0">
+                      <button
+                        onClick={() => moveClient(userId, 'up')}
+                        disabled={idx === 0}
+                        className="w-6 h-6 rounded-md bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      >
+                        <ChevronUp className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => moveClient(userId, 'down')}
+                        disabled={idx === clientOrder.length - 1}
+                        className="w-6 h-6 rounded-md bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
+                      >
+                        <ChevronDown className="w-3.5 h-3.5" />
+                      </button>
                     </div>
-                    {clientPkgs.some((p) => p.is_active) && (
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
-                        {clientPkgs.find((p) => p.is_active)!.total_sessions - clientPkgs.find((p) => p.is_active)!.used_sessions} left
-                      </span>
-                    )}
-                  </button>
+                    <button
+                      onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
+                      className="flex-1 text-left flex items-center justify-between min-w-0"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-bold text-sm truncate">{client.full_name}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
+                      </div>
+                      {clientPkgs.some((p) => p.is_active) && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold shrink-0 ml-2">
+                          {clientPkgs.find((p) => p.is_active)!.total_sessions - clientPkgs.find((p) => p.is_active)!.used_sessions} left
+                        </span>
+                      )}
+                    </button>
+                  </div>
 
                   {isOpen && (
                     <motion.div
