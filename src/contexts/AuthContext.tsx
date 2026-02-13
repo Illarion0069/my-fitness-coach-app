@@ -8,6 +8,7 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string;
+  is_trainer: boolean;
 }
 
 interface AuthContextType {

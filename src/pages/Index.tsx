@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
@@ -8,7 +8,10 @@ import PricingSection from '@/components/sections/PricingSection';
 import AboutSection from '@/components/sections/AboutSection';
 import ContactSection from '@/components/sections/ContactSection';
 import GroupTrainingSection from '@/components/sections/GroupTrainingSection';
+import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
+import RegistrationBanner from '@/components/RegistrationBanner';
+import SessionWidget from '@/components/SessionWidget';
 
 const AppContent = () => {
   const { user, profile, loading } = useAuth();
@@ -16,44 +19,52 @@ const AppContent = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      setShowWelcome(true);
-    }
-  }, [loading, user]);
-
   const handleNavigate = (section: string) => {
     setActiveSection(section);
     containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Authenticated users get group training in nav
   const isAuthenticated = !!user;
+  const isTrainer = profile?.is_trainer === true;
 
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div ref={containerRef} className="h-screen overflow-y-auto scroll-smooth">
-        {activeSection === 'home' && <HeroSection onNavigate={handleNavigate} />}
+        {activeSection === 'home' && (
+          <>
+            <HeroSection onNavigate={handleNavigate} />
+            {isAuthenticated && (
+              <div className="px-5 -mt-24 relative z-10 max-w-lg mx-auto">
+                <SessionWidget />
+              </div>
+            )}
+          </>
+        )}
         {activeSection === 'test' && <TestSection />}
         {activeSection === 'pricing' && <PricingSection />}
         {activeSection === 'about' && <AboutSection />}
         {activeSection === 'group' && isAuthenticated && <GroupTrainingSection />}
+        {activeSection === 'admin' && isTrainer && <AdminSection />}
         {activeSection === 'contact' && <ContactSection />}
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showGroup={isAuthenticated} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showGroup={isAuthenticated} showAdmin={isTrainer} />
+      
+      {/* Non-intrusive banner for non-authenticated users */}
+      {!loading && !isAuthenticated && (
+        <RegistrationBanner onRegister={() => setShowWelcome(true)} />
+      )}
+      
       <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
     </div>
   );
 };
 
-const Index = () => {
-  return (
-    <LanguageProvider>
-      <AuthProvider>
-        <AppContent />
-      </AuthProvider>
-    </LanguageProvider>
-  );
-};
+const Index = () => (
+  <LanguageProvider>
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
+  </LanguageProvider>
+);
 
 export default Index;
