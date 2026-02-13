@@ -95,12 +95,6 @@ const TrainerView = () => {
   const [newPkgTotal, setNewPkgTotal] = useState(8);
   const [loading, setLoading] = useState(true);
 
-  const pkgNames: Record<number, { en: string; ru: string }> = {
-    8: { en: '8 sessions', ru: '8 занятий' },
-    12: { en: '12 sessions', ru: '12 занятий' },
-    20: { en: '20 sessions', ru: '20 занятий' },
-  };
-
   const fetchData = async () => {
     const { data: profileData } = await supabase.from('profiles').select('*');
     setClients(profileData || []);
@@ -131,7 +125,7 @@ const TrainerView = () => {
   };
 
   const createPackage = async (userId: string) => {
-    const name = lang === 'en' ? pkgNames[newPkgTotal].en : pkgNames[newPkgTotal].ru;
+    const name = `${newPkgTotal} ${lang === 'en' ? 'sessions' : 'занятий'}`;
     await supabase.from('client_packages').insert({
       user_id: userId,
       package_name: name,
@@ -202,20 +196,20 @@ const TrainerView = () => {
                       </div>
                     )}
 
-                    {/* Add new package */}
+                    {/* Add new package - free input */}
                     <div className="flex items-center gap-2">
-                      <select
+                      <input
+                        type="number"
+                        min={1}
+                        max={999}
                         value={newPkgTotal}
-                        onChange={(e) => setNewPkgTotal(Number(e.target.value))}
-                        className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none"
-                      >
-                        <option value={8}>8 {lang === 'en' ? 'sessions' : 'занятий'}</option>
-                        <option value={12}>12 {lang === 'en' ? 'sessions' : 'занятий'}</option>
-                        <option value={20}>20 {lang === 'en' ? 'sessions' : 'занятий'}</option>
-                      </select>
+                        onChange={(e) => setNewPkgTotal(Math.max(1, Number(e.target.value)))}
+                        className="w-20 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs text-center focus:outline-none focus:border-primary/50"
+                      />
+                      <span className="text-xs text-muted-foreground">{lang === 'en' ? 'sessions' : 'занятий'}</span>
                       <button
                         onClick={() => createPackage(client.user_id)}
-                        className="gradient-primary text-primary-foreground text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-1"
+                        className="ml-auto gradient-primary text-primary-foreground text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-1"
                       >
                         <Package className="w-3 h-3" /> {lang === 'en' ? 'Add' : 'Добавить'}
                       </button>
