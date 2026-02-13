@@ -7,11 +7,12 @@ interface SwipeableClientCardProps {
   onDelete: () => void;
   clientName: string;
   lang: string;
+  disabled?: boolean;
 }
 
 const SWIPE_THRESHOLD = -80;
 
-const SwipeableClientCard = ({ children, onDelete, clientName, lang }: SwipeableClientCardProps) => {
+const SwipeableClientCard = ({ children, onDelete, clientName, lang, disabled = false }: SwipeableClientCardProps) => {
   const [confirming, setConfirming] = useState(false);
   const x = useMotionValue(0);
   const deleteOpacity = useTransform(x, [-120, -60, 0], [1, 0.8, 0]);
@@ -48,6 +49,14 @@ const SwipeableClientCard = ({ children, onDelete, clientName, lang }: Swipeable
           {lang === 'en' ? 'Cancel' : 'Отмена'}
         </button>
       </motion.div>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <div ref={containerRef} className="relative rounded-2xl">
+        {children}
+      </div>
     );
   }
 

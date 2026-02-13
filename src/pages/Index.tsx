@@ -53,8 +53,8 @@ const AppContent = () => {
   const handleTouchEnd = (e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-    // Only swipe if horizontal movement is dominant and > 60px
-    if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+    // Only swipe if horizontal movement is dominant and > 120px
+    if (Math.abs(deltaX) > 120 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
       handleSwipe(deltaX < 0 ? 'left' : 'right');
     }
   };

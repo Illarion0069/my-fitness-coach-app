@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus, LogOut } from 'lucide-react';
+import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -63,6 +63,12 @@ const AdminSection = () => {
     const newUsed = Math.max(0, Math.min(pkg.total_sessions, pkg.used_sessions + delta));
     await supabase.from('client_packages').update({ used_sessions: newUsed }).eq('id', pkgId);
     fetchData();
+  };
+
+  const deletePackage = async (pkgId: string) => {
+    await supabase.from('client_packages').delete().eq('id', pkgId);
+    fetchData();
+    toast({ title: lang === 'en' ? 'Package deleted' : 'Пакет удалён' });
   };
 
   const createPackage = async (userId: string) => {
@@ -216,7 +222,7 @@ const AdminSection = () => {
               const clientPkgs = packages[client.user_id] || [];
 
               return (
-                <SwipeableClientCard key={client.id} onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang}>
+                <SwipeableClientCard key={client.id} onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
                 <motion.div layout className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <button
                     onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
@@ -244,9 +250,17 @@ const AdminSection = () => {
                         <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3 mt-3">
                           <div className="flex items-center justify-between mb-2">
                             <p className="text-xs font-semibold">{pkg.package_name}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {pkg.used_sessions}/{pkg.total_sessions}
-                            </p>
+                            <div className="flex items-center gap-2">
+                              <p className="text-xs text-muted-foreground">
+                                {pkg.used_sessions}/{pkg.total_sessions}
+                              </p>
+                              <button
+                                onClick={() => deletePackage(pkg.id)}
+                                className="w-6 h-6 rounded-md bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
                           </div>
                           <div className="h-1.5 bg-secondary rounded-full overflow-hidden mb-3">
                             <div
