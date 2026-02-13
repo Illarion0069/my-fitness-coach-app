@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Activity, Heart, Flame, Zap, Moon, Link2, Loader2 } from 'lucide-react';
+import { Activity, Heart, Flame, Zap, Moon, Link2, Loader2, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { ResponsiveContainer, AreaChart, Area, XAxis, Tooltip, BarChart, Bar, Cell } from 'recharts';
 
 interface WhoopMetric {
   metric_date: string;
@@ -25,6 +26,7 @@ const WhoopWidget = () => {
   const [metrics, setMetrics] = useState<WhoopMetric[]>([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
+  const [showCharts, setShowCharts] = useState(false);
 
   const syncData = async () => {
     if (!session) return;
@@ -148,7 +150,115 @@ const WhoopWidget = () => {
                 </div>
               </motion.div>
             ))}
+        </div>
+
+        {/* 7-day charts */}
+        {metrics.length > 1 && (
+          <div className="mt-3 border-t border-border/30 pt-3">
+            <button
+              onClick={() => setShowCharts(!showCharts)}
+              className="w-full flex items-center justify-between text-[10px] text-muted-foreground font-semibold uppercase tracking-wider"
+            >
+              <span className="flex items-center gap-1">
+                <BarChart3 className="w-3 h-3" /> {lang === 'en' ? '7-day trends' : 'Динамика за 7 дн.'}
+              </span>
+              <span className="text-primary">{showCharts ? '▲' : '▼'}</span>
+            </button>
+
+            {showCharts && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                className="mt-3 space-y-4"
+              >
+                {(() => {
+                  const chartData = [...metrics].reverse().map(m => ({
+                    date: m.metric_date.slice(5),
+                    calories: m.calories != null ? Math.round(m.calories) : null,
+                    strain: m.strain,
+                    recovery: m.recovery_score,
+                    hr: m.avg_heart_rate != null ? Math.round(m.avg_heart_rate) : null,
+                    sleep: m.sleep_duration_minutes != null ? +(m.sleep_duration_minutes / 60).toFixed(1) : null,
+                  }));
+
+                  const tipStyle = {
+                    contentStyle: { background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px', fontSize: '10px' },
+                    labelStyle: { fontSize: '10px', color: 'hsl(var(--muted-foreground))' },
+                  };
+
+                  return (
+                    <>
+                      {chartData.some(d => d.recovery != null) && (
+                        <div>
+                          <p className="text-[9px] text-muted-foreground font-semibold mb-1">Recovery %</p>
+                          <ResponsiveContainer width="100%" height={80}>
+                            <BarChart data={chartData} barSize={14}>
+                              <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                              <Tooltip {...tipStyle} />
+                              <Bar dataKey="recovery" radius={[4, 4, 0, 0]}>
+                                {chartData.map((entry, i) => (
+                                  <Cell key={i} fill={entry.recovery == null ? 'hsl(var(--muted))' : entry.recovery >= 67 ? '#4ade80' : entry.recovery >= 34 ? '#facc15' : '#f87171'} />
+                                ))}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {chartData.some(d => d.strain != null) && (
+                        <div>
+                          <p className="text-[9px] text-muted-foreground font-semibold mb-1">Strain</p>
+                          <ResponsiveContainer width="100%" height={60}>
+                            <AreaChart data={chartData}>
+                              <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                              <Tooltip {...tipStyle} />
+                              <Area type="monotone" dataKey="strain" stroke="#facc15" fill="#facc15" fillOpacity={0.15} strokeWidth={2} dot={{ r: 2, fill: '#facc15' }} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {chartData.some(d => d.calories != null) && (
+                        <div>
+                          <p className="text-[9px] text-muted-foreground font-semibold mb-1">{lang === 'en' ? 'Calories' : 'Калории'}</p>
+                          <ResponsiveContainer width="100%" height={60}>
+                            <AreaChart data={chartData}>
+                              <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                              <Tooltip {...tipStyle} />
+                              <Area type="monotone" dataKey="calories" stroke="#fb923c" fill="#fb923c" fillOpacity={0.15} strokeWidth={2} dot={{ r: 2, fill: '#fb923c' }} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {chartData.some(d => d.hr != null) && (
+                        <div>
+                          <p className="text-[9px] text-muted-foreground font-semibold mb-1">{lang === 'en' ? 'Avg Heart Rate' : 'Ср. пульс'}</p>
+                          <ResponsiveContainer width="100%" height={60}>
+                            <AreaChart data={chartData}>
+                              <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                              <Tooltip {...tipStyle} />
+                              <Area type="monotone" dataKey="hr" stroke="#f87171" fill="#f87171" fillOpacity={0.15} strokeWidth={2} dot={{ r: 2, fill: '#f87171' }} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                      {chartData.some(d => d.sleep != null) && (
+                        <div>
+                          <p className="text-[9px] text-muted-foreground font-semibold mb-1">{lang === 'en' ? 'Sleep (hours)' : 'Сон (часы)'}</p>
+                          <ResponsiveContainer width="100%" height={60}>
+                            <BarChart data={chartData} barSize={14}>
+                              <XAxis dataKey="date" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} axisLine={false} tickLine={false} />
+                              <Tooltip {...tipStyle} />
+                              <Bar dataKey="sleep" fill="#60a5fa" radius={[4, 4, 0, 0]} fillOpacity={0.7} />
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </motion.div>
+            )}
           </div>
+        )}
         </div>
       ) : (
         <div className="bg-background border border-border/50 rounded-2xl p-4 text-center">
