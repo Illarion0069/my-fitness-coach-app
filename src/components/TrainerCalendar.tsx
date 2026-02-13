@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Clock } from 'lucide-react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, addMonths, startOfWeek, isSameDay, isToday } from 'date-fns';
@@ -28,6 +28,13 @@ interface Props {
 }
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 6:00 — 22:00
+const ROW_HEIGHT = 52; // px per hour slot
+
+const minutesToTimeStr = (totalMinutes: number) => {
+  const h = Math.max(6, Math.min(22, Math.floor(totalMinutes / 60)));
+  const m = Math.round(totalMinutes % 60 / 5) * 5;
+  return `${String(h).padStart(2, '0')}:${String(m >= 60 ? 0 : m).padStart(2, '0')}`;
+};
 
 const TrainerCalendar = ({ lang, clients }: Props) => {
   const { toast } = useToast();
@@ -36,9 +43,20 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const touchStartX = useRef<number | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
-  const [showAddForm, setShowAddForm] = useState<number | null>(null); // hour to add
+  const [showAddForm, setShowAddForm] = useState<number | null>(null);
   const [selectedClientId, setSelectedClientId] = useState('');
   const [addTime, setAddTime] = useState('');
+
+  // Edit state
+  const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
+  const [editTime, setEditTime] = useState('');
+
+  // Drag state
+  const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
+  const [dragPreviewTime, setDragPreviewTime] = useState<string | null>(null);
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const dragStartY = useRef<number>(0);
+  const dragStartMinutes = useRef<number>(0);
 
   const weekDays = useMemo(() =>
     Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -84,7 +102,6 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
   const dayOfWeek = selectedDate.getDay();
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
 
-  // Sessions for selected day: one-off matching date OR recurring matching day-of-week
   const daySessions = useMemo(() => {
     return sessions.filter(s => {
       if (s.is_recurring && s.recurrence_day === dayOfWeek) return true;
@@ -93,7 +110,6 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
     });
   }, [sessions, selectedDateStr, dayOfWeek]);
 
-  // Group sessions by hour
   const sessionsByHour = useMemo(() => {
     const map: Record<number, (ScheduledSession & { clientName: string })[]> = {};
     daySessions.forEach(s => {
@@ -132,6 +148,180 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
     await supabase.from('scheduled_sessions').delete().eq('id', id);
     fetchSessions();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
+  };
+
+  // --- Edit time ---
+  const startEditing = (session: ScheduledSession) => {
+    const time = session.is_recurring ? session.recurrence_time : session.session_time;
+    setEditingSessionId(session.id);
+    setEditTime(time?.slice(0, 5) || '');
+  };
+
+  const saveEditTime = async () => {
+    if (!editingSessionId || !editTime) return;
+    const session = sessions.find(s => s.id === editingSessionId);
+    if (!session) return;
+
+    const updateField = session.is_recurring
+      ? { recurrence_time: editTime }
+      : { session_time: editTime };
+
+    await supabase.from('scheduled_sessions').update(updateField).eq('id', editingSessionId);
+    setEditingSessionId(null);
+    setEditTime('');
+    fetchSessions();
+    toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+  };
+
+  // --- Drag to reposition ---
+  const getMinutesFromTime = (timeStr: string | null): number => {
+    if (!timeStr) return 6 * 60;
+    const [h, m] = timeStr.split(':').map(Number);
+    return h * 60 + (m || 0);
+  };
+
+  const handleDragStart = useCallback((sessionId: string, timeStr: string | null, clientY: number) => {
+    setDraggingSessionId(sessionId);
+    dragStartY.current = clientY;
+    dragStartMinutes.current = getMinutesFromTime(timeStr);
+    setDragPreviewTime(timeStr?.slice(0, 5) || null);
+  }, []);
+
+  const handleDragMove = useCallback((clientY: number) => {
+    if (!draggingSessionId) return;
+    const deltaY = clientY - dragStartY.current;
+    const deltaMinutes = (deltaY / ROW_HEIGHT) * 60;
+    const newMinutes = Math.max(6 * 60, Math.min(22 * 60, dragStartMinutes.current + deltaMinutes));
+    const snapped = Math.round(newMinutes / 5) * 5;
+    setDragPreviewTime(minutesToTimeStr(snapped));
+  }, [draggingSessionId]);
+
+  const handleDragEnd = useCallback(async () => {
+    if (!draggingSessionId || !dragPreviewTime) {
+      setDraggingSessionId(null);
+      setDragPreviewTime(null);
+      return;
+    }
+
+    const session = sessions.find(s => s.id === draggingSessionId);
+    if (!session) return;
+
+    const updateField = session.is_recurring
+      ? { recurrence_time: dragPreviewTime }
+      : { session_time: dragPreviewTime };
+
+    await supabase.from('scheduled_sessions').update(updateField).eq('id', draggingSessionId);
+    setDraggingSessionId(null);
+    setDragPreviewTime(null);
+    fetchSessions();
+    toast({ title: lang === 'en' ? `Moved to ${dragPreviewTime}` : `Перенесено на ${dragPreviewTime}` });
+  }, [draggingSessionId, dragPreviewTime, sessions, lang, toast]);
+
+  // Touch handlers for drag
+  const onSessionTouchStart = (sessionId: string, timeStr: string | null, e: React.TouchEvent) => {
+    e.stopPropagation();
+    handleDragStart(sessionId, timeStr, e.touches[0].clientY);
+  };
+
+  const onSessionTouchMove = useCallback((e: React.TouchEvent) => {
+    if (draggingSessionId) {
+      e.preventDefault();
+      handleDragMove(e.touches[0].clientY);
+    }
+  }, [draggingSessionId, handleDragMove]);
+
+  const onSessionTouchEnd = useCallback(() => {
+    if (draggingSessionId) handleDragEnd();
+  }, [draggingSessionId, handleDragEnd]);
+
+  // Mouse handlers for drag
+  useEffect(() => {
+    if (!draggingSessionId) return;
+    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientY);
+    const onMouseUp = () => handleDragEnd();
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [draggingSessionId, handleDragMove, handleDragEnd]);
+
+  const renderSessionCard = (s: ScheduledSession & { clientName: string }) => {
+    const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
+    const isDragging = draggingSessionId === s.id;
+    const isEditing = editingSessionId === s.id;
+
+    if (isEditing) {
+      return (
+        <div
+          key={s.id}
+          className="flex items-center gap-2 bg-primary/20 border-2 border-primary rounded-lg px-3 py-2 mb-1 mt-1"
+        >
+          <div className="w-1 h-8 rounded-full bg-primary shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold truncate mb-1">{s.clientName}</p>
+            <input
+              type="time"
+              value={editTime}
+              onChange={e => setEditTime(e.target.value)}
+              autoFocus
+              className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary"
+            />
+          </div>
+          <button
+            onClick={saveEditTime}
+            className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-1 rounded-lg"
+          >
+            ✓
+          </button>
+          <button
+            onClick={() => setEditingSessionId(null)}
+            className="text-muted-foreground"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={s.id}
+        className={`flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 mb-1 mt-1 transition-all ${
+          isDragging ? 'opacity-60 scale-95 shadow-lg ring-2 ring-primary/40' : ''
+        }`}
+      >
+        {/* Drag handle */}
+        <div
+          className="touch-none cursor-grab active:cursor-grabbing shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
+          onTouchStart={(e) => onSessionTouchStart(s.id, timeStr, e)}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            handleDragStart(s.id, timeStr, e.clientY);
+          }}
+        >
+          <GripVertical className="w-3.5 h-3.5" />
+        </div>
+        <div className="w-1 h-5 rounded-full bg-primary shrink-0" />
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={() => startEditing(s)}
+        >
+          <p className="text-xs font-semibold truncate">{s.clientName}</p>
+          <p className="text-[10px] text-muted-foreground">
+            {isDragging && dragPreviewTime
+              ? <span className="text-primary font-bold">{dragPreviewTime}</span>
+              : timeStr?.slice(0, 5)}
+            {s.is_recurring && ` · ${lang === 'en' ? 'recurring' : 'повтор'}`}
+          </p>
+        </div>
+        {s.is_deducted && <span className="text-[10px] text-primary">✓</span>}
+        <button onClick={() => deleteSession(s.id)} className="text-destructive/60 hover:text-destructive">
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    );
   };
 
   return (
@@ -173,7 +363,7 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
               <span className="text-[10px] font-medium uppercase opacity-70">
                 {format(day, 'EEE', { locale })}
               </span>
-              <span className={`text-lg font-bold leading-tight`}>
+              <span className="text-lg font-bold leading-tight">
                 {format(day, 'd')}
               </span>
               {sessions.some(s =>
@@ -203,7 +393,7 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
         </button>
       </div>
 
-      {/* Add form (top-level) */}
+      {/* Add form */}
       {showAddForm === -1 && (
         <div className="bg-card border border-border/50 rounded-xl p-3 mb-3 space-y-2">
           <div className="flex items-center justify-between">
@@ -242,21 +432,25 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
           <p className="text-[10px] text-muted-foreground font-medium px-1">
             {lang === 'en' ? 'All day' : 'Весь день'}
           </p>
-          {noTimeSessions.map(s => (
-            <div key={s.id} className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-2">
-              <div className="w-1 h-6 rounded-full bg-primary shrink-0" />
-              <span className="text-xs font-medium flex-1">{s.clientName}</span>
-              {s.is_deducted && <span className="text-[10px] text-muted-foreground">✓</span>}
-              <button onClick={() => deleteSession(s.id)} className="text-destructive/60 hover:text-destructive">
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          ))}
+          {noTimeSessions.map(s => renderSessionCard(s))}
+        </div>
+      )}
+
+      {/* Drag preview floating badge */}
+      {draggingSessionId && dragPreviewTime && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-scale-in">
+          <Clock className="w-3.5 h-3.5 inline mr-1.5" />
+          {dragPreviewTime}
         </div>
       )}
 
       {/* Timeline */}
-      <div className="relative">
+      <div
+        ref={timelineRef}
+        className="relative"
+        onTouchMove={onSessionTouchMove}
+        onTouchEnd={onSessionTouchEnd}
+      >
         {HOURS.map(hour => {
           const hourSessions = sessionsByHour[hour] || [];
           return (
@@ -269,25 +463,7 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
               </div>
               {/* Slot */}
               <div className="flex-1 border-t border-border/30 relative min-h-[52px]">
-                {hourSessions.map(s => (
-                  <div
-                    key={s.id}
-                    className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 mb-1 mt-1"
-                  >
-                    <div className="w-1 h-5 rounded-full bg-primary shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold truncate">{s.clientName}</p>
-                      <p className="text-[10px] text-muted-foreground">
-                        {(s.is_recurring ? s.recurrence_time : s.session_time)?.slice(0, 5)}
-                        {s.is_recurring && ` · ${lang === 'en' ? 'recurring' : 'повтор'}`}
-                      </p>
-                    </div>
-                    {s.is_deducted && <span className="text-[10px] text-primary">✓</span>}
-                    <button onClick={() => deleteSession(s.id)} className="text-destructive/60 hover:text-destructive">
-                      <X className="w-3 h-3" />
-                    </button>
-                  </div>
-                ))}
+                {hourSessions.map(s => renderSessionCard(s))}
                 {/* Tap to add */}
                 {hourSessions.length === 0 && (
                   <button
