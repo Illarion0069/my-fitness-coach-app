@@ -1,12 +1,13 @@
 import { useEffect, useState, useCallback } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical } from 'lucide-react';
+import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SwipeableClientCard from '@/components/SwipeableClientCard';
 import ClientSchedule from '@/components/ClientSchedule';
+import TrainerCalendar from '@/components/TrainerCalendar';
 
 interface Profile {
   id: string;
@@ -40,6 +41,7 @@ const AdminSection = () => {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [inviting, setInviting] = useState(false);
+  const [viewMode, setViewMode] = useState<'clients' | 'calendar'>('clients');
 
   const fetchData = async () => {
     const [{ data: profileData }, { data: pkgData }, { data: orderData }] = await Promise.all([
@@ -222,6 +224,32 @@ const AdminSection = () => {
           </button>
         </div>
 
+        {/* View mode tabs */}
+        <div className="flex gap-1 mb-4 bg-secondary/50 rounded-xl p-1">
+          <button
+            onClick={() => setViewMode('clients')}
+            className={`flex-1 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+              viewMode === 'clients' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Users className="w-3.5 h-3.5" />
+            {lang === 'en' ? 'Clients' : 'Клиенты'}
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`flex-1 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+              viewMode === 'calendar' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <CalendarDays className="w-3.5 h-3.5" />
+            {lang === 'en' ? 'Calendar' : 'Календарь'}
+          </button>
+        </div>
+
+        {viewMode === 'calendar' ? (
+          <TrainerCalendar lang={lang} clients={clients} />
+        ) : (
+        <>
         {/* Add client form */}
         {showAddClient && (
           <motion.div
@@ -436,6 +464,8 @@ const AdminSection = () => {
               );
             })}
           </Reorder.Group>
+        )}
+        </>
         )}
       </div>
     </section>
