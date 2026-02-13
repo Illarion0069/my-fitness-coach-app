@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { message, action, telegram_username, booking_id, session_id } = body;
+    const { message, action, telegram_username, booking_id, session_id, client_user_id } = body;
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     if (!TELEGRAM_BOT_TOKEN) throw new Error("TELEGRAM_BOT_TOKEN not configured");
@@ -111,6 +111,35 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Send reminder directly to client if they have telegram_chat_id
+    if (action === "sendReminder" && client_user_id) {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+      const adminClient = createClient(supabaseUrl, supabaseKey);
+
+      const { data: clientProfile } = await adminClient
+        .from("profiles")
+        .select("telegram_chat_id, full_name")
+        .eq("user_id", client_user_id)
+        .single();
+
+      if (clientProfile?.telegram_chat_id) {
+        // Send to client directly
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, message);
+        // Also notify trainer
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, `✅ Напоминание отправлено клиенту <b>${clientProfile.full_name}</b> в Telegram.`);
+        return new Response(JSON.stringify({ success: true, sent_to: "client" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      } else {
+        // No telegram linked — send to trainer with note
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, `⚠️ У клиента <b>${clientProfile?.full_name || 'Unknown'}</b> не привязан Telegram.\n\n${message}`);
+        return new Response(JSON.stringify({ success: true, sent_to: "trainer_only", reason: "no_telegram" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Default: send message to trainer
