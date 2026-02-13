@@ -1,13 +1,14 @@
-import { Home, ClipboardCheck, CreditCard, User, MessageCircle } from 'lucide-react';
+import { Home, ClipboardCheck, CreditCard, User, MessageCircle, Users } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
 interface BottomNavProps {
   active: string;
   onNavigate: (section: string) => void;
+  showGroup?: boolean;
 }
 
-const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, showGroup = false }: BottomNavProps) => {
   const { t, lang } = useLanguage();
   const nav = translations.nav;
 
@@ -15,6 +16,7 @@ const BottomNav = ({ active, onNavigate }: BottomNavProps) => {
     { id: 'home', icon: Home, label: t(nav.home) },
     { id: 'test', icon: ClipboardCheck, label: t(nav.test) },
     { id: 'pricing', icon: CreditCard, label: t(nav.pricing) },
+    ...(showGroup ? [{ id: 'group', icon: Users, label: t(nav.group) }] : []),
     { id: 'about', icon: User, label: lang === 'en' ? 'About' : 'Обо мне' },
     { id: 'contact', icon: MessageCircle, label: t(nav.contact) },
   ];
