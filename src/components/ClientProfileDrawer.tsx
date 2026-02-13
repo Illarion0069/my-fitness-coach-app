@@ -91,7 +91,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
             </div>
 
             {/* Session balance */}
-            <div className="px-5 py-4 flex-1">
+            <div className="px-5 py-4 flex-1 overflow-y-auto">
               <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider mb-3">
                 {lang === 'en' ? 'My Sessions' : 'Мои занятия'}
               </h3>
