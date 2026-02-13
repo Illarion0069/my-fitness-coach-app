@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown } from 'lucide-react';
+import { X, ChevronDown, UserRound } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface HeroSectionProps {
   onNavigate: (section: string) => void;
+  onProfileClick: () => void;
 }
 
-const HeroSection = ({ onNavigate }: HeroSectionProps) => {
+const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
   const { t, lang } = useLanguage();
+  const { user, profile } = useAuth();
   const hero = translations.hero;
+
+  const getInitials = () => {
+    const name = profile?.full_name || user?.user_metadata?.full_name || '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase() || '?';
+  };
   const workouts = translations.workouts;
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
 
@@ -31,9 +41,20 @@ const HeroSection = ({ onNavigate }: HeroSectionProps) => {
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-4 pb-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-extrabold text-[11px]">
-            LF
-          </div>
+          <button
+            onClick={onProfileClick}
+            className="w-8 h-8 rounded-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0"
+          >
+            {user ? (
+              <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center">
+                <span className="text-primary-foreground font-extrabold text-[11px]">{getInitials()}</span>
+              </div>
+            ) : (
+              <div className="w-8 h-8 rounded-xl bg-secondary border border-border/50 flex items-center justify-center">
+                <UserRound className="w-4 h-4 text-muted-foreground" />
+              </div>
+            )}
+          </button>
           <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         </div>
         <LanguageSwitch />
