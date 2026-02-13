@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, LogIn, X, Loader2 } from 'lucide-react';
+import { UserPlus, LogIn, X, Loader2, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 
-type Step = 'welcome' | 'register' | 'login';
+type Step = 'welcome' | 'register' | 'login' | 'telegram';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -103,7 +103,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
           ? 'Please check your email to verify your account.'
           : 'Проверьте почту для подтверждения аккаунта.',
       });
-      onClose();
+      setStep('telegram');
     } catch (err: any) {
       toast({
         title: lang === 'en' ? 'Error' : 'Ошибка',
@@ -143,12 +143,14 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
             <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-3">
               <span className="text-primary-foreground font-extrabold text-sm">LF</span>
             </div>
-            <h3 className="text-lg font-extrabold font-heading uppercase tracking-tight">
+             <h3 className="text-lg font-extrabold font-heading uppercase tracking-tight">
               {step === 'welcome'
                 ? lang === 'en' ? 'Welcome!' : 'Добро пожаловать!'
                 : step === 'register'
                   ? lang === 'en' ? 'New Client' : 'Новый клиент'
-                  : lang === 'en' ? 'Welcome Back' : 'С возвращением'}
+                  : step === 'telegram'
+                    ? lang === 'en' ? 'Stay Connected' : 'Будьте на связи'
+                    : lang === 'en' ? 'Welcome Back' : 'С возвращением'}
             </h3>
             {step === 'welcome' && (
               <p className="text-xs text-muted-foreground mt-1">
@@ -341,6 +343,41 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors"
                   >
                     ← {lang === 'en' ? 'Back' : 'Назад'}
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Step: Telegram */}
+              {step === 'telegram' && (
+                <motion.div
+                  key="telegram"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  className="space-y-4 text-center"
+                >
+                  <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
+                    <Bot className="w-8 h-8 text-primary" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {lang === 'en'
+                      ? 'Join our Telegram bot to receive training reminders and session updates!'
+                      : 'Подключите Telegram-бот, чтобы получать напоминания о тренировках и обновления!'}
+                  </p>
+                  <a
+                    href="https://t.me/LimassolFitness_bot"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                  >
+                    <Bot className="w-4 h-4" />
+                    {lang === 'en' ? 'Open Telegram Bot' : 'Открыть Telegram-бот'}
+                  </a>
+                  <button
+                    onClick={onClose}
+                    className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors"
+                  >
+                    {lang === 'en' ? 'Skip for now' : 'Пропустить'}
                   </button>
                 </motion.div>
               )}
