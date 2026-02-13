@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package } from 'lucide-react';
+import { Users, Plus, Minus, Send, Package, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,10 @@ const AdminSection = () => {
   const [newPkgName, setNewPkgName] = useState('');
   const [newPkgTotal, setNewPkgTotal] = useState(8);
   const [loading, setLoading] = useState(true);
+  const [showAddClient, setShowAddClient] = useState(false);
+  const [newClientName, setNewClientName] = useState('');
+  const [newClientEmail, setNewClientEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   const fetchData = async () => {
     const { data: profileData } = await supabase.from('profiles').select('*');
@@ -87,6 +91,30 @@ const AdminSection = () => {
     });
   };
 
+  const inviteClient = async () => {
+    if (!newClientName.trim() || !newClientEmail.trim()) return;
+    setInviting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('invite-client', {
+        body: { full_name: newClientName.trim(), email: newClientEmail.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({
+        title: lang === 'en' ? 'Client invited!' : 'Клиент приглашён!',
+        description: lang === 'en' ? `Invitation sent to ${newClientEmail}` : `Приглашение отправлено на ${newClientEmail}`,
+      });
+      setNewClientName('');
+      setNewClientEmail('');
+      setShowAddClient(false);
+      fetchData();
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e.message, variant: 'destructive' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
   if (loading) return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
 
   return (
@@ -99,7 +127,50 @@ const AdminSection = () => {
           <h1 className="text-2xl font-extrabold font-heading uppercase tracking-tight">
             {lang === 'en' ? 'Clients' : 'Клиенты'}
           </h1>
+          <button
+            onClick={() => setShowAddClient(!showAddClient)}
+            className="ml-auto w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
+          >
+            <UserPlus className="w-4 h-4" />
+          </button>
         </div>
+
+        {/* Add client form */}
+        {showAddClient && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="bg-card border border-border/50 rounded-2xl p-4 mb-4 space-y-3"
+          >
+            <p className="text-xs font-semibold flex items-center gap-1">
+              <UserPlus className="w-3 h-3" /> {lang === 'en' ? 'Add Customer' : 'Добавить клиента'}
+            </p>
+            <input
+              type="text"
+              placeholder={lang === 'en' ? 'Full name' : 'Имя и фамилия'}
+              value={newClientName}
+              onChange={(e) => setNewClientName(e.target.value)}
+              className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={newClientEmail}
+              onChange={(e) => setNewClientEmail(e.target.value)}
+              className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+            />
+            <button
+              onClick={inviteClient}
+              disabled={inviting || !newClientName.trim() || !newClientEmail.trim()}
+              className="w-full gradient-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <Send className="w-3 h-3" />
+              {inviting
+                ? (lang === 'en' ? 'Sending...' : 'Отправка...')
+                : (lang === 'en' ? 'Send Invite' : 'Отправить приглашение')}
+            </button>
+          </motion.div>
+        )}
 
         {clients.length === 0 ? (
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
