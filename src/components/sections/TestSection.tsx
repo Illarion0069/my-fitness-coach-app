@@ -135,7 +135,7 @@ const TestSection = () => {
   );
 
   return (
-    <section className="min-h-screen px-5 pt-8 pb-28">
+    <section className="h-full px-5 pt-8 pb-28 overflow-hidden flex flex-col">
       <AnimatePresence mode="wait">
         {step === 'intro' && (
           <motion.div
