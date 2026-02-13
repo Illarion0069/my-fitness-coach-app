@@ -4,6 +4,7 @@ import { Users, Plus, Minus, Send, Package, UserPlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
+import SwipeableClientCard from '@/components/SwipeableClientCard';
 
 interface Profile {
   id: string;
@@ -73,6 +74,13 @@ const AdminSection = () => {
     setNewPkgTotal(8);
     fetchData();
     toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
+  };
+
+  const deleteClient = async (client: Profile) => {
+    await supabase.from('client_packages').delete().eq('user_id', client.user_id);
+    await supabase.from('profiles').delete().eq('user_id', client.user_id);
+    fetchData();
+    toast({ title: lang === 'en' ? 'Client deleted' : 'Клиент удалён', description: client.full_name });
   };
 
   const sendReminder = async (client: Profile) => {
@@ -195,7 +203,8 @@ const AdminSection = () => {
               const clientPkgs = packages[client.user_id] || [];
 
               return (
-                <motion.div key={client.id} layout className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+                <SwipeableClientCard key={client.id} onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang}>
+                <motion.div layout className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <button
                     onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                     className="w-full p-4 text-left flex items-center justify-between"
@@ -291,6 +300,7 @@ const AdminSection = () => {
                     </motion.div>
                   )}
                 </motion.div>
+                </SwipeableClientCard>
               );
             })}
           </div>
