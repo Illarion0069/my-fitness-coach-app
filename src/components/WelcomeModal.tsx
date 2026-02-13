@@ -141,11 +141,13 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
         });
         if (profileError) console.error('Profile creation error:', profileError);
 
-        await supabase.functions.invoke('send-telegram', {
+        // Non-blocking trainer notification (client doesn't have trainer role)
+        supabase.functions.invoke('send-telegram', {
           body: {
+            action: 'notifyRegistration',
             message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${email.trim()}\n📱 ${fullPhone}`,
           },
-        });
+        }).catch(() => {/* best-effort */});
 
         await refreshProfile();
       }

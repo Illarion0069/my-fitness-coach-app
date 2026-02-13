@@ -35,25 +35,34 @@ serve(async (req) => {
       });
     }
 
-    // Check caller has trainer role
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const roleClient = createClient(supabaseUrl, supabaseServiceKey);
-    const { data: roleData } = await roleClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .eq("role", "trainer")
-      .maybeSingle();
 
-    if (!roleData) {
-      return new Response(JSON.stringify({ error: "Forbidden: trainer role required" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
+    // Parse body early to check action
     const body = await req.json();
     const { message, action, telegram_username, booking_id, session_id, client_user_id } = body;
+
+    // Allow registration notifications from any authenticated user
+    const isRegistrationNotify = action === "notifyRegistration";
+
+    if (!isRegistrationNotify) {
+      // Check caller has trainer role
+      const { data: roleData } = await roleClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .eq("role", "trainer")
+        .maybeSingle();
+
+      if (!roleData) {
+        return new Response(JSON.stringify({ error: "Forbidden: trainer role required" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Input validation (body already parsed above)
 
     // Input validation
     if (message && (typeof message !== "string" || message.length > 4096)) {
