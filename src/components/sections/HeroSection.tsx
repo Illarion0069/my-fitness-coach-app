@@ -150,7 +150,15 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                       className="overflow-hidden"
                     >
                       <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
-                      <X className="w-3 h-3 text-muted-foreground/40 mt-2 ml-auto" />
+                      <a
+                        href="https://calendly.com/limassol-fitness/booking"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-primary hover:underline"
+                      >
+                        {lang === 'en' ? 'Book →' : 'Записаться →'}
+                      </a>
                     </motion.div>
                   ) : (
                     <motion.p
@@ -181,15 +189,24 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                   <h3 className="text-[13px] font-bold text-foreground">{t(workouts.items[4].name)}</h3>
                   <AnimatePresence mode="wait">
                     {expandedCard === 4 ? (
-                      <motion.p
+                      <motion.div
                         key="exp"
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: 'auto', opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
-                        className="text-[11px] text-muted-foreground leading-relaxed mt-1 overflow-hidden"
+                        className="overflow-hidden"
                       >
-                        {t(workouts.items[4].desc)}
-                      </motion.p>
+                        <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
+                        <a
+                          href="https://calendly.com/limassol-fitness/booking"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-primary hover:underline"
+                        >
+                          {lang === 'en' ? 'Book →' : 'Записаться →'}
+                        </a>
+                      </motion.div>
                     ) : (
                       <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
                         {t(workouts.items[4].desc)}
