@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, ChevronUp, ChevronDown } from 'lucide-react';
+import { motion, Reorder } from 'framer-motion';
+import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -104,17 +104,6 @@ const AdminSection = () => {
     toast({ title: lang === 'en' ? 'Client deleted' : 'Клиент удалён', description: client.full_name });
   };
 
-  const moveClient = (userId: string, direction: 'up' | 'down') => {
-    setClientOrder(prev => {
-      const idx = prev.indexOf(userId);
-      if (idx < 0) return prev;
-      const newIdx = direction === 'up' ? idx - 1 : idx + 1;
-      if (newIdx < 0 || newIdx >= prev.length) return prev;
-      const next = [...prev];
-      [next[idx], next[newIdx]] = [next[newIdx], next[idx]];
-      return next;
-    });
-  };
 
   const sendNotification = async (client: Profile, message: string) => {
     const { data } = await supabase.functions.invoke('send-telegram', {
@@ -241,33 +230,19 @@ const AdminSection = () => {
         {clients.length === 0 ? (
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
-          <div className="space-y-3">
-            {clientOrder.map((userId, idx) => {
+          <Reorder.Group axis="y" values={clientOrder} onReorder={setClientOrder} className="space-y-3">
+            {clientOrder.map((userId) => {
               const client = clients.find(c => c.user_id === userId);
               if (!client) return null;
               const isOpen = selectedClient === client.user_id;
               const clientPkgs = packages[client.user_id] || [];
 
               return (
-                <SwipeableClientCard key={client.id} onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
+                <Reorder.Item key={userId} value={userId} dragListener={!isOpen}>
+                <SwipeableClientCard onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
                 <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
-                  <div className="w-full p-4 flex items-center gap-2">
-                    <div className="flex flex-col gap-0.5 shrink-0">
-                      <button
-                        onClick={() => moveClient(userId, 'up')}
-                        disabled={idx === 0}
-                        className="w-6 h-6 rounded-md bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                      >
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => moveClient(userId, 'down')}
-                        disabled={idx === clientOrder.length - 1}
-                        className="w-6 h-6 rounded-md bg-secondary/50 flex items-center justify-center text-muted-foreground hover:text-foreground disabled:opacity-30 transition-colors"
-                      >
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                  <div className="w-full p-4 flex items-center gap-3">
+                    <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
                     <button
                       onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                       className="flex-1 text-left flex items-center justify-between min-w-0"
@@ -373,9 +348,10 @@ const AdminSection = () => {
                   )}
                 </div>
                 </SwipeableClientCard>
+                </Reorder.Item>
               );
             })}
-          </div>
+          </Reorder.Group>
         )}
       </div>
     </section>
