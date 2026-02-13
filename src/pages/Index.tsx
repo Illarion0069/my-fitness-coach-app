@@ -30,7 +30,16 @@ const AppContent = () => {
       <div ref={containerRef} className="h-screen overflow-y-auto scroll-smooth">
         {activeSection === 'home' && (
           <>
-            <HeroSection onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} />
+            <HeroSection onNavigate={handleNavigate} onProfileClick={() => {
+              if (isTrainer) {
+                handleNavigate('admin');
+              } else if (isAuthenticated) {
+                // Client is logged in — scroll to session widget on home
+                handleNavigate('home');
+              } else {
+                setShowWelcome(true);
+              }
+            }} />
             {isAuthenticated && (
               <div className="px-5 -mt-24 relative z-10 max-w-lg mx-auto">
                 <SessionWidget />
