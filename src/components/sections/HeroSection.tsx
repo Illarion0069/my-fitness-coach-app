@@ -128,7 +128,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
             {t(workouts.title)}
           </h2>
           <div className="grid grid-cols-2 gap-3">
-            {workouts.items.slice(0, 6).map((item, i) => (
+            {workouts.items.slice(0, 4).map((item, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 10 }}
@@ -166,21 +166,21 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
               </motion.div>
             ))}
           </div>
-          {/* 7th workout card full-width */}
-          {workouts.items[6] && (
+          {/* 5th workout card full-width */}
+          {workouts.items[4] && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0 }}
-              onClick={() => setExpandedCard(expandedCard === 6 ? null : 6)}
+              transition={{ delay: 0.9 }}
+              onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
               className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{workouts.items[6].icon}</span>
+                <span className="text-2xl">{workouts.items[4].icon}</span>
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-[13px] font-bold text-foreground">{t(workouts.items[6].name)}</h3>
+                  <h3 className="text-[13px] font-bold text-foreground">{t(workouts.items[4].name)}</h3>
                   <AnimatePresence mode="wait">
-                    {expandedCard === 6 ? (
+                    {expandedCard === 4 ? (
                       <motion.p
                         key="exp"
                         initial={{ height: 0, opacity: 0 }}
@@ -188,11 +188,11 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                         exit={{ height: 0, opacity: 0 }}
                         className="text-[11px] text-muted-foreground leading-relaxed mt-1 overflow-hidden"
                       >
-                        {t(workouts.items[6].desc)}
+                        {t(workouts.items[4].desc)}
                       </motion.p>
                     ) : (
                       <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
-                        {t(workouts.items[6].desc)}
+                        {t(workouts.items[4].desc)}
                       </motion.p>
                     )}
                   </AnimatePresence>
