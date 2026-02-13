@@ -155,9 +155,9 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                         target="_blank"
                         rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
-                        className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-primary hover:underline"
+                        className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                       >
-                        {lang === 'en' ? 'Book →' : 'Записаться →'}
+                        {lang === 'en' ? 'Book session' : 'Записаться'}
                       </a>
                     </motion.div>
                   ) : (
@@ -202,9 +202,9 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                           target="_blank"
                           rel="noopener noreferrer"
                           onClick={(e) => e.stopPropagation()}
-                          className="inline-flex items-center gap-1 mt-2 text-[10px] font-bold text-primary hover:underline"
+                          className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                         >
-                          {lang === 'en' ? 'Book →' : 'Записаться →'}
+                          {lang === 'en' ? 'Book session' : 'Записаться'}
                         </a>
                       </motion.div>
                     ) : (
