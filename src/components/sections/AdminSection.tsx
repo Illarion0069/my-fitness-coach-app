@@ -223,7 +223,7 @@ const AdminSection = () => {
 
               return (
                 <SwipeableClientCard key={client.id} onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
-                <motion.div layout className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+                <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <button
                     onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                     className="w-full p-4 text-left flex items-center justify-between"
@@ -333,7 +333,7 @@ const AdminSection = () => {
                       </div>
                     </motion.div>
                   )}
-                </motion.div>
+                </div>
                 </SwipeableClientCard>
               );
             })}
