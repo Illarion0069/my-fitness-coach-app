@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, LogIn, X, Loader2, Bot, KeyRound } from 'lucide-react';
+import { UserPlus, LogIn, X, Loader2, Bot, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,20 +8,13 @@ import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 
-type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot';
+type Step = 'welcome' | 'register' | 'login' | 'otp' | 'telegram';
 
 interface WelcomeModalProps {
   open: boolean;
   onClose: () => void;
 }
 
-// Inline error component
-const FieldError = ({ message }: { message: string | null }) => {
-  if (!message) return null;
-  return <p className="text-[11px] text-destructive -mt-1 px-1">{message}</p>;
-};
-
-// Inline success message
 const InlineMessage = ({ message, variant = 'error' }: { message: string | null; variant?: 'error' | 'success' }) => {
   if (!message) return null;
   return (
@@ -39,43 +32,42 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('welcome');
 
-  // Reset step when modal opens
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [countryCode, setCountryCode] = useState('+357');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [loginEmail, setLoginEmail] = useState('');
+  const [formError, setFormError] = useState<string | null>(null);
+  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  // Track which flow triggered OTP
+  const [otpFlow, setOtpFlow] = useState<'register' | 'login'>('register');
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     if (open) {
       setStep('welcome');
       setFormError(null);
       setFormSuccess(null);
+      setOtpCode('');
     }
   }, [open]);
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [countryCode, setCountryCode] = useState('+357');
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [password, setPassword] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [resetEmail, setResetEmail] = useState('');
-  const [formError, setFormError] = useState<string | null>(null);
-  const [formSuccess, setFormSuccess] = useState<string | null>(null);
+  // Auto-focus OTP input
+  useEffect(() => {
+    if (step === 'otp') {
+      setTimeout(() => otpInputRef.current?.focus(), 100);
+    }
+  }, [step]);
 
   const t = (en: string, ru: string) => lang === 'en' ? en : ru;
-
-  // Validation
   const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
-
-  const getPasswordErrors = (p: string): string | null => {
-    if (p.length < 6) return t('Password must be at least 6 characters', 'Пароль должен быть не менее 6 символов');
-    return null;
-  };
 
   const getRegisterErrors = (): string | null => {
     if (!name.trim()) return t('Please enter your name', 'Введите ваше имя');
     if (!email.trim() || !validateEmail(email)) return t('Please enter a valid email', 'Введите корректный email');
     if (!phoneNumber.trim() || phoneNumber.length < 5) return t('Please enter a valid phone number', 'Введите корректный номер телефона');
-    const pwErr = getPasswordErrors(password);
-    if (pwErr) return pwErr;
     return null;
   };
 
@@ -89,30 +81,8 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     setSubmitting(false);
   };
 
-  const handleEmailLogin = async () => {
-    setFormError(null);
-    if (!loginEmail.trim() || !loginPassword.trim()) {
-      setFormError(t('Please fill in all fields', 'Заполните все поля'));
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail.trim(),
-        password: loginPassword.trim(),
-      });
-      if (error) throw error;
-      await refreshProfile();
-      onClose();
-    } catch (err: any) {
-      setFormError(err.message === 'Invalid login credentials'
-        ? t('Invalid email or password', 'Неверный email или пароль')
-        : err.message);
-    }
-    setSubmitting(false);
-  };
-
-  const handleRegister = async () => {
+  // Send OTP for registration
+  const handleRegisterSendOtp = async () => {
     setFormError(null);
     const validationError = getRegisterErrors();
     if (validationError) {
@@ -120,46 +90,99 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       return;
     }
     setSubmitting(true);
-    const fullPhone = `${countryCode}${phoneNumber}`;
     try {
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const fullPhone = `${countryCode}${phoneNumber}`;
+      const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        password: password.trim(),
         options: {
-          emailRedirectTo: window.location.origin,
           data: { full_name: name.trim(), phone: fullPhone },
+          emailRedirectTo: window.location.origin,
         },
       });
-      if (authError) throw authError;
+      if (error) throw error;
+      setOtpFlow('register');
+      setOtpCode('');
+      setStep('otp');
+    } catch (err: any) {
+      setFormError(err.message);
+    }
+    setSubmitting(false);
+  };
 
-      if (authData.user) {
-        const { error: profileError } = await supabase.from('profiles').insert({
-          user_id: authData.user.id,
+  // Send OTP for login
+  const handleLoginSendOtp = async () => {
+    setFormError(null);
+    if (!loginEmail.trim() || !validateEmail(loginEmail)) {
+      setFormError(t('Please enter a valid email', 'Введите корректный email'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: loginEmail.trim(),
+        options: { emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setOtpFlow('login');
+      setOtpCode('');
+      setStep('otp');
+    } catch (err: any) {
+      setFormError(err.message);
+    }
+    setSubmitting(false);
+  };
+
+  // Verify OTP code
+  const handleVerifyOtp = async () => {
+    setFormError(null);
+    if (otpCode.length !== 6) {
+      setFormError(t('Please enter the 6-digit code', 'Введите 6-значный код'));
+      return;
+    }
+    setSubmitting(true);
+    const otpEmail = otpFlow === 'register' ? email.trim() : loginEmail.trim();
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: otpEmail,
+        token: otpCode,
+        type: 'email',
+      });
+      if (error) throw error;
+
+      if (data.user && otpFlow === 'register') {
+        // Update profile with phone if needed (trigger already creates profile)
+        const fullPhone = `${countryCode}${phoneNumber}`;
+        await supabase.from('profiles').update({
           full_name: name.trim(),
-          email: email.trim(),
           phone: fullPhone,
-        });
-        if (profileError) console.error('Profile creation error:', profileError);
+        }).eq('user_id', data.user.id);
 
-        // Non-blocking trainer notification (client doesn't have trainer role)
+        // Notify trainer
         supabase.functions.invoke('send-telegram', {
           body: {
             action: 'notifyRegistration',
-            message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${email.trim()}\n📱 ${fullPhone}`,
+            message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${otpEmail}\n📱 ${fullPhone}`,
           },
-        }).catch(() => {/* best-effort */});
-
-        await refreshProfile();
+        }).catch(() => {});
       }
 
-      toast({
-        title: t('Registration successful!', 'Регистрация успешна!'),
-        description: t('Please check your email to verify your account.', 'Проверьте почту для подтверждения аккаунта.'),
-      });
-      setStep('telegram');
+      await refreshProfile();
+
+      if (otpFlow === 'register') {
+        toast({
+          title: t('Registration successful!', 'Регистрация успешна!'),
+          description: t('Welcome aboard!', 'Добро пожаловать!'),
+        });
+        setStep('telegram');
+      } else {
+        toast({
+          title: t('Welcome back!', 'С возвращением!'),
+        });
+        onClose();
+      }
     } catch (err: any) {
-      if (err.message?.includes('already registered')) {
-        setFormError(t('This email is already registered. Try logging in.', 'Этот email уже зарегистрирован. Попробуйте войти.'));
+      if (err.message?.includes('expired') || err.message?.includes('invalid')) {
+        setFormError(t('Invalid or expired code. Please try again.', 'Неверный или истёкший код. Попробуйте снова.'));
       } else {
         setFormError(err.message);
       }
@@ -167,23 +190,19 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     setSubmitting(false);
   };
 
-  const handleForgotPassword = async () => {
+  // Resend OTP
+  const handleResendOtp = async () => {
     setFormError(null);
     setFormSuccess(null);
-    if (!resetEmail.trim() || !validateEmail(resetEmail)) {
-      setFormError(t('Please enter a valid email', 'Введите корректный email'));
-      return;
-    }
     setSubmitting(true);
+    const otpEmail = otpFlow === 'register' ? email.trim() : loginEmail.trim();
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
-        redirectTo: window.location.origin,
+      const { error } = await supabase.auth.signInWithOtp({
+        email: otpEmail,
+        options: { emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
-      setFormSuccess(t(
-        'Password reset link sent! Check your email.',
-        'Ссылка для сброса пароля отправлена! Проверьте почту.'
-      ));
+      setFormSuccess(t('Code resent! Check your email.', 'Код отправлен повторно! Проверьте почту.'));
     } catch (err: any) {
       setFormError(err.message);
     }
@@ -193,6 +212,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   if (!open) return null;
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
+  const otpInputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] placeholder:text-muted-foreground placeholder:tracking-normal placeholder:text-sm focus:outline-none focus:border-primary/50";
 
   const googleButton = (
     <button
@@ -245,8 +265,8 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
             <h3 className="text-lg font-extrabold font-heading uppercase tracking-tight">
               {step === 'welcome' ? t('Welcome!', 'Добро пожаловать!')
                 : step === 'register' ? t('New Client', 'Новый клиент')
+                : step === 'otp' ? t('Enter Code', 'Введите код')
                 : step === 'telegram' ? t('Stay Connected', 'Будьте на связи')
-                : step === 'forgot' ? t('Reset Password', 'Сброс пароля')
                 : t('Welcome Back', 'С возвращением')}
             </h3>
             {step === 'welcome' && (
@@ -267,7 +287,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm a new client", 'Я новый клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Create your account', 'Создать аккаунт')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Quick signup — no password needed', 'Быстрая регистрация — без пароля')}</p>
                     </div>
                   </button>
                   <button onClick={() => { setStep('login'); setFormError(null); }} className="w-full bg-secondary/50 border border-border/50 rounded-2xl p-4 flex items-center gap-3 hover:bg-secondary transition-all text-left">
@@ -276,7 +296,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm already a client", 'Я уже клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Sign in to your account', 'Войти в аккаунт')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Sign in with email code', 'Войти по коду из email')}</p>
                     </div>
                   </button>
                 </motion.div>
@@ -294,23 +314,20 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     onPhoneChange={setPhoneNumber}
                     placeholder={t('Phone number', 'Номер телефона')}
                   />
-                  <div>
-                    <input type="password" placeholder={t('Create password', 'Придумайте пароль')} value={password} onChange={(e) => setPassword(e.target.value)} className={inputClass} maxLength={72} />
-                    {password.length > 0 && password.length < 6 && (
-                      <p className="text-[11px] text-amber-400 mt-1 px-1">
-                        {t('Minimum 6 characters', 'Минимум 6 символов')}
-                      </p>
-                    )}
-                  </div>
 
                   <InlineMessage message={formError} variant="error" />
 
                   <button
-                    onClick={handleRegister}
+                    onClick={handleRegisterSendOtp}
                     disabled={submitting}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Sign Up', 'Зарегистрироваться')}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        {t('Send Code', 'Отправить код')}
+                      </>
+                    )}
                   </button>
 
                   {divider}
@@ -325,24 +342,24 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {/* Step: Login */}
               {step === 'login' && (
                 <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t('Enter your email and we\'ll send you a login code', 'Введите email — мы отправим код для входа')}
+                  </p>
                   <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputClass} maxLength={255} />
-                  <input type="password" placeholder={t('Password', 'Пароль')} value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)} className={inputClass} maxLength={72} />
 
                   <InlineMessage message={formError} variant="error" />
 
                   <button
-                    onClick={handleEmailLogin}
+                    onClick={handleLoginSendOtp}
                     disabled={submitting}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Sign In', 'Войти')}
-                  </button>
-
-                  <button
-                    onClick={() => { setStep('forgot'); setFormError(null); setFormSuccess(null); setResetEmail(loginEmail); }}
-                    className="w-full text-xs text-primary hover:text-primary/80 py-1 transition-colors"
-                  >
-                    {t('Forgot password?', 'Забыли пароль?')}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        {t('Send Code', 'Отправить код')}
+                      </>
+                    )}
                   </button>
 
                   {divider}
@@ -354,33 +371,51 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                 </motion.div>
               )}
 
-              {/* Step: Forgot Password */}
-              {step === 'forgot' && (
-                <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+              {/* Step: OTP Verification */}
+              {step === 'otp' && (
+                <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
                   <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
-                    <KeyRound className="w-7 h-7 text-primary" />
+                    <Mail className="w-7 h-7 text-primary" />
                   </div>
                   <p className="text-xs text-muted-foreground text-center">
                     {t(
-                      'Enter your email and we\'ll send you a link to reset your password.',
-                      'Введите ваш email, и мы отправим ссылку для сброса пароля.'
+                      `We sent a 6-digit code to ${otpFlow === 'register' ? email.trim() : loginEmail.trim()}`,
+                      `Мы отправили 6-значный код на ${otpFlow === 'register' ? email.trim() : loginEmail.trim()}`
                     )}
                   </p>
-                  <input type="email" placeholder="Email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} className={inputClass} maxLength={255} />
+
+                  <input
+                    ref={otpInputRef}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={6}
+                    placeholder="000000"
+                    value={otpCode}
+                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className={otpInputClass}
+                  />
 
                   <InlineMessage message={formError} variant="error" />
                   <InlineMessage message={formSuccess} variant="success" />
 
                   <button
-                    onClick={handleForgotPassword}
-                    disabled={submitting}
+                    onClick={handleVerifyOtp}
+                    disabled={submitting || otpCode.length !== 6}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Send Reset Link', 'Отправить ссылку')}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Verify', 'Подтвердить')}
                   </button>
 
-                  <button onClick={() => { setStep('login'); setFormError(null); setFormSuccess(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
-                    ← {t('Back to login', 'Назад к входу')}
+                  <button
+                    onClick={handleResendOtp}
+                    disabled={submitting}
+                    className="w-full text-xs text-primary hover:text-primary/80 py-1 transition-colors"
+                  >
+                    {t('Resend code', 'Отправить код повторно')}
+                  </button>
+
+                  <button onClick={() => { setStep(otpFlow === 'register' ? 'register' : 'login'); setFormError(null); setFormSuccess(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
+                    ← {t('Back', 'Назад')}
                   </button>
                 </motion.div>
               )}
