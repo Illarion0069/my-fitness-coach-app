@@ -92,6 +92,57 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_sessions: {
+        Row: {
+          created_at: string
+          deducted_at: string | null
+          id: string
+          is_deducted: boolean
+          is_recurring: boolean
+          notes: string | null
+          package_id: string | null
+          recurrence_day: number | null
+          recurrence_time: string | null
+          session_date: string
+          session_time: string | null
+          trainer_user_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deducted_at?: string | null
+          id?: string
+          is_deducted?: boolean
+          is_recurring?: boolean
+          notes?: string | null
+          package_id?: string | null
+          recurrence_day?: number | null
+          recurrence_time?: string | null
+          session_date: string
+          session_time?: string | null
+          trainer_user_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deducted_at?: string | null
+          id?: string
+          is_deducted?: boolean
+          is_recurring?: boolean
+          notes?: string | null
+          package_id?: string | null
+          recurrence_day?: number | null
+          recurrence_time?: string | null
+          session_date?: string
+          session_time?: string | null
+          trainer_user_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       trainer_client_order: {
         Row: {
           client_order: string[]

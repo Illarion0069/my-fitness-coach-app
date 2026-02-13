@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.delete-client]
 verify_jwt = false
+
+[functions.deduct-sessions]
+verify_jwt = false

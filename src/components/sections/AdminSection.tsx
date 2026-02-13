@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SwipeableClientCard from '@/components/SwipeableClientCard';
+import ClientSchedule from '@/components/ClientSchedule';
 
 interface Profile {
   id: string;
@@ -408,6 +409,9 @@ const AdminSection = () => {
                           </button>
                         </div>
                       </div>
+
+                      {/* Schedule */}
+                      <ClientSchedule userId={client.user_id} lang={lang} />
 
                       {/* Send notifications */}
                       <div className="flex gap-2">
