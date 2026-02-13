@@ -8,15 +8,16 @@ import PricingSection from '@/components/sections/PricingSection';
 import AboutSection from '@/components/sections/AboutSection';
 import ContactSection from '@/components/sections/ContactSection';
 import GroupTrainingSection from '@/components/sections/GroupTrainingSection';
-import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import RegistrationBanner from '@/components/RegistrationBanner';
 import SessionWidget from '@/components/SessionWidget';
+import ProfileModal from '@/components/ProfileModal';
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
   const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleNavigate = (section: string) => {
@@ -26,13 +27,21 @@ const AppContent = () => {
 
   const isAuthenticated = !!user;
 
+  const handleProfileClick = () => {
+    if (isAuthenticated) {
+      setShowProfile(true);
+    } else {
+      setShowWelcome(true);
+    }
+  };
+
   return (
     <div className="dark min-h-screen bg-background text-foreground">
       <div ref={containerRef} className="h-screen overflow-y-auto scroll-smooth">
         {activeSection === 'home' && (
           <>
-            <HeroSection onNavigate={handleNavigate} onOpenAuth={() => setShowWelcome(true)} />
-            {isAuthenticated && (
+            <HeroSection onNavigate={handleNavigate} onOpenAuth={handleProfileClick} />
+            {isAuthenticated && !isTrainer && (
               <div className="px-5 -mt-24 relative z-10 max-w-lg mx-auto">
                 <SessionWidget />
               </div>
@@ -43,17 +52,16 @@ const AppContent = () => {
         {activeSection === 'pricing' && <PricingSection />}
         {activeSection === 'about' && <AboutSection />}
         {activeSection === 'group' && isAuthenticated && <GroupTrainingSection />}
-        {activeSection === 'admin' && isTrainer && <AdminSection />}
         {activeSection === 'contact' && <ContactSection />}
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showGroup={isAuthenticated} showAdmin={isTrainer} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showGroup={isAuthenticated} />
       
-      {/* Non-intrusive banner for non-authenticated users */}
       {!loading && !isAuthenticated && (
         <RegistrationBanner onRegister={() => setShowWelcome(true)} />
       )}
       
       <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
+      <ProfileModal open={showProfile} onClose={() => setShowProfile(false)} />
     </div>
   );
 };
