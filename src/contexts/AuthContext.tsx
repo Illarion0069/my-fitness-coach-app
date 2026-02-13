@@ -53,6 +53,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
+        console.log('[Auth] onAuthStateChange event:', _event, 'session:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -65,14 +66,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
+    // Handle magic link tokens in URL hash
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
+
+    if (accessToken && refreshToken) {
+      console.log('[Auth] Magic link tokens detected in URL, setting session...');
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ data, error }) => {
+        if (error) {
+          console.error('[Auth] Failed to set session from magic link:', error);
+        } else {
+          console.log('[Auth] Session set from magic link successfully');
+        }
+        // Clean up URL hash
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        setLoading(false);
+      });
+    } else {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        }
+        setLoading(false);
+      });
+    }
 
     return () => subscription.unsubscribe();
   }, []);
