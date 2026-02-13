@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Shield, Target, Handshake, Gem, ChevronRight } from 'lucide-react';
+import { Award, Shield, Target, Handshake, Gem, ChevronRight, Star, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
@@ -168,6 +168,30 @@ const AboutSection = () => {
           ))}
         </div>
       </motion.div>
+
+      {/* Google Maps Reviews */}
+      <motion.a
+        href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+        target="_blank"
+        rel="noopener noreferrer"
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.8 }}
+        className="mt-3 bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:border-primary/30 transition-all block"
+      >
+        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+          <Star className="w-5 h-5 text-primary" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-bold text-foreground">
+            {lang === 'en' ? 'Client Reviews' : 'Отзывы клиентов'}
+          </h3>
+          <p className="text-[11px] text-muted-foreground">
+            {lang === 'en' ? 'Read reviews on Google Maps' : 'Читайте отзывы на Google Картах'}
+          </p>
+        </div>
+        <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
+      </motion.a>
 
       {/* Photo lightbox */}
       <AnimatePresence>
