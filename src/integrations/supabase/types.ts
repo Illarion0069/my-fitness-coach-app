@@ -182,6 +182,93 @@ export type Database = {
         }
         Relationships: []
       }
+      whoop_metrics: {
+        Row: {
+          avg_heart_rate: number | null
+          calories: number | null
+          created_at: string
+          hrv: number | null
+          id: string
+          max_heart_rate: number | null
+          metric_date: string
+          raw_data: Json | null
+          recovery_score: number | null
+          resting_heart_rate: number | null
+          sleep_duration_minutes: number | null
+          strain: number | null
+          updated_at: string
+          user_id: string
+          workout_count: number | null
+        }
+        Insert: {
+          avg_heart_rate?: number | null
+          calories?: number | null
+          created_at?: string
+          hrv?: number | null
+          id?: string
+          max_heart_rate?: number | null
+          metric_date: string
+          raw_data?: Json | null
+          recovery_score?: number | null
+          resting_heart_rate?: number | null
+          sleep_duration_minutes?: number | null
+          strain?: number | null
+          updated_at?: string
+          user_id: string
+          workout_count?: number | null
+        }
+        Update: {
+          avg_heart_rate?: number | null
+          calories?: number | null
+          created_at?: string
+          hrv?: number | null
+          id?: string
+          max_heart_rate?: number | null
+          metric_date?: string
+          raw_data?: Json | null
+          recovery_score?: number | null
+          resting_heart_rate?: number | null
+          sleep_duration_minutes?: number | null
+          strain?: number | null
+          updated_at?: string
+          user_id?: string
+          workout_count?: number | null
+        }
+        Relationships: []
+      }
+      whoop_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          refresh_token: string
+          scopes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          refresh_token: string
+          scopes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          scopes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
