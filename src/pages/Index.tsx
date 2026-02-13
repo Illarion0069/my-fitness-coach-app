@@ -28,6 +28,8 @@ const AppContent = () => {
     const nextIdx = sections.indexOf(section);
     setSwipeDirection(nextIdx > currentIdx ? 1 : -1);
     setActiveSection(section);
+    // Scroll to top on navigate
+    setTimeout(() => containerRef.current?.scrollTo({ top: 0 }), 0);
   };
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
@@ -99,10 +101,10 @@ const AppContent = () => {
   };
 
   return (
-    <div className="dark min-h-screen bg-background text-foreground">
+    <div className="dark h-screen bg-background text-foreground flex flex-col">
       <div
         ref={containerRef}
-        className="h-screen overflow-y-auto overflow-x-hidden scroll-smooth"
+        className="flex-1 overflow-y-auto overflow-x-hidden"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
