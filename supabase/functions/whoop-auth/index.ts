@@ -73,15 +73,18 @@ serve(async (req) => {
 
       // Store tokens using service role
       const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-      const { error: upsertError } = await supabaseAdmin
-        .from('whoop_tokens')
-        .upsert({
+      const upsertPayload: Record<string, unknown> = {
           user_id: userId,
           access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
           expires_at: expiresAt,
           scopes: tokens.scope || '',
-        }, { onConflict: 'user_id' });
+        };
+      if (tokens.refresh_token) {
+        upsertPayload.refresh_token = tokens.refresh_token;
+      }
+      const { error: upsertError } = await supabaseAdmin
+        .from('whoop_tokens')
+        .upsert(upsertPayload, { onConflict: 'user_id' });
 
       if (upsertError) {
         console.error('Failed to store tokens:', upsertError);
