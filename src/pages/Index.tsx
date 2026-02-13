@@ -61,11 +61,9 @@ const AppContent = () => {
     }
   };
 
-  // Auto-close modals when user logs in
+  // Reset state on logout
   useEffect(() => {
-    if (user) {
-      setShowWelcome(false);
-    } else {
+    if (!user) {
       setActiveSection('home');
       setShowProfile(false);
     }
