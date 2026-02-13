@@ -36,7 +36,6 @@ serve(async (req) => {
     }
 
     // Check caller has trainer role
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const roleClient = createClient(supabaseUrl, supabaseServiceKey);
     const { data: roleData } = await roleClient
@@ -109,9 +108,7 @@ serve(async (req) => {
 
     // Notify all participants when group is full
     if (action === "notifyGroupFull" && session_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
       const { data: session } = await supabase
         .from("group_sessions")
@@ -156,9 +153,7 @@ serve(async (req) => {
 
     // Send reminder directly to client if they have telegram_chat_id
     if (action === "sendReminder" && client_user_id) {
-      const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-      const adminClient = createClient(supabaseUrl, supabaseKey);
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
       const { data: clientProfile } = await adminClient
         .from("profiles")
