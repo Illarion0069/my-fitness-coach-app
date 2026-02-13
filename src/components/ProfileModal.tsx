@@ -185,16 +185,19 @@ const TrainerView = () => {
                     {activePkg && (
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => updateSession(activePkg.id, 1)}
-                          className="flex-1 bg-primary/20 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors"
-                        >
-                          <Plus className="w-3 h-3" /> {lang === 'en' ? 'Mark used' : 'Отметить'}
-                        </button>
-                        <button
                           onClick={() => updateSession(activePkg.id, -1)}
-                          className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
+                          className="w-10 h-10 rounded-xl bg-secondary text-foreground flex items-center justify-center hover:bg-secondary/80 transition-colors"
                         >
-                          <Minus className="w-3 h-3" /> {lang === 'en' ? 'Undo' : 'Отмена'}
+                          <Minus className="w-5 h-5" />
+                        </button>
+                        <span className="flex-1 text-center text-sm font-bold">
+                          {activePkg.used_sessions}/{activePkg.total_sessions}
+                        </span>
+                        <button
+                          onClick={() => updateSession(activePkg.id, 1)}
+                          className="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center hover:bg-primary/30 transition-colors"
+                        >
+                          <Plus className="w-5 h-5" />
                         </button>
                       </div>
                     )}
