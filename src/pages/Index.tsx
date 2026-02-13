@@ -50,7 +50,7 @@ const AppContent = () => {
         {activeSection === 'test' && <TestSection />}
         {activeSection === 'pricing' && <PricingSection />}
         {activeSection === 'about' && <AboutSection />}
-        {activeSection === 'group' && isAuthenticated && <GroupTrainingSection />}
+        {/* group section hidden for now */}
         {activeSection === 'admin' && isTrainer && <AdminSection />}
         {activeSection === 'contact' && <ContactSection />}
       </div>
