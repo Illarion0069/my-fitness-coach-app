@@ -72,7 +72,8 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
             <img
               src={trainerPhoto}
               alt={t(hero.trainer)}
-              className="w-full h-full rounded-full object-cover object-center bg-card border-4 border-card"
+              className="w-full h-full rounded-full object-cover bg-card border-4 border-card"
+              style={{ objectPosition: '45% center' }}
             />
           </div>
         </motion.div>
