@@ -33,7 +33,7 @@ const AdminSection = () => {
   const [loading, setLoading] = useState(true);
 
   const fetchData = async () => {
-    const { data: profileData } = await supabase.from('profiles').select('*').eq('is_trainer', false);
+    const { data: profileData } = await supabase.from('profiles').select('*');
     setClients(profileData || []);
 
     const { data: pkgData } = await supabase.from('client_packages').select('*').order('created_at', { ascending: false });
