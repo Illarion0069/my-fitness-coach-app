@@ -55,10 +55,20 @@ serve(async (req) => {
 
     const { full_name, email, phone } = await req.json();
 
-    if (!full_name || !email) {
-      return new Response(JSON.stringify({ error: "full_name and email are required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Input validation
+    if (!full_name || typeof full_name !== "string" || full_name.length < 2 || full_name.length > 100) {
+      return new Response(JSON.stringify({ error: "Invalid name (2-100 characters)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (!email || typeof email !== "string" || email.length > 255 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return new Response(JSON.stringify({ error: "Invalid email" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (phone && (typeof phone !== "string" || phone.length > 20)) {
+      return new Response(JSON.stringify({ error: "Invalid phone" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
