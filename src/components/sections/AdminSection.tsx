@@ -303,7 +303,39 @@ const AdminSection = () => {
                         </p>
                         <p className="text-xs text-foreground">{client.full_name}</p>
                         <p className="text-xs text-muted-foreground">{client.email}</p>
-                        <p className="text-xs text-muted-foreground">{client.phone || (lang === 'en' ? 'No phone' : 'Нет телефона')}</p>
+                        {client.phone ? (
+                          <p className="text-xs text-muted-foreground">{client.phone}</p>
+                        ) : (
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="tel"
+                              placeholder={lang === 'en' ? 'Enter phone' : 'Введите телефон'}
+                              className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
+                              onKeyDown={async (e) => {
+                                if (e.key === 'Enter') {
+                                  const val = (e.target as HTMLInputElement).value.trim();
+                                  if (!val) return;
+                                  await supabase.from('profiles').update({ phone: val }).eq('user_id', client.user_id);
+                                  fetchData();
+                                  toast({ title: lang === 'en' ? 'Phone saved' : 'Телефон сохранён' });
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={async (e) => {
+                                const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
+                                const val = input?.value?.trim();
+                                if (!val) return;
+                                await supabase.from('profiles').update({ phone: val }).eq('user_id', client.user_id);
+                                fetchData();
+                                toast({ title: lang === 'en' ? 'Phone saved' : 'Телефон сохранён' });
+                              }}
+                              className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
+                            >
+                              {lang === 'en' ? 'Save' : 'ОК'}
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {/* Active packages */}
