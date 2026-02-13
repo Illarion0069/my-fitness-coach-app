@@ -48,60 +48,44 @@ export const translations = {
     title: { en: 'WORKOUTS', ru: 'ТРЕНИРОВКИ' },
     items: [
       {
-        name: { en: 'HIIT', ru: 'ВИИТ' },
+        name: { en: 'Weight Loss', ru: 'Похудение' },
         desc: {
-          en: 'High-Intensity Interval Training. Intervals of maximal effort with rest periods. Oriented towards maximum fat loss and muscle strength.',
-          ru: 'Высокоинтенсивная интервальная тренировка. Интервалы максимального усилия с периодами отдыха. Направлена на максимальное сжигание жира и силу мышц.',
+          en: 'High-intensity interval training (HIIT) combined with mid-intensity cardio. Maximum calorie burn, accelerated metabolism and visible results in the shortest time.',
+          ru: 'Высокоинтенсивные интервальные тренировки (HIIT) в сочетании с кардио средней интенсивности. Максимальное сжигание калорий, ускорение метаболизма и видимый результат в кратчайшие сроки.',
         },
-        icon: '⚡',
+        icon: '🔥',
       },
       {
-        name: { en: 'TRX', ru: 'TRX' },
+        name: { en: 'Muscle Gain', ru: 'Набор мышц' },
         desc: {
-          en: 'Simple and effective training using only body weight. All muscle groups are engaged. Positive effect on muscle tone, posture and figure.',
-          ru: 'Простая и эффективная тренировка с собственным весом. Задействованы все группы мышц. Положительное влияние на тонус, осанку и фигуру.',
-        },
-        icon: '🔗',
-      },
-      {
-        name: { en: 'Stretching', ru: 'Растяжка' },
-        desc: {
-          en: 'Combines elements of yoga and martial arts. Simulated animal movements. Develops flexibility, muscle strength, improves posture and recovery.',
-          ru: 'Сочетает элементы йоги и единоборств. Имитация движений животных. Развивает гибкость, силу мышц, улучшает осанку и восстановление.',
-        },
-        icon: '🧘',
-      },
-      {
-        name: { en: 'Cardio', ru: 'Кардио' },
-        desc: {
-          en: 'Fat-burning, mid-intensity training engaging all muscle groups. Develops endurance, cardiovascular system and metabolism.',
-          ru: 'Жиросжигающая тренировка средней интенсивности. Развивает выносливость, сердечно-сосудистую систему и метаболизм.',
-        },
-        icon: '❤️‍🔥',
-      },
-      {
-        name: { en: 'Strength', ru: 'Силовая' },
-        desc: {
-          en: 'General training with weights. Develops muscle strength, improves joint mobility, posture, hormonal function and bone density.',
-          ru: 'Общая тренировка с отягощениями. Развивает силу мышц, улучшает подвижность суставов, осанку и гормональную систему.',
+          en: 'Strength and functional training using free weights, TRX suspension system and Procedos 3D platform. Building lean muscle mass, improving posture and joint mobility.',
+          ru: 'Силовые и функциональные тренировки с использованием свободных весов, подвесной системы TRX и платформы Procedos 3D. Набор сухой мышечной массы, улучшение осанки и подвижности суставов.',
         },
         icon: '💪',
       },
       {
-        name: { en: '3D Procedos', ru: '3D Procedos' },
+        name: { en: 'Flexibility', ru: 'Растяжка' },
         desc: {
-          en: 'Platform with 3D indicators. Exercises with dumbbells and body weight. Forms new neural connections. Improves balance and dynamic power.',
-          ru: 'Платформа с 3D-индикаторами. Упражнения с гантелями и собственным весом. Формирует новые нейронные связи. Улучшает баланс и динамическую силу.',
+          en: 'Animal Flow movement practice and myofascial release (MFR) with foam rollers. Develops flexibility, relieves muscle tension, improves posture and accelerates recovery.',
+          ru: 'Практика движений Animal Flow и миофасциальный релиз (MFR) с роллерами. Развивает гибкость, снимает мышечное напряжение, улучшает осанку и ускоряет восстановление.',
         },
-        icon: '🎯',
+        icon: '🧘',
       },
       {
-        name: { en: 'Foam Rolling', ru: 'Миофасциальный релиз' },
+        name: { en: 'Stay in Shape', ru: 'В форме' },
         desc: {
-          en: 'Muscle recovery training. Self-massage with foam roller & massage ball. Relaxes muscles, removes clamps and restores circulation.',
-          ru: 'Тренировка для восстановления мышц. Самомассаж с роллером и мячом. Расслабляет мышцы, снимает зажимы и восстанавливает кровообращение.',
+          en: 'Balanced program to maintain your current fitness level. A mix of strength, cardio and mobility work tailored to keep you toned, energized and injury-free.',
+          ru: 'Сбалансированная программа для поддержания текущей физической формы. Сочетание силовых, кардио и мобильных упражнений для тонуса, энергии и профилактики травм.',
         },
-        icon: '🧊',
+        icon: '⚡',
+      },
+      {
+        name: { en: 'Pain Relief', ru: 'Боль в теле' },
+        desc: {
+          en: 'Careful, detail-oriented exercises focused on spinal decompression and targeted muscle work. Every movement is controlled and precise — relieving back pain, improving posture and restoring comfort.',
+          ru: 'Внимательные, детальные упражнения, направленные на декомпрессию позвоночника и точечную проработку мышц. Каждое движение контролируемое и точное — снятие боли в спине, улучшение осанки и восстановление комфорта.',
+        },
+        icon: '🩺',
       },
     ],
   },
