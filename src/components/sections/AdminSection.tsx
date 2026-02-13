@@ -83,26 +83,28 @@ const AdminSection = () => {
     toast({ title: lang === 'en' ? 'Client deleted' : 'Клиент удалён', description: client.full_name });
   };
 
-  const sendReminder = async (client: Profile) => {
+  const sendNotification = async (client: Profile, message: string) => {
+    const { data } = await supabase.functions.invoke('send-telegram', {
+      body: { action: 'sendReminder', client_user_id: client.user_id, message },
+    });
+    const sentToClient = data?.sent_to === 'client';
+    toast({
+      title: lang === 'en' ? 'Sent' : 'Отправлено',
+      description: sentToClient
+        ? (lang === 'en' ? `Sent to ${client.full_name} via Telegram` : `Отправлено ${client.full_name} в Telegram`)
+        : (lang === 'en' ? `${client.full_name} has no Telegram — sent to you` : `У ${client.full_name} нет Telegram — отправлено вам`),
+    });
+  };
+
+  const sendRemainingNotification = (client: Profile) => {
     const clientPkgs = packages[client.user_id] || [];
     const activePkg = clientPkgs.find((p) => p.is_active);
     const remaining = activePkg ? activePkg.total_sessions - activePkg.used_sessions : 0;
+    return sendNotification(client, `📊 <b>Limassol Fitness</b>\n\n${client.full_name}, у вас осталось <b>${remaining}</b> занятий из ${activePkg?.total_sessions || 0}.\nЗаписывайтесь на следующую тренировку! 💪`);
+  };
 
-    const { data } = await supabase.functions.invoke('send-telegram', {
-      body: {
-        action: 'sendReminder',
-        client_user_id: client.user_id,
-        message: `📢 <b>Limassol Fitness</b>\n\n${client.full_name}, у вас осталось <b>${remaining}</b> занятий.\nПора продлить абонемент! 💪`,
-      },
-    });
-
-    const sentToClient = data?.sent_to === 'client';
-    toast({
-      title: lang === 'en' ? 'Reminder sent' : 'Напоминание отправлено',
-      description: sentToClient
-        ? (lang === 'en' ? `Sent directly to ${client.full_name} via Telegram` : `Отправлено ${client.full_name} в Telegram`)
-        : (lang === 'en' ? `${client.full_name} has no Telegram linked — sent to you` : `У ${client.full_name} не привязан Telegram — отправлено вам`),
-    });
+  const sendRenewalNotification = (client: Profile) => {
+    return sendNotification(client, `🔄 <b>Limassol Fitness</b>\n\n${client.full_name}, пора продлить абонемент!\n\n📦 Пакеты:\n• 8 занятий — 750€\n• 12 занятий — 1030€\n• 20 занятий — 1599€\n\nОплата: <a href="https://revolut.me/illarion">Revolut</a>\nНапишите тренеру для продления! 💪`);
   };
 
   const inviteClient = async () => {
@@ -290,13 +292,21 @@ const AdminSection = () => {
                         </div>
                       </div>
 
-                      {/* Send reminder */}
-                      <button
-                        onClick={() => sendReminder(client)}
-                        className="w-full bg-primary/10 border border-primary/30 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
-                      >
-                        <Send className="w-3 h-3" /> {lang === 'en' ? 'Send Reminder' : 'Отправить напоминание'}
-                      </button>
+                      {/* Send notifications */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => sendRemainingNotification(client)}
+                          className="flex-1 bg-primary/10 border border-primary/30 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 hover:bg-primary/20 transition-colors"
+                        >
+                          <Send className="w-3 h-3" /> {lang === 'en' ? 'Remaining' : 'Остаток'}
+                        </button>
+                        <button
+                          onClick={() => sendRenewalNotification(client)}
+                          className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
+                        >
+                          <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
+                        </button>
+                      </div>
                     </motion.div>
                   )}
                 </motion.div>
