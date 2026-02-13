@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, addDays, startOfWeek, isSameDay, isToday } from 'date-fns';
+import { format, addDays, addMonths, startOfWeek, isSameDay, isToday } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 
 interface Profile {
@@ -34,6 +34,7 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
   const locale = lang === 'en' ? enUS : ru;
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const touchStartX = useRef<number | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [showAddForm, setShowAddForm] = useState<number | null>(null); // hour to add
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -59,6 +60,25 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
     setWeekStart(newStart);
     if (dir === 1) setSelectedDate(newStart);
     else setSelectedDate(addDays(newStart, 6));
+  };
+
+  const navigateMonth = (dir: number) => {
+    const newDate = addMonths(selectedDate, dir);
+    setSelectedDate(newDate);
+    setWeekStart(startOfWeek(newDate, { weekStartsOn: 1 }));
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(diff) > 50) {
+      navigateWeek(diff < 0 ? 1 : -1);
+    }
+    touchStartX.current = null;
   };
 
   const dayOfWeek = selectedDate.getDay();
@@ -118,19 +138,23 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
     <div className="space-y-0">
       {/* Month header */}
       <div className="flex items-center justify-between px-1 mb-3">
-        <button onClick={() => navigateWeek(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+        <button onClick={() => navigateMonth(-1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
           <ChevronLeft className="w-5 h-5" />
         </button>
         <h2 className="text-base font-bold capitalize">
           {format(selectedDate, 'LLLL yyyy', { locale })}
         </h2>
-        <button onClick={() => navigateWeek(1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
+        <button onClick={() => navigateMonth(1)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-secondary transition-colors">
           <ChevronRight className="w-5 h-5" />
         </button>
       </div>
 
-      {/* Week strip */}
-      <div className="grid grid-cols-7 gap-1 mb-4">
+      {/* Week strip — swipeable */}
+      <div
+        className="grid grid-cols-7 gap-1 mb-4 touch-pan-y"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
         {weekDays.map(day => {
           const active = isSameDay(day, selectedDate);
           const today = isToday(day);
@@ -149,10 +173,9 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
               <span className="text-[10px] font-medium uppercase opacity-70">
                 {format(day, 'EEE', { locale })}
               </span>
-              <span className={`text-lg font-bold leading-tight ${active ? '' : ''}`}>
+              <span className={`text-lg font-bold leading-tight`}>
                 {format(day, 'd')}
               </span>
-              {/* Dot indicator for sessions */}
               {sessions.some(s =>
                 (s.is_recurring && s.recurrence_day === day.getDay()) ||
                 (!s.is_recurring && s.session_date === format(day, 'yyyy-MM-dd'))
