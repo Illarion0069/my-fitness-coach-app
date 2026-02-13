@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SwipeableClientCard from '@/components/SwipeableClientCard';
+import DraggableClientRow from '@/components/DraggableClientRow';
 import ClientSchedule from '@/components/ClientSchedule';
 import TrainerCalendar from '@/components/TrainerCalendar';
 
@@ -305,11 +306,14 @@ const AdminSection = () => {
               const clientPkgs = packages[client.user_id] || [];
 
               return (
-                <Reorder.Item key={userId} value={userId} dragListener={!isOpen}>
+                <DraggableClientRow key={userId} value={userId} disabled={isOpen}>
+                {(dragHandle) => (
                 <SwipeableClientCard onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
                 <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <div className="w-full p-4 flex items-center gap-3">
-                    <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
+                    <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
+                      <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
+                    </div>
                     <button
                       onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                       className="flex-1 text-left flex items-center justify-between min-w-0"
@@ -460,7 +464,8 @@ const AdminSection = () => {
                   )}
                 </div>
                 </SwipeableClientCard>
-                </Reorder.Item>
+                )}
+                </DraggableClientRow>
               );
             })}
           </Reorder.Group>
