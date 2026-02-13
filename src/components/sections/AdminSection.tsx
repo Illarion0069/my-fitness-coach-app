@@ -9,6 +9,7 @@ import SwipeableClientCard from '@/components/SwipeableClientCard';
 import DraggableClientRow from '@/components/DraggableClientRow';
 import ClientSchedule from '@/components/ClientSchedule';
 import TrainerCalendar from '@/components/TrainerCalendar';
+import TrainerWhoopWidget from '@/components/TrainerWhoopWidget';
 
 interface Profile {
   id: string;
@@ -444,6 +445,9 @@ const AdminSection = () => {
 
                       {/* Schedule */}
                       <ClientSchedule userId={client.user_id} lang={lang} />
+
+                      {/* Whoop metrics */}
+                      <TrainerWhoopWidget userId={client.user_id} lang={lang} />
 
                       {/* Send notifications */}
                       <div className="flex gap-2">
