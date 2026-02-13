@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Plus, Minus, Package, LogOut, ExternalLink, Activity } from 'lucide-react';
+import { X, Plus, Minus, Package, LogOut, ExternalLink, Activity, UserPlus, Mail } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -94,6 +94,10 @@ const TrainerView = () => {
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
   const [newPkgTotal, setNewPkgTotal] = useState(8);
   const [loading, setLoading] = useState(true);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [inviting, setInviting] = useState(false);
 
   const fetchData = async () => {
     const { data: profileData } = await supabase.from('profiles').select('*');
@@ -135,11 +139,77 @@ const TrainerView = () => {
     toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
   };
 
+  const inviteClient = async () => {
+    if (!inviteEmail.trim()) return;
+    setInviting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await supabase.functions.invoke('invite-client', {
+        body: { email: inviteEmail.trim(), full_name: inviteName.trim() },
+      });
+      if (res.error) throw res.error;
+      toast({ title: lang === 'en' ? 'Invitation sent!' : 'Приглашение отправлено!' });
+      setInviteEmail('');
+      setInviteName('');
+      setShowInvite(false);
+      fetchData();
+    } catch (err: any) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
+    } finally {
+      setInviting(false);
+    }
+  };
+
   if (loading) return <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>;
 
   return (
-    <div className="space-y-2">
-      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+    <div className="space-y-3">
+      {/* Invite button / form */}
+      {showInvite ? (
+        <div className="bg-secondary/30 rounded-xl p-3 space-y-2 border border-primary/30">
+          <p className="text-xs font-semibold flex items-center gap-1">
+            <Mail className="w-3 h-3" /> {lang === 'en' ? 'Invite Client' : 'Пригласить клиента'}
+          </p>
+          <input
+            type="text"
+            placeholder={lang === 'en' ? 'Name' : 'Имя'}
+            value={inviteName}
+            onChange={(e) => setInviteName(e.target.value)}
+            className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            value={inviteEmail}
+            onChange={(e) => setInviteEmail(e.target.value)}
+            className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowInvite(false)}
+              className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg"
+            >
+              {lang === 'en' ? 'Cancel' : 'Отмена'}
+            </button>
+            <button
+              onClick={inviteClient}
+              disabled={!inviteEmail.trim() || inviting}
+              className="flex-1 gradient-primary text-primary-foreground text-xs font-bold py-2 rounded-lg disabled:opacity-50"
+            >
+              {inviting ? '...' : lang === 'en' ? 'Send Invite' : 'Отправить'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => setShowInvite(true)}
+          className="w-full bg-primary/10 border border-primary/30 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-2 hover:bg-primary/20 transition-colors"
+        >
+          <UserPlus className="w-4 h-4" /> {lang === 'en' ? 'Add Client' : 'Добавить клиента'}
+        </button>
+      )}
+
+      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
         {lang === 'en' ? 'Clients' : 'Клиенты'} ({clients.length})
       </p>
 
