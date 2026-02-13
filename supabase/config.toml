@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.whoop-sync]
 verify_jwt = false
+
+[functions.whoop-cron]
+verify_jwt = false
