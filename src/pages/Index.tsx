@@ -28,6 +28,10 @@ const AppContent = () => {
   useEffect(() => {
     if (user) {
       setShowWelcome(false);
+    } else {
+      // On logout: reset to home, close everything
+      setActiveSection('home');
+      setShowProfile(false);
     }
   }, [user]);
 
