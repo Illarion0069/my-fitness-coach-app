@@ -5,14 +5,12 @@ import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
-import ProfileIcon from '@/components/ProfileIcon';
 
 interface HeroSectionProps {
   onNavigate: (section: string) => void;
-  onOpenAuth: () => void;
 }
 
-const HeroSection = ({ onNavigate, onOpenAuth }: HeroSectionProps) => {
+const HeroSection = ({ onNavigate }: HeroSectionProps) => {
   const { t, lang } = useLanguage();
   const hero = translations.hero;
   const workouts = translations.workouts;
@@ -38,10 +36,7 @@ const HeroSection = ({ onNavigate, onOpenAuth }: HeroSectionProps) => {
           </div>
           <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         </div>
-        <div className="flex items-center gap-2">
-          <LanguageSwitch />
-          <ProfileIcon onClick={onOpenAuth} />
-        </div>
+        <LanguageSwitch />
       </div>
 
       <div className="flex-1 flex flex-col items-center px-5">
