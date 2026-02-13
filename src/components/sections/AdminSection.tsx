@@ -129,10 +129,17 @@ const AdminSection = () => {
   };
 
   const deleteClient = async (client: Profile) => {
-    await supabase.from('client_packages').delete().eq('user_id', client.user_id);
-    await supabase.from('profiles').delete().eq('user_id', client.user_id);
-    fetchData();
-    toast({ title: lang === 'en' ? 'Client deleted' : 'Клиент удалён', description: client.full_name });
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-client', {
+        body: { client_user_id: client.user_id },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      fetchData();
+      toast({ title: lang === 'en' ? 'Client deleted' : 'Клиент удалён', description: client.full_name });
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e.message, variant: 'destructive' });
+    }
   };
 
 
