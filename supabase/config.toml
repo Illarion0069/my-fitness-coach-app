@@ -2,3 +2,6 @@ project_id = "yzzgkjwyhnvlyqldvzxf"
 
 [functions.send-telegram]
 verify_jwt = false
+
+[functions.invite-client]
+verify_jwt = false
