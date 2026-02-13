@@ -64,6 +64,7 @@ export type Database = {
           id: string
           phone: string
           telegram_chat_id: string | null
+          telegram_link_code: string | null
           updated_at: string
           user_id: string
         }
@@ -74,6 +75,7 @@ export type Database = {
           id?: string
           phone: string
           telegram_chat_id?: string | null
+          telegram_link_code?: string | null
           updated_at?: string
           user_id: string
         }
@@ -84,6 +86,7 @@ export type Database = {
           id?: string
           phone?: string
           telegram_chat_id?: string | null
+          telegram_link_code?: string | null
           updated_at?: string
           user_id?: string
         }

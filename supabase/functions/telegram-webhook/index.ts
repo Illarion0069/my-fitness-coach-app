@@ -51,85 +51,104 @@ serve(async (req) => {
 
     // Handle /start command — link telegram chat_id to profile
     if (text.startsWith("/start")) {
+      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
       const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Try to find profile by full_name match or existing chat_id
-      const { data: profiles } = await supabase
+      // Check if already linked
+      const { data: existingProfile } = await supabase
         .from("profiles")
-        .select("id, full_name, telegram_chat_id");
+        .select("id, full_name")
+        .eq("telegram_chat_id", chatId)
+        .maybeSingle();
 
-      // First check if this chat_id is already linked to someone
-      const alreadyLinked = profiles?.find((p: any) => p.telegram_chat_id === chatId);
-      if (alreadyLinked) {
-        const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+      if (existingProfile) {
         await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
-          `✅ ${alreadyLinked.full_name}, вы уже подключены к уведомлениям Limassol Fitness! 💪`);
+          `✅ ${existingProfile.full_name}, вы уже подключены к уведомлениям Limassol Fitness! 💪`);
         return new Response(JSON.stringify({ ok: true }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      // Try name matching among unlinked profiles
+      // Extract deep link code: "/start abc123def456"
+      const parts = text.split(" ");
+      const linkCode = parts.length > 1 ? parts[1].trim() : null;
 
       let matched = false;
-      const unlinkedProfiles = profiles?.filter((p: any) => !p.telegram_chat_id) || [];
-      if (unlinkedProfiles.length > 0) {
-        // Try exact match first, then fuzzy
-        const exactMatch = unlinkedProfiles.find(
-          (p: any) => p.full_name.toLowerCase() === fullName.toLowerCase()
-        );
-        const fuzzyMatch = unlinkedProfiles.find(
-          (p: any) =>
-            (firstName.length >= 3 && p.full_name.toLowerCase().includes(firstName.toLowerCase())) ||
-            (firstName.length >= 3 && firstName.toLowerCase().includes(p.full_name.split(" ")[0]?.toLowerCase()))
-        );
 
-        const matchedProfile = exactMatch || fuzzyMatch;
-        if (matchedProfile) {
+      // Priority 1: Deep link code match (100% reliable)
+      if (linkCode) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .eq("telegram_link_code", linkCode)
+          .is("telegram_chat_id", null)
+          .maybeSingle();
+
+        if (profile) {
           await supabase
             .from("profiles")
             .update({ telegram_chat_id: chatId })
-            .eq("id", matchedProfile.id);
+            .eq("id", profile.id);
           matched = true;
 
-          // Send confirmation to client
-          const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-          await sendTelegramMessage(
-            TELEGRAM_BOT_TOKEN,
-            chatId,
-            `✅ Привет, ${matchedProfile.full_name}! Вы подключены к уведомлениям Limassol Fitness. Теперь вы будете получать напоминания здесь. 💪`
-          );
+          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
+            `✅ Привет, ${profile.full_name}! Вы успешно подключены к уведомлениям Limassol Fitness. 💪`);
 
-          // Notify trainer
           const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
           if (TELEGRAM_CHAT_ID) {
-            await sendTelegramMessage(
-              TELEGRAM_BOT_TOKEN,
-              TELEGRAM_CHAT_ID,
-              `🔗 Клиент <b>${matchedProfile.full_name}</b> подключился к Telegram-уведомлениям!`
-            );
+            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+              `🔗 Клиент <b>${profile.full_name}</b> подключился к Telegram через deep link!`);
+          }
+        }
+      }
+
+      // Priority 2: Name matching fallback
+      if (!matched) {
+        const { data: unlinked } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .is("telegram_chat_id", null);
+
+        if (unlinked && unlinked.length > 0) {
+          const exactMatch = unlinked.find(
+            (p: any) => p.full_name.toLowerCase() === fullName.toLowerCase()
+          );
+          const fuzzyMatch = unlinked.find(
+            (p: any) =>
+              (firstName.length >= 3 && p.full_name.toLowerCase().includes(firstName.toLowerCase())) ||
+              (firstName.length >= 3 && firstName.toLowerCase().includes(p.full_name.split(" ")[0]?.toLowerCase()))
+          );
+
+          const matchedProfile = exactMatch || fuzzyMatch;
+          if (matchedProfile) {
+            await supabase
+              .from("profiles")
+              .update({ telegram_chat_id: chatId })
+              .eq("id", matchedProfile.id);
+            matched = true;
+
+            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
+              `✅ Привет, ${matchedProfile.full_name}! Вы подключены к уведомлениям Limassol Fitness. 💪`);
+
+            const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
+            if (TELEGRAM_CHAT_ID) {
+              await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+                `🔗 Клиент <b>${matchedProfile.full_name}</b> подключился к Telegram (по имени).`);
+            }
           }
         }
       }
 
       if (!matched) {
-        // No match found — save chat_id anyway and notify trainer
-        const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-        await sendTelegramMessage(
-          TELEGRAM_BOT_TOKEN,
-          chatId,
-          `👋 Привет, ${fullName}! Я бот Limassol Fitness. Ваш аккаунт будет привязан вручную тренером.`
-        );
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
+          `👋 Привет, ${fullName}! Я бот Limassol Fitness. Ваш аккаунт будет привязан вручную тренером.`);
 
         const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
         if (TELEGRAM_CHAT_ID) {
-          await sendTelegramMessage(
-            TELEGRAM_BOT_TOKEN,
-            TELEGRAM_CHAT_ID,
-            `⚠️ Новый /start от <b>${fullName}</b> (chat_id: ${chatId}), но автоматически не удалось привязать к профилю. Привяжите вручную.`
-          );
+          await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+            `⚠️ Новый /start от <b>${fullName}</b> (chat_id: ${chatId}), не удалось привязать автоматически.`);
         }
       }
     }
