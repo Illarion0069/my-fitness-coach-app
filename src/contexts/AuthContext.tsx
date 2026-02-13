@@ -51,9 +51,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        console.log('[Auth] onAuthStateChange event:', _event, 'session:', !!session);
+        console.log('[Auth] onAuthStateChange:', _event, 'hasSession:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -66,25 +67,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Handle magic link tokens in URL hash
-    const hashParams = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
+    // Handle PKCE code exchange (magic link redirect with ?code= parameter)
+    const url = new URL(window.location.href);
+    const code = url.searchParams.get('code');
 
-    if (accessToken && refreshToken) {
-      console.log('[Auth] Magic link tokens detected in URL, setting session...');
-      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ data, error }) => {
+    if (code) {
+      console.log('[Auth] PKCE code detected, exchanging for session...');
+      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
         if (error) {
-          console.error('[Auth] Failed to set session from magic link:', error);
+          console.error('[Auth] Code exchange failed:', error);
         } else {
-          console.log('[Auth] Session set from magic link successfully');
+          console.log('[Auth] Code exchange success, user:', data.user?.email);
         }
-        // Clean up URL hash
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-        setLoading(false);
+        // Clean URL
+        url.searchParams.delete('code');
+        window.history.replaceState(null, '', url.pathname + url.search);
       });
     } else {
+      // Normal session recovery
       supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('[Auth] getSession:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
