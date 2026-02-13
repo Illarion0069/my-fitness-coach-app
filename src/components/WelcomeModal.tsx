@@ -8,7 +8,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 
-type Step = 'welcome' | 'register' | 'login' | 'otp' | 'telegram';
+type Step = 'welcome' | 'register' | 'login' | 'check-email' | 'telegram';
 
 interface WelcomeModalProps {
   open: boolean;
