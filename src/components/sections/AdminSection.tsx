@@ -32,7 +32,6 @@ const AdminSection = () => {
   const [packages, setPackages] = useState<Record<string, ClientPackage[]>>({});
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
   const [newPkgName, setNewPkgName] = useState('');
-  const [newPkgTotal, setNewPkgTotal] = useState(8);
   const [loading, setLoading] = useState(true);
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -72,14 +71,20 @@ const AdminSection = () => {
   };
 
   const createPackage = async (userId: string) => {
-    if (!newPkgName.trim()) return;
+    const name = newPkgName.trim();
+    if (!name) return;
+    const parsed = parseInt(name, 10);
+    const total = parsed > 0 ? parsed : 0;
+    if (total <= 0) {
+      toast({ title: lang === 'en' ? 'Enter a number' : 'Введите число', variant: 'destructive' });
+      return;
+    }
     await supabase.from('client_packages').insert({
       user_id: userId,
-      package_name: newPkgName.trim(),
-      total_sessions: newPkgTotal,
+      package_name: `${total} ${lang === 'en' ? 'sessions' : 'занятий'}`,
+      total_sessions: total,
     });
     setNewPkgName('');
-    setNewPkgTotal(8);
     fetchData();
     toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
   };
@@ -290,21 +295,14 @@ const AdminSection = () => {
                         <p className="text-xs font-semibold flex items-center gap-1">
                           <Package className="w-3 h-3" /> {lang === 'en' ? 'New Package' : 'Новый пакет'}
                         </p>
-                        <input
-                          type="text"
-                          placeholder={lang === 'en' ? 'Package name (e.g. 8 sessions)' : 'Название (напр. 8 занятий)'}
-                          value={newPkgName}
-                          onChange={(e) => setNewPkgName(e.target.value)}
-                          className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
-                        />
                         <div className="flex gap-2">
                           <input
                             type="number"
                             min={1}
-                            value={newPkgTotal}
-                            onChange={(e) => setNewPkgTotal(Math.max(1, Number(e.target.value)))}
-                            placeholder={lang === 'en' ? 'Sessions' : 'Занятий'}
-                            className="w-20 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50 text-center"
+                            placeholder={lang === 'en' ? 'Number of sessions' : 'Количество занятий'}
+                            value={newPkgName}
+                            onChange={(e) => setNewPkgName(e.target.value)}
+                            className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
                           />
                           <button
                             onClick={() => createPackage(client.user_id)}
