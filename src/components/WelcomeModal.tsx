@@ -48,6 +48,12 @@ const PasswordInput = ({ value, onChange, placeholder, className }: {
   );
 };
 
+/** Convert phone to a fake email for Supabase auth */
+const phoneToEmail = (countryCode: string, phone: string) => {
+  const digits = `${countryCode}${phone}`.replace(/[^0-9]/g, '');
+  return `${digits}@phone.fitness.local`;
+};
+
 const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { lang } = useLanguage();
   const { refreshProfile } = useAuth();
@@ -55,12 +61,12 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const [step, setStep] = useState<Step>('welcome');
 
   const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [countryCode, setCountryCode] = useState('+357');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [loginEmail, setLoginEmail] = useState('');
+  const [loginCountryCode, setLoginCountryCode] = useState('+357');
+  const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -72,13 +78,11 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   }, [open]);
 
   const t = (en: string, ru: string) => lang === 'en' ? en : ru;
-  const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
 
   const getRegisterErrors = (): string | null => {
     if (!name.trim()) return t('Please enter your name', 'Введите ваше имя');
-    if (!email.trim() || !validateEmail(email)) return t('Please enter a valid email', 'Введите корректный email');
-    if (password.length < 6) return t('Password must be at least 6 characters', 'Пароль минимум 6 символов');
     if (!phoneNumber.trim() || phoneNumber.length < 5) return t('Please enter a valid phone number', 'Введите корректный номер телефона');
+    if (password.length < 6) return t('Password must be at least 6 characters', 'Пароль минимум 6 символов');
     return null;
   };
 
@@ -99,15 +103,21 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     setSubmitting(true);
     try {
       const fullPhone = `${countryCode}${phoneNumber}`;
+      const fakeEmail = phoneToEmail(countryCode, phoneNumber);
       const { error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: fakeEmail,
         password,
         options: {
           data: { full_name: name.trim(), phone: fullPhone },
           emailRedirectTo: window.location.origin,
         },
       });
-      if (error) throw error;
+      if (error) {
+        if (error.message?.includes('already been registered')) {
+          throw new Error(t('This phone number is already registered. Please sign in.', 'Этот номер уже зарегистрирован. Войдите в систему.'));
+        }
+        throw error;
+      }
       await refreshProfile();
       toast({ title: t('Registration successful!', 'Регистрация успешна!') });
 
@@ -115,7 +125,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       supabase.functions.invoke('send-telegram', {
         body: {
           action: 'notifyRegistration',
-          message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${email.trim()}\n📱 ${fullPhone}`,
+          message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📱 ${fullPhone}`,
         },
       }).catch(() => {});
 
@@ -128,8 +138,8 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
 
   const handleLogin = async () => {
     setFormError(null);
-    if (!loginEmail.trim() || !validateEmail(loginEmail)) {
-      setFormError(t('Please enter a valid email', 'Введите корректный email'));
+    if (!loginPhone.trim() || loginPhone.length < 5) {
+      setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
       return;
     }
     if (!loginPassword) {
@@ -138,8 +148,9 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     }
     setSubmitting(true);
     try {
+      const fakeEmail = phoneToEmail(loginCountryCode, loginPhone);
       const { error } = await supabase.auth.signInWithPassword({
-        email: loginEmail.trim(),
+        email: fakeEmail,
         password: loginPassword,
       });
       if (error) throw error;
@@ -148,7 +159,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
       onClose();
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials')) {
-        setFormError(t('Wrong email or password', 'Неверный email или пароль'));
+        setFormError(t('Wrong phone number or password', 'Неверный номер или пароль'));
       } else {
         setFormError(err.message);
       }
@@ -232,7 +243,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm a new client", 'Я новый клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Quick signup with email & password', 'Быстрая регистрация по email и паролю')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Quick signup with phone & password', 'Быстрая регистрация по телефону')}</p>
                     </div>
                   </button>
                   <button onClick={() => { setStep('login'); setFormError(null); }} className="w-full bg-secondary/50 border border-border/50 rounded-2xl p-4 flex items-center gap-3 hover:bg-secondary transition-all text-left">
@@ -241,7 +252,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm already a client", 'Я уже клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Sign in with email & password', 'Войти по email и паролю')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Sign in with phone & password', 'Войти по телефону и паролю')}</p>
                     </div>
                   </button>
                 </motion.div>
@@ -251,8 +262,6 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {step === 'register' && (
                 <motion.div key="register" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
                   <input type="text" placeholder={t('Full name', 'Полное имя')} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} maxLength={100} />
-                  <input type="email" placeholder="Email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputClass} maxLength={255} />
-                  <PasswordInput value={password} onChange={setPassword} placeholder={t('Password (min 6 chars)', 'Пароль (мин 6 символов)')} className={inputClass} />
                   <CountryCodeSelect
                     value={countryCode}
                     onChange={setCountryCode}
@@ -260,6 +269,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     onPhoneChange={setPhoneNumber}
                     placeholder={t('Phone number', 'Номер телефона')}
                   />
+                  <PasswordInput value={password} onChange={setPassword} placeholder={t('Password (min 6 chars)', 'Пароль (мин 6 символов)')} className={inputClass} />
 
                   <InlineMessage message={formError} variant="error" />
 
@@ -288,7 +298,13 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {/* Step: Login */}
               {step === 'login' && (
                 <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-                  <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputClass} maxLength={255} />
+                  <CountryCodeSelect
+                    value={loginCountryCode}
+                    onChange={setLoginCountryCode}
+                    phoneNumber={loginPhone}
+                    onPhoneChange={setLoginPhone}
+                    placeholder={t('Phone number', 'Номер телефона')}
+                  />
                   <PasswordInput value={loginPassword} onChange={setLoginPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
 
                   <InlineMessage message={formError} variant="error" />
