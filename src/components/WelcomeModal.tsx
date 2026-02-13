@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { UserPlus, LogIn, X, Loader2, Bot, Mail } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -36,30 +36,34 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const [email, setEmail] = useState('');
   const [countryCode, setCountryCode] = useState('+357');
   const [phoneNumber, setPhoneNumber] = useState('');
-  const [otpCode, setOtpCode] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [loginEmail, setLoginEmail] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
-  const [formSuccess, setFormSuccess] = useState<string | null>(null);
-  // Track which flow triggered OTP
-  const [otpFlow, setOtpFlow] = useState<'register' | 'login'>('register');
-  const otpInputRef = useRef<HTMLInputElement>(null);
+  const [emailFlow, setEmailFlow] = useState<'register' | 'login'>('register');
 
   useEffect(() => {
     if (open) {
       setStep('welcome');
       setFormError(null);
-      setFormSuccess(null);
-      setOtpCode('');
     }
   }, [open]);
 
-  // Auto-focus OTP input
+  // Listen for auth state change (magic link click) to auto-close modal
   useEffect(() => {
-    if (step === 'otp') {
-      setTimeout(() => otpInputRef.current?.focus(), 100);
-    }
-  }, [step]);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
+      if (event === 'SIGNED_IN' && open) {
+        await refreshProfile();
+        if (emailFlow === 'register') {
+          toast({ title: t('Registration successful!', 'Регистрация успешна!') });
+          setStep('telegram');
+        } else {
+          toast({ title: t('Welcome back!', 'С возвращением!') });
+          onClose();
+        }
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [open, emailFlow]);
 
   const t = (en: string, ru: string) => lang === 'en' ? en : ru;
   const validateEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
@@ -81,8 +85,8 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     setSubmitting(false);
   };
 
-  // Send OTP for registration
-  const handleRegisterSendOtp = async () => {
+  // Send magic link for registration
+  const handleRegisterSendLink = async () => {
     setFormError(null);
     const validationError = getRegisterErrors();
     if (validationError) {
@@ -100,17 +104,24 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
         },
       });
       if (error) throw error;
-      setOtpFlow('register');
-      setOtpCode('');
-      setStep('otp');
+      setEmailFlow('register');
+      setStep('check-email');
+
+      // Non-blocking trainer notification
+      supabase.functions.invoke('send-telegram', {
+        body: {
+          action: 'notifyRegistration',
+          message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${email.trim()}\n📱 ${fullPhone}`,
+        },
+      }).catch(() => {});
     } catch (err: any) {
       setFormError(err.message);
     }
     setSubmitting(false);
   };
 
-  // Send OTP for login
-  const handleLoginSendOtp = async () => {
+  // Send magic link for login
+  const handleLoginSendLink = async () => {
     setFormError(null);
     if (!loginEmail.trim() || !validateEmail(loginEmail)) {
       setFormError(t('Please enter a valid email', 'Введите корректный email'));
@@ -123,86 +134,26 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
         options: { emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
-      setOtpFlow('login');
-      setOtpCode('');
-      setStep('otp');
+      setEmailFlow('login');
+      setStep('check-email');
     } catch (err: any) {
       setFormError(err.message);
     }
     setSubmitting(false);
   };
 
-  // Verify OTP code
-  const handleVerifyOtp = async () => {
+  // Resend magic link
+  const handleResendLink = async () => {
     setFormError(null);
-    if (otpCode.length !== 6) {
-      setFormError(t('Please enter the 6-digit code', 'Введите 6-значный код'));
-      return;
-    }
     setSubmitting(true);
-    const otpEmail = otpFlow === 'register' ? email.trim() : loginEmail.trim();
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: otpEmail,
-        token: otpCode,
-        type: 'email',
-      });
-      if (error) throw error;
-
-      if (data.user && otpFlow === 'register') {
-        // Update profile with phone if needed (trigger already creates profile)
-        const fullPhone = `${countryCode}${phoneNumber}`;
-        await supabase.from('profiles').update({
-          full_name: name.trim(),
-          phone: fullPhone,
-        }).eq('user_id', data.user.id);
-
-        // Notify trainer
-        supabase.functions.invoke('send-telegram', {
-          body: {
-            action: 'notifyRegistration',
-            message: `🆕 <b>New Client Registered!</b>\n\n👤 ${name.trim()}\n📧 ${otpEmail}\n📱 ${fullPhone}`,
-          },
-        }).catch(() => {});
-      }
-
-      await refreshProfile();
-
-      if (otpFlow === 'register') {
-        toast({
-          title: t('Registration successful!', 'Регистрация успешна!'),
-          description: t('Welcome aboard!', 'Добро пожаловать!'),
-        });
-        setStep('telegram');
-      } else {
-        toast({
-          title: t('Welcome back!', 'С возвращением!'),
-        });
-        onClose();
-      }
-    } catch (err: any) {
-      if (err.message?.includes('expired') || err.message?.includes('invalid')) {
-        setFormError(t('Invalid or expired code. Please try again.', 'Неверный или истёкший код. Попробуйте снова.'));
-      } else {
-        setFormError(err.message);
-      }
-    }
-    setSubmitting(false);
-  };
-
-  // Resend OTP
-  const handleResendOtp = async () => {
-    setFormError(null);
-    setFormSuccess(null);
-    setSubmitting(true);
-    const otpEmail = otpFlow === 'register' ? email.trim() : loginEmail.trim();
+    const targetEmail = emailFlow === 'register' ? email.trim() : loginEmail.trim();
     try {
       const { error } = await supabase.auth.signInWithOtp({
-        email: otpEmail,
+        email: targetEmail,
         options: { emailRedirectTo: window.location.origin },
       });
       if (error) throw error;
-      setFormSuccess(t('Code resent! Check your email.', 'Код отправлен повторно! Проверьте почту.'));
+      toast({ title: t('Link resent!', 'Ссылка отправлена повторно!'), description: t('Check your email.', 'Проверьте почту.') });
     } catch (err: any) {
       setFormError(err.message);
     }
@@ -212,7 +163,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   if (!open) return null;
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
-  const otpInputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-4 text-center text-2xl font-mono tracking-[0.5em] placeholder:text-muted-foreground placeholder:tracking-normal placeholder:text-sm focus:outline-none focus:border-primary/50";
+  const sentEmail = emailFlow === 'register' ? email.trim() : loginEmail.trim();
 
   const googleButton = (
     <button
@@ -265,7 +216,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
             <h3 className="text-lg font-extrabold font-heading uppercase tracking-tight">
               {step === 'welcome' ? t('Welcome!', 'Добро пожаловать!')
                 : step === 'register' ? t('New Client', 'Новый клиент')
-                : step === 'otp' ? t('Enter Code', 'Введите код')
+                : step === 'check-email' ? t('Check Your Email', 'Проверьте почту')
                 : step === 'telegram' ? t('Stay Connected', 'Будьте на связи')
                 : t('Welcome Back', 'С возвращением')}
             </h3>
@@ -296,7 +247,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     </div>
                     <div>
                       <p className="text-sm font-bold">{t("I'm already a client", 'Я уже клиент')}</p>
-                      <p className="text-[11px] text-muted-foreground">{t('Sign in with email code', 'Войти по коду из email')}</p>
+                      <p className="text-[11px] text-muted-foreground">{t('Sign in with email link', 'Войти по ссылке из email')}</p>
                     </div>
                   </button>
                 </motion.div>
@@ -318,14 +269,14 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                   <InlineMessage message={formError} variant="error" />
 
                   <button
-                    onClick={handleRegisterSendOtp}
+                    onClick={handleRegisterSendLink}
                     disabled={submitting}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <>
                         <Mail className="w-4 h-4" />
-                        {t('Send Code', 'Отправить код')}
+                        {t('Send Login Link', 'Отправить ссылку')}
                       </>
                     )}
                   </button>
@@ -343,21 +294,21 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {step === 'login' && (
                 <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
                   <p className="text-xs text-muted-foreground text-center">
-                    {t('Enter your email and we\'ll send you a login code', 'Введите email — мы отправим код для входа')}
+                    {t('Enter your email and we\'ll send you a login link', 'Введите email — мы отправим ссылку для входа')}
                   </p>
                   <input type="email" placeholder="Email" value={loginEmail} onChange={(e) => setLoginEmail(e.target.value)} className={inputClass} maxLength={255} />
 
                   <InlineMessage message={formError} variant="error" />
 
                   <button
-                    onClick={handleLoginSendOtp}
+                    onClick={handleLoginSendLink}
                     disabled={submitting}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
                   >
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <>
                         <Mail className="w-4 h-4" />
-                        {t('Send Code', 'Отправить код')}
+                        {t('Send Login Link', 'Отправить ссылку')}
                       </>
                     )}
                   </button>
@@ -371,51 +322,37 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                 </motion.div>
               )}
 
-              {/* Step: OTP Verification */}
-              {step === 'otp' && (
-                <motion.div key="otp" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4">
-                  <div className="w-14 h-14 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
-                    <Mail className="w-7 h-7 text-primary" />
+              {/* Step: Check Email */}
+              {step === 'check-email' && (
+                <motion.div key="check-email" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-primary/15 flex items-center justify-center mx-auto">
+                    <Mail className="w-8 h-8 text-primary" />
                   </div>
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t(
-                      `We sent a 6-digit code to ${otpFlow === 'register' ? email.trim() : loginEmail.trim()}`,
-                      `Мы отправили 6-значный код на ${otpFlow === 'register' ? email.trim() : loginEmail.trim()}`
-                    )}
-                  </p>
-
-                  <input
-                    ref={otpInputRef}
-                    type="text"
-                    inputMode="numeric"
-                    maxLength={6}
-                    placeholder="000000"
-                    value={otpCode}
-                    onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className={otpInputClass}
-                  />
+                  <div className="space-y-2">
+                    <p className="text-sm text-foreground">
+                      {t('We sent a login link to:', 'Мы отправили ссылку для входа на:')}
+                    </p>
+                    <p className="text-sm font-bold text-primary">{sentEmail}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(
+                        'Open your email and click "Log In" to continue. Check spam if you don\'t see it.',
+                        'Откройте почту и нажмите "Log In" для входа. Проверьте спам, если не видите письмо.'
+                      )}
+                    </p>
+                  </div>
 
                   <InlineMessage message={formError} variant="error" />
-                  <InlineMessage message={formSuccess} variant="success" />
 
                   <button
-                    onClick={handleVerifyOtp}
-                    disabled={submitting || otpCode.length !== 6}
-                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
-                  >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Verify', 'Подтвердить')}
-                  </button>
-
-                  <button
-                    onClick={handleResendOtp}
+                    onClick={handleResendLink}
                     disabled={submitting}
-                    className="w-full text-xs text-primary hover:text-primary/80 py-1 transition-colors"
+                    className="w-full bg-secondary/50 border border-border/50 text-foreground font-semibold py-3 rounded-xl disabled:opacity-50 transition-all hover:bg-secondary flex items-center justify-center gap-2"
                   >
-                    {t('Resend code', 'Отправить код повторно')}
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : t('Resend Link', 'Отправить повторно')}
                   </button>
 
-                  <button onClick={() => { setStep(otpFlow === 'register' ? 'register' : 'login'); setFormError(null); setFormSuccess(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
-                    ← {t('Back', 'Назад')}
+                  <button onClick={() => { setStep(emailFlow === 'register' ? 'register' : 'login'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
+                    ← {t('Change email', 'Изменить email')}
                   </button>
                 </motion.div>
               )}
