@@ -80,15 +80,20 @@ const AdminSection = () => {
     const activePkg = clientPkgs.find((p) => p.is_active);
     const remaining = activePkg ? activePkg.total_sessions - activePkg.used_sessions : 0;
 
-    await supabase.functions.invoke('send-telegram', {
+    const { data } = await supabase.functions.invoke('send-telegram', {
       body: {
+        action: 'sendReminder',
+        client_user_id: client.user_id,
         message: `📢 <b>Limassol Fitness</b>\n\n${client.full_name}, у вас осталось <b>${remaining}</b> занятий.\nПора продлить абонемент! 💪`,
       },
     });
 
+    const sentToClient = data?.sent_to === 'client';
     toast({
       title: lang === 'en' ? 'Reminder sent' : 'Напоминание отправлено',
-      description: client.full_name,
+      description: sentToClient
+        ? (lang === 'en' ? `Sent directly to ${client.full_name} via Telegram` : `Отправлено ${client.full_name} в Telegram`)
+        : (lang === 'en' ? `${client.full_name} has no Telegram linked — sent to you` : `У ${client.full_name} не привязан Telegram — отправлено вам`),
     });
   };
 
