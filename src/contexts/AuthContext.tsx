@@ -67,19 +67,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // Handle PKCE code exchange (magic link redirect with ?code= parameter)
+    // Check for magic link tokens in URL
     const url = new URL(window.location.href);
     const code = url.searchParams.get('code');
+    const hashParams = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = hashParams.get('access_token');
+    const refreshToken = hashParams.get('refresh_token');
 
-    if (code) {
-      console.log('[Auth] PKCE code detected, exchanging for session...');
-      supabase.auth.exchangeCodeForSession(code).then(({ data, error }) => {
-        if (error) {
-          console.error('[Auth] Code exchange failed:', error);
-        } else {
-          console.log('[Auth] Code exchange success, user:', data.user?.email);
-        }
-        // Clean URL
+    if (accessToken && refreshToken) {
+      // Implicit flow: tokens in hash fragment
+      console.log('[Auth] Implicit flow tokens detected in URL hash');
+      supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
+        if (error) console.error('[Auth] setSession failed:', error);
+        else console.log('[Auth] Session set from hash tokens');
+        window.history.replaceState(null, '', window.location.pathname);
+      });
+    } else if (code) {
+      // PKCE flow: code in query params
+      console.log('[Auth] PKCE code detected in URL');
+      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
+        if (error) console.error('[Auth] Code exchange failed:', error);
+        else console.log('[Auth] Code exchange success');
         url.searchParams.delete('code');
         window.history.replaceState(null, '', url.pathname + url.search);
       });
