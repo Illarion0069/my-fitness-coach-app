@@ -296,6 +296,16 @@ const AdminSection = () => {
                       animate={{ height: 'auto', opacity: 1 }}
                       className="px-4 pb-4 space-y-3 border-t border-border/30"
                     >
+                      {/* Client contact info */}
+                      <div className="bg-secondary/30 rounded-xl p-3 mt-3 space-y-1.5">
+                        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">
+                          {lang === 'en' ? 'Contact Info' : 'Контакты'}
+                        </p>
+                        <p className="text-xs text-foreground">{client.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{client.email}</p>
+                        <p className="text-xs text-muted-foreground">{client.phone || (lang === 'en' ? 'No phone' : 'Нет телефона')}</p>
+                      </div>
+
                       {/* Active packages */}
                       {clientPkgs.filter((p) => p.is_active).map((pkg) => (
                         <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3 mt-3">
