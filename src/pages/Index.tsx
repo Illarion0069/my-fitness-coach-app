@@ -7,7 +7,6 @@ import TestSection from '@/components/sections/TestSection';
 import PricingSection from '@/components/sections/PricingSection';
 import AboutSection from '@/components/sections/AboutSection';
 import ContactSection from '@/components/sections/ContactSection';
-import GroupTrainingSection from '@/components/sections/GroupTrainingSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import SessionWidget from '@/components/SessionWidget';
@@ -50,11 +49,11 @@ const AppContent = () => {
         {activeSection === 'test' && <TestSection />}
         {activeSection === 'pricing' && <PricingSection />}
         {activeSection === 'about' && <AboutSection />}
-        {/* group section hidden for now */}
+        
         {activeSection === 'admin' && isTrainer && <AdminSection />}
         {activeSection === 'contact' && <ContactSection />}
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showGroup={isAuthenticated} showAdmin={isTrainer} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={isTrainer} />
       
       <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
     </div>
