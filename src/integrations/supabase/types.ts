@@ -14,6 +14,48 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_packages: {
+        Row: {
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          notes: string | null
+          package_name: string
+          purchased_at: string
+          total_sessions: number
+          updated_at: string
+          used_sessions: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          package_name: string
+          purchased_at?: string
+          total_sessions: number
+          updated_at?: string
+          used_sessions?: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          notes?: string | null
+          package_name?: string
+          purchased_at?: string
+          total_sessions?: number
+          updated_at?: string
+          used_sessions?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       group_bookings: {
         Row: {
           created_at: string
@@ -103,6 +145,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_trainer: boolean
           phone: string
           updated_at: string
           user_id: string
@@ -112,6 +155,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          is_trainer?: boolean
           phone: string
           updated_at?: string
           user_id: string
@@ -121,6 +165,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_trainer?: boolean
           phone?: string
           updated_at?: string
           user_id?: string
