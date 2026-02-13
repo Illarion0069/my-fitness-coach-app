@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight } from 'lucide-react';
+import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import type { Language } from '@/i18n/translations';
@@ -55,6 +55,24 @@ const ContactSection = () => {
           <div className="flex-1">
             <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{lang === 'en' ? 'Location' : 'Адрес'}</p>
             <p className="text-sm font-bold text-foreground">{t(contact.address)}</p>
+          </div>
+          <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+        </a>
+
+        <a
+          href="https://t.me/LimassolFitness_bot"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
+        >
+          <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+            <Bot className="w-5 h-5 text-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Telegram Bot</p>
+            <p className="text-sm font-bold text-foreground">
+              {lang === 'en' ? 'Get notifications' : 'Получать уведомления'}
+            </p>
           </div>
           <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
         </a>
