@@ -40,13 +40,16 @@ const SwipeableClientCard = ({ children, onDelete, clientName, lang, disabled = 
           onClick={onDelete}
           className="bg-destructive text-destructive-foreground text-xs font-bold px-4 py-2 rounded-xl"
         >
-          {lang === 'en' ? 'Delete' : 'Удалить'}
+          {lang === 'en' ? 'Yes' : 'Да'}
         </button>
         <button
-          onClick={() => setConfirming(false)}
+          onClick={() => {
+            setConfirming(false);
+            x.set(0);
+          }}
           className="bg-secondary text-foreground text-xs font-bold px-4 py-2 rounded-xl"
         >
-          {lang === 'en' ? 'Cancel' : 'Отмена'}
+          {lang === 'en' ? 'No' : 'Нет'}
         </button>
       </motion.div>
     );
