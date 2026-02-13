@@ -8,6 +8,8 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string;
+  telegram_link_code: string | null;
+  telegram_chat_id: string | null;
 }
 
 interface AuthContextType {
@@ -35,7 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select('*')
       .eq('user_id', userId)
       .maybeSingle();
-    setProfile(data ? { id: data.id, user_id: data.user_id, full_name: data.full_name, email: data.email, phone: data.phone } : null);
+    setProfile(data ? { id: data.id, user_id: data.user_id, full_name: data.full_name, email: data.email, phone: data.phone, telegram_link_code: data.telegram_link_code, telegram_chat_id: data.telegram_chat_id } : null);
 
     const { data: roles } = await supabase
       .from('user_roles')

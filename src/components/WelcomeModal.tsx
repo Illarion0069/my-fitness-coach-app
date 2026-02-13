@@ -16,7 +16,7 @@ interface WelcomeModalProps {
 
 const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { lang } = useLanguage();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, profile } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('welcome');
 
@@ -368,17 +368,17 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                   </div>
                   <p className="text-sm text-muted-foreground">
                     {lang === 'en'
-                      ? 'Join our Telegram bot to receive training reminders and session updates!'
-                      : 'Подключите Telegram-бот, чтобы получать напоминания о тренировках и обновления!'}
+                      ? 'Tap the button below to connect Telegram — you\'ll receive training reminders automatically!'
+                      : 'Нажмите кнопку ниже, чтобы подключить Telegram — вы будете получать напоминания автоматически!'}
                   </p>
                   <a
-                    href="https://t.me/LimassolFitness_bot"
+                    href={`https://t.me/LimassolFitness_bot?start=${profile?.telegram_link_code || ''}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
                   >
                     <Bot className="w-4 h-4" />
-                    {lang === 'en' ? 'Open Telegram Bot' : 'Открыть Telegram-бот'}
+                    {lang === 'en' ? 'Connect Telegram' : 'Подключить Telegram'}
                   </a>
                   <button
                     onClick={onClose}
