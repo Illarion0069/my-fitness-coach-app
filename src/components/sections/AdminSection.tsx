@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus } from 'lucide-react';
+import { Users, Plus, Minus, Send, Package, UserPlus, LogOut } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SwipeableClientCard from '@/components/SwipeableClientCard';
 
@@ -25,6 +26,7 @@ interface ClientPackage {
 
 const AdminSection = () => {
   const { lang } = useLanguage();
+  const { signOut } = useAuth();
   const { toast } = useToast();
   const [clients, setClients] = useState<Profile[]>([]);
   const [packages, setPackages] = useState<Record<string, ClientPackage[]>>({});
@@ -149,6 +151,15 @@ const AdminSection = () => {
             className="ml-auto w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
           >
             <UserPlus className="w-4 h-4" />
+          </button>
+          <button
+            onClick={async () => {
+              await signOut();
+              toast({ title: lang === 'en' ? 'Signed out' : 'Вы вышли', duration: 2000 });
+            }}
+            className="w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
 
