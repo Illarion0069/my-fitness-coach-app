@@ -13,9 +13,10 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
+    const body = await req.json().catch(() => ({}));
     
     // Setup: register webhook with Telegram
-    if (url.searchParams.get("setup") === "true") {
+    if (url.searchParams.get("setup") === "true" || (body as any).setup === true) {
       const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
       const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-webhook`;
       const res = await fetch(
@@ -33,10 +34,9 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
     console.log("Telegram webhook received:", JSON.stringify(body));
 
-    const message = body.message;
+    const message = (body as any).message;
     if (!message) {
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
