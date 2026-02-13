@@ -35,8 +35,49 @@ serve(async (req) => {
       });
     }
 
+    // Check caller has trainer role
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const roleClient = createClient(supabaseUrl, supabaseServiceKey);
+    const { data: roleData } = await roleClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "trainer")
+      .maybeSingle();
+
+    if (!roleData) {
+      return new Response(JSON.stringify({ error: "Forbidden: trainer role required" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const body = await req.json();
     const { message, action, telegram_username, booking_id, session_id, client_user_id } = body;
+
+    // Input validation
+    if (message && (typeof message !== "string" || message.length > 4096)) {
+      return new Response(JSON.stringify({ error: "Invalid message (max 4096 chars)" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (session_id && !uuidRegex.test(session_id)) {
+      return new Response(JSON.stringify({ error: "Invalid session_id" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (booking_id && !uuidRegex.test(booking_id)) {
+      return new Response(JSON.stringify({ error: "Invalid booking_id" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    if (client_user_id && !uuidRegex.test(client_user_id)) {
+      return new Response(JSON.stringify({ error: "Invalid client_user_id" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     if (!TELEGRAM_BOT_TOKEN) throw new Error("TELEGRAM_BOT_TOKEN not configured");
