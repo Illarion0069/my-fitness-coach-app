@@ -55,22 +55,35 @@ serve(async (req) => {
       const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
       const supabase = createClient(supabaseUrl, supabaseKey);
 
-      // Try to find profile by full_name match (best effort)
+      // Try to find profile by full_name match or existing chat_id
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, full_name, telegram_chat_id")
-        .is("telegram_chat_id", null);
+        .select("id, full_name, telegram_chat_id");
+
+      // First check if this chat_id is already linked to someone
+      const alreadyLinked = profiles?.find((p: any) => p.telegram_chat_id === chatId);
+      if (alreadyLinked) {
+        const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
+          `✅ ${alreadyLinked.full_name}, вы уже подключены к уведомлениям Limassol Fitness! 💪`);
+        return new Response(JSON.stringify({ ok: true }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Try name matching among unlinked profiles
 
       let matched = false;
-      if (profiles && profiles.length > 0) {
+      const unlinkedProfiles = profiles?.filter((p: any) => !p.telegram_chat_id) || [];
+      if (unlinkedProfiles.length > 0) {
         // Try exact match first, then fuzzy
-        const exactMatch = profiles.find(
+        const exactMatch = unlinkedProfiles.find(
           (p: any) => p.full_name.toLowerCase() === fullName.toLowerCase()
         );
-        const fuzzyMatch = profiles.find(
+        const fuzzyMatch = unlinkedProfiles.find(
           (p: any) =>
-            p.full_name.toLowerCase().includes(firstName.toLowerCase()) ||
-            firstName.toLowerCase().includes(p.full_name.split(" ")[0]?.toLowerCase())
+            (firstName.length >= 3 && p.full_name.toLowerCase().includes(firstName.toLowerCase())) ||
+            (firstName.length >= 3 && firstName.toLowerCase().includes(p.full_name.split(" ")[0]?.toLowerCase()))
         );
 
         const matchedProfile = exactMatch || fuzzyMatch;
