@@ -10,7 +10,6 @@ import ContactSection from '@/components/sections/ContactSection';
 import GroupTrainingSection from '@/components/sections/GroupTrainingSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
-import RegistrationBanner from '@/components/RegistrationBanner';
 import SessionWidget from '@/components/SessionWidget';
 
 const AppContent = () => {
@@ -31,7 +30,7 @@ const AppContent = () => {
       <div ref={containerRef} className="h-screen overflow-y-auto scroll-smooth">
         {activeSection === 'home' && (
           <>
-            <HeroSection onNavigate={handleNavigate} />
+            <HeroSection onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} />
             {isAuthenticated && (
               <div className="px-5 -mt-24 relative z-10 max-w-lg mx-auto">
                 <SessionWidget />
@@ -47,11 +46,6 @@ const AppContent = () => {
         {activeSection === 'contact' && <ContactSection />}
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showGroup={isAuthenticated} showAdmin={isTrainer} />
-      
-      {/* Non-intrusive banner for non-authenticated users */}
-      {!loading && !isAuthenticated && (
-        <RegistrationBanner onRegister={() => setShowWelcome(true)} />
-      )}
       
       <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
     </div>
