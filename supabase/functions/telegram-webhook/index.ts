@@ -104,42 +104,7 @@ serve(async (req) => {
         }
       }
 
-      // Priority 2: Name matching fallback
-      if (!matched) {
-        const { data: unlinked } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .is("telegram_chat_id", null);
-
-        if (unlinked && unlinked.length > 0) {
-          const exactMatch = unlinked.find(
-            (p: any) => p.full_name.toLowerCase() === fullName.toLowerCase()
-          );
-          const fuzzyMatch = unlinked.find(
-            (p: any) =>
-              (firstName.length >= 3 && p.full_name.toLowerCase().includes(firstName.toLowerCase())) ||
-              (firstName.length >= 3 && firstName.toLowerCase().includes(p.full_name.split(" ")[0]?.toLowerCase()))
-          );
-
-          const matchedProfile = exactMatch || fuzzyMatch;
-          if (matchedProfile) {
-            await supabase
-              .from("profiles")
-              .update({ telegram_chat_id: chatId })
-              .eq("id", matchedProfile.id);
-            matched = true;
-
-            await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
-              `✅ Привет, ${matchedProfile.full_name}! Вы подключены к уведомлениям Limassol Fitness. 💪`);
-
-            const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
-            if (TELEGRAM_CHAT_ID) {
-              await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-                `🔗 Клиент <b>${matchedProfile.full_name}</b> подключился к Telegram (по имени).`);
-            }
-          }
-        }
-      }
+      // Name matching fallback removed for security — only deep link codes are used
 
       if (!matched) {
         await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
