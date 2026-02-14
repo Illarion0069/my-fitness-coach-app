@@ -144,7 +144,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
             className="fixed top-0 left-0 bottom-0 z-[100] w-[85%] max-w-[320px] bg-card border-r border-border/50 shadow-2xl flex flex-col"
           >
             {/* Header */}
-            <div className="p-5 pb-3 flex items-center justify-between">
+            <div className="p-5 pb-3 flex items-center justify-between" style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
                   <span className="text-primary-foreground font-extrabold text-xs">
