@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useToast } from '@/hooks/use-toast';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 
 const WhoopCallback = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { lang } = useLanguage();
+  const { toast } = useToast();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
   const [errorMsg, setErrorMsg] = useState('');
 
@@ -42,6 +44,10 @@ const WhoopCallback = () => {
       }
 
       setStatus('success');
+      toast({
+        title: lang === 'en' ? '✅ Whoop connected!' : '✅ Whoop подключён!',
+        description: lang === 'en' ? 'Your fitness data will sync automatically.' : 'Ваши фитнес-данные будут синхронизироваться автоматически.',
+      });
       setTimeout(() => navigate('/'), 2000);
     };
 
