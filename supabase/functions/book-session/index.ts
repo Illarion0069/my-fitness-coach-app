@@ -1,0 +1,324 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    // Authenticate the caller
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+
+    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await authClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const supabase = createClient(supabaseUrl, serviceKey);
+    const body = await req.json();
+    const { action } = body;
+
+    // === GET AVAILABLE SLOTS ===
+    if (action === 'getSlots') {
+      const { date } = body;
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return new Response(JSON.stringify({ error: 'Invalid date' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+
+      // Get all sessions for this date (one-off) and recurring for this day
+      const { data: oneOff } = await supabase
+        .from('scheduled_sessions')
+        .select('session_time')
+        .eq('session_date', date)
+        .eq('is_recurring', false);
+
+      const { data: recurring } = await supabase
+        .from('scheduled_sessions')
+        .select('recurrence_time')
+        .eq('is_recurring', true)
+        .eq('recurrence_day', dayOfWeek);
+
+      const bookedTimes = new Set<string>();
+      (oneOff || []).forEach(s => { if (s.session_time) bookedTimes.add(s.session_time.slice(0, 5)); });
+      (recurring || []).forEach(s => { if (s.recurrence_time) bookedTimes.add(s.recurrence_time.slice(0, 5)); });
+
+      // Generate hourly slots from 08:00 to 20:00
+      const slots: { time: string; available: boolean }[] = [];
+      for (let h = 8; h <= 20; h++) {
+        const timeStr = `${String(h).padStart(2, '0')}:00`;
+        slots.push({ time: timeStr, available: !bookedTimes.has(timeStr) });
+      }
+
+      return new Response(JSON.stringify({ slots }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === BOOK A SESSION ===
+    if (action === 'book') {
+      const { date, time } = body;
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return new Response(JSON.stringify({ error: 'Invalid date' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (!time || !/^\d{2}:\d{2}$/.test(time)) {
+        return new Response(JSON.stringify({ error: 'Invalid time' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Check the date is not in the past
+      const bookingDate = new Date(date + 'T' + time + ':00');
+      if (bookingDate < new Date()) {
+        return new Response(JSON.stringify({ error: 'Cannot book in the past' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Check slot not already taken
+      const { data: existing } = await supabase
+        .from('scheduled_sessions')
+        .select('id')
+        .eq('session_date', date)
+        .eq('session_time', time)
+        .eq('is_recurring', false)
+        .limit(1);
+
+      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+      const { data: recurringExisting } = await supabase
+        .from('scheduled_sessions')
+        .select('id')
+        .eq('is_recurring', true)
+        .eq('recurrence_day', dayOfWeek)
+        .eq('recurrence_time', time)
+        .limit(1);
+
+      if ((existing && existing.length > 0) || (recurringExisting && recurringExisting.length > 0)) {
+        return new Response(JSON.stringify({ error: 'Slot already booked' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Find trainer user id (first trainer)
+      const { data: trainers } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'trainer')
+        .limit(1);
+      const trainerId = trainers?.[0]?.user_id;
+      if (!trainerId) {
+        return new Response(JSON.stringify({ error: 'No trainer found' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Create session
+      const { data: session, error: insertError } = await supabase
+        .from('scheduled_sessions')
+        .insert({
+          user_id: user.id,
+          trainer_user_id: trainerId,
+          session_date: date,
+          session_time: time,
+          is_recurring: false,
+        })
+        .select()
+        .single();
+
+      if (insertError) throw insertError;
+
+      // Deduct from active package
+      const { data: pkgs } = await supabase
+        .from('client_packages')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1);
+
+      const pkg = pkgs?.[0];
+      if (pkg && pkg.used_sessions < pkg.total_sessions) {
+        await supabase
+          .from('client_packages')
+          .update({ used_sessions: pkg.used_sessions + 1 })
+          .eq('id', pkg.id);
+      }
+
+      // Get client profile for notifications
+      const { data: clientProfile } = await supabase
+        .from('profiles')
+        .select('full_name, telegram_chat_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const dateObj = new Date(date + 'T00:00:00');
+      const dateStr = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+      const remaining = pkg ? pkg.total_sessions - pkg.used_sessions - 1 : '?';
+
+      // Send Telegram to trainer
+      const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
+      const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        const trainerMsg = `📅 <b>Новая запись!</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} в ${time}\n📦 Осталось: ${remaining} занятий`;
+        await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
+
+        // Send to client if they have telegram
+        if (clientProfile?.telegram_chat_id) {
+          const clientMsg = `✅ <b>Запись подтверждена!</b>\n\n📆 ${dateStr} в ${time}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`;
+          await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true, session_id: session.id }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === CANCEL A SESSION ===
+    if (action === 'cancel') {
+      const { session_id } = body;
+      if (!session_id) {
+        return new Response(JSON.stringify({ error: 'session_id required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Get the session
+      const { data: session } = await supabase
+        .from('scheduled_sessions')
+        .select('*')
+        .eq('id', session_id)
+        .eq('user_id', user.id)
+        .single();
+
+      if (!session) {
+        return new Response(JSON.stringify({ error: 'Session not found' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Check 24h rule
+      const sessionDateTime = new Date(session.session_date + 'T' + (session.session_time || '00:00') + ':00');
+      const hoursUntil = (sessionDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+      if (hoursUntil < 24) {
+        return new Response(JSON.stringify({ error: 'Cannot cancel less than 24 hours before session' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Delete session
+      await supabase.from('scheduled_sessions').delete().eq('id', session_id);
+
+      // Restore package balance
+      if (!session.is_recurring) {
+        const { data: pkgs } = await supabase
+          .from('client_packages')
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: true })
+          .limit(1);
+        const pkg = pkgs?.[0];
+        if (pkg && pkg.used_sessions > 0) {
+          await supabase
+            .from('client_packages')
+            .update({ used_sessions: pkg.used_sessions - 1 })
+            .eq('id', pkg.id);
+        }
+      }
+
+      // Get client profile
+      const { data: clientProfile } = await supabase
+        .from('profiles')
+        .select('full_name, telegram_chat_id')
+        .eq('user_id', user.id)
+        .single();
+
+      const dateObj = new Date(session.session_date + 'T00:00:00');
+      const dateStr = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+      const timeStr = session.session_time?.slice(0, 5) || '';
+
+      // Notify trainer
+      const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
+      const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
+          `❌ <b>Отмена записи</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} ${timeStr ? 'в ' + timeStr : ''}`
+        );
+
+        if (clientProfile?.telegram_chat_id) {
+          await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id,
+            `❌ <b>Запись отменена</b>\n\n📆 ${dateStr} ${timeStr ? 'в ' + timeStr : ''}\n\nЗанятие возвращено на баланс.`
+          );
+        }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // === GET MY SESSIONS ===
+    if (action === 'mySessions') {
+      const { data: mySessions } = await supabase
+        .from('scheduled_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_recurring', false)
+        .gte('session_date', new Date().toISOString().split('T')[0])
+        .order('session_date', { ascending: true });
+
+      return new Response(JSON.stringify({ sessions: mySessions || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    return new Response(JSON.stringify({ error: 'Unknown action' }), {
+      status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+
+  } catch (error) {
+    console.error('Error in book-session:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
+
+async function sendTelegram(token: string, chatId: string, text: string) {
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    console.error('Telegram error:', data);
+  }
+}
