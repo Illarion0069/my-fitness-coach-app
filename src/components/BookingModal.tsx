@@ -293,18 +293,20 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                     const past = isBefore(day, startOfDay(new Date()));
                     const today = isToday(day);
                     const selected = selectedDate && isSameDay(day, selectedDate);
+                    const dayOfWeek = getDay(day);
+                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
                     return (
                       <button
                         key={day.toISOString()}
-                        disabled={past || !inMonth}
+                        disabled={past || !inMonth || isWeekend}
                         onClick={() => handleDateSelect(day)}
                         className={`aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                           selected
                             ? 'bg-primary text-primary-foreground shadow-md'
-                            : today
+                            : today && !isWeekend
                               ? 'bg-primary/10 text-primary font-bold'
-                              : past || !inMonth
+                              : past || !inMonth || isWeekend
                                 ? 'text-muted-foreground/30 cursor-not-allowed'
                                 : 'hover:bg-secondary text-foreground'
                         }`}
