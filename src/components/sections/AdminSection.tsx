@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical, CalendarDays } from 'lucide-react';
+import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical, CalendarDays, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,12 +44,14 @@ const AdminSection = () => {
   const [newClientPhone, setNewClientPhone] = useState('');
   const [inviting, setInviting] = useState(false);
   const [viewMode, setViewMode] = useState<'clients' | 'calendar'>('clients');
+  const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
 
   const fetchData = async () => {
-    const [{ data: profileData }, { data: pkgData }, { data: orderData }] = await Promise.all([
+    const [{ data: profileData }, { data: pkgData }, { data: orderData }, { data: sessData }] = await Promise.all([
       supabase.from('profiles').select('*'),
       supabase.from('client_packages').select('*').order('created_at', { ascending: false }),
       supabase.from('trainer_client_order').select('*').limit(1).maybeSingle(),
+      supabase.from('scheduled_sessions').select('user_id, session_date, is_recurring, recurrence_day'),
     ]);
 
     const fetched = (profileData || []) as Profile[];
@@ -67,6 +69,7 @@ const AdminSection = () => {
       grouped[p.user_id].push(p);
     });
     setPackages(grouped);
+    setAllSessions((sessData || []) as typeof allSessions);
     setLoading(false);
   };
 
@@ -146,6 +149,32 @@ const AdminSection = () => {
       toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e.message, variant: 'destructive' });
     }
   };
+
+  // Compute weekly session counts per client
+  const weeklySessionCounts = useMemo(() => {
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const monday = new Date(now);
+    monday.setHours(0, 0, 0, 0);
+    monday.setDate(monday.getDate() + mondayOffset);
+    const sunday = new Date(monday);
+    sunday.setDate(sunday.getDate() + 6);
+
+    const counts: Record<string, number> = {};
+    allSessions.forEach(s => {
+      if (!counts[s.user_id]) counts[s.user_id] = 0;
+      if (s.is_recurring && s.recurrence_day != null) {
+        counts[s.user_id]++;
+      } else if (!s.is_recurring) {
+        const d = new Date(s.session_date + 'T00:00:00');
+        if (d >= monday && d <= sunday) {
+          counts[s.user_id]++;
+        }
+      }
+    });
+    return counts;
+  }, [allSessions]);
 
 
   const sendNotification = async (client: Profile, message: string) => {
@@ -323,11 +352,19 @@ const AdminSection = () => {
                         <p className="font-bold text-sm truncate">{client.full_name}</p>
                         <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
                       </div>
-                      {clientPkgs.some((p) => p.is_active) && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold shrink-0 ml-2">
-                          {clientPkgs.find((p) => p.is_active)!.total_sessions - clientPkgs.find((p) => p.is_active)!.used_sessions} left
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                        {(weeklySessionCounts[client.user_id] || 0) > 0 && (
+                          <span className="text-[10px] bg-secondary text-muted-foreground px-1.5 py-0.5 rounded-md font-semibold flex items-center gap-0.5">
+                            <Clock className="w-2.5 h-2.5" />
+                            {weeklySessionCounts[client.user_id]}/{lang === 'en' ? 'wk' : 'нед'}
+                          </span>
+                        )}
+                        {clientPkgs.some((p) => p.is_active) && (
+                          <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
+                            {clientPkgs.find((p) => p.is_active)!.total_sessions - clientPkgs.find((p) => p.is_active)!.used_sessions} left
+                          </span>
+                        )}
+                      </div>
                     </button>
                   </div>
 
