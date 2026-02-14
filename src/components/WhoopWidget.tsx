@@ -91,13 +91,16 @@ const WhoopWidget = () => {
         </h3>
         <button
           onClick={connectWhoop}
-          className="w-full flex items-center justify-center gap-2 bg-background border border-border/50 rounded-2xl p-4 hover:border-primary/30 transition-colors"
+          className="w-full flex items-center justify-center gap-2 bg-background border border-yellow-500/50 rounded-2xl p-4 hover:border-yellow-500 transition-colors"
         >
-          <Link2 className="w-5 h-5 text-primary" />
+          <Link2 className="w-5 h-5 text-yellow-500" />
           <span className="text-sm font-semibold text-foreground">
-            {lang === 'en' ? 'Connect Whoop' : 'Подключить Whoop'}
+            {lang === 'en' ? 'Reconnect Whoop' : 'Переподключить Whoop'}
           </span>
         </button>
+        <p className="text-[10px] text-muted-foreground mt-1.5 text-center">
+          {lang === 'en' ? 'Session expired. Please reconnect to sync your data.' : 'Сессия истекла. Переподключите для синхронизации данных.'}
+        </p>
       </div>
     );
   }
