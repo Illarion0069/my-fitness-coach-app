@@ -25,17 +25,24 @@ async function refreshTokenIfNeeded(supabaseAdmin: any, tokenRow: any, clientId:
   if (!res.ok) {
     const errText = await res.text();
     console.error('Token refresh failed:', res.status, errText);
+    // Delete invalid tokens so user can re-connect
+    await supabaseAdmin.from('whoop_tokens').delete().eq('user_id', tokenRow.user_id);
     throw new Error('Token refresh failed');
   }
 
   const tokens = await res.json();
   const expiresAt = new Date(Date.now() + tokens.expires_in * 1000).toISOString();
 
-  await supabaseAdmin.from('whoop_tokens').update({
+  const updatePayload: Record<string, unknown> = {
     access_token: tokens.access_token,
-    refresh_token: tokens.refresh_token,
     expires_at: expiresAt,
-  }).eq('user_id', tokenRow.user_id);
+  };
+  // Only update refresh_token if Whoop returned a new one
+  if (tokens.refresh_token) {
+    updatePayload.refresh_token = tokens.refresh_token;
+  }
+
+  await supabaseAdmin.from('whoop_tokens').update(updatePayload).eq('user_id', tokenRow.user_id);
 
   return tokens.access_token;
 }
@@ -97,7 +104,24 @@ serve(async (req) => {
       });
     }
 
-    const accessToken = await refreshTokenIfNeeded(supabaseAdmin, tokenRow, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET);
+    // If refresh_token is missing, token can't be refreshed — check if still valid
+    if (!tokenRow.refresh_token && new Date(tokenRow.expires_at) <= new Date(Date.now() + 5 * 60 * 1000)) {
+      console.error('Token expired and no refresh_token available');
+      await supabaseAdmin.from('whoop_tokens').delete().eq('user_id', userId);
+      return new Response(JSON.stringify({ error: 'Whoop token expired', connected: false }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    let accessToken: string;
+    try {
+      accessToken = await refreshTokenIfNeeded(supabaseAdmin, tokenRow, WHOOP_CLIENT_ID, WHOOP_CLIENT_SECRET);
+    } catch (e) {
+      console.error('Failed to refresh Whoop token:', e);
+      return new Response(JSON.stringify({ error: 'Whoop token expired', connected: false }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     // Fetch last 7 days of data
     const now = new Date();
