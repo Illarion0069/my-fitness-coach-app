@@ -170,7 +170,7 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
   );
 
   return (
-    <section className="h-full px-5 pt-8 pb-28 overflow-hidden flex flex-col">
+    <section className="h-full px-5 pb-28 overflow-hidden flex flex-col" style={{ paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
       <AnimatePresence mode="wait">
         {step === 'intro' && (
           <motion.div

@@ -8,7 +8,7 @@ const ReviewsSection = () => {
   const reviews = translations.reviews;
 
   return (
-    <section className="min-h-screen px-5 pt-8 pb-28">
+    <section className="min-h-screen px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
       <div className="flex items-end justify-between mb-6">
         <div>
           <motion.h2

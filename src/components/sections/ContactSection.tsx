@@ -16,7 +16,7 @@ const ContactSection = () => {
   ];
 
   return (
-    <section className="min-h-screen px-5 pt-8 pb-28">
+    <section className="min-h-screen px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
