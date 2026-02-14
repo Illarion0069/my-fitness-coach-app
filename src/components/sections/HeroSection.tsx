@@ -41,7 +41,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
   return (
     <section className="relative min-h-screen flex flex-col bg-background">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-2">
+      <div className="flex items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
         <div className="flex items-center gap-2.5">
           <button
             onClick={onProfileClick}
