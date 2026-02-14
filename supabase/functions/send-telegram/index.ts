@@ -45,8 +45,9 @@ serve(async (req) => {
     // Allow registration notifications from any authenticated user
     const isRegistrationNotify = action === "notifyRegistration";
     const isCancelNotify = action === "cancelSession";
+    const isTestResult = action === "testResult";
 
-    if (!isRegistrationNotify && !isCancelNotify) {
+    if (!isRegistrationNotify && !isCancelNotify && !isTestResult) {
       // Check caller has trainer role
       const { data: roleData } = await roleClient
         .from("user_roles")
@@ -199,6 +200,14 @@ serve(async (req) => {
       const clientName = profile?.full_name || "Unknown";
       const cancelMsg = `❌ <b>Клиент отменил тренировку</b>\n\n👤 ${clientName}\n📅 ${message}`;
       await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, cancelMsg);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Test result from authenticated user
+    if (isTestResult) {
+      await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

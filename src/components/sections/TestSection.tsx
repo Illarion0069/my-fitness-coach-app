@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Activity, Heart, Apple, ArrowRight } from 'lucide-react';
+import { ArrowLeft, Activity, Heart, Apple, ArrowRight, LogIn } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
+import { supabase } from '@/integrations/supabase/client';
 
 const COUNTRY_CODES = [
   { code: '+357', country: '🇨🇾', label: 'Cyprus' },
@@ -22,8 +24,13 @@ const COUNTRY_CODES = [
 const NUTRITION_INDICES = [0, 1, 2, 3, 4];
 const HEALTH_INDICES = [5, 6, 7, 8, 9];
 
-const TestSection = () => {
+interface TestSectionProps {
+  onLoginClick?: () => void;
+}
+
+const TestSection = ({ onLoginClick }: TestSectionProps) => {
   const { t, lang } = useLanguage();
+  const { user, profile } = useAuth();
   const test = translations.test;
   const [step, setStep] = useState<'intro' | 'info' | 'quiz' | 'result'>('intro');
   const [name, setName] = useState('');
@@ -33,6 +40,20 @@ const TestSection = () => {
   const [answers, setAnswers] = useState<number[]>([]);
 
   const totalQuestions = test.questions.length;
+
+  // For logged-in users, use profile data
+  const effectiveName = user && profile ? profile.full_name : name;
+  const effectivePhone = user && profile ? profile.phone : `${countryCode}${phone}`;
+
+  const handleStart = () => {
+    if (user) {
+      // Logged in — skip info step, go straight to quiz
+      setStep('quiz');
+    } else {
+      // Not logged in — prompt to register
+      onLoginClick?.();
+    }
+  };
 
   const handleAnswer = (scoreIndex: number) => {
     const score = test.questions[currentQ].scores[scoreIndex];
@@ -47,12 +68,10 @@ const TestSection = () => {
       const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
       const healthPct = Math.round((healthScore / healthMax) * 100);
       const overallPct = Math.round(((nutritionScore + healthScore) / (nutritionMax + healthMax)) * 100);
-      const msg = `🏋️ <b>New Health Test</b>\n👤 ${name}\n📱 ${countryCode}${phone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%`;
+      const msg = `🏋️ <b>New Health Test</b>\n👤 ${effectiveName}\n📱 ${effectivePhone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%`;
       
-      fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-telegram`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg }),
+      supabase.functions.invoke('send-telegram', {
+        body: { action: 'testResult', message: msg },
       }).catch(err => console.error('Telegram send error:', err));
     }
   };
@@ -150,53 +169,29 @@ const TestSection = () => {
             </div>
             <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-3">{t(test.title)}</h2>
             <p className="text-sm text-muted-foreground mb-8 max-w-xs">{t(test.subtitle)}</p>
-            <button
-              onClick={() => setStep('info')}
-              className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-10 py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
-            >
-              {t(test.start)}
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </button>
-          </motion.div>
-        )}
 
-        {step === 'info' && (
-          <motion.div
-            key="info"
-            initial={{ opacity: 0, x: 40 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -40 }}
-            className="flex flex-col items-center justify-center min-h-[70vh]"
-          >
-            <div className="w-full max-w-sm space-y-5">
-              <h3 className="text-xl font-extrabold uppercase tracking-tight text-center mb-6">{t(test.title)}</h3>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-bold uppercase tracking-wider">{t(test.nameLabel)}</label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder={t(test.nameLabel)}
-                  className="bg-card border-border/50 rounded-xl"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1.5 block font-bold uppercase tracking-wider">{t(test.phoneLabel)}</label>
-                <PhoneInput
-                  countryCode={countryCode}
-                  onCountryCodeChange={setCountryCode}
-                  phone={phone}
-                  onPhoneChange={setPhone}
-                  countryCodes={COUNTRY_CODES}
-                />
-              </div>
+            {user ? (
               <button
-                onClick={() => name && phone && setStep('quiz')}
-                disabled={!name || !phone}
-                className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl text-sm uppercase tracking-wider glow-primary hover:scale-[1.02] transition-transform disabled:opacity-40 disabled:hover:scale-100 mt-4"
+                onClick={handleStart}
+                className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-10 py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
               >
-                {t(test.next)} →
+                {t(test.start)}
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </button>
-            </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <p className="text-xs text-muted-foreground max-w-xs">
+                  {lang === 'en' ? 'Please sign in to take the test' : 'Войдите в аккаунт, чтобы пройти тест'}
+                </p>
+                <button
+                  onClick={() => onLoginClick?.()}
+                  className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-10 py-3.5 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
+                >
+                  <LogIn className="w-4 h-4" />
+                  {lang === 'en' ? 'Sign In' : 'Войти'}
+                </button>
+              </div>
+            )}
           </motion.div>
         )}
 
@@ -223,7 +218,7 @@ const TestSection = () => {
                     setCurrentQ(currentQ - 1);
                     setAnswers(answers.slice(0, -1));
                   } else {
-                    setStep('info');
+                    setStep('intro');
                   }
                 }}
                 className="text-muted-foreground hover:text-foreground transition-colors"
