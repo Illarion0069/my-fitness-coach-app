@@ -40,6 +40,7 @@ serve(async (req) => {
     if (action === 'get_auth_url') {
       // Generate Whoop OAuth URL
       const scopes = 'read:recovery read:cycles read:workout read:body_measurement read:profile read:sleep offline';
+      console.log('whoop-auth: redirect_uri received =', redirect_uri);
       const authUrl = `https://api.prod.whoop.com/oauth/oauth2/auth?client_id=${WHOOP_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirect_uri)}&response_type=code&scope=${encodeURIComponent(scopes)}&state=${userId}`;
       return new Response(JSON.stringify({ url: authUrl }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
