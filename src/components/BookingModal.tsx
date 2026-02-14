@@ -414,8 +414,15 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                   </div>
                 </div>
 
+                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
+                  <p className="text-xs text-destructive font-medium">
+                    ⚠️ {lang === 'en'
+                      ? 'Free cancellation up to 24 hours before the session. After that, the session will be deducted from your package.'
+                      : 'Бесплатная отмена за 24 часа до тренировки. После этого занятие будет списано из пакета.'}
+                  </p>
+                </div>
+
                 <button
-                  onClick={handleBook}
                   disabled={loading}
                   className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >

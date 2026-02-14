@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, LogOut, CalendarDays, RotateCw } from 'lucide-react';
+import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -35,10 +36,38 @@ interface ClientProfileDrawerProps {
 const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const { user, profile, signOut } = useAuth();
   const { lang } = useLanguage();
+  const { toast } = useToast();
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
 
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
+
+  const canCancel = (s: ScheduledSession) => {
+    if (!s.session_time) return false;
+    const sessionDateTime = new Date(`${s.session_date}T${s.session_time}`);
+    const now = new Date();
+    const hoursLeft = (sessionDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+    return hoursLeft > 24;
+  };
+
+  const handleCancel = async (session: ScheduledSession) => {
+    if (!canCancel(session)) {
+      toast({
+        title: lang === 'en' ? 'Cannot cancel' : 'Отмена невозможна',
+        description: lang === 'en'
+          ? 'Sessions can only be cancelled more than 24 hours in advance.'
+          : 'Отмена возможна только за 24 часа до тренировки.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    setCancellingId(session.id);
+    await supabase.from('scheduled_sessions').delete().eq('id', session.id).eq('user_id', user!.id);
+    setSessions(prev => prev.filter(s => s.id !== session.id));
+    setCancellingId(null);
+    toast({ title: lang === 'en' ? 'Session cancelled' : 'Тренировка отменена' });
+  };
 
   useEffect(() => {
     if (!user || !open) return;
@@ -218,15 +247,38 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                         </span>
                       </div>
                     ))}
-                    {sessions.filter(s => !s.is_recurring).map(s => (
-                      <div key={s.id} className="flex items-center gap-2 bg-background border border-border/50 rounded-xl p-3">
-                        <CalendarDays className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="text-sm">
-                          {new Date(s.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })}
-                          {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
-                        </span>
-                      </div>
-                    ))}
+                    {sessions.filter(s => !s.is_recurring).map(s => {
+                      const cancelable = canCancel(s);
+                      return (
+                        <div key={s.id} className="flex items-center justify-between bg-background border border-border/50 rounded-xl p-3">
+                          <div className="flex items-center gap-2">
+                            <CalendarDays className="w-3.5 h-3.5 text-primary shrink-0" />
+                            <span className="text-sm">
+                              {new Date(s.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })}
+                              {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
+                            </span>
+                          </div>
+                          {cancelable ? (
+                            <button
+                              onClick={() => handleCancel(s)}
+                              disabled={cancellingId === s.id}
+                              className="text-destructive hover:text-destructive/80 transition-colors"
+                              title={lang === 'en' ? 'Cancel session' : 'Отменить'}
+                            >
+                              {cancellingId === s.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <XCircle className="w-4 h-4" />
+                              )}
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-muted-foreground/50">
+                              {lang === 'en' ? '< 24h' : '< 24ч'}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </>
               )}
