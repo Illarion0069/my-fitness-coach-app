@@ -89,6 +89,17 @@ serve(async (req) => {
       });
     }
 
+    // Sanitize message to prevent HTML injection in Telegram
+    const sanitizeForTelegram = (text: string): string => {
+      if (!text) return text;
+      // Only allow specific safe HTML tags that Telegram supports
+      const allowedTags = ['b', 'i', 'u', 's', 'code', 'pre', 'a'];
+      // Remove any HTML tags that are not in the allowed list
+      return text.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tag) => {
+        return allowedTags.includes(tag.toLowerCase()) ? match : '';
+      }).slice(0, 4096);
+    };
+
     const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     if (!TELEGRAM_BOT_TOKEN) throw new Error("TELEGRAM_BOT_TOKEN not configured");
 
@@ -214,7 +225,7 @@ serve(async (req) => {
     }
 
     // Default: send message to trainer
-    await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, message);
+    await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, sanitizeForTelegram(message));
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

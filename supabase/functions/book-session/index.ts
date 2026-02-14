@@ -139,10 +139,58 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Validate time is within valid range (00-23 hours)
+      const bookHour = parseInt(time.split(':')[0]);
+      const bookMinute = parseInt(time.split(':')[1]);
+      if (bookHour < 0 || bookHour > 23 || bookMinute < 0 || bookMinute > 59) {
+        return new Response(JSON.stringify({ error: 'Time out of valid range' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Check the date is not in the past
       const bookingDate = new Date(date + 'T' + time + ':00');
       if (bookingDate < new Date()) {
         return new Response(JSON.stringify({ error: 'Cannot book in the past' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Validate time is within trainer's working hours
+      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+
+      // Find trainer
+      const { data: trainersList } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'trainer')
+        .limit(1);
+      const trainerId = trainersList?.[0]?.user_id;
+
+      let workStart = 7;
+      let workEnd = 19;
+      let daysOff: number[] = [0];
+      if (trainerId) {
+        const { data: wh } = await supabase
+          .from('trainer_working_hours')
+          .select('work_start_hour, work_end_hour, days_off')
+          .eq('trainer_user_id', trainerId)
+          .single();
+        if (wh) {
+          workStart = wh.work_start_hour;
+          workEnd = wh.work_end_hour;
+          daysOff = wh.days_off || [0];
+        }
+      }
+
+      if (daysOff.includes(dayOfWeek)) {
+        return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (bookHour < workStart || bookHour >= workEnd) {
+        return new Response(JSON.stringify({ error: 'Time outside working hours' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -154,7 +202,7 @@ Deno.serve(async (req) => {
         .eq('session_date', date)
         .eq('is_recurring', false);
 
-      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+      // dayOfWeek already computed above
       const { data: existingRecurring } = await supabase
         .from('scheduled_sessions')
         .select('recurrence_time, duration_minutes')
@@ -172,13 +220,7 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Find trainer user id (first trainer)
-      const { data: trainers } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'trainer')
-        .limit(1);
-      const trainerId = trainers?.[0]?.user_id;
+      // trainerId already resolved above
       if (!trainerId) {
         return new Response(JSON.stringify({ error: 'No trainer found' }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
