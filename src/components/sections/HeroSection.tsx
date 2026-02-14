@@ -221,7 +221,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
       </div>
 
       {/* Booking Modal */}
-      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} />
+      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} onLoginRequest={onProfileClick} />
     </section>
   );
 };
