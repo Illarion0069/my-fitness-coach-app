@@ -25,6 +25,7 @@ interface ScheduledSession {
 interface Props {
   lang: string;
   clients: Profile[];
+  onSessionChange?: () => void;
 }
 
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 6); // 6:00 — 22:00
@@ -36,7 +37,7 @@ const minutesToTimeStr = (totalMinutes: number) => {
   return `${String(h).padStart(2, '0')}:${String(m >= 60 ? 0 : m).padStart(2, '0')}`;
 };
 
-const TrainerCalendar = ({ lang, clients }: Props) => {
+const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const { toast } = useToast();
   const locale = lang === 'en' ? enUS : ru;
   const [selectedDate, setSelectedDate] = useState(new Date());
@@ -136,16 +137,56 @@ const TrainerCalendar = ({ lang, clients }: Props) => {
       is_recurring: false,
     });
 
+    // Auto-deduct from active package
+    const { data: pkgs } = await supabase
+      .from('client_packages')
+      .select('*')
+      .eq('user_id', selectedClientId)
+      .eq('is_active', true)
+      .order('created_at', { ascending: true })
+      .limit(1);
+    const pkg = pkgs?.[0];
+    if (pkg && pkg.used_sessions < pkg.total_sessions) {
+      await supabase
+        .from('client_packages')
+        .update({ used_sessions: pkg.used_sessions + 1 })
+        .eq('id', pkg.id);
+    }
+
     setShowAddForm(null);
     setSelectedClientId('');
     setAddTime('');
     fetchSessions();
+    if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
   };
 
   const deleteSession = async (id: string) => {
+    // Find the session to restore its deduction
+    const session = sessions.find(s => s.id === id);
+
     await supabase.from('scheduled_sessions').delete().eq('id', id);
+
+    // Auto-restore to active package
+    if (session) {
+      const { data: pkgs } = await supabase
+        .from('client_packages')
+        .select('*')
+        .eq('user_id', session.user_id)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const pkg = pkgs?.[0];
+      if (pkg && pkg.used_sessions > 0) {
+        await supabase
+          .from('client_packages')
+          .update({ used_sessions: pkg.used_sessions - 1 })
+          .eq('id', pkg.id);
+      }
+    }
+
     fetchSessions();
+    if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
   };
 

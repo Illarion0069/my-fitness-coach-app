@@ -249,7 +249,7 @@ const AdminSection = () => {
         </div>
 
         {viewMode === 'calendar' ? (
-          <TrainerCalendar lang={lang} clients={clients} />
+          <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
         ) : (
         <>
         {/* Add client form */}
@@ -444,7 +444,7 @@ const AdminSection = () => {
                       </div>
 
                       {/* Schedule */}
-                      <ClientSchedule userId={client.user_id} lang={lang} />
+                      <ClientSchedule userId={client.user_id} lang={lang} onSessionChange={fetchData} />
 
                       {/* Whoop metrics */}
                       <TrainerWhoopWidget userId={client.user_id} lang={lang} />
