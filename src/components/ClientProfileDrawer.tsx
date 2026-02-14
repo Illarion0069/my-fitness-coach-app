@@ -66,6 +66,16 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
     };
     fetchPkg();
     fetchSessions();
+
+    const channel = supabase
+      .channel('client-sessions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => {
+        fetchSessions();
+        fetchPkg();
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user, open]);
 
   if (!open || !user) return null;
