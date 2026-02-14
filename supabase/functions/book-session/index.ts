@@ -87,9 +87,11 @@ Deno.serve(async (req) => {
       (oneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
       (recurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
 
-      // Generate hourly slots from 08:00 to 20:00
+      // Generate hourly slots from 07:00 to 19:00 (working hours)
+      const WORK_START = 7;
+      const WORK_END = 19; // last slot at 19:00, session ends at 20:00
       const slots: { time: string; available: boolean }[] = [];
-      for (let h = 8; h <= 20; h++) {
+      for (let h = WORK_START; h <= WORK_END; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
         slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, DEFAULT_DURATION, bookedSessions) });
