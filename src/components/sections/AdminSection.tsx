@@ -231,7 +231,7 @@ const AdminSection = () => {
   if (loading) return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
 
   return (
-    <section className="min-h-screen bg-background p-5 pb-24">
+    <section className="min-h-screen bg-background px-5 pb-24" style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}>
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">

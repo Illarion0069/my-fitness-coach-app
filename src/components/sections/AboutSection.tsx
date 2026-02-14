@@ -42,7 +42,7 @@ const AboutSection = () => {
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
 
   return (
-    <section className="min-h-screen px-5 pt-8 pb-28">
+    <section className="min-h-screen px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
       {/* Hero banner with trainer photo */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
