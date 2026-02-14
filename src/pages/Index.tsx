@@ -89,7 +89,7 @@ const AppContent = () => {
             }
           }} />
         );
-      case 'test': return <TestSection />;
+      case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
       case 'contact': return <ContactSection />;
