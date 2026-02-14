@@ -20,9 +20,10 @@ const DAY_NAMES_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 interface Props {
   userId: string;
   lang: string;
+  onSessionChange?: () => void;
 }
 
-const ClientSchedule = ({ userId, lang }: Props) => {
+const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
   const { toast } = useToast();
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [showAdd, setShowAdd] = useState(false);
@@ -58,6 +59,22 @@ const ClientSchedule = ({ userId, lang }: Props) => {
         session_time: time || null,
         is_recurring: false,
       });
+
+      // Auto-deduct from active package
+      const { data: pkgs } = await supabase
+        .from('client_packages')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const pkg = pkgs?.[0];
+      if (pkg && pkg.used_sessions < pkg.total_sessions) {
+        await supabase
+          .from('client_packages')
+          .update({ used_sessions: pkg.used_sessions + 1 })
+          .eq('id', pkg.id);
+      }
     } else {
       await supabase.from('scheduled_sessions').insert({
         user_id: userId,
@@ -73,12 +90,35 @@ const ClientSchedule = ({ userId, lang }: Props) => {
     setTime('');
     setShowAdd(false);
     fetchSessions();
+    if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
   };
 
   const deleteSession = async (id: string) => {
+    const session = sessions.find(s => s.id === id);
+
     await supabase.from('scheduled_sessions').delete().eq('id', id);
+
+    // Auto-restore to active package (only for one-off sessions)
+    if (session && !session.is_recurring) {
+      const { data: pkgs } = await supabase
+        .from('client_packages')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const pkg = pkgs?.[0];
+      if (pkg && pkg.used_sessions > 0) {
+        await supabase
+          .from('client_packages')
+          .update({ used_sessions: pkg.used_sessions - 1 })
+          .eq('id', pkg.id);
+      }
+    }
+
     fetchSessions();
+    if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
   };
 
