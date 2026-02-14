@@ -114,6 +114,14 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
 
   const handleBook = async () => {
     if (!selectedDate || !selectedTime) return;
+    if (!user) {
+      toast({
+        title: lang === 'en' ? 'Please log in' : 'Войдите в аккаунт',
+        description: lang === 'en' ? 'You need to be logged in to book a session' : 'Для записи необходимо авторизоваться',
+        variant: 'destructive',
+      });
+      return;
+    }
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('book-session', {
@@ -124,11 +132,20 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
         },
       });
       if (error || data?.error) {
-        toast({
-          title: lang === 'en' ? 'Error' : 'Ошибка',
-          description: data?.error || error?.message || 'Unknown error',
-          variant: 'destructive',
-        });
+        const msg = data?.error || error?.message || '';
+        if (msg.includes('Unauthorized') || msg.includes('401')) {
+          toast({
+            title: lang === 'en' ? 'Session expired' : 'Сессия истекла',
+            description: lang === 'en' ? 'Please log in again to book' : 'Войдите заново для записи',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: lang === 'en' ? 'Error' : 'Ошибка',
+            description: msg || 'Unknown error',
+            variant: 'destructive',
+          });
+        }
       } else {
         setStep('done');
       }
