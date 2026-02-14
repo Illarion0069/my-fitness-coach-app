@@ -11,35 +11,25 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Authenticate the caller
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-
-    // Validate the user's JWT using anon key client with user's auth header
-    const authClient = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user }, error: authError } = await authClient.auth.getUser();
-    if (authError || !user) {
-      console.error('Auth error:', authError?.message);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Service role client for data operations
     const supabase = createClient(supabaseUrl, serviceKey);
+
     const body = await req.json();
     const { action } = body;
     const DEFAULT_DURATION = 60;
+
+    // Helper: authenticate user (only for actions that need it)
+    const authHeader = req.headers.get('Authorization');
+    const getAuthUser = async () => {
+      if (!authHeader?.startsWith('Bearer ')) return null;
+      const authClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await authClient.auth.getUser();
+      return user;
+    };
 
     // Helper: parse "HH:MM" to minutes since midnight
     const timeToMinutes = (t: string): number => {
@@ -135,6 +125,8 @@ Deno.serve(async (req) => {
 
     // === BOOK A SESSION ===
     if (action === 'book') {
+      const user = await getAuthUser();
+      if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const { date, time } = body;
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return new Response(JSON.stringify({ error: 'Invalid date' }), {
@@ -258,6 +250,8 @@ Deno.serve(async (req) => {
 
     // === CANCEL A SESSION ===
     if (action === 'cancel') {
+      const user = await getAuthUser();
+      if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const { session_id } = body;
       if (!session_id) {
         return new Response(JSON.stringify({ error: 'session_id required' }), {
@@ -343,6 +337,8 @@ Deno.serve(async (req) => {
 
     // === GET MY SESSIONS ===
     if (action === 'mySessions') {
+      const user = await getAuthUser();
+      if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const { data: mySessions } = await supabase
         .from('scheduled_sessions')
         .select('*')
