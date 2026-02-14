@@ -170,7 +170,7 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={e => e.stopPropagation()}
-          className="bg-card w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] overflow-y-auto border border-border/50 shadow-2xl"
+          className="bg-card w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] min-h-[60vh] overflow-y-auto border border-border/50 shadow-2xl flex flex-col"
         >
           {/* Header */}
           <div className="sticky top-0 bg-card/95 backdrop-blur-md z-10 px-5 pt-5 pb-3 border-b border-border/30">
@@ -215,7 +215,7 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
             )}
           </div>
 
-          <div className="p-5">
+          <div className="p-5 flex-1">
             {/* === DATE STEP === */}
             {step === 'date' && (
               <div>
