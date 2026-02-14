@@ -140,7 +140,7 @@ export const translations = {
       en: 'Certifications',
       ru: 'Сертификаты',
     },
-    certs: ['TRX', 'Procedos', 'Recovery MFR', 'Animal Flow', 'Strength Training'],
+    certs: ['EQF 3', 'EQF 4', 'HIIT', 'TRX', 'Procedos', 'Recovery MFR', 'Animal Flow', 'Strength Training'],
     accreditation: {
       en: 'European Accreditation EQF 3 & EQF 4',
       ru: 'Европейская аккредитация EQF 3 и EQF 4',
