@@ -63,7 +63,16 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
       return;
     }
     setCancellingId(session.id);
+    const dateStr = new Date(session.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' });
+    const timeStr = session.session_time ? ` ${session.session_time.slice(0, 5)}` : '';
+
     await supabase.from('scheduled_sessions').delete().eq('id', session.id).eq('user_id', user!.id);
+
+    // Notify trainer via Telegram (best-effort)
+    supabase.functions.invoke('send-telegram', {
+      body: { action: 'cancelSession', message: `${dateStr}${timeStr}` },
+    }).catch(() => {});
+
     setSessions(prev => prev.filter(s => s.id !== session.id));
     setCancellingId(null);
     toast({ title: lang === 'en' ? 'Session cancelled' : 'Тренировка отменена' });
