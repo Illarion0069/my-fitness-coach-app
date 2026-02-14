@@ -11,6 +11,7 @@ import ClientSchedule from '@/components/ClientSchedule';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import TrainerWhoopWidget from '@/components/TrainerWhoopWidget';
 import TrainerWorkingHours from '@/components/TrainerWorkingHours';
+import ClientTestHistory from '@/components/ClientTestHistory';
 
 interface Profile {
   id: string;
@@ -489,6 +490,9 @@ const AdminSection = () => {
 
                       {/* Whoop metrics */}
                       <TrainerWhoopWidget userId={client.user_id} lang={lang} />
+
+                      {/* Test history */}
+                      <ClientTestHistory userId={client.user_id} lang={lang} />
 
                       {/* Send notifications */}
                       <div className="flex gap-2">

@@ -146,6 +146,42 @@ export type Database = {
         }
         Relationships: []
       }
+      test_results: {
+        Row: {
+          answers: number[]
+          created_at: string
+          health_max: number
+          health_score: number
+          id: string
+          nutrition_max: number
+          nutrition_score: number
+          overall_percentage: number
+          user_id: string
+        }
+        Insert: {
+          answers?: number[]
+          created_at?: string
+          health_max: number
+          health_score: number
+          id?: string
+          nutrition_max: number
+          nutrition_score: number
+          overall_percentage: number
+          user_id: string
+        }
+        Update: {
+          answers?: number[]
+          created_at?: string
+          health_max?: number
+          health_score?: number
+          id?: string
+          nutrition_max?: number
+          nutrition_score?: number
+          overall_percentage?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       trainer_client_order: {
         Row: {
           client_order: string[]

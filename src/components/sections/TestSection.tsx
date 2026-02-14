@@ -68,6 +68,22 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
       const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
       const healthPct = Math.round((healthScore / healthMax) * 100);
       const overallPct = Math.round(((nutritionScore + healthScore) / (nutritionMax + healthMax)) * 100);
+
+      // Save to database
+      if (user) {
+        supabase.from('test_results').insert({
+          user_id: user.id,
+          nutrition_score: nutritionScore,
+          nutrition_max: nutritionMax,
+          health_score: healthScore,
+          health_max: healthMax,
+          overall_percentage: overallPct,
+          answers: newAnswers.map(a => Number(a)),
+        }).then(({ error }) => {
+          if (error) console.error('Save test result error:', error);
+        });
+      }
+
       const msg = `🏋️ <b>New Health Test</b>\n👤 ${effectiveName}\n📱 ${effectivePhone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%`;
       
       supabase.functions.invoke('send-telegram', {
