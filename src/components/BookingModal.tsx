@@ -11,6 +11,7 @@ import { ru, enUS } from 'date-fns/locale';
 interface BookingModalProps {
   open: boolean;
   onClose: () => void;
+  onLoginRequest?: () => void;
 }
 
 interface TimeSlot {
@@ -26,7 +27,7 @@ interface MySession {
 
 type Step = 'date' | 'time' | 'confirm' | 'done' | 'my-sessions';
 
-const BookingModal = ({ open, onClose }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -115,11 +116,16 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
   const handleBook = async () => {
     if (!selectedDate || !selectedTime) return;
     if (!user) {
-      toast({
-        title: lang === 'en' ? 'Please log in' : 'Войдите в аккаунт',
-        description: lang === 'en' ? 'You need to be logged in to book a session' : 'Для записи необходимо авторизоваться',
-        variant: 'destructive',
-      });
+      onClose();
+      if (onLoginRequest) {
+        onLoginRequest();
+      } else {
+        toast({
+          title: lang === 'en' ? 'Please log in' : 'Войдите в аккаунт',
+          description: lang === 'en' ? 'You need to be logged in to book a session' : 'Для записи необходимо авторизоваться',
+          variant: 'destructive',
+        });
+      }
       return;
     }
     setLoading(true);
