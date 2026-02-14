@@ -1,10 +1,23 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, LogOut } from 'lucide-react';
+import { X, Activity, LogOut, CalendarDays, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import WhoopWidget from './WhoopWidget';
+
+interface ScheduledSession {
+  id: string;
+  session_date: string;
+  session_time: string | null;
+  is_recurring: boolean;
+  recurrence_day: number | null;
+  recurrence_time: string | null;
+  is_deducted: boolean;
+}
+
+const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
+const DAY_NAMES_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 interface ClientPackage {
   id: string;
@@ -23,6 +36,9 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const { user, profile, signOut } = useAuth();
   const { lang } = useLanguage();
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
+  const [sessions, setSessions] = useState<ScheduledSession[]>([]);
+
+  const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
 
   useEffect(() => {
     if (!user || !open) return;
@@ -37,7 +53,19 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
         .maybeSingle();
       setPkg(data);
     };
+    const fetchSessions = async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const { data } = await supabase
+        .from('scheduled_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .or(`is_recurring.eq.true,session_date.gte.${today}`)
+        .eq('is_deducted', false)
+        .order('session_date', { ascending: true });
+      setSessions((data as ScheduledSession[]) || []);
+    };
     fetchPkg();
+    fetchSessions();
   }, [user, open]);
 
   if (!open || !user) return null;
@@ -163,6 +191,35 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                   ? 'Payment via Revolut. Gym membership 150€/month paid separately.'
                   : 'Оплата через Revolut. Абонемент зала 150€/мес оплачивается отдельно.'}
               </p>
+
+              {/* My Schedule */}
+              {sessions.length > 0 && (
+                <>
+                  <h3 className="text-xs font-extrabold text-foreground uppercase tracking-wider mt-6 mb-3">
+                    {lang === 'en' ? 'My Schedule' : 'Моё расписание'}
+                  </h3>
+                  <div className="space-y-2">
+                    {sessions.filter(s => s.is_recurring).map(s => (
+                      <div key={s.id} className="flex items-center gap-2 bg-background border border-border/50 rounded-xl p-3">
+                        <RotateCw className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="text-sm font-medium">
+                          {lang === 'en' ? 'Every' : 'Каждый'} {dayNames[s.recurrence_day!]}
+                          {s.recurrence_time ? ` ${s.recurrence_time.slice(0, 5)}` : ''}
+                        </span>
+                      </div>
+                    ))}
+                    {sessions.filter(s => !s.is_recurring).map(s => (
+                      <div key={s.id} className="flex items-center gap-2 bg-background border border-border/50 rounded-xl p-3">
+                        <CalendarDays className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="text-sm">
+                          {new Date(s.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })}
+                          {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Whoop Integration */}
               <WhoopWidget />
