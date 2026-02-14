@@ -42,6 +42,19 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
   const [isDayOff, setIsDayOff] = useState(false);
   const [mySessions, setMySessions] = useState<MySession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [trainerDaysOff, setTrainerDaysOff] = useState<number[]>([0, 6]);
+
+  // Fetch trainer days off on mount
+  useEffect(() => {
+    (async () => {
+      const { data: trainers } = await supabase.from('user_roles').select('user_id').eq('role', 'trainer').limit(1);
+      const trainerId = trainers?.[0]?.user_id;
+      if (trainerId) {
+        const { data: wh } = await supabase.from('trainer_working_hours').select('days_off').eq('trainer_user_id', trainerId).maybeSingle();
+        if (wh?.days_off) setTrainerDaysOff(wh.days_off);
+      }
+    })();
+  }, []);
 
   // Reset on open
   useEffect(() => {
@@ -294,19 +307,19 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                     const today = isToday(day);
                     const selected = selectedDate && isSameDay(day, selectedDate);
                     const dayOfWeek = getDay(day);
-                    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+                    const isDayOff = trainerDaysOff.includes(dayOfWeek);
 
                     return (
                       <button
                         key={day.toISOString()}
-                        disabled={past || !inMonth || isWeekend}
+                        disabled={past || !inMonth || isDayOff}
                         onClick={() => handleDateSelect(day)}
                         className={`aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                           selected
                             ? 'bg-primary text-primary-foreground shadow-md'
-                            : today && !isWeekend
+                            : today && !isDayOff
                               ? 'bg-primary/10 text-primary font-bold'
-                              : past || !inMonth || isWeekend
+                              : past || !inMonth || isDayOff
                                 ? 'text-muted-foreground/30 cursor-not-allowed'
                                 : 'hover:bg-secondary text-foreground'
                         }`}
