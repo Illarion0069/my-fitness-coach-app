@@ -39,7 +39,13 @@ const WhoopCallback = () => {
 
       if (error || !data?.success) {
         setStatus('error');
-        setErrorMsg(error?.message || 'Failed to connect Whoop');
+        const msg = error?.message || 'Failed to connect Whoop';
+        setErrorMsg(msg);
+        toast({
+          title: lang === 'en' ? '❌ Connection failed' : '❌ Ошибка подключения',
+          description: msg,
+          variant: 'destructive',
+        });
         return;
       }
 
