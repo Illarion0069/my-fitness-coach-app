@@ -36,6 +36,24 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
     const body = await req.json();
     const { action } = body;
+    const SESSION_DURATION_MINUTES = 60; // 1 hour session duration
+
+    // Helper: parse "HH:MM" to minutes since midnight
+    const timeToMinutes = (t: string): number => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + (m || 0);
+    };
+
+    // Helper: check if a new slot overlaps with any booked session
+    const isSlotBlocked = (slotMinutes: number, bookedMinutes: number[]): boolean => {
+      for (const booked of bookedMinutes) {
+        // Overlap if |slotStart - bookedStart| < duration
+        if (Math.abs(slotMinutes - booked) < SESSION_DURATION_MINUTES) {
+          return true;
+        }
+      }
+      return false;
+    };
 
     // === GET AVAILABLE SLOTS ===
     if (action === 'getSlots') {
@@ -61,18 +79,19 @@ Deno.serve(async (req) => {
         .eq('is_recurring', true)
         .eq('recurrence_day', dayOfWeek);
 
-      const bookedTimes = new Set<string>();
-      (oneOff || []).forEach(s => { if (s.session_time) bookedTimes.add(s.session_time.slice(0, 5)); });
-      (recurring || []).forEach(s => { if (s.recurrence_time) bookedTimes.add(s.recurrence_time.slice(0, 5)); });
+      const bookedMinutes: number[] = [];
+      (oneOff || []).forEach(s => { if (s.session_time) bookedMinutes.push(timeToMinutes(s.session_time.slice(0, 5))); });
+      (recurring || []).forEach(s => { if (s.recurrence_time) bookedMinutes.push(timeToMinutes(s.recurrence_time.slice(0, 5))); });
 
       // Generate hourly slots from 08:00 to 20:00
       const slots: { time: string; available: boolean }[] = [];
       for (let h = 8; h <= 20; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
-        slots.push({ time: timeStr, available: !bookedTimes.has(timeStr) });
+        const slotMinutes = h * 60;
+        slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, bookedMinutes) });
       }
 
-      return new Response(JSON.stringify({ slots }), {
+      return new Response(JSON.stringify({ slots, sessionDuration: SESSION_DURATION_MINUTES }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -99,26 +118,27 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Check slot not already taken
-      const { data: existing } = await supabase
+      // Check slot not already taken (with duration overlap)
+      const { data: existingOneOff } = await supabase
         .from('scheduled_sessions')
-        .select('id')
+        .select('session_time')
         .eq('session_date', date)
-        .eq('session_time', time)
-        .eq('is_recurring', false)
-        .limit(1);
+        .eq('is_recurring', false);
 
       const dayOfWeek = new Date(date + 'T12:00:00').getDay();
-      const { data: recurringExisting } = await supabase
+      const { data: existingRecurring } = await supabase
         .from('scheduled_sessions')
-        .select('id')
+        .select('recurrence_time')
         .eq('is_recurring', true)
-        .eq('recurrence_day', dayOfWeek)
-        .eq('recurrence_time', time)
-        .limit(1);
+        .eq('recurrence_day', dayOfWeek);
 
-      if ((existing && existing.length > 0) || (recurringExisting && recurringExisting.length > 0)) {
-        return new Response(JSON.stringify({ error: 'Slot already booked' }), {
+      const bookedMinutes: number[] = [];
+      (existingOneOff || []).forEach(s => { if (s.session_time) bookedMinutes.push(timeToMinutes(s.session_time.slice(0, 5))); });
+      (existingRecurring || []).forEach(s => { if (s.recurrence_time) bookedMinutes.push(timeToMinutes(s.recurrence_time.slice(0, 5))); });
+
+      const requestedMinutes = timeToMinutes(time);
+      if (isSlotBlocked(requestedMinutes, bookedMinutes)) {
+        return new Response(JSON.stringify({ error: 'Slot overlaps with existing session' }), {
           status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
