@@ -6,6 +6,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import { useAuth } from '@/contexts/AuthContext';
+import BookingModal from '@/components/BookingModal';
 
 interface HeroSectionProps {
   onNavigate: (section: string) => void;
@@ -16,6 +17,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
   const { t, lang } = useLanguage();
   const { user, profile } = useAuth();
   const hero = translations.hero;
+  const [bookingOpen, setBookingOpen] = useState(false);
 
   const getInitials = () => {
     const name = profile?.full_name || user?.user_metadata?.full_name || '';
@@ -106,17 +108,15 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
         </motion.div>
 
         {/* CTA Button */}
-        <motion.a
+        <motion.button
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          href="https://calendly.com/limassol-fitness/booking"
-          target="_blank"
-          rel="noopener noreferrer"
+          onClick={() => setBookingOpen(true)}
           className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-10"
         >
           {t(hero.cta)}
-        </motion.a>
+        </motion.button>
 
         {/* Workouts section */}
         <motion.div
@@ -151,15 +151,12 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                       className="overflow-hidden"
                     >
                       <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
-                      <a
-                        href="https://calendly.com/limassol-fitness/booking"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
                         className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                       >
                         {lang === 'en' ? 'Book session' : 'Записаться'}
-                      </a>
+                      </button>
                     </motion.div>
                   ) : (
                     <motion.p
@@ -198,15 +195,12 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                         className="overflow-hidden"
                       >
                         <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
-                        <a
-                          href="https://calendly.com/limassol-fitness/booking"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
                           className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                         >
                           {lang === 'en' ? 'Book session' : 'Записаться'}
-                        </a>
+                        </button>
                       </motion.div>
                     ) : (
                       <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
@@ -225,6 +219,9 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           </div>
         </motion.div>
       </div>
+
+      {/* Booking Modal */}
+      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} />
     </section>
   );
 };
