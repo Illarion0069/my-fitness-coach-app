@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
+import trainerLogo from '@/assets/trainer-logo.png';
 
 type Step = 'welcome' | 'register' | 'login' | 'telegram';
 
@@ -216,9 +217,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
             <button onClick={onClose} className="absolute top-4 right-4 text-muted-foreground hover:text-foreground">
               <X className="w-5 h-5" />
             </button>
-            <div className="w-12 h-12 rounded-2xl gradient-primary flex items-center justify-center mx-auto mb-3">
-              <span className="text-primary-foreground font-extrabold text-sm">LF</span>
-            </div>
+            <img src={trainerLogo} alt="Logo" className="w-12 h-12 rounded-2xl mx-auto mb-3" />
             <h3 className="text-lg font-extrabold font-heading uppercase tracking-tight">
               {step === 'welcome' ? t('Welcome!', 'Добро пожаловать!')
                 : step === 'register' ? t('New Client', 'Новый клиент')
