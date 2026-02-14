@@ -44,8 +44,9 @@ serve(async (req) => {
 
     // Allow registration notifications from any authenticated user
     const isRegistrationNotify = action === "notifyRegistration";
+    const isCancelNotify = action === "cancelSession";
 
-    if (!isRegistrationNotify) {
+    if (!isRegistrationNotify && !isCancelNotify) {
       // Check caller has trainer role
       const { data: roleData } = await roleClient
         .from("user_roles")
@@ -185,6 +186,22 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+    }
+
+    // Client cancels a session — notify trainer
+    if (isCancelNotify) {
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      const clientName = profile?.full_name || "Unknown";
+      const cancelMsg = `❌ <b>Клиент отменил тренировку</b>\n\n👤 ${clientName}\n📅 ${message}`;
+      await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, cancelMsg);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Default: send message to trainer
