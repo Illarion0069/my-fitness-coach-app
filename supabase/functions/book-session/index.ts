@@ -66,6 +66,38 @@ Deno.serve(async (req) => {
 
       const dayOfWeek = new Date(date + 'T12:00:00').getDay();
 
+      // Find trainer
+      const { data: trainers } = await supabase
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'trainer')
+        .limit(1);
+      const trainerId = trainers?.[0]?.user_id;
+
+      // Get trainer working hours
+      let workStart = 7;
+      let workEnd = 19;
+      let daysOff: number[] = [0]; // Sunday by default
+      if (trainerId) {
+        const { data: wh } = await supabase
+          .from('trainer_working_hours')
+          .select('work_start_hour, work_end_hour, days_off')
+          .eq('trainer_user_id', trainerId)
+          .single();
+        if (wh) {
+          workStart = wh.work_start_hour;
+          workEnd = wh.work_end_hour;
+          daysOff = wh.days_off || [0];
+        }
+      }
+
+      // If it's a day off, return empty slots
+      if (daysOff.includes(dayOfWeek)) {
+        return new Response(JSON.stringify({ slots: [], sessionDuration: DEFAULT_DURATION, dayOff: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Get all sessions for this date (one-off) and recurring for this day
       const { data: oneOff } = await supabase
         .from('scheduled_sessions')
@@ -83,11 +115,9 @@ Deno.serve(async (req) => {
       (oneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
       (recurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
 
-      // Generate hourly slots from 07:00 to 19:00 (working hours)
-      const WORK_START = 7;
-      const WORK_END = 19; // last slot at 19:00, session ends at 20:00
+      // Generate hourly slots within working hours
       const slots: { time: string; available: boolean }[] = [];
-      for (let h = WORK_START; h <= WORK_END; h++) {
+      for (let h = workStart; h <= workEnd; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
         slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, DEFAULT_DURATION, bookedSessions) });

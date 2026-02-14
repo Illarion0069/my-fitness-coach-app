@@ -167,6 +167,36 @@ export type Database = {
         }
         Relationships: []
       }
+      trainer_working_hours: {
+        Row: {
+          created_at: string
+          days_off: number[]
+          id: string
+          trainer_user_id: string
+          updated_at: string
+          work_end_hour: number
+          work_start_hour: number
+        }
+        Insert: {
+          created_at?: string
+          days_off?: number[]
+          id?: string
+          trainer_user_id: string
+          updated_at?: string
+          work_end_hour?: number
+          work_start_hour?: number
+        }
+        Update: {
+          created_at?: string
+          days_off?: number[]
+          id?: string
+          trainer_user_id?: string
+          updated_at?: string
+          work_end_hour?: number
+          work_start_hour?: number
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string

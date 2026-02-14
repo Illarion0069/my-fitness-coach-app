@@ -10,6 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import ClientSchedule from '@/components/ClientSchedule';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import TrainerWhoopWidget from '@/components/TrainerWhoopWidget';
+import TrainerWorkingHours from '@/components/TrainerWorkingHours';
 
 interface Profile {
   id: string;
@@ -278,7 +279,10 @@ const AdminSection = () => {
         </div>
 
         {viewMode === 'calendar' ? (
-          <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
+          <div className="space-y-4">
+            <TrainerWorkingHours lang={lang} />
+            <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
+          </div>
         ) : (
         <>
         {/* Add client form */}

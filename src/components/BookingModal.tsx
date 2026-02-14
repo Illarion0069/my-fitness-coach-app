@@ -38,6 +38,7 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
   const [slots, setSlots] = useState<TimeSlot[]>([]);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [isDayOff, setIsDayOff] = useState(false);
   const [mySessions, setMySessions] = useState<MySession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
 
@@ -73,11 +74,17 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
   const fetchSlots = async (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     setLoading(true);
+    setIsDayOff(false);
     try {
       const { data } = await supabase.functions.invoke('book-session', {
         body: { action: 'getSlots', date: dateStr },
       });
-      setSlots(data?.slots || []);
+      if (data?.dayOff) {
+        setIsDayOff(true);
+        setSlots([]);
+      } else {
+        setSlots(data?.slots || []);
+      }
     } catch {
       setSlots([]);
     }
@@ -325,7 +332,19 @@ const BookingModal = ({ open, onClose }: BookingModalProps) => {
                   </div>
                 )}
 
-                {!loading && slots.filter(s => s.available).length === 0 && (
+                {!loading && isDayOff && (
+                  <p className="text-sm text-muted-foreground text-center mt-4">
+                    {lang === 'en' ? 'Day off — no sessions available' : 'Выходной день — запись недоступна'}
+                  </p>
+                )}
+
+                {!loading && !isDayOff && slots.filter(s => s.available).length === 0 && slots.length > 0 && (
+                  <p className="text-sm text-muted-foreground text-center mt-4">
+                    {lang === 'en' ? 'All slots are booked for this day' : 'Все слоты на этот день заняты'}
+                  </p>
+                )}
+
+                {!loading && !isDayOff && slots.length === 0 && (
                   <p className="text-sm text-muted-foreground text-center mt-4">
                     {lang === 'en' ? 'No available slots for this day' : 'Нет свободных слотов на этот день'}
                   </p>
