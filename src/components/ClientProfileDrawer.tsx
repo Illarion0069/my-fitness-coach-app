@@ -126,7 +126,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   return (
     <AnimatePresence>
       {open && (
-        <>
+        <motion.div key="drawer-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
@@ -310,7 +310,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
               </button>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
