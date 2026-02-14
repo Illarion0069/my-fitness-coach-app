@@ -36,7 +36,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
     const body = await req.json();
     const { action } = body;
-    const SESSION_DURATION_MINUTES = 60; // 1 hour session duration
+    const DEFAULT_DURATION = 60;
 
     // Helper: parse "HH:MM" to minutes since midnight
     const timeToMinutes = (t: string): number => {
@@ -44,11 +44,13 @@ Deno.serve(async (req) => {
       return h * 60 + (m || 0);
     };
 
-    // Helper: check if a new slot overlaps with any booked session
-    const isSlotBlocked = (slotMinutes: number, bookedMinutes: number[]): boolean => {
-      for (const booked of bookedMinutes) {
-        // Overlap if |slotStart - bookedStart| < duration
-        if (Math.abs(slotMinutes - booked) < SESSION_DURATION_MINUTES) {
+    // Helper: check if a new slot overlaps with any booked session (using per-session durations)
+    const isSlotBlocked = (slotStart: number, slotDuration: number, bookedSessions: { start: number; duration: number }[]): boolean => {
+      const slotEnd = slotStart + slotDuration;
+      for (const booked of bookedSessions) {
+        const bookedEnd = booked.start + booked.duration;
+        // Overlap: slotStart < bookedEnd AND bookedStart < slotEnd
+        if (slotStart < bookedEnd && booked.start < slotEnd) {
           return true;
         }
       }
@@ -69,29 +71,29 @@ Deno.serve(async (req) => {
       // Get all sessions for this date (one-off) and recurring for this day
       const { data: oneOff } = await supabase
         .from('scheduled_sessions')
-        .select('session_time')
+        .select('session_time, duration_minutes')
         .eq('session_date', date)
         .eq('is_recurring', false);
 
       const { data: recurring } = await supabase
         .from('scheduled_sessions')
-        .select('recurrence_time')
+        .select('recurrence_time, duration_minutes')
         .eq('is_recurring', true)
         .eq('recurrence_day', dayOfWeek);
 
-      const bookedMinutes: number[] = [];
-      (oneOff || []).forEach(s => { if (s.session_time) bookedMinutes.push(timeToMinutes(s.session_time.slice(0, 5))); });
-      (recurring || []).forEach(s => { if (s.recurrence_time) bookedMinutes.push(timeToMinutes(s.recurrence_time.slice(0, 5))); });
+      const bookedSessions: { start: number; duration: number }[] = [];
+      (oneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
+      (recurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
 
       // Generate hourly slots from 08:00 to 20:00
       const slots: { time: string; available: boolean }[] = [];
       for (let h = 8; h <= 20; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
-        slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, bookedMinutes) });
+        slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, DEFAULT_DURATION, bookedSessions) });
       }
 
-      return new Response(JSON.stringify({ slots, sessionDuration: SESSION_DURATION_MINUTES }), {
+      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -121,23 +123,23 @@ Deno.serve(async (req) => {
       // Check slot not already taken (with duration overlap)
       const { data: existingOneOff } = await supabase
         .from('scheduled_sessions')
-        .select('session_time')
+        .select('session_time, duration_minutes')
         .eq('session_date', date)
         .eq('is_recurring', false);
 
       const dayOfWeek = new Date(date + 'T12:00:00').getDay();
       const { data: existingRecurring } = await supabase
         .from('scheduled_sessions')
-        .select('recurrence_time')
+        .select('recurrence_time, duration_minutes')
         .eq('is_recurring', true)
         .eq('recurrence_day', dayOfWeek);
 
-      const bookedMinutes: number[] = [];
-      (existingOneOff || []).forEach(s => { if (s.session_time) bookedMinutes.push(timeToMinutes(s.session_time.slice(0, 5))); });
-      (existingRecurring || []).forEach(s => { if (s.recurrence_time) bookedMinutes.push(timeToMinutes(s.recurrence_time.slice(0, 5))); });
+      const bookedSessions: { start: number; duration: number }[] = [];
+      (existingOneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
+      (existingRecurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
 
       const requestedMinutes = timeToMinutes(time);
-      if (isSlotBlocked(requestedMinutes, bookedMinutes)) {
+      if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, bookedSessions)) {
         return new Response(JSON.stringify({ error: 'Slot overlaps with existing session' }), {
           status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });

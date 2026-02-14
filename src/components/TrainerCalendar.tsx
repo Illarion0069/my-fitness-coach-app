@@ -20,6 +20,7 @@ interface ScheduledSession {
   recurrence_day: number | null;
   recurrence_time: string | null;
   is_deducted: boolean;
+  duration_minutes: number;
 }
 
 interface Props {
@@ -55,6 +56,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   // Edit state
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editTime, setEditTime] = useState('');
+  const [editDuration, setEditDuration] = useState(60);
 
   // Drag state
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
@@ -190,11 +192,12 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
   };
 
-  // --- Edit time ---
+  // --- Edit time & duration ---
   const startEditing = (session: ScheduledSession) => {
     const time = session.is_recurring ? session.recurrence_time : session.session_time;
     setEditingSessionId(session.id);
     setEditTime(time?.slice(0, 5) || '');
+    setEditDuration(session.duration_minutes || 60);
   };
 
   const saveEditTime = async () => {
@@ -203,14 +206,15 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     if (!session) return;
 
     const updateField = session.is_recurring
-      ? { recurrence_time: editTime }
-      : { session_time: editTime };
+      ? { recurrence_time: editTime, duration_minutes: editDuration }
+      : { session_time: editTime, duration_minutes: editDuration };
 
     await supabase.from('scheduled_sessions').update(updateField).eq('id', editingSessionId);
     setEditingSessionId(null);
     setEditTime('');
+    setEditDuration(60);
     fetchSessions();
-    toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+    toast({ title: lang === 'en' ? 'Session updated' : 'Тренировка обновлена' });
   };
 
   // --- Drag to reposition ---
@@ -298,16 +302,29 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           key={s.id}
           className="flex items-center gap-2 bg-primary/20 border-2 border-primary rounded-lg px-3 py-2 mb-1 mt-1"
         >
-          <div className="w-1 h-8 rounded-full bg-primary shrink-0" />
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold truncate mb-1">{s.clientName}</p>
-            <input
-              type="time"
-              value={editTime}
-              onChange={e => setEditTime(e.target.value)}
-              autoFocus
-              className="w-full bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary"
-            />
+          <div className="w-1 h-10 rounded-full bg-primary shrink-0" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <p className="text-xs font-semibold truncate">{s.clientName}</p>
+            <div className="flex gap-1.5">
+              <input
+                type="time"
+                value={editTime}
+                onChange={e => setEditTime(e.target.value)}
+                autoFocus
+                className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary"
+              />
+              <select
+                value={editDuration}
+                onChange={e => setEditDuration(Number(e.target.value))}
+                className="bg-background border border-border rounded-md px-1.5 py-1 text-xs focus:outline-none focus:border-primary"
+              >
+                <option value={30}>30m</option>
+                <option value={45}>45m</option>
+                <option value={60}>1h</option>
+                <option value={90}>1.5h</option>
+                <option value={120}>2h</option>
+              </select>
+            </div>
           </div>
           <button
             onClick={saveEditTime}
@@ -371,6 +388,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             {isDragging && dragPreviewTime
               ? <span className="text-primary font-bold">{dragPreviewTime}</span>
               : timeStr?.slice(0, 5)}
+            {s.duration_minutes && s.duration_minutes !== 60 && (
+              <span className="text-primary/70 ml-1">{s.duration_minutes}m</span>
+            )}
             {s.is_recurring && ` · ${lang === 'en' ? 'recurring' : 'повтор'}`}
           </p>
         </div>

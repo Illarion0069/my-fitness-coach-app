@@ -96,6 +96,7 @@ export type Database = {
         Row: {
           created_at: string
           deducted_at: string | null
+          duration_minutes: number
           id: string
           is_deducted: boolean
           is_recurring: boolean
@@ -112,6 +113,7 @@ export type Database = {
         Insert: {
           created_at?: string
           deducted_at?: string | null
+          duration_minutes?: number
           id?: string
           is_deducted?: boolean
           is_recurring?: boolean
@@ -128,6 +130,7 @@ export type Database = {
         Update: {
           created_at?: string
           deducted_at?: string | null
+          duration_minutes?: number
           id?: string
           is_deducted?: boolean
           is_recurring?: boolean
