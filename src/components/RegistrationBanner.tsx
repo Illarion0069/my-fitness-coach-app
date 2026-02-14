@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, UserPlus } from 'lucide-react';
+import { X } from 'lucide-react';
+import trainerLogo from '@/assets/trainer-logo.png';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface RegistrationBannerProps {
@@ -36,9 +37,7 @@ const RegistrationBanner = ({ onRegister }: RegistrationBannerProps) => {
             <X className="w-4 h-4" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center shrink-0">
-              <UserPlus className="w-5 h-5 text-primary-foreground" />
-            </div>
+            <img src={trainerLogo} alt="Logo" className="w-10 h-10 rounded-xl shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-bold text-foreground">
                 {lang === 'en' ? 'Track your progress' : 'Отслеживайте прогресс'}
