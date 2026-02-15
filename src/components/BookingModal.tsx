@@ -258,7 +258,7 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
             )}
           </div>
 
-          <div className="p-5 flex-1">
+          <div className="p-5 pb-20 flex-1">
             {/* === DATE STEP === */}
             {step === 'date' && (
               <div>
