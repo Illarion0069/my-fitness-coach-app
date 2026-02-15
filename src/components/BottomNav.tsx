@@ -23,7 +23,7 @@ const BottomNav = ({ active, onNavigate, showAdmin = false }: BottomNavProps) =>
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-2xl border-t border-border/50 pb-safe">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-2xl border-t border-border/50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
       <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
         {items.map((item) => (
           <button
