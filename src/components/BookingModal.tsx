@@ -423,6 +423,7 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                 </div>
 
                 <button
+                  onClick={(e) => { e.stopPropagation(); handleBook(); }}
                   disabled={loading}
                   className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
