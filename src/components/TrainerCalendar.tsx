@@ -24,6 +24,7 @@ interface ScheduledSession {
   is_deducted: boolean;
   duration_minutes: number;
   recurring_exceptions: string[];
+  notes: string | null;
 }
 
 interface TrainerBlock {
@@ -153,7 +154,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : -1;
       if (!map[hour]) map[hour] = [];
       const client = clients.find(c => c.user_id === s.user_id);
-      map[hour].push({ ...s, clientName: client?.full_name || '?' });
+      // Extract manual name from notes like "👤 Name (manual)"
+      const manualMatch = s.notes?.match(/^👤 (.+?) \(manual\)$/);
+      const clientName = client?.full_name || manualMatch?.[1] || '?';
+      map[hour].push({ ...s, clientName });
     });
     return map;
   }, [daySessions, clients]);
@@ -861,12 +865,66 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           hour={showBlockModal}
           date={selectedDateStr}
           dayOfWeek={dayOfWeek}
+          clients={clients}
           onClose={() => setShowBlockModal(null)}
-          onSave={saveBlock}
-          onAddSession={() => {
+          onSaveBlock={saveBlock}
+          onAddSession={async ({ clientId, manualName: name, time, travelMinutes }) => {
             setShowBlockModal(null);
-            setShowAddForm(-1);
-            setAddTime(`${String(showBlockModal).padStart(2, '0')}:00`);
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Create session
+            const notes = name && !clientId ? `👤 ${name} (manual)` : null;
+            const userId = clientId || user.id; // If manual name, store under trainer's id with note
+            await supabase.from('scheduled_sessions').insert({
+              user_id: userId,
+              trainer_user_id: user.id,
+              session_date: selectedDateStr,
+              session_time: time || null,
+              is_recurring: false,
+              notes,
+            });
+
+            // Auto-deduct from package if real client
+            if (clientId) {
+              const { data: pkgs } = await supabase
+                .from('client_packages')
+                .select('*')
+                .eq('user_id', clientId)
+                .eq('is_active', true)
+                .order('created_at', { ascending: true })
+                .limit(1);
+              const pkg = pkgs?.[0];
+              if (pkg && pkg.used_sessions < pkg.total_sessions) {
+                await supabase
+                  .from('client_packages')
+                  .update({ used_sessions: pkg.used_sessions + 1 })
+                  .eq('id', pkg.id);
+              }
+            }
+
+            // Create travel block if specified
+            if (travelMinutes > 0 && time) {
+              const [h, m] = time.split(':').map(Number);
+              const travelStart = h * 60 + (m || 0) - travelMinutes;
+              const th = Math.max(0, Math.floor(travelStart / 60));
+              const tm = travelStart % 60;
+              const travelTime = `${String(th).padStart(2, '0')}:${String(tm < 0 ? 0 : tm).padStart(2, '0')}`;
+              await supabase.from('trainer_blocks').insert({
+                trainer_user_id: user.id,
+                block_type: 'travel',
+                title: lang === 'en' ? 'Travel' : 'В пути',
+                block_time: travelTime,
+                duration_minutes: travelMinutes,
+                is_recurring: false,
+                block_date: selectedDateStr,
+              });
+              fetchBlocks();
+            }
+
+            fetchSessions();
+            if (onSessionChange) onSessionChange();
+            toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
           }}
         />
       )}
