@@ -688,7 +688,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         })}
       </div>
 
-      {/* Swipeable day content */}
+      {/* Swipeable day content - stop propagation to prevent global tab swipe */}
+      <div onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
       <AnimatePresence mode="wait" custom={swipeDir}>
         <motion.div
           key={selectedDateStr}
@@ -826,6 +827,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           </div>
         </motion.div>
       </AnimatePresence>
+      </div>
       {deleteChoiceSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteChoiceSession(null)}>
           <div className="bg-card border border-border rounded-2xl p-5 mx-4 max-w-sm w-full space-y-3 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
