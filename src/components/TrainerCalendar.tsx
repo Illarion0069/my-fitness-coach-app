@@ -134,6 +134,25 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const noTimeSessions = sessionsByHour[-1] || [];
 
+  const sendSessionNotification = async (clientUserId: string, message: string, trainerMessage?: string) => {
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.access_token) return;
+      // Send to client
+      await supabase.functions.invoke('send-telegram', {
+        body: { action: 'sendReminder', client_user_id: clientUserId, message },
+      });
+      // Send to trainer (via default chat)
+      if (trainerMessage) {
+        await supabase.functions.invoke('send-telegram', {
+          body: { message: trainerMessage },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to send notification', e);
+    }
+  };
+
   const addSession = async () => {
     if (!selectedClientId) return;
     const { data: { user } } = await supabase.auth.getUser();
@@ -163,6 +182,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         .eq('id', pkg.id);
     }
 
+    // Notify client and trainer
+    const client = clients.find(c => c.user_id === selectedClientId);
+    const clientName = client?.full_name || '?';
+    const displayDate = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+    const timeDisplay = addTime ? ` в ${addTime}` : '';
+    const remaining = pkg ? pkg.total_sessions - pkg.used_sessions - 1 : '?';
+
+    sendSessionNotification(
+      selectedClientId,
+      `📅 <b>Новая тренировка!</b>\n\n📆 ${displayDate}${timeDisplay}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`,
+      `📅 <b>Тренировка добавлена</b>\n\n👤 ${clientName}\n📆 ${displayDate}${timeDisplay}\n📦 Осталось: ${remaining} занятий`
+    );
+
     setShowAddForm(null);
     setSelectedClientId('');
     setAddTime('');
@@ -172,26 +204,17 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const sendCancelNotification = async (session: ScheduledSession, dateStr: string) => {
-    try {
-      const client = clients.find(c => c.user_id === session.user_id);
-      const clientName = client?.full_name || '?';
-      const displayDate = new Date(dateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-      const timeStr = session.is_recurring ? session.recurrence_time : session.session_time;
-      const timeDisplay = timeStr ? ` в ${timeStr.slice(0, 5)}` : '';
+    const client = clients.find(c => c.user_id === session.user_id);
+    const clientName = client?.full_name || '?';
+    const displayDate = new Date(dateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+    const timeStr = session.is_recurring ? session.recurrence_time : session.session_time;
+    const timeDisplay = timeStr ? ` в ${timeStr.slice(0, 5)}` : '';
 
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (authSession?.access_token) {
-        await supabase.functions.invoke('send-telegram', {
-          body: {
-            action: 'sendReminder',
-            client_user_id: session.user_id,
-            message: `❌ <b>Тренировка отменена</b>\n\n📅 ${displayDate}${timeDisplay}\n\nЕсли у вас есть вопросы, свяжитесь с тренером.`,
-          },
-        });
-      }
-    } catch (e) {
-      console.error('Failed to send cancel notification', e);
-    }
+    sendSessionNotification(
+      session.user_id,
+      `❌ <b>Тренировка отменена тренером</b>\n\n📅 ${displayDate}${timeDisplay}\n\nЕсли у вас есть вопросы, свяжитесь с тренером.`,
+      `❌ <b>Тренировка отменена</b>\n\n👤 ${clientName}\n📅 ${displayDate}${timeDisplay}`
+    );
   };
 
   const deleteSession = async (id: string) => {
@@ -273,6 +296,20 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       : { session_time: editTime, duration_minutes: editDuration };
 
     await supabase.from('scheduled_sessions').update(updateField).eq('id', editingSessionId);
+
+    // Notify about time change
+    const client = clients.find(c => c.user_id === session.user_id);
+    const clientName = client?.full_name || '?';
+    const displayDate = session.is_recurring
+      ? (lang === 'en' ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][session.recurrence_day || 0] : ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][session.recurrence_day || 0])
+      : new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+
+    sendSessionNotification(
+      session.user_id,
+      `✏️ <b>Тренировка перенесена</b>\n\n📅 ${displayDate}\n🕐 Новое время: ${editTime}\n⏱ ${editDuration} мин`,
+      `✏️ <b>Тренировка изменена</b>\n\n👤 ${clientName}\n📅 ${displayDate}\n🕐 ${editTime} · ${editDuration} мин`
+    );
+
     setEditingSessionId(null);
     setEditTime('');
     setEditDuration(60);
@@ -318,6 +355,20 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       : { session_time: dragPreviewTime };
 
     await supabase.from('scheduled_sessions').update(updateField).eq('id', draggingSessionId);
+
+    // Notify about drag move
+    const client = clients.find(c => c.user_id === session.user_id);
+    const clientName = client?.full_name || '?';
+    const displayDate = session.is_recurring
+      ? (lang === 'en' ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][session.recurrence_day || 0] : ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][session.recurrence_day || 0])
+      : new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+
+    sendSessionNotification(
+      session.user_id,
+      `✏️ <b>Тренировка перенесена</b>\n\n📅 ${displayDate}\n🕐 Новое время: ${dragPreviewTime}`,
+      `✏️ <b>Тренировка перенесена</b>\n\n👤 ${clientName}\n📅 ${displayDate}\n🕐 ${dragPreviewTime}`
+    );
+
     setDraggingSessionId(null);
     setDragPreviewTime(null);
     fetchSessions();
