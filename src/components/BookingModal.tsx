@@ -1,6 +1,6 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2 } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2, CreditCard, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,7 +25,16 @@ interface MySession {
   session_time: string | null;
 }
 
-type Step = 'date' | 'time' | 'confirm' | 'done' | 'my-sessions';
+type Step = 'date' | 'time' | 'payment' | 'confirm' | 'done' | 'my-sessions';
+
+const REVOLUT_LINK = 'https://revolut.me/illarion';
+
+const PACKAGES = [
+  { sessions: 1, price: 100, label: { en: 'Single Session', ru: 'Разовая тренировка' } },
+  { sessions: 8, price: 750, label: { en: '8 Sessions', ru: '8 занятий' } },
+  { sessions: 12, price: 1030, label: { en: '12 Sessions', ru: '12 занятий' } },
+  { sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
+];
 
 const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
   const { user } = useAuth();
@@ -43,6 +52,9 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
   const [mySessions, setMySessions] = useState<MySession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [trainerDaysOff, setTrainerDaysOff] = useState<number[]>([0, 6]);
+  const [hasActivePackage, setHasActivePackage] = useState<boolean | null>(null);
+  const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
+  const [paymentOpened, setPaymentOpened] = useState(false);
 
   // Fetch trainer days off on mount
   useEffect(() => {
@@ -64,6 +76,9 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
       setSelectedDate(null);
       setSelectedTime(null);
       setSlots([]);
+      setHasActivePackage(null);
+      setSelectedPackage(null);
+      setPaymentOpened(false);
     }
   }, [open]);
 
@@ -116,6 +131,37 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
       setMySessions([]);
     }
     setLoading(false);
+  };
+
+  const checkActivePackage = useCallback(async () => {
+    if (!user) return false;
+    const { data } = await supabase
+      .from('client_packages')
+      .select('id')
+      .eq('user_id', user.id)
+      .eq('is_active', true)
+      .limit(1);
+    const has = (data?.length ?? 0) > 0;
+    setHasActivePackage(has);
+    return has;
+  }, [user]);
+
+  const handleTimeSelect = async (time: string) => {
+    setSelectedTime(time);
+    if (!user) {
+      setStep('confirm');
+      return;
+    }
+    setLoading(true);
+    const has = await checkActivePackage();
+    setLoading(false);
+    if (has) {
+      setStep('confirm');
+    } else {
+      setSelectedPackage(null);
+      setPaymentOpened(false);
+      setStep('payment');
+    }
   };
 
   const handleDateSelect = (day: Date) => {
@@ -225,6 +271,11 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                   </button>
                 )}
                 {step === 'confirm' && (
+                  <button onClick={() => setStep(hasActivePackage === false ? 'payment' : 'time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
+                {step === 'payment' && (
                   <button onClick={() => setStep('time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
@@ -234,7 +285,9 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                     ? (lang === 'en' ? 'Booked!' : 'Записано!')
                     : step === 'my-sessions'
                       ? (lang === 'en' ? 'My Sessions' : 'Мои записи')
-                      : (lang === 'en' ? 'Book Session' : 'Запись на тренировку')
+                      : step === 'payment'
+                        ? (lang === 'en' ? 'Payment' : 'Оплата')
+                        : (lang === 'en' ? 'Book Session' : 'Запись на тренировку')
                   }
                 </h2>
               </div>
@@ -246,11 +299,11 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
             {/* Step indicators */}
             {step !== 'done' && step !== 'my-sessions' && (
               <div className="flex gap-1 mt-3">
-                {['date', 'time', 'confirm'].map((s, i) => (
+                {(hasActivePackage === false ? ['date', 'time', 'payment', 'confirm'] : ['date', 'time', 'confirm']).map((s, i, arr) => (
                   <div
                     key={s}
                     className={`h-1 flex-1 rounded-full transition-colors ${
-                      ['date', 'time', 'confirm'].indexOf(step) >= i ? 'bg-primary' : 'bg-secondary'
+                      arr.indexOf(step as string) >= i ? 'bg-primary' : 'bg-secondary'
                     }`}
                   />
                 ))}
@@ -355,7 +408,7 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                       <button
                         key={slot.time}
                         disabled={!slot.available}
-                        onClick={() => { setSelectedTime(slot.time); setStep('confirm'); }}
+                        onClick={() => handleTimeSelect(slot.time)}
                         className={`py-3 rounded-xl text-sm font-semibold transition-all ${
                           !slot.available
                             ? 'bg-secondary/50 text-muted-foreground/40 cursor-not-allowed line-through'
@@ -390,7 +443,105 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
               </div>
             )}
 
-            {/* === CONFIRM STEP === */}
+            {/* === PAYMENT STEP === */}
+            {step === 'payment' && selectedDate && selectedTime && (
+              <div className="space-y-5">
+                {/* Selected slot summary */}
+                <div className="bg-secondary/50 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{format(selectedDate, 'EEEE, d MMMM', { locale })}</p>
+                    <p className="text-xs text-muted-foreground">{selectedTime}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold mb-1">
+                    {lang === 'en' ? 'Choose a plan to continue' : 'Выберите вариант для продолжения'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {lang === 'en'
+                      ? 'You need to purchase a session or package to book a training.'
+                      : 'Для записи на тренировку необходимо оплатить занятие или пакет.'}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  {PACKAGES.map(pkg => (
+                    <button
+                      key={pkg.sessions}
+                      onClick={() => setSelectedPackage(pkg)}
+                      className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
+                        selectedPackage?.sessions === pkg.sessions
+                          ? 'border-primary bg-primary/5 shadow-md'
+                          : 'border-border/50 bg-secondary/30 hover:border-primary/30'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
+                          selectedPackage?.sessions === pkg.sessions ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                        }`}>
+                          {pkg.sessions === 1
+                            ? <CreditCard className="w-4 h-4" />
+                            : <Package className="w-4 h-4" />
+                          }
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm font-bold">{pkg.label[lang]}</p>
+                          {pkg.sessions > 1 && (
+                            <p className="text-[10px] text-muted-foreground">
+                              {Math.round(pkg.price / pkg.sessions)}€ {lang === 'en' ? 'per session' : 'за занятие'}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-base font-bold">{pkg.price}€</p>
+                    </button>
+                  ))}
+                </div>
+
+                {selectedPackage && !paymentOpened && (
+                  <a
+                    href={REVOLUT_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => setPaymentOpened(true)}
+                    className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+                  >
+                    <CreditCard className="w-5 h-5" />
+                    {lang === 'en' ? `Pay ${selectedPackage.price}€ via Revolut` : `Оплатить ${selectedPackage.price}€ через Revolut`}
+                  </a>
+                )}
+
+                {paymentOpened && (
+                  <div className="space-y-3">
+                    <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
+                      <p className="text-xs text-primary font-medium text-center">
+                        💳 {lang === 'en'
+                          ? 'Complete the payment in Revolut, then confirm below.'
+                          : 'Завершите оплату в Revolut, затем подтвердите ниже.'}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => setStep('confirm')}
+                      className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <Check className="w-5 h-5" />
+                      {lang === 'en' ? 'I have paid — Confirm booking' : 'Я оплатил — Подтвердить запись'}
+                    </button>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-muted-foreground/60 text-center">
+                  {lang === 'en'
+                    ? 'Payment via Revolut. Gym membership 150€/month paid separately.'
+                    : 'Оплата через Revolut. Абонемент зала 150€/мес оплачивается отдельно.'}
+                </p>
+              </div>
+            )}
+
             {step === 'confirm' && selectedDate && selectedTime && (
               <div className="space-y-6">
                 <div className="bg-secondary/50 rounded-2xl p-5 space-y-3">
