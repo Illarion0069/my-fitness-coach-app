@@ -68,11 +68,11 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, onClose, onSave, onAdd
     : ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={onClose}>
       <div
-        className="bg-card border border-border/50 rounded-t-2xl w-full max-w-md pb-8 shadow-xl animate-slide-up"
+        className="bg-card border border-border/50 rounded-t-2xl w-full max-w-md shadow-xl animate-slide-up"
         onClick={e => e.stopPropagation()}
-        style={{ animation: 'slide-up 0.25s ease-out' }}
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
       >
         {/* Handle bar */}
         <div className="flex justify-center pt-2 pb-3">
