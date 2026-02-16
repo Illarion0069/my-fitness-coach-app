@@ -467,7 +467,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const label = b.title || (b.block_type === 'block' ? (lang === 'en' ? 'Blocked' : 'Закрыто') : b.block_type === 'travel' ? (lang === 'en' ? 'Travel' : 'В пути') : '');
 
     return (
-      <div key={b.id} className={`flex items-center gap-2 ${colorClass} border rounded-lg px-3 py-1.5 mb-1 mt-1`}>
+      <div key={b.id} className={`flex items-center gap-2 ${colorClass} border rounded-lg px-3 py-1.5 h-full`}>
         <Icon className="w-3.5 h-3.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold truncate">{label}</p>
@@ -550,7 +550,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return (
       <div
         key={s.id}
-        className={`relative flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 mb-1 mt-1 transition-all select-none ${
+        className={`relative flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 h-full transition-all select-none ${
           isDragging ? 'opacity-60 scale-95 shadow-lg ring-2 ring-primary/40' : ''
         } ${contextMenuSessionId === s.id ? 'ring-2 ring-primary/60' : ''}`}
         onTouchStart={handleLongPressStart}
