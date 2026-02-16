@@ -36,13 +36,20 @@ Deno.serve(async (req) => {
       return h * 60 + (m || 0);
     };
 
-    const isSlotBlocked = (slotStart: number, slotDuration: number, bookedSessions: { start: number; duration: number }[]): boolean => {
+    const MAX_CLIENTS_PER_SLOT = 2; // Split sessions: max 2 clients at the same time
+
+    const countOverlapping = (slotStart: number, slotDuration: number, bookedSessions: { start: number; duration: number }[]): number => {
       const slotEnd = slotStart + slotDuration;
+      let count = 0;
       for (const booked of bookedSessions) {
         const bookedEnd = booked.start + booked.duration;
-        if (slotStart < bookedEnd && booked.start < slotEnd) return true;
+        if (slotStart < bookedEnd && booked.start < slotEnd) count++;
       }
-      return false;
+      return count;
+    };
+
+    const isSlotBlocked = (slotStart: number, slotDuration: number, bookedSessions: { start: number; duration: number }[]): boolean => {
+      return countOverlapping(slotStart, slotDuration, bookedSessions) >= MAX_CLIENTS_PER_SLOT;
     };
 
     // Helper: get active package with remaining sessions (checks expiry)
@@ -144,14 +151,15 @@ Deno.serve(async (req) => {
 
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
 
-      const slots: { time: string; available: boolean }[] = [];
+      const slots: { time: string; available: boolean; booked: number }[] = [];
       for (let h = trainer.workStart; h <= trainer.workEnd; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
-        slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, DEFAULT_DURATION, bookedSessions) });
+        const bookedCount = countOverlapping(slotMinutes, DEFAULT_DURATION, bookedSessions);
+        slots.push({ time: timeStr, available: bookedCount < MAX_CLIENTS_PER_SLOT, booked: bookedCount });
       }
 
-      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION }), {
+      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: MAX_CLIENTS_PER_SLOT }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -197,11 +205,11 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Time outside working hours' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Check slot availability (overlap check)
+      // Check slot availability (split sessions: max 2 clients per slot)
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
       const requestedMinutes = timeToMinutes(time);
-      if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, bookedSessions)) {
-        return new Response(JSON.stringify({ error: 'Slot overlaps with existing session' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions) >= MAX_CLIENTS_PER_SLOT) {
+        return new Response(JSON.stringify({ error: 'Slot is full (max 2 clients)' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Check balance — get active package with remaining sessions
