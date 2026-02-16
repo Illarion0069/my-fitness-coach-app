@@ -90,19 +90,6 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
           .update({ used_sessions: pkg.used_sessions + 1 })
           .eq('id', pkg.id);
       }
-
-      // Notify
-      const displayDate = new Date(date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-      const timeDisplay = time ? ` в ${time}` : '';
-      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
-      const clientName = clientProfile?.full_name || '?';
-      const remaining = pkg ? pkg.total_sessions - pkg.used_sessions - 1 : '?';
-
-      sendNotification(
-        userId,
-        `📅 <b>Новая тренировка!</b>\n\n📆 ${displayDate}${timeDisplay}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`,
-        `📅 <b>Тренировка добавлена</b>\n\n👤 ${clientName}\n📆 ${displayDate}${timeDisplay}\n📦 Осталось: ${remaining} занятий`
-      );
     } else {
       await supabase.from('scheduled_sessions').insert({
         user_id: userId,
@@ -112,18 +99,6 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         recurrence_day: recurDay,
         recurrence_time: recurTime || null,
       });
-
-      // Notify about recurring
-      const dayName = dayNames[recurDay];
-      const timeDisplay = recurTime ? ` в ${recurTime}` : '';
-      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
-      const clientName = clientProfile?.full_name || '?';
-
-      sendNotification(
-        userId,
-        `🔄 <b>Регулярная тренировка!</b>\n\nКаждый ${dayName}${timeDisplay}\n📍 Eleftherias 119, Limassol`,
-        `🔄 <b>Регулярная тренировка добавлена</b>\n\n👤 ${clientName}\nКаждый ${dayName}${timeDisplay}`
-      );
     }
 
     setDate('');
