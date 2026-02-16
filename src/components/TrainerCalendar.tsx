@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical, Pencil, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, addMonths, startOfWeek, startOfMonth, endOfMonth, isSameDay, isToday, isSameMonth, eachDayOfInterval, getDay } from 'date-fns';
@@ -68,6 +69,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const timelineRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number>(0);
   const dragStartMinutes = useRef<number>(0);
+  const [swipeDir, setSwipeDir] = useState(0);
 
   // Generate all days for the month for smooth scrolling
   const monthDays = useMemo(() => {
@@ -577,121 +579,143 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         })}
       </div>
 
-      {/* Selected day label */}
-      <div className="flex items-center justify-between mb-3 px-1">
-        <p className="text-sm font-semibold capitalize">
-          {format(selectedDate, 'EEEE, d MMMM', { locale })}
-        </p>
-        <button
-          onClick={() => {
-            setShowAddForm(-1);
-            setAddTime('');
+      {/* Swipeable day content */}
+      <AnimatePresence mode="wait" custom={swipeDir}>
+        <motion.div
+          key={selectedDateStr}
+          custom={swipeDir}
+          initial={{ x: swipeDir > 0 ? '40%' : '-40%', opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: swipeDir > 0 ? '-40%' : '40%', opacity: 0 }}
+          transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
+          drag="x"
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.15}
+          onDragEnd={(_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+            if (draggingSessionId) return; // Don't navigate while dragging a session
+            const threshold = 60;
+            if (info.offset.x < -threshold) {
+              setSwipeDir(1);
+              setSelectedDate(prev => addDays(prev, 1));
+            } else if (info.offset.x > threshold) {
+              setSwipeDir(-1);
+              setSelectedDate(prev => addDays(prev, -1));
+            }
           }}
-          className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground"
         >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Add form */}
-      {showAddForm === -1 && (
-        <div className="bg-card border border-border/50 rounded-xl p-3 mb-3 space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-xs font-semibold">{lang === 'en' ? 'New session' : 'Новая тренировка'}</p>
-            <button onClick={() => setShowAddForm(null)} className="text-muted-foreground"><X className="w-4 h-4" /></button>
+          {/* Selected day label */}
+          <div className="flex items-center justify-between mb-3 px-1">
+            <p className="text-sm font-semibold capitalize">
+              {format(selectedDate, 'EEEE, d MMMM', { locale })}
+            </p>
+            <button
+              onClick={() => {
+                setShowAddForm(-1);
+                setAddTime('');
+              }}
+              className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
           </div>
-          <select
-            value={selectedClientId}
-            onChange={e => setSelectedClientId(e.target.value)}
-            className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
-          >
-            <option value="">{lang === 'en' ? 'Select client' : 'Выберите клиента'}</option>
-            {clients.map(c => (
-              <option key={c.user_id} value={c.user_id}>{c.full_name}</option>
-            ))}
-          </select>
-          <input
-            type="time"
-            value={addTime}
-            onChange={e => setAddTime(e.target.value)}
-            className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
-          />
-          <button
-            onClick={addSession}
-            disabled={!selectedClientId}
-            className="w-full gradient-primary text-primary-foreground text-xs font-bold py-2 rounded-lg disabled:opacity-50"
-          >
-            {lang === 'en' ? 'Add' : 'Добавить'}
-          </button>
-        </div>
-      )}
 
-      {/* No-time sessions */}
-      {noTimeSessions.length > 0 && (
-        <div className="mb-2 space-y-1">
-          <p className="text-[10px] text-muted-foreground font-medium px-1">
-            {lang === 'en' ? 'All day' : 'Весь день'}
-          </p>
-          {noTimeSessions.map(s => renderSessionCard(s))}
-        </div>
-      )}
-
-      {/* Drag preview floating badge */}
-      {draggingSessionId && dragPreviewTime && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-scale-in">
-          <Clock className="w-3.5 h-3.5 inline mr-1.5" />
-          {dragPreviewTime}
-        </div>
-      )}
-
-      {/* Timeline */}
-      <div
-        ref={timelineRef}
-        className="relative"
-        onTouchMove={onSessionTouchMove}
-        onTouchEnd={onSessionTouchEnd}
-      >
-        {HOURS.map(hour => {
-          const hourSessions = sessionsByHour[hour] || [];
-          return (
-            <div key={hour} className="flex min-h-[52px] group">
-              {/* Time label */}
-              <div className="w-12 shrink-0 text-right pr-3 pt-0">
-                <span className="text-[10px] text-muted-foreground font-medium">
-                  {String(hour).padStart(2, '0')}:00
-                </span>
+          {/* Add form */}
+          {showAddForm === -1 && (
+            <div className="bg-card border border-border/50 rounded-xl p-3 mb-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-semibold">{lang === 'en' ? 'New session' : 'Новая тренировка'}</p>
+                <button onClick={() => setShowAddForm(null)} className="text-muted-foreground"><X className="w-4 h-4" /></button>
               </div>
-              {/* Slot */}
-              <div className="flex-1 border-t border-border/30 relative min-h-[52px]">
-                {hourSessions.length > 0 && (
-                  <div className="flex gap-1 mt-1 mb-1">
-                    {hourSessions.map(s => (
-                      <div key={s.id} className="flex-1 min-w-0">
-                        {renderSessionCard(s)}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {hourSessions.length < 2 && (
-                  <button
-                    onClick={() => {
-                      setShowAddForm(-1);
-                      setAddTime(`${String(hour).padStart(2, '0')}:00`);
-                    }}
-                    className={`absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity ${hourSessions.length > 0 ? 'pointer-events-none group-hover:pointer-events-auto' : ''}`}
-                  >
-                    <span className="text-[10px] text-primary/50 flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> {hourSessions.length === 1 ? (lang === 'en' ? 'Split' : 'Сплит') : (lang === 'en' ? 'Add' : 'Добавить')}
-                    </span>
-                  </button>
-                )}
-              </div>
+              <select
+                value={selectedClientId}
+                onChange={e => setSelectedClientId(e.target.value)}
+                className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+              >
+                <option value="">{lang === 'en' ? 'Select client' : 'Выберите клиента'}</option>
+                {clients.map(c => (
+                  <option key={c.user_id} value={c.user_id}>{c.full_name}</option>
+                ))}
+              </select>
+              <input
+                type="time"
+                value={addTime}
+                onChange={e => setAddTime(e.target.value)}
+                className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+              />
+              <button
+                onClick={addSession}
+                disabled={!selectedClientId}
+                className="w-full gradient-primary text-primary-foreground text-xs font-bold py-2 rounded-lg disabled:opacity-50"
+              >
+                {lang === 'en' ? 'Add' : 'Добавить'}
+              </button>
             </div>
-          );
-        })}
-      </div>
+          )}
 
-      {/* Delete recurring choice dialog */}
+          {/* No-time sessions */}
+          {noTimeSessions.length > 0 && (
+            <div className="mb-2 space-y-1">
+              <p className="text-[10px] text-muted-foreground font-medium px-1">
+                {lang === 'en' ? 'All day' : 'Весь день'}
+              </p>
+              {noTimeSessions.map(s => renderSessionCard(s))}
+            </div>
+          )}
+
+          {/* Drag preview floating badge */}
+          {draggingSessionId && dragPreviewTime && (
+            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-scale-in">
+              <Clock className="w-3.5 h-3.5 inline mr-1.5" />
+              {dragPreviewTime}
+            </div>
+          )}
+
+          {/* Timeline */}
+          <div
+            ref={timelineRef}
+            className="relative"
+            onTouchMove={onSessionTouchMove}
+            onTouchEnd={onSessionTouchEnd}
+          >
+            {HOURS.map(hour => {
+              const hourSessions = sessionsByHour[hour] || [];
+              return (
+                <div key={hour} className="flex min-h-[52px] group">
+                  <div className="w-12 shrink-0 text-right pr-3 pt-0">
+                    <span className="text-[10px] text-muted-foreground font-medium">
+                      {String(hour).padStart(2, '0')}:00
+                    </span>
+                  </div>
+                  <div className="flex-1 border-t border-border/30 relative min-h-[52px]">
+                    {hourSessions.length > 0 && (
+                      <div className="flex gap-1 mt-1 mb-1">
+                        {hourSessions.map(s => (
+                          <div key={s.id} className="flex-1 min-w-0">
+                            {renderSessionCard(s)}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {hourSessions.length < 2 && (
+                      <button
+                        onClick={() => {
+                          setShowAddForm(-1);
+                          setAddTime(`${String(hour).padStart(2, '0')}:00`);
+                        }}
+                        className={`absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity ${hourSessions.length > 0 ? 'pointer-events-none group-hover:pointer-events-auto' : ''}`}
+                      >
+                        <span className="text-[10px] text-primary/50 flex items-center gap-1">
+                          <Plus className="w-3 h-3" /> {hourSessions.length === 1 ? (lang === 'en' ? 'Split' : 'Сплит') : (lang === 'en' ? 'Add' : 'Добавить')}
+                        </span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+      </AnimatePresence>
       {deleteChoiceSession && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteChoiceSession(null)}>
           <div className="bg-card border border-border rounded-2xl p-5 mx-4 max-w-sm w-full space-y-3 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
