@@ -329,7 +329,7 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
             )}
           </div>
 
-          <div className="p-5 flex-1" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 100px)' }}>
+          <div className="p-5 flex-1 pb-40">
             {/* === DATE STEP === */}
             {step === 'date' && (
               <div>
