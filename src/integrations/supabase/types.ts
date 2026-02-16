@@ -215,6 +215,59 @@ export type Database = {
         }
         Relationships: []
       }
+      trainer_blocks: {
+        Row: {
+          block_date: string | null
+          block_time: string
+          block_type: string
+          created_at: string
+          duration_minutes: number
+          id: string
+          is_recurring: boolean
+          linked_session_id: string | null
+          recurrence_day: number | null
+          title: string | null
+          trainer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          block_date?: string | null
+          block_time: string
+          block_type?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_recurring?: boolean
+          linked_session_id?: string | null
+          recurrence_day?: number | null
+          title?: string | null
+          trainer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          block_date?: string | null
+          block_time?: string
+          block_type?: string
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          is_recurring?: boolean
+          linked_session_id?: string | null
+          recurrence_day?: number | null
+          title?: string | null
+          trainer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainer_blocks_linked_session_id_fkey"
+            columns: ["linked_session_id"]
+            isOneToOne: false
+            referencedRelation: "scheduled_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       trainer_client_order: {
         Row: {
           client_order: string[]

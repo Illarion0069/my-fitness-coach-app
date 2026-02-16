@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical, Pencil, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical, Pencil, Trash2, Ban, Car, Calendar as CalIcon } from 'lucide-react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, addMonths, startOfWeek, startOfMonth, endOfMonth, isSameDay, isToday, isSameMonth, eachDayOfInterval, getDay } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
+import TrainerBlockModal from './TrainerBlockModal';
 
 interface Profile {
   id: string;
@@ -23,6 +24,19 @@ interface ScheduledSession {
   is_deducted: boolean;
   duration_minutes: number;
   recurring_exceptions: string[];
+}
+
+interface TrainerBlock {
+  id: string;
+  trainer_user_id: string;
+  block_type: string;
+  title: string | null;
+  block_date: string | null;
+  block_time: string;
+  duration_minutes: number;
+  is_recurring: boolean;
+  recurrence_day: number | null;
+  linked_session_id: string | null;
 }
 
 interface Props {
@@ -46,7 +60,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
+  const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
   const [showAddForm, setShowAddForm] = useState<number | null>(null);
+  const [showBlockModal, setShowBlockModal] = useState<number | null>(null); // hour for block modal
   const [selectedClientId, setSelectedClientId] = useState('');
   const [addTime, setAddTime] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -89,7 +105,15 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     setSessions((data as ScheduledSession[]) || []);
   };
 
-  useEffect(() => { fetchSessions(); }, []);
+  const fetchBlocks = async () => {
+    const { data } = await supabase
+      .from('trainer_blocks')
+      .select('*')
+      .order('block_time', { ascending: true });
+    setBlocks((data as TrainerBlock[]) || []);
+  };
+
+  useEffect(() => { fetchSessions(); fetchBlocks(); }, []);
 
   const navigateMonth = (dir: number) => {
     const newDate = addMonths(currentMonth, dir);
@@ -133,6 +157,28 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     });
     return map;
   }, [daySessions, clients]);
+
+  // Filter blocks for the selected date
+  const dayBlocks = useMemo(() => {
+    return blocks.filter(b => {
+      if (b.is_recurring && b.recurrence_day === dayOfWeek) return true;
+      if (!b.is_recurring && b.block_date === selectedDateStr) return true;
+      return false;
+    });
+  }, [blocks, selectedDateStr, dayOfWeek]);
+
+  const blocksByHour = useMemo(() => {
+    const map: Record<number, TrainerBlock[]> = {};
+    dayBlocks.forEach(b => {
+      const hour = parseInt(b.block_time.split(':')[0], 10);
+      const durationHours = Math.ceil(b.duration_minutes / 60);
+      for (let h = hour; h < hour + durationHours && h <= 22; h++) {
+        if (!map[h]) map[h] = [];
+        if (h === hour) map[h].push(b); // Only show card on start hour
+      }
+    });
+    return map;
+  }, [dayBlocks]);
 
   const noTimeSessions = sessionsByHour[-1] || [];
 
@@ -368,6 +414,65 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       window.removeEventListener('mouseup', onMouseUp);
     };
   }, [draggingSessionId, handleDragMove, handleDragEnd]);
+
+  // --- Block handlers ---
+  const saveBlock = async (block: {
+    block_type: string;
+    title: string | null;
+    block_time: string;
+    duration_minutes: number;
+    is_recurring: boolean;
+    recurrence_day: number | null;
+    block_date: string | null;
+  }) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from('trainer_blocks').insert({
+      trainer_user_id: user.id,
+      ...block,
+    });
+    setShowBlockModal(null);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'Block added' : 'Блок добавлен' });
+  };
+
+  const deleteBlock = async (blockId: string) => {
+    await supabase.from('trainer_blocks').delete().eq('id', blockId);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'Block removed' : 'Блок удалён' });
+  };
+
+  const renderBlockCard = (b: TrainerBlock) => {
+    const blockColors: Record<string, string> = {
+      block: 'bg-destructive/10 border-destructive/30 text-destructive',
+      travel: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
+      personal: 'bg-blue-500/10 border-blue-500/30 text-blue-600',
+    };
+    const blockIcons: Record<string, typeof Ban> = {
+      block: Ban,
+      travel: Car,
+      personal: CalIcon,
+    };
+    const Icon = blockIcons[b.block_type] || Ban;
+    const colorClass = blockColors[b.block_type] || blockColors.block;
+    const label = b.title || (b.block_type === 'block' ? (lang === 'en' ? 'Blocked' : 'Закрыто') : b.block_type === 'travel' ? (lang === 'en' ? 'Travel' : 'В пути') : '');
+
+    return (
+      <div key={b.id} className={`flex items-center gap-2 ${colorClass} border rounded-lg px-3 py-1.5 mb-1 mt-1`}>
+        <Icon className="w-3.5 h-3.5 shrink-0" />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold truncate">{label}</p>
+          <p className="text-[10px] opacity-70">
+            {b.block_time.slice(0, 5)} · {b.duration_minutes}{lang === 'en' ? 'min' : 'мин'}
+            {b.is_recurring && ` · ${lang === 'en' ? 'weekly' : 'еженед.'}`}
+          </p>
+        </div>
+        <button onClick={() => deleteBlock(b.id)} className="opacity-50 hover:opacity-100 transition-opacity">
+          <X className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    );
+  };
 
   const renderSessionCard = (s: ScheduledSession & { clientName: string }) => {
     const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
@@ -679,6 +784,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           >
             {HOURS.map(hour => {
               const hourSessions = sessionsByHour[hour] || [];
+              const hourBlocks = blocksByHour[hour] || [];
               return (
                 <div key={hour} className="flex min-h-[52px] group">
                   <div className="w-12 shrink-0 text-right pr-3 pt-0">
@@ -687,6 +793,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                     </span>
                   </div>
                   <div className="flex-1 border-t border-border/30 relative min-h-[52px]">
+                    {/* Blocks */}
+                    {hourBlocks.map(b => renderBlockCard(b))}
+                    {/* Sessions */}
                     {hourSessions.length > 0 && (
                       <div className="flex gap-1 mt-1 mb-1">
                         {hourSessions.map(s => (
@@ -696,12 +805,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                         ))}
                       </div>
                     )}
-                    {hourSessions.length < 2 && (
+                    {hourSessions.length < 2 && hourBlocks.length === 0 && (
                       <button
-                        onClick={() => {
-                          setShowAddForm(-1);
-                          setAddTime(`${String(hour).padStart(2, '0')}:00`);
-                        }}
+                        onClick={() => setShowBlockModal(hour)}
                         className={`absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity ${hourSessions.length > 0 ? 'pointer-events-none group-hover:pointer-events-auto' : ''}`}
                       >
                         <span className="text-[10px] text-primary/50 flex items-center gap-1">
@@ -748,6 +854,21 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             </div>
           </div>
         </div>
+      )}
+      {showBlockModal !== null && (
+        <TrainerBlockModal
+          lang={lang}
+          hour={showBlockModal}
+          date={selectedDateStr}
+          dayOfWeek={dayOfWeek}
+          onClose={() => setShowBlockModal(null)}
+          onSave={saveBlock}
+          onAddSession={() => {
+            setShowBlockModal(null);
+            setShowAddForm(-1);
+            setAddTime(`${String(showBlockModal).padStart(2, '0')}:00`);
+          }}
+        />
       )}
     </div>
   );
