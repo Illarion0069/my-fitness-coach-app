@@ -646,8 +646,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
               {/* Slot */}
               <div className="flex-1 border-t border-border/30 relative min-h-[52px]">
                 {hourSessions.map(s => renderSessionCard(s))}
-                {/* Tap to add */}
-                {hourSessions.length === 0 && (
+                {/* Tap to add — show if less than 2 sessions (split allowed) */}
+                {hourSessions.length < 2 && (
                   <button
                     onClick={() => {
                       setShowAddForm(-1);
@@ -656,7 +656,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                     className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
                   >
                     <span className="text-[10px] text-primary/50 flex items-center gap-1">
-                      <Plus className="w-3 h-3" /> {lang === 'en' ? 'Add' : 'Добавить'}
+                      <Plus className="w-3 h-3" /> {hourSessions.length === 1 ? (lang === 'en' ? 'Split' : 'Сплит') : (lang === 'en' ? 'Add' : 'Добавить')}
                     </span>
                   </button>
                 )}

@@ -17,6 +17,7 @@ interface BookingModalProps {
 interface TimeSlot {
   time: string;
   available: boolean;
+  booked?: number;
 }
 
 interface MySession {
@@ -427,15 +428,20 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                         key={slot.time}
                         disabled={!slot.available}
                         onClick={() => handleTimeSelect(slot.time)}
-                        className={`py-3 rounded-xl text-sm font-semibold transition-all ${
+                        className={`py-3 rounded-xl text-sm font-semibold transition-all relative ${
                           !slot.available
                             ? 'bg-secondary/50 text-muted-foreground/40 cursor-not-allowed line-through'
                             : selectedTime === slot.time
                               ? 'bg-primary text-primary-foreground shadow-md'
-                              : 'bg-secondary hover:bg-primary/10 hover:text-primary text-foreground'
+                              : slot.booked === 1
+                                ? 'bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30'
+                                : 'bg-secondary hover:bg-primary/10 hover:text-primary text-foreground'
                         }`}
                       >
                         {slot.time}
+                        {slot.booked === 1 && slot.available && (
+                          <span className="absolute top-0.5 right-1.5 text-[8px] font-bold text-primary/70">1/2</span>
+                        )}
                       </button>
                     ))}
                   </div>
