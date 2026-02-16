@@ -870,20 +870,22 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           clients={clients}
           onClose={() => setShowBlockModal(null)}
           onSaveBlock={saveBlock}
-          onAddSession={async ({ clientId, manualName: name, time, travelMinutes }) => {
+          onAddSession={async ({ clientId, manualName: name, time, travelMinutes, isRecurring: recurring, recurrenceDay }) => {
             setShowBlockModal(null);
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
             // Create session
             const notes = name && !clientId ? `👤 ${name} (manual)` : null;
-            const userId = clientId || user.id; // If manual name, store under trainer's id with note
+            const userId = clientId || user.id;
             await supabase.from('scheduled_sessions').insert({
               user_id: userId,
               trainer_user_id: user.id,
               session_date: selectedDateStr,
-              session_time: time || null,
-              is_recurring: false,
+              session_time: recurring ? null : (time || null),
+              is_recurring: recurring,
+              recurrence_day: recurring ? recurrenceDay : null,
+              recurrence_time: recurring ? (time || null) : null,
               notes,
             });
 
@@ -918,8 +920,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                 title: lang === 'en' ? 'Travel' : 'В пути',
                 block_time: travelTime,
                 duration_minutes: travelMinutes,
-                is_recurring: false,
-                block_date: selectedDateStr,
+                is_recurring: recurring,
+                recurrence_day: recurring ? recurrenceDay : null,
+                block_date: recurring ? null : selectedDateStr,
               });
               fetchBlocks();
             }

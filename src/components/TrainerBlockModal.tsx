@@ -28,6 +28,8 @@ interface Props {
     manualName: string;
     time: string;
     travelMinutes: number;
+    isRecurring: boolean;
+    recurrenceDay: number | null;
   }) => void;
 }
 
@@ -46,7 +48,8 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
   const [manualName, setManualName] = useState('');
   const [useManualName, setUseManualName] = useState(false);
   const [sessionTime, setSessionTime] = useState(`${String(hour).padStart(2, '0')}:00`);
-  const [travelMinutes, setTravelMinutes] = useState(0); // 0 = no travel
+  const [travelMinutes, setTravelMinutes] = useState(0);
+  const [sessionRecurring, setSessionRecurring] = useState(false);
 
   // Block fields
   const [title, setTitle] = useState('');
@@ -86,6 +89,8 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
       manualName: useManualName ? manualName.trim() : '',
       time: sessionTime,
       travelMinutes,
+      isRecurring: sessionRecurring,
+      recurrenceDay: sessionRecurring ? dayOfWeek : null,
     });
   };
 
@@ -229,6 +234,21 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
                 </p>
               )}
             </div>
+
+            {/* Recurring toggle */}
+            <button
+              onClick={() => setSessionRecurring(!sessionRecurring)}
+              className={`flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm transition-colors ${
+                sessionRecurring ? 'bg-primary/10 text-primary' : 'bg-secondary/50 text-muted-foreground'
+              }`}
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span className="font-medium text-xs">
+                {sessionRecurring
+                  ? (lang === 'en' ? `Every ${dayNames[dayOfWeek]}` : `Каждый ${dayNames[dayOfWeek]}`)
+                  : (lang === 'en' ? 'One-time' : 'Разовая')}
+              </span>
+            </button>
 
             {/* Save */}
             <button
