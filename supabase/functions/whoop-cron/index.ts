@@ -1,20 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { decrypt, encrypt, isEncrypted } from "../_shared/crypto.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+async function decryptToken(value: string): Promise<string> {
+  return isEncrypted(value) ? await decrypt(value) : value;
+}
+
 async function refreshToken(tokenRow: any, clientId: string, clientSecret: string) {
   if (new Date(tokenRow.expires_at) > new Date(Date.now() + 5 * 60 * 1000)) {
-    return tokenRow.access_token;
+    return await decryptToken(tokenRow.access_token);
   }
+  const refreshTokenValue = await decryptToken(tokenRow.refresh_token);
   const res = await fetch('https://api.prod.whoop.com/oauth/oauth2/token', {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
       grant_type: 'refresh_token',
-      refresh_token: tokenRow.refresh_token,
+      refresh_token: refreshTokenValue,
       client_id: clientId,
       client_secret: clientSecret,
     }),
@@ -24,7 +30,12 @@ async function refreshToken(tokenRow: any, clientId: string, clientSecret: strin
     return null;
   }
   const tokens = await res.json();
-  return { access_token: tokens.access_token, refresh_token: tokens.refresh_token, expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString() };
+  return {
+    access_token: tokens.access_token,
+    encrypted_access_token: await encrypt(tokens.access_token),
+    refresh_token: tokens.refresh_token ? await encrypt(tokens.refresh_token) : undefined,
+    expires_at: new Date(Date.now() + tokens.expires_in * 1000).toISOString(),
+  };
 }
 
 async function fetchWhoopData(accessToken: string, endpoint: string, params?: Record<string, string>) {
@@ -47,7 +58,6 @@ serve(async (req) => {
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Get all users with Whoop tokens
     const { data: allTokens, error: tokensError } = await supabase.from('whoop_tokens').select('*');
     if (tokensError || !allTokens?.length) {
       console.log('No Whoop tokens found or error:', tokensError);
@@ -67,11 +77,14 @@ serve(async (req) => {
           accessToken = refreshResult;
         } else {
           accessToken = refreshResult.access_token;
-          await supabase.from('whoop_tokens').update({
-            access_token: refreshResult.access_token,
-            refresh_token: refreshResult.refresh_token,
+          const updatePayload: Record<string, unknown> = {
+            access_token: refreshResult.encrypted_access_token,
             expires_at: refreshResult.expires_at,
-          }).eq('user_id', tokenRow.user_id);
+          };
+          if (refreshResult.refresh_token) {
+            updatePayload.refresh_token = refreshResult.refresh_token;
+          }
+          await supabase.from('whoop_tokens').update(updatePayload).eq('user_id', tokenRow.user_id);
         }
 
         const now = new Date();
