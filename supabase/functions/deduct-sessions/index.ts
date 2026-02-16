@@ -71,8 +71,13 @@ Deno.serve(async (req) => {
       .eq('is_recurring', true)
       .eq('recurrence_day', dayOfWeek);
 
-    // For recurring, check if already deducted today by looking at deducted_at
+    // For recurring, check if already deducted today or if today is in exceptions
     const recurringToDeduct = (recurringSessions || []).filter(s => {
+      // Skip if today's date is in recurring_exceptions
+      if (s.recurring_exceptions && s.recurring_exceptions.includes(todayStr)) {
+        console.log(`Session ${s.id} has exception for ${todayStr}, skipping`);
+        return false;
+      }
       if (!s.deducted_at) return true;
       const lastDeducted = new Date(s.deducted_at).toISOString().split('T')[0];
       return lastDeducted !== todayStr;
