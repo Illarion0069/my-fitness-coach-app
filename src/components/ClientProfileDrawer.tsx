@@ -44,7 +44,8 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
 
   const canCancel = (s: ScheduledSession) => {
-    if (!s.session_time) return false;
+    if (s.is_recurring) return true; // recurring can always be removed
+    if (!s.session_time) return true; // no time = future, allow cancel
     const sessionDateTime = new Date(`${s.session_date}T${s.session_time}`);
     const now = new Date();
     const hoursLeft = (sessionDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
@@ -248,12 +249,26 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                   </h3>
                   <div className="space-y-2">
                     {sessions.filter(s => s.is_recurring).map(s => (
-                      <div key={s.id} className="flex items-center gap-2 bg-background border border-border/50 rounded-xl p-3">
-                        <RotateCw className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="text-sm font-medium">
-                          {lang === 'en' ? 'Every' : 'Каждый'} {dayNames[s.recurrence_day!]}
-                          {s.recurrence_time ? ` ${s.recurrence_time.slice(0, 5)}` : ''}
-                        </span>
+                      <div key={s.id} className="flex items-center justify-between bg-background border border-border/50 rounded-xl p-3">
+                        <div className="flex items-center gap-2">
+                          <RotateCw className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-sm font-medium">
+                            {lang === 'en' ? 'Every' : 'Каждый'} {dayNames[s.recurrence_day!]}
+                            {s.recurrence_time ? ` ${s.recurrence_time.slice(0, 5)}` : ''}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleCancel(s)}
+                          disabled={cancellingId === s.id}
+                          className="text-destructive/60 hover:text-destructive transition-colors"
+                          title={lang === 'en' ? 'Remove recurring session' : 'Убрать повторяющееся занятие'}
+                        >
+                          {cancellingId === s.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <X className="w-4 h-4" />
+                          )}
+                        </button>
                       </div>
                     ))}
                     {sessions.filter(s => !s.is_recurring).map(s => {
