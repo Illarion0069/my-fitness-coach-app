@@ -101,6 +101,26 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
       });
     }
 
+    // Notify client about new session
+    const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
+    const clientName = clientProfile?.full_name || '?';
+    let dateDisplay: string;
+    let timeDisplay = '';
+
+    if (mode === 'once') {
+      dateDisplay = new Date(date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+      timeDisplay = time ? ` в ${time}` : '';
+    } else {
+      dateDisplay = `каждый ${dayNames[recurDay]}`;
+      timeDisplay = recurTime ? ` в ${recurTime}` : '';
+    }
+
+    sendNotification(
+      userId,
+      `📅 <b>Новая тренировка добавлена тренером</b>\n\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}\n\nУвидимся на тренировке! 💪`,
+      `✅ <b>Тренировка добавлена</b>\n\n👤 ${clientName}\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}`
+    );
+
     setDate('');
     setTime('');
     setShowAdd(false);
