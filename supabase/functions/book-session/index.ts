@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
     const { action } = body;
     const DEFAULT_DURATION = 60;
 
-    // Helper: authenticate user (only for actions that need it)
+    // Helper: authenticate user
     const authHeader = req.headers.get('Authorization');
     const getAuthUser = async () => {
       if (!authHeader?.startsWith('Bearer ')) return null;
@@ -31,69 +31,76 @@ Deno.serve(async (req) => {
       return user;
     };
 
-    // Helper: parse "HH:MM" to minutes since midnight
     const timeToMinutes = (t: string): number => {
       const [h, m] = t.split(':').map(Number);
       return h * 60 + (m || 0);
     };
 
-    // Helper: check if a new slot overlaps with any booked session (using per-session durations)
     const isSlotBlocked = (slotStart: number, slotDuration: number, bookedSessions: { start: number; duration: number }[]): boolean => {
       const slotEnd = slotStart + slotDuration;
       for (const booked of bookedSessions) {
         const bookedEnd = booked.start + booked.duration;
-        // Overlap: slotStart < bookedEnd AND bookedStart < slotEnd
-        if (slotStart < bookedEnd && booked.start < slotEnd) {
-          return true;
-        }
+        if (slotStart < bookedEnd && booked.start < slotEnd) return true;
       }
       return false;
     };
 
-    // === GET AVAILABLE SLOTS ===
-    if (action === 'getSlots') {
-      const { date } = body;
-      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return new Response(JSON.stringify({ error: 'Invalid date' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+    // Helper: get active package with remaining sessions (checks expiry)
+    const getActivePackageWithBalance = async (userId: string) => {
+      const { data: pkgs } = await supabase
+        .from('client_packages')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('is_active', true)
+        .order('created_at', { ascending: true });
+
+      if (!pkgs) return null;
+
+      for (const pkg of pkgs) {
+        // Check expiry
+        if (pkg.expires_at && new Date(pkg.expires_at) < new Date()) {
+          // Auto-deactivate expired package
+          await supabase.from('client_packages').update({ is_active: false }).eq('id', pkg.id);
+          continue;
+        }
+        // Check remaining
+        if (pkg.used_sessions < pkg.total_sessions) {
+          return pkg;
+        }
+        // Auto-deactivate exhausted package
+        if (pkg.used_sessions >= pkg.total_sessions) {
+          await supabase.from('client_packages').update({ is_active: false }).eq('id', pkg.id);
+        }
       }
+      return null;
+    };
 
-      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
-
-      // Find trainer
+    // Helper: get trainer info
+    const getTrainerInfo = async () => {
       const { data: trainers } = await supabase
         .from('user_roles')
         .select('user_id')
         .eq('role', 'trainer')
         .limit(1);
       const trainerId = trainers?.[0]?.user_id;
+      if (!trainerId) return null;
 
-      // Get trainer working hours
-      let workStart = 7;
-      let workEnd = 19;
-      let daysOff: number[] = [0]; // Sunday by default
-      if (trainerId) {
-        const { data: wh } = await supabase
-          .from('trainer_working_hours')
-          .select('work_start_hour, work_end_hour, days_off')
-          .eq('trainer_user_id', trainerId)
-          .single();
-        if (wh) {
-          workStart = wh.work_start_hour;
-          workEnd = wh.work_end_hour;
-          daysOff = wh.days_off || [0];
-        }
+      let workStart = 7, workEnd = 19, daysOff: number[] = [0];
+      const { data: wh } = await supabase
+        .from('trainer_working_hours')
+        .select('work_start_hour, work_end_hour, days_off')
+        .eq('trainer_user_id', trainerId)
+        .single();
+      if (wh) {
+        workStart = wh.work_start_hour;
+        workEnd = wh.work_end_hour;
+        daysOff = wh.days_off || [0];
       }
+      return { trainerId, workStart, workEnd, daysOff };
+    };
 
-      // If it's a day off, return empty slots
-      if (daysOff.includes(dayOfWeek)) {
-        return new Response(JSON.stringify({ slots: [], sessionDuration: DEFAULT_DURATION, dayOff: true }), {
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Get all sessions for this date (one-off) and recurring for this day
+    // Helper: get booked sessions for a date
+    const getBookedSessions = async (date: string, dayOfWeek: number) => {
       const { data: oneOff } = await supabase
         .from('scheduled_sessions')
         .select('session_time, duration_minutes')
@@ -109,10 +116,36 @@ Deno.serve(async (req) => {
       const bookedSessions: { start: number; duration: number }[] = [];
       (oneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
       (recurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
+      return bookedSessions;
+    };
 
-      // Generate hourly slots within working hours
+    // === GET AVAILABLE SLOTS ===
+    if (action === 'getSlots') {
+      const { date } = body;
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return new Response(JSON.stringify({ error: 'Invalid date' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+      const trainer = await getTrainerInfo();
+      if (!trainer) {
+        return new Response(JSON.stringify({ slots: [], sessionDuration: DEFAULT_DURATION }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (trainer.daysOff.includes(dayOfWeek)) {
+        return new Response(JSON.stringify({ slots: [], sessionDuration: DEFAULT_DURATION, dayOff: true }), {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const bookedSessions = await getBookedSessions(date, dayOfWeek);
+
       const slots: { time: string; available: boolean }[] = [];
-      for (let h = workStart; h <= workEnd; h++) {
+      for (let h = trainer.workStart; h <= trainer.workEnd; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
         slots.push({ time: timeStr, available: !isSlotBlocked(slotMinutes, DEFAULT_DURATION, bookedSessions) });
@@ -127,136 +160,95 @@ Deno.serve(async (req) => {
     if (action === 'book') {
       const user = await getAuthUser();
       if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      const { date, time } = body;
+
+      const { date, time, pendingPayment, selectedPackageSessions, selectedPackagePrice } = body;
+
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-        return new Response(JSON.stringify({ error: 'Invalid date' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Invalid date' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
       if (!time || !/^\d{2}:\d{2}$/.test(time)) {
-        return new Response(JSON.stringify({ error: 'Invalid time' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Invalid time' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Validate time is within valid range (00-23 hours)
       const bookHour = parseInt(time.split(':')[0]);
       const bookMinute = parseInt(time.split(':')[1]);
       if (bookHour < 0 || bookHour > 23 || bookMinute < 0 || bookMinute > 59) {
-        return new Response(JSON.stringify({ error: 'Time out of valid range' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Time out of valid range' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Check the date is not in the past
+      // Use Cyprus timezone (UTC+2/+3) for past-check to avoid blocking evening slots
+      const cyprusNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Nicosia' }));
       const bookingDate = new Date(date + 'T' + time + ':00');
-      if (bookingDate < new Date()) {
-        return new Response(JSON.stringify({ error: 'Cannot book in the past' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (bookingDate < cyprusNow) {
+        return new Response(JSON.stringify({ error: 'Cannot book in the past' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Validate time is within trainer's working hours
+      // Get trainer
+      const trainer = await getTrainerInfo();
+      if (!trainer) {
+        return new Response(JSON.stringify({ error: 'No trainer found' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       const dayOfWeek = new Date(date + 'T12:00:00').getDay();
-
-      // Find trainer
-      const { data: trainersList } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .eq('role', 'trainer')
-        .limit(1);
-      const trainerId = trainersList?.[0]?.user_id;
-
-      let workStart = 7;
-      let workEnd = 19;
-      let daysOff: number[] = [0];
-      if (trainerId) {
-        const { data: wh } = await supabase
-          .from('trainer_working_hours')
-          .select('work_start_hour, work_end_hour, days_off')
-          .eq('trainer_user_id', trainerId)
-          .single();
-        if (wh) {
-          workStart = wh.work_start_hour;
-          workEnd = wh.work_end_hour;
-          daysOff = wh.days_off || [0];
-        }
+      if (trainer.daysOff.includes(dayOfWeek)) {
+        return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (bookHour < trainer.workStart || bookHour >= trainer.workEnd) {
+        return new Response(JSON.stringify({ error: 'Time outside working hours' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      if (daysOff.includes(dayOfWeek)) {
-        return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (bookHour < workStart || bookHour >= workEnd) {
-        return new Response(JSON.stringify({ error: 'Time outside working hours' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Check slot not already taken (with duration overlap)
-      const { data: existingOneOff } = await supabase
-        .from('scheduled_sessions')
-        .select('session_time, duration_minutes')
-        .eq('session_date', date)
-        .eq('is_recurring', false);
-
-      // dayOfWeek already computed above
-      const { data: existingRecurring } = await supabase
-        .from('scheduled_sessions')
-        .select('recurrence_time, duration_minutes')
-        .eq('is_recurring', true)
-        .eq('recurrence_day', dayOfWeek);
-
-      const bookedSessions: { start: number; duration: number }[] = [];
-      (existingOneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
-      (existingRecurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
-
+      // Check slot availability (overlap check)
+      const bookedSessions = await getBookedSessions(date, dayOfWeek);
       const requestedMinutes = timeToMinutes(time);
       if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, bookedSessions)) {
-        return new Response(JSON.stringify({ error: 'Slot overlaps with existing session' }), {
-          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        return new Response(JSON.stringify({ error: 'Slot overlaps with existing session' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Check balance — get active package with remaining sessions
+      const pkg = await getActivePackageWithBalance(user.id);
+
+      // If no balance and no pending payment flag, reject
+      if (!pkg && !pendingPayment) {
+        return new Response(JSON.stringify({ error: 'No active package with remaining sessions', requiresPayment: true }), {
+          status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // trainerId already resolved above
-      if (!trainerId) {
-        return new Response(JSON.stringify({ error: 'No trainer found' }), {
-          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      // Create session
+      // Create session (unique index prevents race condition — will throw on duplicate)
       const { data: session, error: insertError } = await supabase
         .from('scheduled_sessions')
         .insert({
           user_id: user.id,
-          trainer_user_id: trainerId,
+          trainer_user_id: trainer.trainerId,
           session_date: date,
           session_time: time,
           is_recurring: false,
+          notes: pendingPayment ? `⏳ PENDING PAYMENT: ${selectedPackageSessions || '?'} sessions (${selectedPackagePrice || '?'}€)` : null,
         })
         .select()
         .single();
 
-      if (insertError) throw insertError;
+      if (insertError) {
+        // Unique constraint violation = race condition or duplicate
+        if (insertError.code === '23505') {
+          return new Response(JSON.stringify({ error: 'Slot already taken' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        throw insertError;
+      }
 
-      // Deduct from active package
-      const { data: pkgs } = await supabase
-        .from('client_packages')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1);
-
-      const pkg = pkgs?.[0];
-      if (pkg && pkg.used_sessions < pkg.total_sessions) {
+      // Deduct from package (only if has balance)
+      let remaining: number | string = '?';
+      if (pkg) {
         await supabase
           .from('client_packages')
           .update({ used_sessions: pkg.used_sessions + 1 })
           .eq('id', pkg.id);
+        remaining = pkg.total_sessions - pkg.used_sessions - 1;
+
+        // Auto-deactivate if now exhausted
+        if (pkg.used_sessions + 1 >= pkg.total_sessions) {
+          await supabase.from('client_packages').update({ is_active: false }).eq('id', pkg.id);
+        }
       }
 
       // Get client profile for notifications
@@ -268,7 +260,6 @@ Deno.serve(async (req) => {
 
       const dateObj = new Date(date + 'T00:00:00');
       const dateStr = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
-      const remaining = pkg ? pkg.total_sessions - pkg.used_sessions - 1 : '?';
 
       // Send Telegram to trainer
       const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
@@ -276,18 +267,28 @@ Deno.serve(async (req) => {
       const SITE_URL = 'https://my-fitness-coach-app.lovable.app';
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-        const trainerMsg = `📅 <b>Новая запись!</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} в ${time}\n📦 Осталось: ${remaining} занятий`;
+        let trainerMsg = `📅 <b>Новая запись!</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} в ${time}\n📦 Осталось: ${remaining} занятий`;
+
+        // Alert trainer about pending payment
+        if (pendingPayment) {
+          trainerMsg += `\n\n💳 <b>⚠️ ОЖИДАЕТ ОПЛАТУ!</b>\nВыбрано: ${selectedPackageSessions || '?'} занятий (${selectedPackagePrice || '?'}€)\nОплата через Revolut — проверьте поступление!`;
+        }
+
         await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
 
         // Send to client with cancel button
         if (clientProfile?.telegram_chat_id) {
-          const clientMsg = `✅ <b>Запись подтверждена!</b>\n\n📆 ${dateStr} в ${time}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`;
+          let clientMsg = `✅ <b>Запись подтверждена!</b>\n\n📆 ${dateStr} в ${time}\n📍 Eleftherias 119, Limassol`;
+          if (pendingPayment) {
+            clientMsg += `\n\n💳 Не забудьте оплатить: ${selectedPackagePrice || '?'}€`;
+          }
+          clientMsg += `\n\nДо встречи! 💪`;
           const cancelUrl = `${SITE_URL}/?cancel_session=${session.id}`;
           await sendTelegramWithButton(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg, '❌ Отменить запись', cancelUrl);
         }
       }
 
-      return new Response(JSON.stringify({ success: true, session_id: session.id }), {
+      return new Response(JSON.stringify({ success: true, session_id: session.id, pendingPayment: !!pendingPayment }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -298,12 +299,9 @@ Deno.serve(async (req) => {
       if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       const { session_id } = body;
       if (!session_id) {
-        return new Response(JSON.stringify({ error: 'session_id required' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'session_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Get the session
       const { data: session } = await supabase
         .from('scheduled_sessions')
         .select('*')
@@ -312,38 +310,42 @@ Deno.serve(async (req) => {
         .single();
 
       if (!session) {
-        return new Response(JSON.stringify({ error: 'Session not found' }), {
-          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Session not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Check 24h rule
+      // Check 24h rule using Cyprus timezone
       const sessionDateTime = new Date(session.session_date + 'T' + (session.session_time || '00:00') + ':00');
-      const hoursUntil = (sessionDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
+      const cyprusNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Nicosia' }));
+      const hoursUntil = (sessionDateTime.getTime() - cyprusNow.getTime()) / (1000 * 60 * 60);
       if (hoursUntil < 24) {
-        return new Response(JSON.stringify({ error: 'Cannot cancel less than 24 hours before session' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: 'Cannot cancel less than 24 hours before session' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Delete session
       await supabase.from('scheduled_sessions').delete().eq('id', session_id);
 
-      // Restore package balance
-      if (!session.is_recurring) {
+      // Restore package balance (only for non-pending-payment sessions)
+      const isPendingPayment = session.notes?.includes('PENDING PAYMENT');
+      if (!session.is_recurring && !isPendingPayment) {
+        // Find the package that was most recently deducted (oldest active)
         const { data: pkgs } = await supabase
           .from('client_packages')
           .select('*')
           .eq('user_id', user.id)
-          .eq('is_active', true)
           .order('created_at', { ascending: true })
-          .limit(1);
-        const pkg = pkgs?.[0];
-        if (pkg && pkg.used_sessions > 0) {
-          await supabase
-            .from('client_packages')
-            .update({ used_sessions: pkg.used_sessions - 1 })
-            .eq('id', pkg.id);
+          .limit(5);
+
+        // Try active ones first, then recently deactivated ones (in case auto-deactivated)
+        const target = pkgs?.find(p => p.is_active && p.used_sessions > 0) 
+          || pkgs?.find(p => p.used_sessions > 0);
+        
+        if (target) {
+          const updates: any = { used_sessions: target.used_sessions - 1 };
+          // Re-activate if it was auto-deactivated
+          if (!target.is_active && target.used_sessions - 1 < target.total_sessions) {
+            updates.is_active = true;
+          }
+          await supabase.from('client_packages').update(updates).eq('id', target.id);
         }
       }
 
@@ -358,7 +360,6 @@ Deno.serve(async (req) => {
       const dateStr = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
       const timeStr = session.session_time?.slice(0, 5) || '';
 
-      // Notify trainer
       const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
       const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
 

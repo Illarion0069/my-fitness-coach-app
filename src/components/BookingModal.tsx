@@ -137,12 +137,16 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
     if (!user) return false;
     const { data } = await supabase
       .from('client_packages')
-      .select('id, total_sessions, used_sessions')
+      .select('id, total_sessions, used_sessions, expires_at')
       .eq('user_id', user.id)
       .eq('is_active', true)
       .order('created_at', { ascending: true });
-    // Check if any active package has remaining sessions
-    const hasRemaining = (data || []).some(p => p.used_sessions < p.total_sessions);
+    // Check if any active package has remaining sessions AND is not expired
+    const now = new Date();
+    const hasRemaining = (data || []).some(p => 
+      p.used_sessions < p.total_sessions && 
+      (!p.expires_at || new Date(p.expires_at) > now)
+    );
     setHasActivePackage(hasRemaining);
     return hasRemaining;
   }, [user]);
@@ -190,12 +194,19 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
     }
     setLoading(true);
     try {
+      const bookBody: any = {
+        action: 'book',
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime,
+      };
+      // If client went through payment step, flag as pending payment
+      if (hasActivePackage === false && selectedPackage) {
+        bookBody.pendingPayment = true;
+        bookBody.selectedPackageSessions = selectedPackage.sessions;
+        bookBody.selectedPackagePrice = selectedPackage.price;
+      }
       const { data, error } = await supabase.functions.invoke('book-session', {
-        body: {
-          action: 'book',
-          date: format(selectedDate, 'yyyy-MM-dd'),
-          time: selectedTime,
-        },
+        body: bookBody,
       });
       if (error || data?.error) {
         const msg = data?.error || error?.message || '';
@@ -205,6 +216,12 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
             description: lang === 'en' ? 'Please log in again to book' : 'Войдите заново для записи',
             variant: 'destructive',
           });
+        } else if (data?.requiresPayment) {
+          // Server detected no balance — show payment step
+          setHasActivePackage(false);
+          setSelectedPackage(null);
+          setPaymentOpened(false);
+          setStep('payment');
         } else {
           toast({
             title: lang === 'en' ? 'Error' : 'Ошибка',
