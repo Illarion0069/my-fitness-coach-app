@@ -46,6 +46,21 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
   useEffect(() => { fetchSessions(); }, [userId]);
 
+  const sendNotification = async (clientUserId: string, clientMsg: string, trainerMsg: string) => {
+    try {
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (!authSession?.access_token) return;
+      await supabase.functions.invoke('send-telegram', {
+        body: { action: 'sendReminder', client_user_id: clientUserId, message: clientMsg },
+      });
+      await supabase.functions.invoke('send-telegram', {
+        body: { message: trainerMsg },
+      });
+    } catch (e) {
+      console.error('Notification failed', e);
+    }
+  };
+
   const addSession = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
@@ -75,6 +90,19 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
           .update({ used_sessions: pkg.used_sessions + 1 })
           .eq('id', pkg.id);
       }
+
+      // Notify
+      const displayDate = new Date(date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+      const timeDisplay = time ? ` в ${time}` : '';
+      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
+      const clientName = clientProfile?.full_name || '?';
+      const remaining = pkg ? pkg.total_sessions - pkg.used_sessions - 1 : '?';
+
+      sendNotification(
+        userId,
+        `📅 <b>Новая тренировка!</b>\n\n📆 ${displayDate}${timeDisplay}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`,
+        `📅 <b>Тренировка добавлена</b>\n\n👤 ${clientName}\n📆 ${displayDate}${timeDisplay}\n📦 Осталось: ${remaining} занятий`
+      );
     } else {
       await supabase.from('scheduled_sessions').insert({
         user_id: userId,
@@ -84,6 +112,18 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         recurrence_day: recurDay,
         recurrence_time: recurTime || null,
       });
+
+      // Notify about recurring
+      const dayName = dayNames[recurDay];
+      const timeDisplay = recurTime ? ` в ${recurTime}` : '';
+      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
+      const clientName = clientProfile?.full_name || '?';
+
+      sendNotification(
+        userId,
+        `🔄 <b>Регулярная тренировка!</b>\n\nКаждый ${dayName}${timeDisplay}\n📍 Eleftherias 119, Limassol`,
+        `🔄 <b>Регулярная тренировка добавлена</b>\n\n👤 ${clientName}\nКаждый ${dayName}${timeDisplay}`
+      );
     }
 
     setDate('');
@@ -115,6 +155,28 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
           .update({ used_sessions: pkg.used_sessions - 1 })
           .eq('id', pkg.id);
       }
+    }
+
+    // Notify about deletion
+    if (session) {
+      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
+      const clientName = clientProfile?.full_name || '?';
+      let dateDisplay: string;
+      let timeDisplay = '';
+
+      if (session.is_recurring) {
+        dateDisplay = `каждый ${dayNames[session.recurrence_day || 0]}`;
+        timeDisplay = session.recurrence_time ? ` в ${session.recurrence_time.slice(0, 5)}` : '';
+      } else {
+        dateDisplay = new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+        timeDisplay = session.session_time ? ` в ${session.session_time.slice(0, 5)}` : '';
+      }
+
+      sendNotification(
+        userId,
+        `❌ <b>Тренировка отменена тренером</b>\n\n📅 ${dateDisplay}${timeDisplay}\n\nЕсли у вас есть вопросы, свяжитесь с тренером.`,
+        `❌ <b>Тренировка удалена</b>\n\n👤 ${clientName}\n📅 ${dateDisplay}${timeDisplay}`
+      );
     }
 
     fetchSessions();

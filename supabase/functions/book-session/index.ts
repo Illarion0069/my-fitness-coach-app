@@ -273,15 +273,17 @@ Deno.serve(async (req) => {
       // Send Telegram to trainer
       const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
       const TELEGRAM_CHAT_ID = Deno.env.get('TELEGRAM_CHAT_ID');
+      const SITE_URL = 'https://my-fitness-coach-app.lovable.app';
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
         const trainerMsg = `📅 <b>Новая запись!</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} в ${time}\n📦 Осталось: ${remaining} занятий`;
         await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
 
-        // Send to client if they have telegram
+        // Send to client with cancel button
         if (clientProfile?.telegram_chat_id) {
           const clientMsg = `✅ <b>Запись подтверждена!</b>\n\n📆 ${dateStr} в ${time}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`;
-          await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
+          const cancelUrl = `${SITE_URL}/?cancel_session=${session.id}`;
+          await sendTelegramWithButton(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg, '❌ Отменить запись', cancelUrl);
         }
       }
 
@@ -411,6 +413,25 @@ async function sendTelegram(token: string, chatId: string, text: string) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'HTML' }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    console.error('Telegram error:', data);
+  }
+}
+
+async function sendTelegramWithButton(token: string, chatId: string, text: string, buttonText: string, buttonUrl: string) {
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text,
+      parse_mode: 'HTML',
+      reply_markup: {
+        inline_keyboard: [[{ text: buttonText, url: buttonUrl }]],
+      },
+    }),
   });
   if (!res.ok) {
     const data = await res.json();

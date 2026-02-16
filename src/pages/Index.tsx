@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import BookingModal from '@/components/BookingModal';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
@@ -18,6 +19,7 @@ const AppContent = () => {
   const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showBooking, setShowBooking] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +68,19 @@ const AppContent = () => {
     if (!user) {
       setActiveSection('home');
       setShowProfile(false);
+    }
+  }, [user]);
+
+  // Handle cancel_session URL parameter (from Telegram cancel button)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const cancelSessionId = params.get('cancel_session');
+    if (cancelSessionId && user) {
+      setShowBooking(true);
+      // Clean URL
+      const url = new URL(window.location.href);
+      url.searchParams.delete('cancel_session');
+      window.history.replaceState(null, '', url.pathname + url.search);
     }
   }, [user]);
 
@@ -124,6 +139,7 @@ const AppContent = () => {
       
       <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
       <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
+      <BookingModal open={showBooking} onClose={() => setShowBooking(false)} onLoginRequest={() => { setShowBooking(false); setShowWelcome(true); }} />
     </div>
   );
 };
