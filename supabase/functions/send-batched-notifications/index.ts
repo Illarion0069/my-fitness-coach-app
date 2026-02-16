@@ -6,7 +6,10 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BATCH_DELAY_SECONDS = 60; // Wait 60s after last change before sending
+const BATCH_DELAY_SECONDS = 60;
+
+const escapeHtml = (s: string): string =>
+  s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : s;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -75,7 +78,7 @@ serve(async (req) => {
       }
 
       // Also send summary to trainer
-      const clientName = profile?.full_name || "Клиент";
+      const clientName = escapeHtml(profile?.full_name || "Клиент");
       const trainerSummary = `📋 <b>Изменения отправлены клиенту ${clientName}</b>\n\n${lines.join("\n\n")}`;
       await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerSummary);
 

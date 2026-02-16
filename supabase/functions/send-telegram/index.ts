@@ -89,12 +89,16 @@ serve(async (req) => {
       });
     }
 
-    // Sanitize message to prevent HTML injection in Telegram
+    // Escape user-provided text to prevent HTML injection in Telegram
+    const escapeHtml = (str: string): string => {
+      if (!str) return str;
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    };
+
+    // Sanitize full message — keep allowed Telegram HTML tags, strip others
     const sanitizeForTelegram = (text: string): string => {
       if (!text) return text;
-      // Only allow specific safe HTML tags that Telegram supports
       const allowedTags = ['b', 'i', 'u', 's', 'code', 'pre', 'a'];
-      // Remove any HTML tags that are not in the allowed list
       return text.replace(/<\/?([a-zA-Z][a-zA-Z0-9]*)\b[^>]*>/g, (match, tag) => {
         return allowedTags.includes(tag.toLowerCase()) ? match : '';
       }).slice(0, 4096);
@@ -120,7 +124,7 @@ serve(async (req) => {
       // We can't send by username directly — bot needs chat_id.
       // For now, send the message to trainer with a note to forward to client.
       // In future: implement webhook to capture chat_ids from /start commands.
-      const trainerMsg = `📨 <b>Forward to client @${telegram_username}:</b>\n\n${message}`;
+      const trainerMsg = `📨 <b>Forward to client @${escapeHtml(telegram_username)}:</b>\n\n${sanitizeForTelegram(message)}`;
       await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
       
       return new Response(JSON.stringify({ success: true, note: "Message sent to trainer for forwarding" }), {
@@ -151,7 +155,7 @@ serve(async (req) => {
 
         // Notify trainer
         const participantList = sessionBookings.map((b: any, i: number) => 
-          `${i + 1}. ${b.participant_name} (📱${b.participant_phone})`
+          `${i + 1}. ${escapeHtml(b.participant_name)} (📱${escapeHtml(b.participant_phone)})`
         ).join("\n");
 
         await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
@@ -162,7 +166,7 @@ serve(async (req) => {
         for (const booking of sessionBookings) {
           if ((booking as any).participant_telegram) {
             await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-              `📨 <b>Forward to @${(booking as any).participant_telegram}:</b>\n\n🎉 <b>Class Confirmed!</b>\n\n📅 ${dateStr} at ${time}\n📍 ${location}\n\n✅ All ${session.max_participants} spots are filled. The training is happening!\nSee you there! 💪`
+              `📨 <b>Forward to @${escapeHtml((booking as any).participant_telegram)}:</b>\n\n🎉 <b>Class Confirmed!</b>\n\n📅 ${dateStr} at ${time}\n📍 ${location}\n\n✅ All ${session.max_participants} spots are filled. The training is happening!\nSee you there! 💪`
             );
           }
         }
@@ -187,13 +191,13 @@ serve(async (req) => {
         // Send to client directly
         await sendTelegramMessage(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, message);
         // Also notify trainer
-        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, `✅ Напоминание отправлено клиенту <b>${clientProfile.full_name}</b> в Telegram.`);
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, `✅ Напоминание отправлено клиенту <b>${escapeHtml(clientProfile.full_name)}</b> в Telegram.`);
         return new Response(JSON.stringify({ success: true, sent_to: "client" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       } else {
         // No telegram linked — send to trainer with note
-        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, `⚠️ У клиента <b>${clientProfile?.full_name || 'Unknown'}</b> не привязан Telegram.\n\n${message}`);
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, `⚠️ У клиента <b>${escapeHtml(clientProfile?.full_name || 'Unknown')}</b> не привязан Telegram.\n\n${sanitizeForTelegram(message)}`);
         return new Response(JSON.stringify({ success: true, sent_to: "trainer_only", reason: "no_telegram" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -208,8 +212,8 @@ serve(async (req) => {
         .select("full_name")
         .eq("user_id", user.id)
         .maybeSingle();
-      const clientName = profile?.full_name || "Unknown";
-      const cancelMsg = `❌ <b>Клиент отменил тренировку</b>\n\n👤 ${clientName}\n📅 ${message}`;
+      const clientName = escapeHtml(profile?.full_name || "Unknown");
+      const cancelMsg = `❌ <b>Клиент отменил тренировку</b>\n\n👤 ${clientName}\n📅 ${escapeHtml(message)}`;
       await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, cancelMsg);
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

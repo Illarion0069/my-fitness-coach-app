@@ -36,6 +36,9 @@ Deno.serve(async (req) => {
       return h * 60 + (m || 0);
     };
 
+    const escapeHtml = (s: string): string =>
+      s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : s;
+
     const MAX_CLIENTS_PER_SLOT = 2; // Split sessions: max 2 clients at the same time
 
     const countOverlapping = (slotStart: number, slotDuration: number, bookedSessions: { start: number; duration: number }[]): number => {
@@ -336,7 +339,7 @@ Deno.serve(async (req) => {
       const SITE_URL = 'https://my-fitness-coach-app.lovable.app';
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-        let trainerMsg = `📅 <b>Новая запись!</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} в ${time}\n📦 Осталось: ${remaining} занятий`;
+        let trainerMsg = `📅 <b>Новая запись!</b>\n\n👤 ${escapeHtml(clientProfile?.full_name || 'Клиент')}\n📆 ${dateStr} в ${time}\n📦 Осталось: ${remaining} занятий`;
 
         // Alert trainer about pending payment
         if (pendingPayment) {
@@ -434,7 +437,7 @@ Deno.serve(async (req) => {
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
         await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID,
-          `❌ <b>Отмена записи</b>\n\n👤 ${clientProfile?.full_name || 'Клиент'}\n📆 ${dateStr} ${timeStr ? 'в ' + timeStr : ''}`
+          `❌ <b>Отмена записи</b>\n\n👤 ${escapeHtml(clientProfile?.full_name || 'Клиент')}\n📆 ${dateStr} ${timeStr ? 'в ' + timeStr : ''}`
         );
 
         if (clientProfile?.telegram_chat_id) {
