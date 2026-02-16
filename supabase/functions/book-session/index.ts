@@ -135,6 +135,14 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Check if requester is trainer
+      const reqUser = await getAuthUser();
+      let isTrainer = false;
+      if (reqUser) {
+        const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', reqUser.id).eq('role', 'trainer');
+        isTrainer = (roles && roles.length > 0);
+      }
+
       const dayOfWeek = new Date(date + 'T12:00:00').getDay();
       const trainer = await getTrainerInfo();
       if (!trainer) {
@@ -156,10 +164,15 @@ Deno.serve(async (req) => {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
         const bookedCount = countOverlapping(slotMinutes, DEFAULT_DURATION, bookedSessions);
-        slots.push({ time: timeStr, available: bookedCount < MAX_CLIENTS_PER_SLOT, booked: bookedCount });
+        // Clients: any booked slot is unavailable (no split booking for clients)
+        // Trainers: slot available if < MAX_CLIENTS_PER_SLOT
+        const available = isTrainer
+          ? bookedCount < MAX_CLIENTS_PER_SLOT
+          : bookedCount === 0;
+        slots.push({ time: timeStr, available, booked: isTrainer ? bookedCount : 0 });
       }
 
-      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: MAX_CLIENTS_PER_SLOT }), {
+      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: isTrainer ? MAX_CLIENTS_PER_SLOT : 1 }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -205,11 +218,18 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Time outside working hours' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
-      // Check slot availability (split sessions: max 2 clients per slot)
+      // Check slot availability — clients can only book empty slots, trainers can do splits
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
       const requestedMinutes = timeToMinutes(time);
-      if (countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions) >= MAX_CLIENTS_PER_SLOT) {
-        return new Response(JSON.stringify({ error: 'Slot is full (max 2 clients)' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const currentCount = countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions);
+
+      // Check if booker is trainer
+      const { data: bookerRoles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'trainer');
+      const bookerIsTrainer = (bookerRoles && bookerRoles.length > 0);
+      const maxAllowed = bookerIsTrainer ? MAX_CLIENTS_PER_SLOT : 1;
+
+      if (currentCount >= maxAllowed) {
+        return new Response(JSON.stringify({ error: 'Slot is not available' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
 
       // Check balance — get active package with remaining sessions
