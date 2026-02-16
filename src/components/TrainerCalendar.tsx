@@ -147,20 +147,25 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     });
   }, [sessions, selectedDateStr, dayOfWeek]);
 
-  const sessionsByHour = useMemo(() => {
-    const map: Record<number, (ScheduledSession & { clientName: string })[]> = {};
-    daySessions.forEach(s => {
-      const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
-      const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : -1;
-      if (!map[hour]) map[hour] = [];
-      // Extract manual name from notes like "👤 Name (manual)" — check FIRST
+  const enrichedSessions = useMemo(() => {
+    return daySessions.map(s => {
       const manualMatch = s.notes?.match(/^👤 (.+?) \(manual\)$/);
       const client = manualMatch ? null : clients.find(c => c.user_id === s.user_id);
       const clientName = manualMatch?.[1] || client?.full_name || '?';
-      map[hour].push({ ...s, clientName });
+      return { ...s, clientName };
+    });
+  }, [daySessions, clients]);
+
+  const sessionsByHour = useMemo(() => {
+    const map: Record<number, (ScheduledSession & { clientName: string })[]> = {};
+    enrichedSessions.forEach(s => {
+      const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
+      const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : -1;
+      if (!map[hour]) map[hour] = [];
+      map[hour].push(s);
     });
     return map;
-  }, [daySessions, clients]);
+  }, [enrichedSessions]);
 
   // Filter blocks for the selected date
   const dayBlocks = useMemo(() => {
@@ -787,40 +792,99 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             onTouchMove={onSessionTouchMove}
             onTouchEnd={onSessionTouchEnd}
           >
-            {HOURS.map(hour => {
-              const hourSessions = sessionsByHour[hour] || [];
-              const hourBlocks = blocksByHour[hour] || [];
+            {/* Hour grid lines */}
+            {HOURS.map(hour => (
+              <div key={hour} className="flex group" style={{ height: ROW_HEIGHT }}>
+                <div className="w-12 shrink-0 text-right pr-3 pt-0">
+                  <span className="text-[10px] text-muted-foreground font-medium">
+                    {String(hour).padStart(2, '0')}:00
+                  </span>
+                </div>
+                <div className="flex-1 border-t border-border/30 relative">
+                  {/* Half-hour line */}
+                  <div className="absolute left-0 right-0 border-t border-border/15" style={{ top: ROW_HEIGHT / 2 }} />
+                  {/* Clickable area for adding blocks */}
+                  {!(sessionsByHour[hour]?.length) && !(blocksByHour[hour]?.length) && (
+                    <button
+                      onClick={() => setShowBlockModal(hour)}
+                      className="absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity"
+                    >
+                      <span className="text-[10px] text-primary/50 flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> {lang === 'en' ? 'Add' : 'Добавить'}
+                      </span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {/* Absolutely positioned sessions */}
+            {enrichedSessions.filter(s => {
+              const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
+              return !!timeStr;
+            }).map(s => {
+              const timeStr = (s.is_recurring ? s.recurrence_time : s.session_time)!;
+              const [h, m] = timeStr.split(':').map(Number);
+              const totalMinutes = h * 60 + (m || 0);
+              const startHour = HOURS[0]; // 6
+              const topPx = ((totalMinutes - startHour * 60) / 60) * ROW_HEIGHT;
+              const heightPx = ((s.duration_minutes || 60) / 60) * ROW_HEIGHT;
+
+              // Check for overlapping sessions at same time for side-by-side layout
+              const sameTimeSlot = enrichedSessions.filter(other => {
+                const otherTime = other.is_recurring ? other.recurrence_time : other.session_time;
+                if (!otherTime) return false;
+                const [oh, om] = otherTime.split(':').map(Number);
+                const otherStart = oh * 60 + (om || 0);
+                const otherEnd = otherStart + (other.duration_minutes || 60);
+                const thisEnd = totalMinutes + (s.duration_minutes || 60);
+                return otherStart < thisEnd && otherEnd > totalMinutes;
+              });
+              const slotIndex = sameTimeSlot.findIndex(x => x.id === s.id);
+              const slotCount = sameTimeSlot.length;
+
               return (
-                <div key={hour} className="flex min-h-[52px] group">
-                  <div className="w-12 shrink-0 text-right pr-3 pt-0">
-                    <span className="text-[10px] text-muted-foreground font-medium">
-                      {String(hour).padStart(2, '0')}:00
-                    </span>
+                <div
+                  key={s.id}
+                  className="absolute"
+                  style={{
+                    top: topPx,
+                    height: heightPx,
+                    left: `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
+                    width: `calc((100% - 48px) / ${slotCount})`,
+                    zIndex: 10,
+                    padding: '1px 2px',
+                  }}
+                >
+                  <div className="h-full">
+                    {renderSessionCard(s)}
                   </div>
-                  <div className="flex-1 border-t border-border/30 relative min-h-[52px]">
-                    {/* Blocks */}
-                    {hourBlocks.map(b => renderBlockCard(b))}
-                    {/* Sessions */}
-                    {hourSessions.length > 0 && (
-                      <div className="flex gap-1 mt-1 mb-1">
-                        {hourSessions.map(s => (
-                          <div key={s.id} className="flex-1 min-w-0">
-                            {renderSessionCard(s)}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    {hourSessions.length < 2 && hourBlocks.length === 0 && (
-                      <button
-                        onClick={() => setShowBlockModal(hour)}
-                        className={`absolute inset-0 w-full h-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity ${hourSessions.length > 0 ? 'pointer-events-none group-hover:pointer-events-auto' : ''}`}
-                      >
-                        <span className="text-[10px] text-primary/50 flex items-center gap-1">
-                          <Plus className="w-3 h-3" /> {hourSessions.length === 1 ? (lang === 'en' ? 'Split' : 'Сплит') : (lang === 'en' ? 'Add' : 'Добавить')}
-                        </span>
-                      </button>
-                    )}
-                  </div>
+                </div>
+              );
+            })}
+
+            {/* Absolutely positioned blocks */}
+            {dayBlocks.map(b => {
+              const [h, m] = b.block_time.split(':').map(Number);
+              const totalMinutes = h * 60 + (m || 0);
+              const startHour = HOURS[0];
+              const topPx = ((totalMinutes - startHour * 60) / 60) * ROW_HEIGHT;
+              const heightPx = (b.duration_minutes / 60) * ROW_HEIGHT;
+
+              return (
+                <div
+                  key={b.id}
+                  className="absolute"
+                  style={{
+                    top: topPx,
+                    height: Math.max(heightPx, 28),
+                    left: 48,
+                    right: 0,
+                    zIndex: 5,
+                    padding: '1px 2px',
+                  }}
+                >
+                  {renderBlockCard(b)}
                 </div>
               );
             })}
