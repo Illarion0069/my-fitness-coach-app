@@ -473,22 +473,39 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         {s.is_deducted && <span className="text-[10px] text-primary">✓</span>}
 
         {/* Context menu overlay */}
-        {contextMenuSessionId === s.id && (
-          <div className="absolute inset-0 z-20 flex items-center justify-end gap-2 bg-card/95 backdrop-blur-sm rounded-lg px-3 animate-scale-in">
+        {contextMenuSessionId === s.id && (() => {
+          const timeVal = s.is_recurring ? s.recurrence_time : s.session_time;
+          const hourVal = timeVal ? parseInt(timeVal.split(':')[0], 10) : -1;
+          const sameSlotCount = hourVal >= 0 ? (sessionsByHour[hourVal]?.length || 0) : 0;
+          const canSplit = sameSlotCount < 2;
+          return (
+          <div className="absolute inset-0 z-20 flex items-center justify-end gap-1.5 bg-card/95 backdrop-blur-sm rounded-lg px-2 animate-scale-in">
             <p className="flex-1 text-xs font-semibold truncate">{s.clientName}</p>
+            {canSplit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setContextMenuSessionId(null);
+                  setShowAddForm(-1);
+                  setAddTime(timeVal?.slice(0, 5) || '');
+                }}
+                className="flex items-center gap-1 bg-accent/20 text-accent-foreground text-[11px] font-semibold px-2.5 py-1.5 rounded-lg"
+              >
+                <Plus className="w-3 h-3" />
+                {lang === 'en' ? 'Split' : 'Сплит'}
+              </button>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); startEditing(s); }}
-              className="flex items-center gap-1.5 bg-primary/15 text-primary text-[11px] font-semibold px-3 py-1.5 rounded-lg"
+              className="flex items-center gap-1 bg-primary/15 text-primary text-[11px] font-semibold px-2.5 py-1.5 rounded-lg"
             >
               <Pencil className="w-3 h-3" />
-              {lang === 'en' ? 'Edit' : 'Изменить'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); handleDeleteClick(s); }}
-              className="flex items-center gap-1.5 bg-destructive/15 text-destructive text-[11px] font-semibold px-3 py-1.5 rounded-lg"
+              className="flex items-center gap-1 bg-destructive/15 text-destructive text-[11px] font-semibold px-2.5 py-1.5 rounded-lg"
             >
               <Trash2 className="w-3 h-3" />
-              {lang === 'en' ? 'Delete' : 'Удалить'}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); }}
@@ -497,7 +514,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
               <X className="w-3.5 h-3.5" />
             </button>
           </div>
-        )}
+          );
+        })()}
       </div>
     );
   };
