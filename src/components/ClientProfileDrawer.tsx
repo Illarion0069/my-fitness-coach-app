@@ -64,19 +64,38 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
       return;
     }
     setCancellingId(session.id);
-    const dateStr = new Date(session.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' });
-    const timeStr = session.session_time ? ` ${session.session_time.slice(0, 5)}` : '';
 
-    await supabase.from('scheduled_sessions').delete().eq('id', session.id).eq('user_id', user!.id);
+    try {
+      // Use the edge function which handles balance restoration server-side
+      const { data, error } = await supabase.functions.invoke('book-session', {
+        body: { action: 'cancel', session_id: session.id },
+      });
 
-    // Notify trainer via Telegram (best-effort)
-    supabase.functions.invoke('send-telegram', {
-      body: { action: 'cancelSession', message: `${dateStr}${timeStr}` },
-    }).catch(() => {});
+      if (error || data?.error) {
+        toast({
+          title: lang === 'en' ? 'Error' : 'Ошибка',
+          description: data?.error || error?.message || 'Unknown error',
+          variant: 'destructive',
+        });
+      } else {
+        setSessions(prev => prev.filter(s => s.id !== session.id));
+        // Re-fetch package to show updated balance
+        const { data: updatedPkg } = await supabase
+          .from('client_packages')
+          .select('*')
+          .eq('user_id', user!.id)
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        setPkg(updatedPkg);
 
-    setSessions(prev => prev.filter(s => s.id !== session.id));
+        toast({ title: lang === 'en' ? 'Session cancelled — balance restored' : 'Тренировка отменена — занятие возвращено' });
+      }
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e.message, variant: 'destructive' });
+    }
     setCancellingId(null);
-    toast({ title: lang === 'en' ? 'Session cancelled' : 'Тренировка отменена' });
   };
 
   useEffect(() => {
