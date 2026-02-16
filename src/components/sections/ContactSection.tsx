@@ -1,12 +1,17 @@
 import { motion } from 'framer-motion';
 import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
 import type { Language } from '@/i18n/translations';
 
 const ContactSection = () => {
   const { t, lang } = useLanguage();
+  const { profile } = useAuth();
   const contact = translations.contact;
+  const botLink = profile?.telegram_link_code
+    ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
+    : 'https://t.me/LimassolFitness_bot';
 
   const socials = [
     { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
@@ -60,7 +65,7 @@ const ContactSection = () => {
         </a>
 
         <a
-          href="https://t.me/LimassolFitness_bot"
+          href={botLink}
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
