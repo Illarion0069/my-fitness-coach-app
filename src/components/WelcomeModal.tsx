@@ -57,7 +57,7 @@ const phoneToEmail = (countryCode: string, phone: string) => {
 
 const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const { lang } = useLanguage();
-  const { refreshProfile } = useAuth();
+  const { refreshProfile, profile } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('welcome');
 
@@ -343,7 +343,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     )}
                   </p>
                   <a
-                    href={`https://t.me/LimassolFitness_bot?start=`}
+                    href={`https://t.me/LimassolFitness_bot?start=${profile?.telegram_link_code || ''}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
