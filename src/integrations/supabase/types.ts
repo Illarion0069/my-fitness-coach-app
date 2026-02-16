@@ -104,6 +104,7 @@ export type Database = {
           package_id: string | null
           recurrence_day: number | null
           recurrence_time: string | null
+          recurring_exceptions: string[]
           session_date: string
           session_time: string | null
           trainer_user_id: string
@@ -121,6 +122,7 @@ export type Database = {
           package_id?: string | null
           recurrence_day?: number | null
           recurrence_time?: string | null
+          recurring_exceptions?: string[]
           session_date: string
           session_time?: string | null
           trainer_user_id: string
@@ -138,6 +140,7 @@ export type Database = {
           package_id?: string | null
           recurrence_day?: number | null
           recurrence_time?: string | null
+          recurring_exceptions?: string[]
           session_date?: string
           session_time?: string | null
           trainer_user_id?: string
