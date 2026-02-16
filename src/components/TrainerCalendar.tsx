@@ -21,6 +21,7 @@ interface ScheduledSession {
   recurrence_time: string | null;
   is_deducted: boolean;
   duration_minutes: number;
+  recurring_exceptions: string[];
 }
 
 interface Props {
@@ -52,6 +53,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   // Long-press context menu state
   const [contextMenuSessionId, setContextMenuSessionId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Delete recurring choice dialog
+  const [deleteChoiceSession, setDeleteChoiceSession] = useState<(ScheduledSession & { clientName: string }) | null>(null);
 
   // Edit state
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -106,7 +110,11 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const daySessions = useMemo(() => {
     return sessions.filter(s => {
-      if (s.is_recurring && s.recurrence_day === dayOfWeek) return true;
+      if (s.is_recurring && s.recurrence_day === dayOfWeek) {
+        // Check if this date is in exceptions
+        if (s.recurring_exceptions?.includes(selectedDateStr)) return false;
+        return true;
+      }
       if (!s.is_recurring && s.session_date === selectedDateStr) return true;
       return false;
     });
@@ -163,8 +171,30 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
   };
 
+  const sendCancelNotification = async (session: ScheduledSession, dateStr: string) => {
+    try {
+      const client = clients.find(c => c.user_id === session.user_id);
+      const clientName = client?.full_name || '?';
+      const displayDate = new Date(dateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+      const timeStr = session.is_recurring ? session.recurrence_time : session.session_time;
+      const timeDisplay = timeStr ? ` в ${timeStr.slice(0, 5)}` : '';
+
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (authSession?.access_token) {
+        await supabase.functions.invoke('send-telegram', {
+          body: {
+            action: 'sendReminder',
+            client_user_id: session.user_id,
+            message: `❌ <b>Тренировка отменена</b>\n\n📅 ${displayDate}${timeDisplay}\n\nЕсли у вас есть вопросы, свяжитесь с тренером.`,
+          },
+        });
+      }
+    } catch (e) {
+      console.error('Failed to send cancel notification', e);
+    }
+  };
+
   const deleteSession = async (id: string) => {
-    // Find the session to restore its deduction
     const session = sessions.find(s => s.id === id);
 
     await supabase.from('scheduled_sessions').delete().eq('id', id);
@@ -190,6 +220,39 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     fetchSessions();
     if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
+  };
+
+  const handleDeleteRecurringThis = async (session: ScheduledSession & { clientName: string }) => {
+    // Add current date to exceptions
+    const exceptions = [...(session.recurring_exceptions || []), selectedDateStr];
+    await supabase
+      .from('scheduled_sessions')
+      .update({ recurring_exceptions: exceptions })
+      .eq('id', session.id);
+    
+    await sendCancelNotification(session, selectedDateStr);
+    setDeleteChoiceSession(null);
+    fetchSessions();
+    if (onSessionChange) onSessionChange();
+    toast({ title: lang === 'en' ? 'This session cancelled' : 'Эта тренировка отменена' });
+  };
+
+  const handleDeleteRecurringAll = async (session: ScheduledSession & { clientName: string }) => {
+    await sendCancelNotification(session, selectedDateStr);
+    await supabase.from('scheduled_sessions').delete().eq('id', session.id);
+    setDeleteChoiceSession(null);
+    fetchSessions();
+    if (onSessionChange) onSessionChange();
+    toast({ title: lang === 'en' ? 'Recurring session deleted' : 'Повторяющаяся тренировка удалена' });
+  };
+
+  const handleDeleteClick = (session: ScheduledSession & { clientName: string }) => {
+    if (session.is_recurring) {
+      setDeleteChoiceSession(session);
+    } else {
+      sendCancelNotification(session, session.session_date);
+      deleteSession(session.id);
+    }
   };
 
   // --- Edit time & duration ---
@@ -408,7 +471,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
               {lang === 'en' ? 'Edit' : 'Изменить'}
             </button>
             <button
-              onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); deleteSession(s.id); }}
+              onClick={(e) => { e.stopPropagation(); setContextMenuSessionId(null); handleDeleteClick(s); }}
               className="flex items-center gap-1.5 bg-destructive/15 text-destructive text-[11px] font-semibold px-3 py-1.5 rounded-lg"
             >
               <Trash2 className="w-3 h-3" />
@@ -589,6 +652,41 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           );
         })}
       </div>
+
+      {/* Delete recurring choice dialog */}
+      {deleteChoiceSession && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteChoiceSession(null)}>
+          <div className="bg-card border border-border rounded-2xl p-5 mx-4 max-w-sm w-full space-y-3 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-bold text-center">
+              {lang === 'en' ? 'Delete recurring session' : 'Удалить повторяющуюся тренировку'}
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              {deleteChoiceSession.clientName} · {format(selectedDate, 'EEEE', { locale })}
+              {deleteChoiceSession.recurrence_time ? ` ${deleteChoiceSession.recurrence_time.slice(0, 5)}` : ''}
+            </p>
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleDeleteRecurringThis(deleteChoiceSession)}
+                className="w-full bg-destructive/10 text-destructive text-xs font-semibold py-2.5 rounded-xl hover:bg-destructive/20 transition-colors"
+              >
+                {lang === 'en' ? 'Cancel only this session' : 'Отменить только эту тренировку'}
+              </button>
+              <button
+                onClick={() => handleDeleteRecurringAll(deleteChoiceSession)}
+                className="w-full bg-destructive text-destructive-foreground text-xs font-semibold py-2.5 rounded-xl hover:bg-destructive/90 transition-colors"
+              >
+                {lang === 'en' ? 'Delete entire series' : 'Удалить весь ряд навсегда'}
+              </button>
+              <button
+                onClick={() => setDeleteChoiceSession(null)}
+                className="w-full text-muted-foreground text-xs font-medium py-2 rounded-xl hover:bg-secondary transition-colors"
+              >
+                {lang === 'en' ? 'Cancel' : 'Отмена'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
