@@ -107,8 +107,10 @@ serve(async (req) => {
       // Name matching fallback removed for security — only deep link codes are used
 
       if (!matched) {
-        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId,
-          `👋 Привет, ${fullName}! Я бот Limassol Fitness. Ваш аккаунт будет привязан вручную тренером.`);
+        const noCodeMsg = !linkCode
+          ? `👋 Привет, ${fullName}! Чтобы подключить уведомления, нажмите кнопку «Telegram Bot» в разделе Контакты приложения Limassol Fitness:\nhttps://my-fitness-coach-app.lovable.app\n\nЭто создаст персональную ссылку для привязки вашего аккаунта.`
+          : `👋 Привет, ${fullName}! Не удалось привязать аккаунт автоматически. Попробуйте ещё раз через кнопку «Telegram Bot» в приложении или обратитесь к тренеру.`;
+        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, chatId, noCodeMsg);
 
         const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
         if (TELEGRAM_CHAT_ID) {
