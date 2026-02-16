@@ -182,18 +182,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         .eq('id', pkg.id);
     }
 
-    // Notify client and trainer
-    const client = clients.find(c => c.user_id === selectedClientId);
-    const clientName = client?.full_name || '?';
-    const displayDate = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-    const timeDisplay = addTime ? ` в ${addTime}` : '';
-    const remaining = pkg ? pkg.total_sessions - pkg.used_sessions - 1 : '?';
-
-    sendSessionNotification(
-      selectedClientId,
-      `📅 <b>Новая тренировка!</b>\n\n📆 ${displayDate}${timeDisplay}\n📍 Eleftherias 119, Limassol\n\nДо встречи! 💪`,
-      `📅 <b>Тренировка добавлена</b>\n\n👤 ${clientName}\n📆 ${displayDate}${timeDisplay}\n📦 Осталось: ${remaining} занятий`
-    );
 
     setShowAddForm(null);
     setSelectedClientId('');
@@ -297,19 +285,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
     await supabase.from('scheduled_sessions').update(updateField).eq('id', editingSessionId);
 
-    // Notify about time change
-    const client = clients.find(c => c.user_id === session.user_id);
-    const clientName = client?.full_name || '?';
-    const displayDate = session.is_recurring
-      ? (lang === 'en' ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][session.recurrence_day || 0] : ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][session.recurrence_day || 0])
-      : new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-
-    sendSessionNotification(
-      session.user_id,
-      `✏️ <b>Тренировка перенесена</b>\n\n📅 ${displayDate}\n🕐 Новое время: ${editTime}\n⏱ ${editDuration} мин`,
-      `✏️ <b>Тренировка изменена</b>\n\n👤 ${clientName}\n📅 ${displayDate}\n🕐 ${editTime} · ${editDuration} мин`
-    );
-
     setEditingSessionId(null);
     setEditTime('');
     setEditDuration(60);
@@ -355,19 +330,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       : { session_time: dragPreviewTime };
 
     await supabase.from('scheduled_sessions').update(updateField).eq('id', draggingSessionId);
-
-    // Notify about drag move
-    const client = clients.find(c => c.user_id === session.user_id);
-    const clientName = client?.full_name || '?';
-    const displayDate = session.is_recurring
-      ? (lang === 'en' ? ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][session.recurrence_day || 0] : ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][session.recurrence_day || 0])
-      : new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-
-    sendSessionNotification(
-      session.user_id,
-      `✏️ <b>Тренировка перенесена</b>\n\n📅 ${displayDate}\n🕐 Новое время: ${dragPreviewTime}`,
-      `✏️ <b>Тренировка перенесена</b>\n\n👤 ${clientName}\n📅 ${displayDate}\n🕐 ${dragPreviewTime}`
-    );
 
     setDraggingSessionId(null);
     setDragPreviewTime(null);
