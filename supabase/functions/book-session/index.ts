@@ -126,6 +126,35 @@ Deno.serve(async (req) => {
       return bookedSessions;
     };
 
+    // Helper: get trainer blocks for a date
+    const getTrainerBlocks = async (date: string, dayOfWeek: number) => {
+      const { data: oneOff } = await supabase
+        .from('trainer_blocks')
+        .select('block_time, duration_minutes')
+        .eq('block_date', date)
+        .eq('is_recurring', false);
+
+      const { data: recurring } = await supabase
+        .from('trainer_blocks')
+        .select('block_time, duration_minutes')
+        .eq('is_recurring', true)
+        .eq('recurrence_day', dayOfWeek);
+
+      const blocks: { start: number; duration: number }[] = [];
+      (oneOff || []).forEach(b => { if (b.block_time) blocks.push({ start: timeToMinutes(b.block_time.slice(0, 5)), duration: b.duration_minutes || 60 }); });
+      (recurring || []).forEach(b => { if (b.block_time) blocks.push({ start: timeToMinutes(b.block_time.slice(0, 5)), duration: b.duration_minutes || 60 }); });
+      return blocks;
+    };
+
+    const isSlotBlockedByTrainer = (slotStart: number, slotDuration: number, trainerBlocks: { start: number; duration: number }[]): boolean => {
+      const slotEnd = slotStart + slotDuration;
+      for (const block of trainerBlocks) {
+        const blockEnd = block.start + block.duration;
+        if (slotStart < blockEnd && block.start < slotEnd) return true;
+      }
+      return false;
+    };
+
     // === GET AVAILABLE SLOTS ===
     if (action === 'getSlots') {
       const { date } = body;
@@ -158,17 +187,19 @@ Deno.serve(async (req) => {
       }
 
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
+      const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
 
       const slots: { time: string; available: boolean; booked: number }[] = [];
       for (let h = trainer.workStart; h <= trainer.workEnd; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
         const bookedCount = countOverlapping(slotMinutes, DEFAULT_DURATION, bookedSessions);
-        // Clients: any booked slot is unavailable (no split booking for clients)
-        // Trainers: slot available if < MAX_CLIENTS_PER_SLOT
+        const blockedByTrainer = isSlotBlockedByTrainer(slotMinutes, DEFAULT_DURATION, trainerBlocks);
+        // Clients: any booked or blocked slot is unavailable
+        // Trainers: slot available if < MAX_CLIENTS_PER_SLOT and not blocked
         const available = isTrainer
-          ? bookedCount < MAX_CLIENTS_PER_SLOT
-          : bookedCount === 0;
+          ? bookedCount < MAX_CLIENTS_PER_SLOT && !blockedByTrainer
+          : bookedCount === 0 && !blockedByTrainer;
         slots.push({ time: timeStr, available, booked: isTrainer ? bookedCount : 0 });
       }
 
@@ -220,8 +251,14 @@ Deno.serve(async (req) => {
 
       // Check slot availability — clients can only book empty slots, trainers can do splits
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
+      const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
       const requestedMinutes = timeToMinutes(time);
       const currentCount = countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions);
+
+      // Check if slot is blocked by trainer
+      if (isSlotBlockedByTrainer(requestedMinutes, DEFAULT_DURATION, trainerBlocks)) {
+        return new Response(JSON.stringify({ error: 'Slot is blocked by trainer' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
 
       // Check if booker is trainer
       const { data: bookerRoles } = await supabase.from('user_roles').select('role').eq('user_id', user.id).eq('role', 'trainer');
