@@ -116,13 +116,17 @@ Deno.serve(async (req) => {
 
       const { data: recurring } = await supabase
         .from('scheduled_sessions')
-        .select('recurrence_time, duration_minutes')
+        .select('recurrence_time, duration_minutes, recurring_exceptions')
         .eq('is_recurring', true)
         .eq('recurrence_day', dayOfWeek);
 
       const bookedSessions: { start: number; duration: number }[] = [];
       (oneOff || []).forEach(s => { if (s.session_time) bookedSessions.push({ start: timeToMinutes(s.session_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
-      (recurring || []).forEach(s => { if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION }); });
+      (recurring || []).forEach(s => {
+        // Skip if this date is in recurring_exceptions
+        if (s.recurring_exceptions && s.recurring_exceptions.includes(date)) return;
+        if (s.recurrence_time) bookedSessions.push({ start: timeToMinutes(s.recurrence_time.slice(0, 5)), duration: s.duration_minutes || DEFAULT_DURATION });
+      });
       return bookedSessions;
     };
 
