@@ -56,6 +56,36 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_notifications: {
+        Row: {
+          action_type: string
+          client_user_id: string
+          created_at: string | null
+          details: string
+          id: string
+          is_sent: boolean | null
+          trainer_user_id: string
+        }
+        Insert: {
+          action_type: string
+          client_user_id: string
+          created_at?: string | null
+          details: string
+          id?: string
+          is_sent?: boolean | null
+          trainer_user_id: string
+        }
+        Update: {
+          action_type?: string
+          client_user_id?: string
+          created_at?: string | null
+          details?: string
+          id?: string
+          is_sent?: boolean | null
+          trainer_user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

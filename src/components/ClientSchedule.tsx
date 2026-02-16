@@ -46,18 +46,18 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
   useEffect(() => { fetchSessions(); }, [userId]);
 
-  const sendNotification = async (clientUserId: string, clientMsg: string, trainerMsg: string) => {
+  const queueNotification = async (clientUserId: string, actionType: string, details: string) => {
     try {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.access_token) return;
-      await supabase.functions.invoke('send-telegram', {
-        body: { action: 'sendReminder', client_user_id: clientUserId, message: clientMsg },
-      });
-      await supabase.functions.invoke('send-telegram', {
-        body: { message: trainerMsg },
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('pending_notifications').insert({
+        client_user_id: clientUserId,
+        trainer_user_id: user.id,
+        action_type: actionType,
+        details,
       });
     } catch (e) {
-      console.error('Notification failed', e);
+      console.error('Queue notification failed', e);
     }
   };
 
@@ -115,10 +115,10 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
       timeDisplay = recurTime ? ` в ${recurTime}` : '';
     }
 
-    sendNotification(
+    queueNotification(
       userId,
-      `📅 <b>Новая тренировка добавлена тренером</b>\n\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}\n\nУвидимся на тренировке! 💪`,
-      `✅ <b>Тренировка добавлена</b>\n\n👤 ${clientName}\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}`
+      'session_added',
+      `✅ <b>Тренировка добавлена</b>\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}`
     );
 
     setDate('');
@@ -167,10 +167,10 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         timeDisplay = session.session_time ? ` в ${session.session_time.slice(0, 5)}` : '';
       }
 
-      sendNotification(
+      queueNotification(
         userId,
-        `❌ <b>Тренировка отменена тренером</b>\n\n📅 ${dateDisplay}${timeDisplay}\n\nЕсли у вас есть вопросы, свяжитесь с тренером.`,
-        `❌ <b>Тренировка удалена</b>\n\n👤 ${clientName}\n📅 ${dateDisplay}${timeDisplay}`
+        'session_deleted',
+        `❌ <b>Тренировка отменена</b>\n📅 ${dateDisplay}${timeDisplay}`
       );
     }
 
