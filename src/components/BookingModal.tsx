@@ -137,13 +137,14 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
     if (!user) return false;
     const { data } = await supabase
       .from('client_packages')
-      .select('id')
+      .select('id, total_sessions, used_sessions')
       .eq('user_id', user.id)
       .eq('is_active', true)
-      .limit(1);
-    const has = (data?.length ?? 0) > 0;
-    setHasActivePackage(has);
-    return has;
+      .order('created_at', { ascending: true });
+    // Check if any active package has remaining sessions
+    const hasRemaining = (data || []).some(p => p.used_sessions < p.total_sessions);
+    setHasActivePackage(hasRemaining);
+    return hasRemaining;
   }, [user]);
 
   const handleTimeSelect = async (time: string) => {
