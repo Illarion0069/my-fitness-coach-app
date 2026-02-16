@@ -153,10 +153,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
       const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : -1;
       if (!map[hour]) map[hour] = [];
-      const client = clients.find(c => c.user_id === s.user_id);
-      // Extract manual name from notes like "👤 Name (manual)"
+      // Extract manual name from notes like "👤 Name (manual)" — check FIRST
       const manualMatch = s.notes?.match(/^👤 (.+?) \(manual\)$/);
-      const clientName = client?.full_name || manualMatch?.[1] || '?';
+      const client = manualMatch ? null : clients.find(c => c.user_id === s.user_id);
+      const clientName = manualMatch?.[1] || client?.full_name || '?';
       map[hour].push({ ...s, clientName });
     });
     return map;
