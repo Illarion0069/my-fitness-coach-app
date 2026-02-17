@@ -49,6 +49,44 @@ const PasswordInput = ({ value, onChange, placeholder, className }: {
   );
 };
 
+const getPasswordStrength = (pw: string): number => {
+  if (!pw) return 0;
+  let score = 0;
+  if (pw.length >= 6) score++;
+  if (pw.length >= 10) score++;
+  if (/[A-Z]/.test(pw)) score++;
+  if (/[0-9]/.test(pw)) score++;
+  if (/[^A-Za-z0-9]/.test(pw)) score++;
+  return Math.min(score, 4);
+};
+
+const PasswordStrength = ({ password, lang }: { password: string; lang: string }) => {
+  if (!password) return (
+    <p className="text-[11px] text-muted-foreground mt-1.5 px-1">
+      {lang === 'en' ? 'At least 6 characters — letters, numbers, or symbols' : 'Минимум 6 символов — буквы, цифры или символы'}
+    </p>
+  );
+  const strength = getPasswordStrength(password);
+  const levels = [
+    { label: lang === 'en' ? 'Too short' : 'Слишком короткий', color: 'bg-destructive' },
+    { label: lang === 'en' ? 'Weak' : 'Слабый', color: 'bg-destructive' },
+    { label: lang === 'en' ? 'Fair' : 'Средний', color: 'bg-yellow-500' },
+    { label: lang === 'en' ? 'Good' : 'Хороший', color: 'bg-emerald-500' },
+    { label: lang === 'en' ? 'Strong' : 'Сильный', color: 'bg-emerald-400' },
+  ];
+  const { label, color } = levels[strength];
+  return (
+    <div className="mt-2 px-1 space-y-1">
+      <div className="flex gap-1">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i < strength ? color : 'bg-border/50'}`} />
+        ))}
+      </div>
+      <p className="text-[11px] text-muted-foreground">{label}</p>
+    </div>
+  );
+};
+
 /** Convert phone to a fake email for Supabase auth */
 const phoneToEmail = (countryCode: string, phone: string) => {
   const digits = `${countryCode}${phone}`.replace(/[^0-9]/g, '');
@@ -270,9 +308,7 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                   />
                   <div>
                     <PasswordInput value={password} onChange={setPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
-                    <p className="text-[11px] text-muted-foreground mt-1.5 px-1">
-                      {t('At least 6 characters — letters, numbers, or symbols', 'Минимум 6 символов — буквы, цифры или символы')}
-                    </p>
+                    <PasswordStrength password={password} lang={lang} />
                   </div>
 
                   <InlineMessage message={formError} variant="error" />
