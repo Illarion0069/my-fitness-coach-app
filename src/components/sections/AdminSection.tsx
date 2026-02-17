@@ -1,18 +1,15 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Plus, Minus, Send, Package, UserPlus, LogOut, Trash2, GripVertical, CalendarDays, Clock } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import SwipeableClientCard from '@/components/SwipeableClientCard';
 import DraggableClientRow from '@/components/DraggableClientRow';
-import ClientSchedule from '@/components/ClientSchedule';
 import TrainerCalendar from '@/components/TrainerCalendar';
-import TrainerWhoopWidget from '@/components/TrainerWhoopWidget';
 import TrainerWorkingHours from '@/components/TrainerWorkingHours';
-import ClientTestHistory from '@/components/ClientTestHistory';
-import BodyMeasurementsInput from '@/components/BodyMeasurementsInput';
+import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 
 interface Profile {
   id: string;
@@ -39,7 +36,6 @@ const AdminSection = () => {
   const [clientOrder, setClientOrder] = useState<string[]>([]);
   const [packages, setPackages] = useState<Record<string, ClientPackage[]>>({});
   const [selectedClient, setSelectedClient] = useState<string | null>(null);
-  const [newPkgName, setNewPkgName] = useState('');
   const [loading, setLoading] = useState(true);
   const [showAddClient, setShowAddClient] = useState(false);
   const [newClientName, setNewClientName] = useState('');
@@ -120,24 +116,6 @@ const AdminSection = () => {
     toast({ title: lang === 'en' ? 'Package deleted' : 'Пакет удалён' });
   };
 
-  const createPackage = async (userId: string) => {
-    const name = newPkgName.trim();
-    if (!name) return;
-    const parsed = parseInt(name, 10);
-    const total = parsed > 0 ? parsed : 0;
-    if (total <= 0) {
-      toast({ title: lang === 'en' ? 'Enter a number' : 'Введите число', variant: 'destructive' });
-      return;
-    }
-    await supabase.from('client_packages').insert({
-      user_id: userId,
-      package_name: `${total} ${lang === 'en' ? 'sessions' : 'занятий'}`,
-      total_sessions: total,
-    });
-    setNewPkgName('');
-    fetchData();
-    toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
-  };
 
   const deleteClient = async (client: Profile) => {
     try {
@@ -375,145 +353,26 @@ const AdminSection = () => {
                   </div>
 
                   {isOpen && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      className="px-4 pb-4 space-y-3 border-t border-border/30"
-                    >
-                      {/* Client contact info */}
-                      <div className="bg-secondary/30 rounded-xl p-3 mt-3 space-y-1.5">
-                        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-1">
-                          {lang === 'en' ? 'Contact Info' : 'Контакты'}
-                        </p>
-                        <p className="text-xs text-foreground">{client.full_name}</p>
-                        <p className="text-xs text-muted-foreground">{client.email}</p>
-                        {client.phone ? (
-                          <p className="text-xs text-muted-foreground">{client.phone}</p>
-                        ) : (
-                          <div className="flex gap-2 items-center">
-                            <input
-                              type="tel"
-                              placeholder={lang === 'en' ? 'Enter phone' : 'Введите телефон'}
-                              className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
-                              onKeyDown={async (e) => {
-                                if (e.key === 'Enter') {
-                                  const val = (e.target as HTMLInputElement).value.trim();
-                                  if (!val) return;
-                                  await supabase.from('profiles').update({ phone: val }).eq('user_id', client.user_id);
-                                  fetchData();
-                                  toast({ title: lang === 'en' ? 'Phone saved' : 'Телефон сохранён' });
-                                }
-                              }}
-                            />
-                            <button
-                              onClick={async (e) => {
-                                const input = (e.currentTarget.previousElementSibling as HTMLInputElement);
-                                const val = input?.value?.trim();
-                                if (!val) return;
-                                await supabase.from('profiles').update({ phone: val }).eq('user_id', client.user_id);
-                                fetchData();
-                                toast({ title: lang === 'en' ? 'Phone saved' : 'Телефон сохранён' });
-                              }}
-                              className="text-xs font-bold text-primary hover:text-primary/80 transition-colors"
-                            >
-                              {lang === 'en' ? 'Save' : 'ОК'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Active packages */}
-                      {clientPkgs.filter((p) => p.is_active).map((pkg) => (
-                        <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3 mt-3">
-                          <div className="flex items-center justify-between mb-2">
-                            <p className="text-xs font-semibold">{pkg.package_name}</p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-muted-foreground">
-                                {pkg.used_sessions}/{pkg.total_sessions}
-                              </p>
-                              <button
-                                onClick={() => deletePackage(pkg.id)}
-                                className="w-6 h-6 rounded-md bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="h-1.5 bg-secondary rounded-full overflow-hidden mb-3">
-                            <div
-                              className="h-full gradient-primary rounded-full transition-all"
-                              style={{ width: `${((pkg.total_sessions - pkg.used_sessions) / pkg.total_sessions) * 100}%` }}
-                            />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => addSession(pkg.id, 1)}
-                              className="flex-1 bg-primary/20 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors"
-                            >
-                              <Plus className="w-3 h-3" /> {lang === 'en' ? 'Used' : 'Израсходовано'}
-                            </button>
-                            <button
-                              onClick={() => addSession(pkg.id, -1)}
-                              className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
-                            >
-                              <Minus className="w-3 h-3" /> {lang === 'en' ? 'Undo' : 'Отмена'}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {/* Add package */}
-                      <div className="bg-secondary/30 rounded-xl p-3 space-y-2">
-                        <p className="text-xs font-semibold flex items-center gap-1">
-                          <Package className="w-3 h-3" /> {lang === 'en' ? 'New Package' : 'Новый пакет'}
-                        </p>
-                        <div className="flex gap-2">
-                          <input
-                            type="number"
-                            min={1}
-                            placeholder={lang === 'en' ? 'Number of sessions' : 'Количество занятий'}
-                            value={newPkgName}
-                            onChange={(e) => setNewPkgName(e.target.value)}
-                            className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
-                          />
-                          <button
-                            onClick={() => createPackage(client.user_id)}
-                            disabled={!newPkgName.trim()}
-                            className="gradient-primary text-primary-foreground text-xs font-bold py-2 px-4 rounded-lg disabled:opacity-50"
-                          >
-                            {lang === 'en' ? 'Add' : 'Добавить'}
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Schedule */}
-                      <ClientSchedule userId={client.user_id} lang={lang} onSessionChange={fetchData} />
-
-                      {/* Whoop metrics */}
-                      <TrainerWhoopWidget userId={client.user_id} lang={lang} />
-
-                      {/* Body measurements input */}
-                      <BodyMeasurementsInput userId={client.user_id} lang={lang} />
-
-                      {/* Test history */}
-                      <ClientTestHistory userId={client.user_id} lang={lang} />
-
-                      {/* Send notifications */}
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => sendRemainingNotification(client)}
-                          className="flex-1 bg-primary/10 border border-primary/30 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 hover:bg-primary/20 transition-colors"
-                        >
-                          <Send className="w-3 h-3" /> {lang === 'en' ? 'Remaining' : 'Остаток'}
-                        </button>
-                        <button
-                          onClick={() => sendRenewalNotification(client)}
-                          className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
-                        >
-                          <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
-                        </button>
-                      </div>
-                    </motion.div>
+                    <ClientDetailAccordion
+                      client={client}
+                      clientPkgs={clientPkgs}
+                      lang={lang}
+                      onSessionChange={fetchData}
+                      onAddSession={addSession}
+                      onDeletePackage={deletePackage}
+                      onCreatePackage={(userId, sessions) => {
+                        supabase.from('client_packages').insert({
+                          user_id: userId,
+                          package_name: `${sessions} ${lang === 'en' ? 'sessions' : 'занятий'}`,
+                          total_sessions: sessions,
+                        }).then(() => {
+                          fetchData();
+                          toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
+                        });
+                      }}
+                      onSendRemaining={() => sendRemainingNotification(client)}
+                      onSendRenewal={() => sendRenewalNotification(client)}
+                    />
                   )}
                 </div>
                 </SwipeableClientCard>
