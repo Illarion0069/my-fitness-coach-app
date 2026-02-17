@@ -212,7 +212,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
 
             {/* Chart */}
             <div className="px-2 pb-4">
-              {chartData.length > 1 ? (
+              {chartData.length >= 1 ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <LineChart data={chartData} margin={{ top: 5, right: 15, left: -15, bottom: 5 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
