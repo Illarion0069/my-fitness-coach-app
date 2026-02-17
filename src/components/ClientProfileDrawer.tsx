@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown } from 'lucide-react';
+import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import WhoopWidget from './WhoopWidget';
-import BodyMeasurementsView from './BodyMeasurementsView';
+import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
 
 interface ScheduledSession {
@@ -83,6 +83,8 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
+  const [measurementsOpen, setMeasurementsOpen] = useState(false);
+  const [measurements, setMeasurements] = useState<any[]>([]);
 
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
 
@@ -158,8 +160,18 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
         .order('session_date', { ascending: true });
       setSessions((data as ScheduledSession[]) || []);
     };
+    const fetchMeasurements = async () => {
+      const { data } = await supabase
+        .from('body_measurements')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('measured_at', { ascending: false })
+        .limit(50);
+      setMeasurements(data || []);
+    };
     fetchPkg();
     fetchSessions();
+    fetchMeasurements();
 
     const channel = supabase
       .channel('client-sessions')
@@ -180,6 +192,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const low = remaining <= 2 && pkg;
 
   return (
+    <>
     <AnimatePresence>
       {open && (
         <motion.div key="drawer-wrapper" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -308,15 +321,18 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                 )}
               </AccordionSection>
 
-              {/* Body Measurements */}
-              <AccordionSection
-                icon={<Ruler className="w-4 h-4 text-primary" />}
-                title={lang === 'en' ? 'Body Progress' : 'Замеры тела'}
-                isOpen={openSection === 'measurements'}
-                onToggle={() => toggleSection('measurements')}
+              {/* Body Measurements — direct open */}
+              <button
+                onClick={() => setMeasurementsOpen(true)}
+                className="w-full border border-border/30 rounded-xl flex items-center gap-2.5 px-3.5 py-3 hover:bg-secondary/30 transition-colors"
               >
-                <BodyMeasurementsView userId={user.id} lang={lang} />
-              </AccordionSection>
+                <Ruler className="w-4 h-4 text-primary" />
+                <span className="text-sm font-semibold flex-1 text-left">{lang === 'en' ? 'Body Progress' : 'Замеры тела'}</span>
+                {measurements.length > 0 && (
+                  <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-bold">{measurements.length}</span>
+                )}
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </button>
 
               {/* Health Tests */}
               <AccordionSection
@@ -383,6 +399,14 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
         </motion.div>
       )}
     </AnimatePresence>
+
+    <BodyMeasurementsDetail
+      open={measurementsOpen}
+      onClose={() => setMeasurementsOpen(false)}
+      measurements={measurements}
+      lang={lang}
+    />
+    </>
   );
 };
 
