@@ -12,6 +12,7 @@ import TrainerCalendar from '@/components/TrainerCalendar';
 import TrainerWhoopWidget from '@/components/TrainerWhoopWidget';
 import TrainerWorkingHours from '@/components/TrainerWorkingHours';
 import ClientTestHistory from '@/components/ClientTestHistory';
+import BodyMeasurementsInput from '@/components/BodyMeasurementsInput';
 
 interface Profile {
   id: string;
@@ -490,6 +491,9 @@ const AdminSection = () => {
 
                       {/* Whoop metrics */}
                       <TrainerWhoopWidget userId={client.user_id} lang={lang} />
+
+                      {/* Body measurements input */}
+                      <BodyMeasurementsInput userId={client.user_id} lang={lang} />
 
                       {/* Test history */}
                       <ClientTestHistory userId={client.user_id} lang={lang} />
