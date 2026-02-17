@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      body_measurements: {
+        Row: {
+          chest_cm: number | null
+          created_at: string
+          hips_cm: number | null
+          id: string
+          left_arm_cm: number | null
+          left_leg_cm: number | null
+          measured_at: string
+          notes: string | null
+          right_arm_cm: number | null
+          right_leg_cm: number | null
+          trainer_user_id: string
+          updated_at: string
+          user_id: string
+          waist_cm: number | null
+          weight_kg: number | null
+        }
+        Insert: {
+          chest_cm?: number | null
+          created_at?: string
+          hips_cm?: number | null
+          id?: string
+          left_arm_cm?: number | null
+          left_leg_cm?: number | null
+          measured_at?: string
+          notes?: string | null
+          right_arm_cm?: number | null
+          right_leg_cm?: number | null
+          trainer_user_id: string
+          updated_at?: string
+          user_id: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Update: {
+          chest_cm?: number | null
+          created_at?: string
+          hips_cm?: number | null
+          id?: string
+          left_arm_cm?: number | null
+          left_leg_cm?: number | null
+          measured_at?: string
+          notes?: string | null
+          right_arm_cm?: number | null
+          right_leg_cm?: number | null
+          trainer_user_id?: string
+          updated_at?: string
+          user_id?: string
+          waist_cm?: number | null
+          weight_kg?: number | null
+        }
+        Relationships: []
+      }
       client_packages: {
         Row: {
           created_at: string
