@@ -268,7 +268,12 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                     onPhoneChange={setPhoneNumber}
                     placeholder={t('Phone number', 'Номер телефона')}
                   />
-                  <PasswordInput value={password} onChange={setPassword} placeholder={t('Password (min 6 chars)', 'Пароль (мин 6 символов)')} className={inputClass} />
+                  <div>
+                    <PasswordInput value={password} onChange={setPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
+                    <p className="text-[11px] text-muted-foreground mt-1.5 px-1">
+                      {t('At least 6 characters — letters, numbers, or symbols', 'Минимум 6 символов — буквы, цифры или символы')}
+                    </p>
+                  </div>
 
                   <InlineMessage message={formError} variant="error" />
 
