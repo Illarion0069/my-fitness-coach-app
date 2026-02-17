@@ -328,9 +328,6 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
               >
                 <Ruler className="w-4 h-4 text-primary" />
                 <span className="text-sm font-semibold flex-1 text-left">{lang === 'en' ? 'Body Progress' : 'Замеры тела'}</span>
-                {measurements.length > 0 && (
-                  <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-bold">{measurements.length}</span>
-                )}
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </button>
 
