@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Ruler, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { Ruler, TrendingUp, TrendingDown, Minus, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 
 interface Measurement {
   id: string;
@@ -42,6 +43,7 @@ const TrendIcon = ({ current, previous }: { current: number | null; previous: nu
 const BodyMeasurementsView = ({ userId, lang }: Props) => {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     supabase
@@ -49,7 +51,7 @@ const BodyMeasurementsView = ({ userId, lang }: Props) => {
       .select('*')
       .eq('user_id', userId)
       .order('measured_at', { ascending: false })
-      .limit(20)
+      .limit(50)
       .then(({ data }) => {
         setMeasurements((data || []) as Measurement[]);
         setLoading(false);
@@ -72,51 +74,48 @@ const BodyMeasurementsView = ({ userId, lang }: Props) => {
   const prev = measurements[1];
 
   return (
-    <div className="space-y-3">
-      {/* Latest measurements card */}
-      <div className="bg-background border border-border/50 rounded-xl p-3">
-        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider mb-2">
-          {lang === 'en' ? 'Latest' : 'Последние'} — {new Date(latest.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
-        </p>
-        <div className="grid grid-cols-2 gap-2">
-          {FIELDS.map(f => {
-            const val = latest[f.key as keyof Measurement] as number | null;
-            const prevVal = prev ? (prev[f.key as keyof Measurement] as number | null) : null;
-            if (val == null) return null;
-            return (
-              <div key={f.key} className="flex items-center justify-between bg-secondary/30 rounded-lg px-2.5 py-1.5">
-                <span className="text-[11px] text-muted-foreground">{lang === 'en' ? f.en : f.ru}</span>
-                <div className="flex items-center gap-1">
-                  <span className="text-xs font-bold">{val}{f.unit === 'kg' ? '' : ''}</span>
-                  <TrendIcon current={val} previous={prevVal} />
+    <>
+      <div className="space-y-3">
+        {/* Latest measurements card — clickable */}
+        <button
+          onClick={() => setDetailOpen(true)}
+          className="w-full text-left bg-background border border-border/50 rounded-xl p-3 hover:border-primary/30 transition-colors"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
+              {lang === 'en' ? 'Latest' : 'Последние'} — {new Date(latest.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+            <div className="flex items-center gap-1 text-primary">
+              <span className="text-[10px] font-semibold">{lang === 'en' ? 'Details' : 'Подробнее'}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            {FIELDS.map(f => {
+              const val = latest[f.key as keyof Measurement] as number | null;
+              const prevVal = prev ? (prev[f.key as keyof Measurement] as number | null) : null;
+              if (val == null) return null;
+              return (
+                <div key={f.key} className="flex items-center justify-between bg-secondary/30 rounded-lg px-2.5 py-1.5">
+                  <span className="text-[11px] text-muted-foreground">{lang === 'en' ? f.en : f.ru}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-bold">{val}</span>
+                    <TrendIcon current={val} previous={prevVal} />
+                  </div>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </button>
       </div>
 
-      {/* History */}
-      {measurements.length > 1 && (
-        <div className="space-y-1.5">
-          <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
-            {lang === 'en' ? 'History' : 'История'}
-          </p>
-          {measurements.slice(1).map(m => (
-            <div key={m.id} className="bg-secondary/20 rounded-lg px-2.5 py-2 flex items-center justify-between">
-              <span className="text-[11px] text-muted-foreground">
-                {new Date(m.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' })}
-              </span>
-              <div className="flex gap-2 text-[10px] text-muted-foreground">
-                {m.weight_kg != null && <span>{m.weight_kg}kg</span>}
-                {m.waist_cm != null && <span>{lang === 'en' ? 'W' : 'Т'}{m.waist_cm}</span>}
-                {m.chest_cm != null && <span>{lang === 'en' ? 'C' : 'Г'}{m.chest_cm}</span>}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
+      <BodyMeasurementsDetail
+        open={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        measurements={measurements}
+        lang={lang}
+      />
+    </>
   );
 };
 
