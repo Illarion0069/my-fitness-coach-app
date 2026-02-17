@@ -67,10 +67,30 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
   }, [measurements, activeMetric, timeRange, range.months]);
 
   const chartData = useMemo(() => {
-    return filtered.map(m => ({
-      date: new Date(m.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' }),
-      value: m[activeMetric as keyof Measurement] as number,
-    }));
+    // Check if there are duplicate dates
+    const dateStrings = filtered.map(m => m.measured_at);
+    const hasDuplicateDates = new Set(dateStrings).size < dateStrings.length;
+
+    return filtered.map((m, i) => {
+      const d = new Date(m.measured_at);
+      let label: string;
+      if (hasDuplicateDates) {
+        // Use "date #index" to differentiate same-day entries
+        const sameDay = filtered.filter(f => f.measured_at === m.measured_at);
+        if (sameDay.length > 1) {
+          const idx = sameDay.indexOf(m) + 1;
+          label = d.toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' }) + ` #${idx}`;
+        } else {
+          label = d.toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' });
+        }
+      } else {
+        label = d.toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' });
+      }
+      return {
+        date: label,
+        value: m[activeMetric as keyof Measurement] as number,
+      };
+    });
   }, [filtered, activeMetric, lang]);
 
   const grouped = useMemo(() => {
@@ -216,6 +236,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
                         fontSize: '12px',
                       }}
                       labelStyle={{ color: 'hsl(var(--muted-foreground))' }}
+                      formatter={(value: number) => [`${value} ${metric.unit}`, lang === 'en' ? metric.en : metric.ru]}
                     />
                     <Line
                       type="monotone"
