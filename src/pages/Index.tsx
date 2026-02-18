@@ -9,6 +9,7 @@ import PricingSection from '@/components/sections/PricingSection';
 import AboutSection from '@/components/sections/AboutSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
+import OnboardingModal from '@/components/OnboardingModal';
 import ClientProfileDrawer from '@/components/ClientProfileDrawer';
 import ConsultationBanner from '@/components/ConsultationBanner';
 import ConsultationModal from '@/components/ConsultationModal';
@@ -22,7 +23,8 @@ const AppContent = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showConsultation, setShowConsultation] = useState(false);
-  const [consultationFlow, setConsultationFlow] = useState(false); // tracks consultation→register→book→test flow
+  const [consultationFlow, setConsultationFlow] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -144,13 +146,23 @@ const AppContent = () => {
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={isTrainer} />
       
-      <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} consultationFlow={consultationFlow} />
+      <WelcomeModal
+        open={showWelcome}
+        onClose={() => setShowWelcome(false)}
+        consultationFlow={consultationFlow}
+        onRegistered={() => setShowOnboarding(true)}
+      />
+      <OnboardingModal
+        open={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        onOpenBooking={() => setShowBooking(true)}
+        onNavigateToTest={() => handleNavigate('test')}
+      />
       <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
       <BookingModal
         open={showBooking}
         onClose={() => {
           setShowBooking(false);
-          // If in consultation flow and booking is done, navigate to test
           if (consultationFlow) {
             setConsultationFlow(false);
             handleNavigate('test');

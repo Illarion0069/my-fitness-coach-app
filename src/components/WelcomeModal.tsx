@@ -15,6 +15,7 @@ interface WelcomeModalProps {
   open: boolean;
   onClose: () => void;
   consultationFlow?: boolean;
+  onRegistered?: () => void;
 }
 
 const InlineMessage = ({ message, variant = 'error' }: { message: string | null; variant?: 'error' | 'success' }) => {
@@ -94,7 +95,7 @@ const phoneToEmail = (countryCode: string, phone: string) => {
   return `${digits}@phone.fitness.local`;
 };
 
-const WelcomeModal = ({ open, onClose, consultationFlow }: WelcomeModalProps) => {
+const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: WelcomeModalProps) => {
   const { lang } = useLanguage();
   const { refreshProfile, profile } = useAuth();
   const { toast } = useToast();
@@ -176,7 +177,13 @@ const WelcomeModal = ({ open, onClose, consultationFlow }: WelcomeModalProps) =>
         },
       }).catch(() => {});
 
-      setStep('telegram');
+      // Trigger fullscreen onboarding instead of inline telegram step
+      if (onRegistered) {
+        onClose();
+        onRegistered();
+      } else {
+        setStep('telegram');
+      }
     } catch (err: any) {
       setFormError(err.message);
     }
