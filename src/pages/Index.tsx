@@ -22,6 +22,7 @@ const AppContent = () => {
   const [showBooking, setShowBooking] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
+  const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sections = ['home', 'test', 'pricing', 'about', ...(isTrainer ? ['admin'] : [])];
@@ -150,13 +151,21 @@ const AppContent = () => {
           setShowOnboarding(false);
           handleNavigate('test');
         }}
+        bookingJustCompleted={bookingJustCompleted}
       />
       <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
       <BookingModal
         open={showBooking}
         onClose={() => setShowBooking(false)}
         onLoginRequest={() => { setShowBooking(false); setShowWelcome(true); }}
-        onBooked={() => handleNavigate('test')}
+        onBooked={() => {
+          if (showOnboarding) {
+            setBookingJustCompleted(true);
+            setTimeout(() => setBookingJustCompleted(false), 2000);
+          } else {
+            handleNavigate('test');
+          }
+        }}
       />
     </div>
   );

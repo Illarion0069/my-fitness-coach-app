@@ -11,11 +11,12 @@ interface OnboardingModalProps {
   onClose: () => void;
   onOpenBooking: () => void;
   onNavigateToTest: () => void;
+  bookingJustCompleted?: boolean;
 }
 
 const ONBOARDING_DONE_KEY = 'onboarding_completed';
 
-const OnboardingModal = ({ open, onClose, onOpenBooking, onNavigateToTest }: OnboardingModalProps) => {
+const OnboardingModal = ({ open, onClose, onOpenBooking, onNavigateToTest, bookingJustCompleted }: OnboardingModalProps) => {
   const { user, profile, refreshProfile } = useAuth();
   const { lang } = useLanguage();
   const [step, setStep] = useState(0); // 0=telegram, 1=booking, 2=test
@@ -52,7 +53,7 @@ const OnboardingModal = ({ open, onClose, onOpenBooking, onNavigateToTest }: Onb
     };
   }, [open, step, user]);
 
-  // Listen for booking completion
+  // Listen for booking completion via Realtime
   useEffect(() => {
     if (!open || step !== 1 || !user) return;
 
@@ -71,6 +72,14 @@ const OnboardingModal = ({ open, onClose, onOpenBooking, onNavigateToTest }: Onb
 
     return () => { supabase.removeChannel(channel); };
   }, [open, step, user]);
+
+  // Also advance when parent signals booking completed (covers race condition with Realtime)
+  useEffect(() => {
+    if (bookingJustCompleted && open && step === 1 && !bookingDone) {
+      setBookingDone(true);
+      setTimeout(() => setStep(2), 800);
+    }
+  }, [bookingJustCompleted, open, step, bookingDone]);
 
   const handleComplete = useCallback(() => {
     localStorage.setItem(ONBOARDING_DONE_KEY, 'true');
