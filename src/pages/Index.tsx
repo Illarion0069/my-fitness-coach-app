@@ -153,7 +153,7 @@ const AppContent = () => {
         onRegistered={() => setShowOnboarding(true)}
       />
       <OnboardingModal
-        open={showOnboarding}
+        open={showOnboarding && !showBooking}
         onClose={() => setShowOnboarding(false)}
         onOpenBooking={() => setShowBooking(true)}
         onNavigateToTest={() => handleNavigate('test')}
