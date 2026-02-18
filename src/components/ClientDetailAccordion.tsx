@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight, Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save } from 'lucide-react';
+import { ChevronDown, ChevronRight, Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
@@ -92,6 +92,9 @@ const ClientDetailAccordion = ({
   const { toast } = useToast();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [newPkgName, setNewPkgName] = useState('');
+  const [resetPw, setResetPw] = useState('');
+  const [resettingPw, setResettingPw] = useState(false);
+  const [showResetPw, setShowResetPw] = useState(false);
 
   const toggleSection = (id: string) => setOpenSection(prev => prev === id ? null : id);
 
@@ -103,6 +106,27 @@ const ClientDetailAccordion = ({
     }
     onCreatePackage(client.user_id, parsed);
     setNewPkgName('');
+  };
+
+  const handleResetPassword = async () => {
+    if (resetPw.length < 6) {
+      toast({ title: lang === 'en' ? 'Min 6 characters' : 'Минимум 6 символов', variant: 'destructive' });
+      return;
+    }
+    setResettingPw(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { action: 'trainer_reset', client_user_id: client.user_id, new_password: resetPw },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: lang === 'en' ? 'Password updated' : 'Пароль обновлён' });
+      setResetPw('');
+      setShowResetPw(false);
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e.message, variant: 'destructive' });
+    }
+    setResettingPw(false);
   };
 
   return (
@@ -152,6 +176,40 @@ const ClientDetailAccordion = ({
           </div>
         )}
       </div>
+
+      {/* Reset password */}
+      {!showResetPw ? (
+        <button
+          onClick={() => setShowResetPw(true)}
+          className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <KeyRound className="w-3 h-3" />
+          {lang === 'en' ? 'Reset password' : 'Сбросить пароль'}
+        </button>
+      ) : (
+        <div className="flex gap-2 items-center">
+          <input
+            type="text"
+            placeholder={lang === 'en' ? 'New password' : 'Новый пароль'}
+            value={resetPw}
+            onChange={(e) => setResetPw(e.target.value)}
+            className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
+          />
+          <button
+            onClick={handleResetPassword}
+            disabled={resettingPw}
+            className="text-xs font-bold text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+          >
+            {resettingPw ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Set' : 'ОК')}
+          </button>
+          <button
+            onClick={() => { setShowResetPw(false); setResetPw(''); }}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Packages — accordion */}
       <AccordionSection
