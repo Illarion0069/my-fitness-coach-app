@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Plus, X, Clock, GripVertical, Pencil, Trash2, Ban, Car, Calendar as CalIcon } from 'lucide-react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { ChevronLeft, ChevronRight, Plus, X, Clock, Pencil, Trash2, Ban, Car, Calendar as CalIcon } from 'lucide-react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -368,7 +368,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const deltaY = clientY - dragStartY.current;
     const deltaMinutes = (deltaY / ROW_HEIGHT) * 60;
     const newMinutes = Math.max(6 * 60, Math.min(22 * 60, dragStartMinutes.current + deltaMinutes));
-    const snapped = Math.round(newMinutes / 5) * 5;
+    // 1-minute precision like iPhone calendar
+    const snapped = Math.round(newMinutes);
     setDragPreviewTime(minutesToTimeStr(snapped));
   }, [draggingSessionId]);
 
@@ -534,9 +535,51 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       );
     }
 
+    // Long-press to activate drag (iPhone-style)
+    let dragLPTimer: ReturnType<typeof setTimeout> | null = null;
+    let dragTouchOrigin: { x: number; y: number } | null = null;
+
+    const handleCardTouchStart = (e: React.TouchEvent) => {
+      e.stopPropagation();
+      const touch = e.touches[0];
+      dragTouchOrigin = { x: touch.clientX, y: touch.clientY };
+      
+      dragLPTimer = setTimeout(() => {
+        if (navigator.vibrate) navigator.vibrate(10);
+        handleDragStart(s.id, timeStr, touch.clientY);
+      }, 500);
+    };
+
+    const handleCardTouchMove = (e: React.TouchEvent) => {
+      if (draggingSessionId === s.id) {
+        e.preventDefault();
+        handleDragMove(e.touches[0].clientY);
+        return;
+      }
+      if (dragTouchOrigin) {
+        const dx = e.touches[0].clientX - dragTouchOrigin.x;
+        const dy = e.touches[0].clientY - dragTouchOrigin.y;
+        if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+          if (dragLPTimer) {
+            clearTimeout(dragLPTimer);
+            dragLPTimer = null;
+          }
+        }
+      }
+    };
+
+    const handleCardTouchEnd = () => {
+      if (dragLPTimer) {
+        clearTimeout(dragLPTimer);
+        dragLPTimer = null;
+      }
+      if (draggingSessionId === s.id) handleDragEnd();
+    };
+
     const handleLongPressStart = () => {
+      if (draggingSessionId) return;
       longPressTimer.current = setTimeout(() => {
-        setContextMenuSessionId(s.id);
+        if (!draggingSessionId) setContextMenuSessionId(s.id);
       }, 500);
     };
 
@@ -550,29 +593,23 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return (
       <div
         key={s.id}
-        className={`relative flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5 h-full transition-all select-none ${
-          isDragging ? 'opacity-60 scale-95 shadow-lg ring-2 ring-primary/40' : ''
+        className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 h-full transition-all select-none ${
+          isDragging
+            ? 'bg-primary/20 border-2 border-primary shadow-2xl scale-[1.03] z-50'
+            : 'bg-primary/10 border border-primary/20'
         } ${contextMenuSessionId === s.id ? 'ring-2 ring-primary/60' : ''}`}
-        onTouchStart={handleLongPressStart}
-        onTouchEnd={handleLongPressEnd}
-        onTouchMove={handleLongPressEnd}
-        onMouseDown={handleLongPressStart}
+        onTouchStart={handleCardTouchStart}
+        onTouchMove={handleCardTouchMove}
+        onTouchEnd={handleCardTouchEnd}
+        onMouseDown={(e) => {
+          handleLongPressStart();
+          e.preventDefault();
+          handleDragStart(s.id, timeStr, e.clientY);
+        }}
         onMouseUp={handleLongPressEnd}
         onMouseLeave={handleLongPressEnd}
+        style={{ touchAction: isDragging ? 'none' : 'auto' }}
       >
-        {/* Drag handle */}
-        <div
-          className="touch-none cursor-grab active:cursor-grabbing shrink-0 text-muted-foreground/50 hover:text-muted-foreground transition-colors"
-          onTouchStart={(e) => { handleLongPressEnd(); onSessionTouchStart(s.id, timeStr, e); }}
-          onMouseDown={(e) => {
-            handleLongPressEnd();
-            e.preventDefault();
-            e.stopPropagation();
-            handleDragStart(s.id, timeStr, e.clientY);
-          }}
-        >
-          <GripVertical className="w-3.5 h-3.5" />
-        </div>
         <div className="w-1 h-5 rounded-full bg-primary shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold truncate">{s.clientName}</p>
@@ -843,23 +880,51 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
               const slotIndex = sameTimeSlot.findIndex(x => x.id === s.id);
               const slotCount = sameTimeSlot.length;
 
+              const isDragging = draggingSessionId === s.id;
+
+              // If dragging, calculate the preview position
+              let displayTopPx = topPx;
+              if (isDragging && dragPreviewTime) {
+                const [ph, pm] = dragPreviewTime.split(':').map(Number);
+                const previewMinutes = ph * 60 + (pm || 0);
+                displayTopPx = ((previewMinutes - startHour * 60) / 60) * ROW_HEIGHT;
+              }
+
               return (
-                <div
-                  key={s.id}
-                  className="absolute"
-                  style={{
-                    top: topPx,
-                    height: heightPx,
-                    left: `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
-                    width: `calc((100% - 48px) / ${slotCount})`,
-                    zIndex: 10,
-                    padding: '1px 2px',
-                  }}
-                >
-                  <div className="h-full">
-                    {renderSessionCard(s)}
+                <React.Fragment key={s.id}>
+                  {/* Ghost placeholder at original position */}
+                  {isDragging && (
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        top: topPx,
+                        height: heightPx,
+                        left: `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
+                        width: `calc((100% - 48px) / ${slotCount})`,
+                        zIndex: 5,
+                        padding: '1px 2px',
+                      }}
+                    >
+                      <div className="h-full bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
+                    </div>
+                  )}
+                  {/* Actual card (at preview position when dragging) */}
+                  <div
+                    className={`absolute transition-none ${isDragging ? 'z-50' : ''}`}
+                    style={{
+                      top: displayTopPx,
+                      height: heightPx,
+                      left: `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
+                      width: `calc((100% - 48px) / ${slotCount})`,
+                      zIndex: isDragging ? 50 : 10,
+                      padding: '1px 2px',
+                    }}
+                  >
+                    <div className="h-full">
+                      {renderSessionCard(s)}
+                    </div>
                   </div>
-                </div>
+                </React.Fragment>
               );
             })}
 
