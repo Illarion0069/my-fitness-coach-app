@@ -14,9 +14,9 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
   const { lang } = useLanguage();
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(true);
 
   useEffect(() => {
-    // Don't show if already visited before or dismissed
     const hasVisited = localStorage.getItem(VISITED_KEY);
     const wasDismissed = localStorage.getItem(STORAGE_KEY);
 
@@ -25,13 +25,18 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
       return;
     }
 
-    // Mark as visited for future
     localStorage.setItem(VISITED_KEY, 'true');
 
-    // Show after 3 seconds
     const timer = setTimeout(() => setVisible(true), 3000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Auto-hide tooltip after 5 seconds
+  useEffect(() => {
+    if (!visible || !showTooltip) return;
+    const timer = setTimeout(() => setShowTooltip(false), 5000);
+    return () => clearTimeout(timer);
+  }, [visible, showTooltip]);
 
   const handleDismiss = () => {
     localStorage.setItem(STORAGE_KEY, 'true');
@@ -52,7 +57,7 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0, opacity: 0 }}
         transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-        className="fixed bottom-24 right-4 z-50"
+        className="fixed bottom-36 right-4 z-50"
       >
         <button
           onClick={handleClick}
@@ -71,21 +76,26 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
         {/* Dismiss tap area */}
         <button
           onClick={handleDismiss}
-          className="absolute -top-1 -left-1 w-5 h-5 rounded-full bg-muted/80 flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors z-30"
+          className="absolute -top-2 -left-2 w-7 h-7 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:bg-muted/80 transition-colors z-30 shadow-md"
           aria-label="Close"
         >
-          <span className="text-[10px] font-bold">✕</span>
+          <span className="text-xs font-bold">✕</span>
         </button>
 
         {/* Tooltip */}
-        <motion.div
-          initial={{ opacity: 0, x: 10 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 1 }}
-          className="absolute right-full mr-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-card border border-border/50 text-foreground text-xs font-medium py-1.5 px-3 rounded-xl shadow-lg"
-        >
-          {lang === 'en' ? 'First visit? Book a consultation' : 'Впервые? Запишись на консультацию'}
-        </motion.div>
+        <AnimatePresence>
+          {showTooltip && (
+            <motion.div
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 10 }}
+              transition={{ delay: 0.5 }}
+              className="absolute right-full mr-2 top-1/2 -translate-y-1/2 whitespace-nowrap bg-card border border-border/50 text-foreground text-xs font-medium py-1.5 px-3 rounded-xl shadow-lg"
+            >
+              {lang === 'en' ? 'First visit? Book a consultation' : 'Впервые? Запишись на консультацию'}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
     </AnimatePresence>
   );
