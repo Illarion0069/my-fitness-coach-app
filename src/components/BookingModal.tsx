@@ -414,9 +414,21 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
             {/* === TIME STEP === */}
             {step === 'time' && selectedDate && (
               <div>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-2">
                   {format(selectedDate, 'EEEE, d MMMM', { locale })}
                 </p>
+                {/* Show timezone hint if user is NOT in Cyprus */}
+                {(() => {
+                  const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                  if (userTz !== 'Asia/Nicosia' && userTz !== 'Europe/Nicosia') {
+                    return (
+                      <p className="text-[10px] text-muted-foreground/60 mb-3">
+                        {lang === 'en' ? '⏰ Times shown in Limassol time (Cyprus)' : '⏰ Время указано по Лимассолу (Кипр)'}
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {loading ? (
                   <div className="flex justify-center py-10">

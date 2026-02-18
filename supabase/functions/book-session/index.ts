@@ -196,21 +196,31 @@ Deno.serve(async (req) => {
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
       const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
 
+      // Check if requested date is today in Cyprus timezone — filter past slots
+      const cyprusNow = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Nicosia' }));
+      const cyprusToday = `${cyprusNow.getFullYear()}-${String(cyprusNow.getMonth() + 1).padStart(2, '0')}-${String(cyprusNow.getDate()).padStart(2, '0')}`;
+      const isToday = date === cyprusToday;
+      const cyprusCurrentMinutes = isToday ? cyprusNow.getHours() * 60 + cyprusNow.getMinutes() : -1;
+
       const slots: { time: string; available: boolean; booked: number }[] = [];
       for (let h = trainer.workStart; h <= trainer.workEnd; h++) {
         const timeStr = `${String(h).padStart(2, '0')}:00`;
         const slotMinutes = h * 60;
         const bookedCount = countOverlapping(slotMinutes, DEFAULT_DURATION, bookedSessions);
         const blockedByTrainer = isSlotBlockedByTrainer(slotMinutes, DEFAULT_DURATION, trainerBlocks);
+        // If today, mark past slots as unavailable
+        const isPast = isToday && slotMinutes <= cyprusCurrentMinutes;
         // Clients: any booked or blocked slot is unavailable
         // Trainers: slot available if < MAX_CLIENTS_PER_SLOT and not blocked
-        const available = isTrainer
-          ? bookedCount < MAX_CLIENTS_PER_SLOT && !blockedByTrainer
-          : bookedCount === 0 && !blockedByTrainer;
+        const available = isPast
+          ? false
+          : isTrainer
+            ? bookedCount < MAX_CLIENTS_PER_SLOT && !blockedByTrainer
+            : bookedCount === 0 && !blockedByTrainer;
         slots.push({ time: timeStr, available, booked: isTrainer ? bookedCount : 0 });
       }
 
-      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: isTrainer ? MAX_CLIENTS_PER_SLOT : 1 }), {
+      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: isTrainer ? MAX_CLIENTS_PER_SLOT : 1, timezone: 'Asia/Nicosia' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
