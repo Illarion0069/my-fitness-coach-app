@@ -31,11 +31,11 @@ type Step = 'date' | 'time' | 'payment' | 'confirm' | 'done' | 'my-sessions';
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 
 const PACKAGES = [
-  { sessions: 1, price: 50, label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, isConsultation: true },
-  { sessions: 1, price: 100, label: { en: 'Single Session', ru: 'Разовая тренировка' } },
-  { sessions: 8, price: 750, label: { en: '8 Sessions', ru: '8 занятий' } },
-  { sessions: 12, price: 1030, label: { en: '12 Sessions', ru: '12 занятий' } },
-  { sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
+  { id: 'consultation', sessions: 1, price: 50, label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, isConsultation: true },
+  { id: 'single', sessions: 1, price: 100, label: { en: 'Single Session', ru: 'Разовая тренировка' } },
+  { id: 'pack8', sessions: 8, price: 750, label: { en: '8 Sessions', ru: '8 занятий' } },
+  { id: 'pack12', sessions: 12, price: 1030, label: { en: '12 Sessions', ru: '12 занятий' } },
+  { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
 const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
@@ -508,17 +508,17 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                 <div className="space-y-2">
                   {PACKAGES.map(pkg => (
                     <button
-                      key={pkg.sessions}
+                      key={pkg.id}
                       onClick={() => setSelectedPackage(pkg)}
                       className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all ${
-                        selectedPackage?.sessions === pkg.sessions
+                        selectedPackage?.id === pkg.id
                           ? 'border-primary bg-primary/5 shadow-md'
                           : 'border-border/50 bg-secondary/30 hover:border-primary/30'
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
-                          selectedPackage?.sessions === pkg.sessions ? 'bg-primary text-primary-foreground' : 'bg-secondary'
+                          selectedPackage?.id === pkg.id ? 'bg-primary text-primary-foreground' : 'bg-secondary'
                         }`}>
                           {pkg.sessions === 1
                             ? <CreditCard className="w-4 h-4" />
