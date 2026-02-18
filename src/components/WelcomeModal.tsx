@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { UserPlus, LogIn, X, Loader2, Bot, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, LogIn, X, Loader2, Bot, Eye, EyeOff, KeyRound, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 import trainerLogo from '@/assets/trainer-logo.png';
 
-type Step = 'welcome' | 'register' | 'login' | 'telegram';
+type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-code' | 'forgot-done';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -109,6 +109,12 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
   const [loginPassword, setLoginPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
+  // Forgot password state
+  const [forgotCountryCode, setForgotCountryCode] = useState('+357');
+  const [forgotPhone, setForgotPhone] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+
   useEffect(() => {
     if (open) {
       setStep('welcome');
@@ -206,6 +212,61 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
     setSubmitting(false);
   };
 
+  const handleForgotRequest = async () => {
+    setFormError(null);
+    if (!forgotPhone.trim() || forgotPhone.length < 5) {
+      setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const fullPhone = `${forgotCountryCode}${forgotPhone}`;
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { action: 'request_reset', phone: fullPhone },
+      });
+      if (error) throw error;
+      if (data?.error === 'not_found') {
+        throw new Error(t('Phone number not found', 'Номер телефона не найден'));
+      }
+      if (data?.error === 'no_telegram') {
+        throw new Error(t('No Telegram linked to this account. Contact your trainer.', 'К аккаунту не привязан Telegram. Обратитесь к тренеру.'));
+      }
+      if (data?.error) throw new Error(data.error);
+      setStep('forgot-code');
+    } catch (err: any) {
+      setFormError(err.message);
+    }
+    setSubmitting(false);
+  };
+
+  const handleForgotVerify = async () => {
+    setFormError(null);
+    if (!resetCode.trim() || resetCode.length !== 6) {
+      setFormError(t('Enter the 6-digit code', 'Введите 6-значный код'));
+      return;
+    }
+    if (newPassword.length < 6) {
+      setFormError(t('Password must be at least 6 characters', 'Пароль минимум 6 символов'));
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const fullPhone = `${forgotCountryCode}${forgotPhone}`;
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { action: 'verify_and_reset', phone: fullPhone, code: resetCode, new_password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error === 'invalid_code') {
+        throw new Error(t('Invalid or expired code', 'Неверный или истёкший код'));
+      }
+      if (data?.error) throw new Error(data.error);
+      setStep('forgot-done');
+    } catch (err: any) {
+      setFormError(err.message);
+    }
+    setSubmitting(false);
+  };
+
   if (!open) return null;
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
@@ -260,6 +321,9 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {step === 'welcome' ? t('Welcome!', 'Добро пожаловать!')
                 : step === 'register' ? t('New Client', 'Новый клиент')
                 : step === 'telegram' ? t('Stay Connected', 'Будьте на связи')
+                : step === 'forgot' ? t('Reset Password', 'Сброс пароля')
+                : step === 'forgot-code' ? t('Enter Code', 'Введите код')
+                : step === 'forgot-done' ? t('Password Updated', 'Пароль обновлён')
                 : t('Welcome Back', 'С возвращением')}
             </h3>
             {step === 'welcome' && (
@@ -365,8 +429,104 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
                   {divider}
                   {googleButton}
 
+                  <button onClick={() => { setStep('forgot'); setFormError(null); setForgotCountryCode(loginCountryCode); setForgotPhone(loginPhone); }} className="w-full text-xs text-primary/70 hover:text-primary py-1 transition-colors">
+                    {t('Forgot password?', 'Забыли пароль?')}
+                  </button>
                   <button onClick={() => { setStep('welcome'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
                     ← {t('Back', 'Назад')}
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Step: Forgot Password — enter phone */}
+              {step === 'forgot' && (
+                <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t('Enter your phone number. We\'ll send a reset code to your Telegram.', 'Введите номер телефона. Мы отправим код сброса в ваш Telegram.')}
+                  </p>
+                  <CountryCodeSelect
+                    value={forgotCountryCode}
+                    onChange={setForgotCountryCode}
+                    phoneNumber={forgotPhone}
+                    onPhoneChange={setForgotPhone}
+                    placeholder={t('Phone number', 'Номер телефона')}
+                  />
+
+                  <InlineMessage message={formError} variant="error" />
+
+                  <button
+                    onClick={handleForgotRequest}
+                    disabled={submitting}
+                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                  >
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        <KeyRound className="w-4 h-4" />
+                        {t('Send Code', 'Отправить код')}
+                      </>
+                    )}
+                  </button>
+                  <button onClick={() => { setStep('login'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
+                    ← {t('Back to login', 'Назад к входу')}
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Step: Forgot Code — enter code + new password */}
+              {step === 'forgot-code' && (
+                <motion.div key="forgot-code" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                  <p className="text-xs text-muted-foreground text-center">
+                    {t('Check your Telegram for the 6-digit code.', 'Проверьте Telegram — мы отправили 6-значный код.')}
+                  </p>
+                  <input
+                    type="text"
+                    inputMode="numeric"
+                    placeholder={t('6-digit code', '6-значный код')}
+                    value={resetCode}
+                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className={inputClass + ' text-center text-lg tracking-[0.3em] font-bold'}
+                    maxLength={6}
+                  />
+                  <div>
+                    <PasswordInput value={newPassword} onChange={setNewPassword} placeholder={t('New password', 'Новый пароль')} className={inputClass} />
+                    <PasswordStrength password={newPassword} lang={lang} />
+                  </div>
+
+                  <InlineMessage message={formError} variant="error" />
+
+                  <button
+                    onClick={handleForgotVerify}
+                    disabled={submitting}
+                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
+                  >
+                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                      <>
+                        <KeyRound className="w-4 h-4" />
+                        {t('Reset Password', 'Сбросить пароль')}
+                      </>
+                    )}
+                  </button>
+                  <button onClick={() => { setStep('forgot'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
+                    ← {t('Back', 'Назад')}
+                  </button>
+                </motion.div>
+              )}
+
+              {/* Step: Forgot Done */}
+              {step === 'forgot-done' && (
+                <motion.div key="forgot-done" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-4 text-center">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center mx-auto">
+                    <CheckCircle className="w-8 h-8 text-emerald-500" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {t('Your password has been updated. You can now sign in.', 'Пароль обновлён. Теперь вы можете войти.')}
+                  </p>
+                  <button
+                    onClick={() => { setStep('login'); setFormError(null); }}
+                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    {t('Sign In', 'Войти')}
                   </button>
                 </motion.div>
               )}

@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.book-session]
 verify_jwt = false
+
+[functions.reset-password]
+verify_jwt = false
