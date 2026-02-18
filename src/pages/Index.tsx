@@ -168,8 +168,8 @@ const AppContent = () => {
           setShowWelcome(true);
         }}
       />
-      {/* Show consultation banner for non-logged-in users */}
-      {!user && !loading && (
+      {/* Show consultation banner — in preview always, in prod only for non-logged-in */}
+      {(!user || window.location.hostname.includes('preview') || window.location.hostname === 'localhost') && !loading && (
         <ConsultationBanner onBook={() => setShowConsultation(true)} />
       )}
     </div>
