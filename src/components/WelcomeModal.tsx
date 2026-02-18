@@ -14,6 +14,7 @@ type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-c
 interface WelcomeModalProps {
   open: boolean;
   onClose: () => void;
+  consultationFlow?: boolean;
 }
 
 const InlineMessage = ({ message, variant = 'error' }: { message: string | null; variant?: 'error' | 'success' }) => {
@@ -93,7 +94,7 @@ const phoneToEmail = (countryCode: string, phone: string) => {
   return `${digits}@phone.fitness.local`;
 };
 
-const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
+const WelcomeModal = ({ open, onClose, consultationFlow }: WelcomeModalProps) => {
   const { lang } = useLanguage();
   const { refreshProfile, profile } = useAuth();
   const { toast } = useToast();
@@ -117,10 +118,11 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
 
   useEffect(() => {
     if (open) {
-      setStep('welcome');
+      // In consultation flow, skip welcome and go straight to register
+      setStep(consultationFlow ? 'register' : 'welcome');
       setFormError(null);
     }
-  }, [open]);
+  }, [open, consultationFlow]);
 
   const t = (en: string, ru: string) => lang === 'en' ? en : ru;
 
@@ -362,6 +364,16 @@ const WelcomeModal = ({ open, onClose }: WelcomeModalProps) => {
               {/* Step: Register */}
               {step === 'register' && (
                 <motion.div key="register" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
+                  {consultationFlow && (
+                    <div className="bg-primary/10 border border-primary/30 rounded-xl p-3 text-center mb-1">
+                      <p className="text-xs font-bold text-primary">
+                        {t('✅ Payment received!', '✅ Оплата получена!')}
+                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-1">
+                        {t('Create an account to book your consultation time slot', 'Создайте аккаунт, чтобы выбрать время для консультации')}
+                      </p>
+                  </div>
+                  )}
                   <input type="text" placeholder={t('Full name', 'Полное имя')} value={name} onChange={(e) => setName(e.target.value)} className={inputClass} maxLength={100} />
                   <CountryCodeSelect
                     value={countryCode}

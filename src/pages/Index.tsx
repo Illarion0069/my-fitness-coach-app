@@ -146,7 +146,7 @@ const AppContent = () => {
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={isTrainer} />
       
-      <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} />
+      <WelcomeModal open={showWelcome} onClose={() => setShowWelcome(false)} consultationFlow={consultationFlow} />
       <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
       <BookingModal
         open={showBooking}
