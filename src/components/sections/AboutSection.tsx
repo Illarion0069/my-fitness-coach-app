@@ -107,7 +107,7 @@ const AboutSection = () => {
         ))}
       </motion.div>
 
-      {/* ─── Reviews ─── */}
+      {/* ─── Reviews (Google Maps embed) ─── */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -117,7 +117,7 @@ const AboutSection = () => {
         <div className="flex items-end justify-between mb-3">
           <h3 className="text-sm font-extrabold uppercase tracking-wider">{t(reviews.title)}</h3>
           <a
-            href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+            href="https://maps.app.goo.gl/BfsgGGsJaB5QCvsD9"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-1.5 bg-card px-2.5 py-1 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0"
@@ -126,40 +126,28 @@ const AboutSection = () => {
             5.0
           </a>
         </div>
-        <div className="space-y-3">
-          {reviews.items.map((review, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 15 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + i * 0.08 }}
-              className="bg-card rounded-2xl p-4 border border-border/50 relative"
-            >
-              <Quote className="absolute top-3 right-3 w-4 h-4 text-primary/15" />
-              <div className="flex items-center gap-3 mb-2.5">
-                <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-                  {t(review.name).charAt(0)}
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold">{t(review.name)}</h4>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    {Array.from({ length: review.rating }).map((_, j) => (
-                      <Star key={j} className="w-3 h-3 fill-primary text-primary" />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground leading-relaxed">{t(review.desc)}</p>
-            </motion.div>
-          ))}
+
+        {/* Google Maps Place Embed */}
+        <div className="rounded-2xl overflow-hidden border border-border/50 mb-3">
+          <iframe
+            src="https://www.google.com/maps?q=Limassol+Fitness,+Eleftherias+109,+Limassol,+Cyprus&output=embed"
+            width="100%"
+            height="200"
+            style={{ border: 0 }}
+            allowFullScreen
+            loading="lazy"
+            referrerPolicy="no-referrer-when-downgrade"
+            title="Limassol Fitness on Google Maps"
+          />
         </div>
+
         <a
-          href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+          href="https://maps.app.goo.gl/BfsgGGsJaB5QCvsD9"
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-3 flex items-center justify-center gap-2 text-xs text-primary font-semibold hover:underline"
+          className="flex items-center justify-center gap-2 text-xs text-primary font-semibold hover:underline"
         >
-          {lang === 'en' ? 'All reviews on Google Maps' : 'Все отзывы на Google Картах'}
+          {lang === 'en' ? 'See all reviews on Google Maps' : 'Все отзывы на Google Картах'}
           <ExternalLink className="w-3.5 h-3.5" />
         </a>
       </motion.div>
@@ -261,7 +249,7 @@ const AboutSection = () => {
           </a>
 
           <a
-            href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+            href="https://maps.app.goo.gl/BfsgGGsJaB5QCvsD9"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
