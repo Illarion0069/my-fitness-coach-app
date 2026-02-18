@@ -348,14 +348,46 @@ const ClientDetailAccordion = ({
 
       {/* Delete client */}
       {onDeleteClient && (
-        <button
-          onClick={onDeleteClient}
-          className="w-full mt-2 bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-destructive/20 transition-colors"
-        >
-          <Trash2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'Delete client' : 'Удалить клиента'}
-        </button>
+        <DeleteClientButton onDeleteClient={onDeleteClient} lang={lang} />
       )}
     </motion.div>
+  );
+};
+
+const DeleteClientButton = ({ onDeleteClient, lang }: { onDeleteClient: () => void; lang: string }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="w-full mt-2 space-y-1.5">
+        <p className="text-xs text-destructive font-semibold text-center">
+          {lang === 'en' ? 'Are you sure?' : 'Вы уверены?'}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setConfirming(false); onDeleteClient(); }}
+            className="flex-1 bg-destructive text-destructive-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-destructive/90 transition-colors"
+          >
+            {lang === 'en' ? 'Yes, delete' : 'Да, удалить'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-secondary/80 transition-colors"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full mt-2 bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-destructive/20 transition-colors"
+    >
+      <Trash2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'Delete client' : 'Удалить клиента'}
+    </button>
   );
 };
 
