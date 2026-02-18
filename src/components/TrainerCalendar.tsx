@@ -618,10 +618,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return (
       <div
         key={s.id}
-        className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 h-full transition-all select-none ${
+        className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 h-full select-none ${
           isDragging
             ? 'bg-primary/20 border-2 border-primary shadow-2xl scale-[1.03] z-50'
-            : 'bg-primary/10 border border-primary/20'
+            : 'bg-primary/10 border border-primary/20 transition-colors'
         } ${contextMenuSessionId === s.id ? 'ring-2 ring-primary/60' : ''}`}
         onTouchStart={handleCardTouchStart}
         onTouchMove={handleCardTouchMove}
@@ -765,7 +765,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: swipeDir > 0 ? '-40%' : '40%', opacity: 0 }}
           transition={{ type: 'tween', duration: 0.2, ease: 'easeOut' }}
-          drag="x"
+          drag={draggingSessionId ? false : "x"}
           dragConstraints={{ left: 0, right: 0 }}
           dragElastic={0.15}
           onDragEnd={(_e: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
@@ -839,18 +839,12 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             </div>
           )}
 
-          {/* Drag preview floating badge */}
-          {draggingSessionId && dragPreviewTime && (
-            <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-primary text-primary-foreground text-sm font-bold px-4 py-2 rounded-full shadow-lg animate-scale-in">
-              <Clock className="w-3.5 h-3.5 inline mr-1.5" />
-              {dragPreviewTime}
-            </div>
-          )}
 
           {/* Timeline */}
           <div
             ref={timelineRef}
             className="relative"
+            style={{ touchAction: draggingSessionId ? 'none' : 'auto' }}
             onTouchMove={onSessionTouchMove}
             onTouchEnd={onSessionTouchEnd}
           >
@@ -908,10 +902,17 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
               const isDragging = draggingSessionId === s.id;
 
               // If dragging, use raw (unsnapped) minutes for smooth visual tracking
-              let displayTopPx = topPx;
-              if (isDragging) {
-                displayTopPx = ((dragRawMinutes.current - startHour * 60) / 60) * ROW_HEIGHT;
-              }
+              const dragOffsetPx = isDragging
+                ? ((dragRawMinutes.current - startHour * 60) / 60) * ROW_HEIGHT - topPx
+                : 0;
+
+              // Snapped position for the indicator line
+              const snappedTopPx = isDragging && dragPreviewTime
+                ? (() => {
+                    const [ph, pm] = dragPreviewTime.split(':').map(Number);
+                    return ((ph * 60 + (pm || 0) - startHour * 60) / 60) * ROW_HEIGHT;
+                  })()
+                : null;
 
               return (
                 <React.Fragment key={s.id}>
@@ -931,17 +932,37 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                       <div className="h-full bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
                     </div>
                   )}
-                  {/* Actual card (at preview position when dragging, shifted left so finger doesn't cover it) */}
+                  {/* Snap indicator line showing target 30-min slot */}
+                  {isDragging && snappedTopPx != null && (
+                    <div
+                      className="absolute pointer-events-none"
+                      style={{
+                        top: snappedTopPx,
+                        left: 48,
+                        right: 0,
+                        zIndex: 45,
+                      }}
+                    >
+                      <div className="flex items-center gap-1">
+                        <div className="h-[2px] flex-1 bg-primary/60 rounded-full" />
+                        <span className="text-[10px] font-bold text-primary bg-background/90 px-1.5 py-0.5 rounded-md border border-primary/30 shrink-0">
+                          {dragPreviewTime}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Actual card — uses transform for GPU-accelerated smooth movement */}
                   <div
                     className={`absolute ${isDragging ? 'z-50' : ''}`}
                     style={{
-                      top: displayTopPx,
+                      top: topPx,
                       height: heightPx,
                       left: isDragging ? '12px' : `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
                       width: isDragging ? 'calc(100% - 24px)' : `calc((100% - 48px) / ${slotCount})`,
                       zIndex: isDragging ? 50 : 10,
                       padding: '1px 2px',
-                      willChange: isDragging ? 'top' : 'auto',
+                      transform: isDragging ? `translateY(${dragOffsetPx}px)` : 'none',
+                      willChange: isDragging ? 'transform' : 'auto',
                       transition: isDragging ? 'none' : 'top 0.3s ease-out, left 0.3s ease-out, width 0.3s ease-out',
                     }}
                   >
