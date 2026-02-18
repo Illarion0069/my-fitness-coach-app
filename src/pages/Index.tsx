@@ -11,8 +11,6 @@ import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import ClientProfileDrawer from '@/components/ClientProfileDrawer';
-import ConsultationBanner from '@/components/ConsultationBanner';
-import ConsultationModal from '@/components/ConsultationModal';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -22,8 +20,6 @@ const AppContent = () => {
   const [showWelcome, setShowWelcome] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
-  const [showConsultation, setShowConsultation] = useState(false);
-  const [consultationFlow, setConsultationFlow] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -73,11 +69,6 @@ const AppContent = () => {
     if (!user) {
       setActiveSection('home');
       setShowProfile(false);
-      setConsultationFlow(false);
-    }
-    // If user just registered during consultation flow, open booking
-    if (user && consultationFlow && !showWelcome) {
-      setShowBooking(true);
     }
   }, [user]);
 
@@ -149,7 +140,6 @@ const AppContent = () => {
       <WelcomeModal
         open={showWelcome}
         onClose={() => setShowWelcome(false)}
-        consultationFlow={consultationFlow}
         onRegistered={() => setShowOnboarding(true)}
       />
       <OnboardingModal
@@ -164,27 +154,9 @@ const AppContent = () => {
       <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
       <BookingModal
         open={showBooking}
-        onClose={() => {
-          setShowBooking(false);
-          if (consultationFlow) {
-            setConsultationFlow(false);
-            handleNavigate('test');
-          }
-        }}
+        onClose={() => setShowBooking(false)}
         onLoginRequest={() => { setShowBooking(false); setShowWelcome(true); }}
       />
-      <ConsultationModal
-        open={showConsultation}
-        onClose={() => setShowConsultation(false)}
-        onProceedToRegister={() => {
-          setConsultationFlow(true);
-          setShowWelcome(true);
-        }}
-      />
-      {/* Show consultation banner — always for trainer, otherwise only for non-logged-in */}
-      {!loading && (isTrainer || !user) && (
-        <ConsultationBanner onBook={() => setShowConsultation(true)} alwaysShow={isTrainer} />
-      )}
     </div>
   );
 };
