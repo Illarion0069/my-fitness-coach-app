@@ -83,6 +83,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   // Drag state
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
   const [dragPreviewTime, setDragPreviewTime] = useState<string | null>(null);
+  const dragRawMinutes = useRef<number>(0); // unsnapped minutes for smooth visual
   const timelineRef = useRef<HTMLDivElement>(null);
   const dragStartY = useRef<number>(0);
   const dragStartMinutes = useRef<number>(0);
@@ -357,20 +358,35 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const handleDragStart = useCallback((sessionId: string, timeStr: string | null, clientY: number) => {
+    const minutes = getMinutesFromTime(timeStr);
     setDraggingSessionId(sessionId);
     dragStartY.current = clientY;
-    dragStartMinutes.current = getMinutesFromTime(timeStr);
+    dragStartMinutes.current = minutes;
+    dragRawMinutes.current = minutes;
     setDragPreviewTime(timeStr?.slice(0, 5) || null);
   }, []);
+
+  const dragRAF = useRef<number>(0);
+  const lastSnapped = useRef<string>('');
 
   const handleDragMove = useCallback((clientY: number) => {
     if (!draggingSessionId) return;
     const deltaY = clientY - dragStartY.current;
     const deltaMinutes = (deltaY / ROW_HEIGHT) * 60;
     const newMinutes = Math.max(6 * 60, Math.min(22 * 60, dragStartMinutes.current + deltaMinutes));
-    // 30-minute snap for easy targeting
-    const snapped = Math.round(newMinutes / 30) * 30;
-    setDragPreviewTime(minutesToTimeStr(snapped));
+    dragRawMinutes.current = newMinutes;
+
+    // Use RAF for smooth ~60fps updates
+    cancelAnimationFrame(dragRAF.current);
+    dragRAF.current = requestAnimationFrame(() => {
+      const snapped = Math.round(newMinutes / 30) * 30;
+      const snappedStr = minutesToTimeStr(snapped);
+      // Only trigger re-render when snapped time actually changes or for position update
+      if (snappedStr !== lastSnapped.current) {
+        lastSnapped.current = snappedStr;
+      }
+      setDragPreviewTime(snappedStr);
+    });
   }, [draggingSessionId]);
 
   const dragEndInProgress = useRef(false);
@@ -891,12 +907,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
               const isDragging = draggingSessionId === s.id;
 
-              // If dragging, calculate the preview position
+              // If dragging, use raw (unsnapped) minutes for smooth visual tracking
               let displayTopPx = topPx;
-              if (isDragging && dragPreviewTime) {
-                const [ph, pm] = dragPreviewTime.split(':').map(Number);
-                const previewMinutes = ph * 60 + (pm || 0);
-                displayTopPx = ((previewMinutes - startHour * 60) / 60) * ROW_HEIGHT;
+              if (isDragging) {
+                displayTopPx = ((dragRawMinutes.current - startHour * 60) / 60) * ROW_HEIGHT;
               }
 
               return (
@@ -919,7 +933,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                   )}
                   {/* Actual card (at preview position when dragging, shifted left so finger doesn't cover it) */}
                   <div
-                    className={`absolute transition-none ${isDragging ? 'z-50' : ''}`}
+                    className={`absolute ${isDragging ? 'z-50' : ''}`}
                     style={{
                       top: displayTopPx,
                       height: heightPx,
@@ -927,6 +941,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                       width: isDragging ? 'calc(100% - 24px)' : `calc((100% - 48px) / ${slotCount})`,
                       zIndex: isDragging ? 50 : 10,
                       padding: '1px 2px',
+                      willChange: isDragging ? 'top' : 'auto',
+                      transition: isDragging ? 'none' : 'top 0.3s ease-out, left 0.3s ease-out, width 0.3s ease-out',
                     }}
                   >
                     <div className="h-full">
