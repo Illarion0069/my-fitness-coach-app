@@ -76,6 +76,7 @@ interface Props {
   onCreatePackage: (userId: string, sessions: number) => void;
   onSendRemaining: () => void;
   onSendRenewal: () => void;
+  onDeleteClient?: () => void;
 }
 
 const ClientDetailAccordion = ({
@@ -88,6 +89,7 @@ const ClientDetailAccordion = ({
   onCreatePackage,
   onSendRemaining,
   onSendRenewal,
+  onDeleteClient,
 }: Props) => {
   const { toast } = useToast();
   const [openSection, setOpenSection] = useState<string | null>(null);
@@ -343,6 +345,16 @@ const ClientDetailAccordion = ({
           <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
         </button>
       </div>
+
+      {/* Delete client */}
+      {onDeleteClient && (
+        <button
+          onClick={onDeleteClient}
+          className="w-full mt-2 bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-destructive/20 transition-colors"
+        >
+          <Trash2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'Delete client' : 'Удалить клиента'}
+        </button>
+      )}
     </motion.div>
   );
 };

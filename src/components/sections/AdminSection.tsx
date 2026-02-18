@@ -5,7 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import SwipeableClientCard from '@/components/SwipeableClientCard';
+
 import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import TrainerWorkingHours from '@/components/TrainerWorkingHours';
@@ -322,7 +322,6 @@ const AdminSection = () => {
               return (
                 <DraggableClientRow key={userId} value={userId} disabled={isOpen}>
                 {(dragHandle) => (
-                <SwipeableClientCard onDelete={() => deleteClient(client)} clientName={client.full_name} lang={lang} disabled={isOpen}>
                 <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <div className="w-full p-4 flex items-center gap-3">
                     <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
@@ -372,10 +371,10 @@ const AdminSection = () => {
                       }}
                       onSendRemaining={() => sendRemainingNotification(client)}
                       onSendRenewal={() => sendRenewalNotification(client)}
+                      onDeleteClient={() => deleteClient(client)}
                     />
                   )}
                 </div>
-                </SwipeableClientCard>
                 )}
                 </DraggableClientRow>
               );
