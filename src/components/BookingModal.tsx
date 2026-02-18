@@ -31,6 +31,7 @@ type Step = 'date' | 'time' | 'payment' | 'confirm' | 'done' | 'my-sessions';
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 
 const PACKAGES = [
+  { sessions: 1, price: 50, label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, isConsultation: true },
   { sessions: 1, price: 100, label: { en: 'Single Session', ru: 'Разовая тренировка' } },
   { sessions: 8, price: 750, label: { en: '8 Sessions', ru: '8 занятий' } },
   { sessions: 12, price: 1030, label: { en: '12 Sessions', ru: '12 занятий' } },
@@ -514,11 +515,15 @@ const BookingModal = ({ open, onClose, onLoginRequest }: BookingModalProps) => {
                         </div>
                         <div className="text-left">
                           <p className="text-sm font-bold">{pkg.label[lang]}</p>
-                          {pkg.sessions > 1 && (
+                          {(pkg as any).isConsultation ? (
+                            <p className="text-[10px] text-muted-foreground">
+                              {lang === 'en' ? 'Measurements, health check & plan' : 'Замеры, здоровье и план'}
+                            </p>
+                          ) : pkg.sessions > 1 ? (
                             <p className="text-[10px] text-muted-foreground">
                               {Math.round(pkg.price / pkg.sessions)}€ {lang === 'en' ? 'per session' : 'за занятие'}
                             </p>
-                          )}
+                          ) : null}
                         </div>
                       </div>
                       <p className="text-base font-bold">{pkg.price}€</p>
