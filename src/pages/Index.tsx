@@ -7,7 +7,6 @@ import HeroSection from '@/components/sections/HeroSection';
 import TestSection from '@/components/sections/TestSection';
 import PricingSection from '@/components/sections/PricingSection';
 import AboutSection from '@/components/sections/AboutSection';
-import ContactSection from '@/components/sections/ContactSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import ClientProfileDrawer from '@/components/ClientProfileDrawer';
@@ -27,7 +26,7 @@ const AppContent = () => {
   const [swipeDirection, setSwipeDirection] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const sections = ['home', 'test', 'pricing', 'about', 'contact', ...(isTrainer ? ['admin'] : [])];
+  const sections = ['home', 'test', 'pricing', 'about', ...(isTrainer ? ['admin'] : [])];
 
   const handleNavigate = (section: string) => {
     const currentIdx = sections.indexOf(activeSection);
@@ -116,7 +115,6 @@ const AppContent = () => {
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
-      case 'contact': return <ContactSection />;
       case 'admin': return isTrainer ? <AdminSection /> : null;
       default: return null;
     }
