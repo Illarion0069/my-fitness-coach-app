@@ -17,6 +17,13 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
+    // In development/preview, always show the banner
+    const isPreview = window.location.hostname.includes('preview') || window.location.hostname === 'localhost';
+    if (isPreview) {
+      const timer = setTimeout(() => setVisible(true), 1500);
+      return () => clearTimeout(timer);
+    }
+
     const hasVisited = localStorage.getItem(VISITED_KEY);
     const wasDismissed = localStorage.getItem(STORAGE_KEY);
 
@@ -121,9 +128,9 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
 
           <ChevronLeft className={`w-3.5 h-3.5 text-primary-foreground transition-transform ${expanded ? 'rotate-180' : ''}`} />
           <span className="text-[10px] font-extrabold text-primary-foreground tracking-wider uppercase">
-            50€
+            {lang === 'en' ? 'Consultation' : 'Консультация'}
           </span>
-          <Stethoscope className="w-4 h-4 text-primary-foreground" />
+          <span className="text-[10px] font-bold text-primary-foreground/80">50€</span>
         </button>
       </motion.div>
     </AnimatePresence>
