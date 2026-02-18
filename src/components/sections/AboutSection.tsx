@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Shield, Target, Handshake, Gem, ChevronRight, Star, ExternalLink } from 'lucide-react';
+import { Award, Shield, Target, Handshake, Gem, ChevronRight, Star, ExternalLink, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, Quote } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 
@@ -37,9 +38,23 @@ const reasons = [
 
 const AboutSection = () => {
   const { t, lang } = useLanguage();
+  const { profile } = useAuth();
   const about = translations.about;
+  const reviews = translations.reviews;
+  const contact = translations.contact;
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
+
+  const botLink = profile?.telegram_link_code
+    ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
+    : 'https://t.me/LimassolFitness_bot';
+
+  const socials = [
+    { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
+    { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
+    { icon: Send, label: 'Telegram', href: 'https://t.me/Illarion_Ientin' },
+    { icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/35795144819' },
+  ];
 
   return (
     <section className="min-h-screen px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
@@ -92,31 +107,64 @@ const AboutSection = () => {
         ))}
       </motion.div>
 
-      {/* Google Maps Reviews */}
-      <motion.a
-        href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* ─── Reviews ─── */}
+      <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.25 }}
-        className="mb-3 bg-card rounded-2xl border border-border/50 p-4 flex items-center gap-3 hover:border-primary/30 transition-all block"
+        transition={{ delay: 0.2 }}
+        className="mb-6"
       >
-        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-          <Star className="w-5 h-5 text-primary" />
+        <div className="flex items-end justify-between mb-3">
+          <h3 className="text-sm font-extrabold uppercase tracking-wider">{t(reviews.title)}</h3>
+          <a
+            href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 bg-card px-2.5 py-1 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0"
+          >
+            <Star className="w-3.5 h-3.5 fill-primary text-primary" />
+            5.0
+          </a>
         </div>
-        <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-bold text-foreground">
-            {lang === 'en' ? 'Client Reviews' : 'Отзывы клиентов'}
-          </h3>
-          <p className="text-[11px] text-muted-foreground">
-            {lang === 'en' ? 'Read reviews on Google Maps' : 'Читайте отзывы на Google Картах'}
-          </p>
+        <div className="space-y-3">
+          {reviews.items.map((review, i) => (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.25 + i * 0.08 }}
+              className="bg-card rounded-2xl p-4 border border-border/50 relative"
+            >
+              <Quote className="absolute top-3 right-3 w-4 h-4 text-primary/15" />
+              <div className="flex items-center gap-3 mb-2.5">
+                <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
+                  {t(review.name).charAt(0)}
+                </div>
+                <div>
+                  <h4 className="text-sm font-bold">{t(review.name)}</h4>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    {Array.from({ length: review.rating }).map((_, j) => (
+                      <Star key={j} className="w-3 h-3 fill-primary text-primary" />
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-muted-foreground leading-relaxed">{t(review.desc)}</p>
+            </motion.div>
+          ))}
         </div>
-        <ExternalLink className="w-4 h-4 text-muted-foreground shrink-0" />
-      </motion.a>
+        <a
+          href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 flex items-center justify-center gap-2 text-xs text-primary font-semibold hover:underline"
+        >
+          {lang === 'en' ? 'All reviews on Google Maps' : 'Все отзывы на Google Картах'}
+          <ExternalLink className="w-3.5 h-3.5" />
+        </a>
+      </motion.div>
 
-      {/* Interactive reasons cards */}
+      {/* ─── Why me cards ─── */}
       <div className="space-y-3 mb-6">
         {reasons.map((reason, i) => {
           const Icon = reason.icon;
@@ -167,12 +215,12 @@ const AboutSection = () => {
         })}
       </div>
 
-      {/* Certifications as scrollable chips */}
+      {/* Certifications */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="bg-card rounded-2xl border border-border/50 p-4"
+        className="bg-card rounded-2xl border border-border/50 p-4 mb-6"
       >
         <div className="flex items-center gap-2 mb-3">
           <Award className="w-4 h-4 text-primary" />
@@ -193,6 +241,78 @@ const AboutSection = () => {
         </div>
       </motion.div>
 
+      {/* ─── Contact ─── */}
+      <motion.div
+        initial={{ opacity: 0, y: 15 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.7 }}
+      >
+        <h3 className="text-sm font-extrabold uppercase tracking-wider mb-3">{t(contact.title)}</h3>
+        <div className="space-y-3 mb-4">
+          <a href="tel:+35795144819" className="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors">
+            <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shrink-0">
+              <Phone className="w-5 h-5 text-primary-foreground" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{lang === 'en' ? 'Call' : 'Позвонить'}</p>
+              <p className="text-sm font-bold text-foreground">{contact.phone}</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+          </a>
+
+          <a
+            href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
+          >
+            <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <MapPin className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{lang === 'en' ? 'Location' : 'Адрес'}</p>
+              <p className="text-sm font-bold text-foreground">{t(contact.address)}</p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+          </a>
+
+          <a
+            href={botLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-4 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
+          >
+            <div className="w-11 h-11 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+              <Bot className="w-5 h-5 text-primary" />
+            </div>
+            <div className="flex-1">
+              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Telegram Bot</p>
+              <p className="text-sm font-bold text-foreground">
+                {lang === 'en' ? 'Get notifications' : 'Получать уведомления'}
+              </p>
+            </div>
+            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
+          </a>
+        </div>
+
+        <h4 className="text-xs font-extrabold text-foreground uppercase tracking-wider mb-3">
+          {lang === 'en' ? 'Social' : 'Соцсети'}
+        </h4>
+        <div className="grid grid-cols-2 gap-3">
+          {socials.map((s, i) => (
+            <a
+              key={i}
+              href={s.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-card rounded-2xl p-4 flex items-center gap-3 border border-border/50 hover:border-primary/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              <s.icon className="w-5 h-5 text-primary" />
+              <span className="text-sm font-bold">{s.label}</span>
+            </a>
+          ))}
+        </div>
+      </motion.div>
 
       {/* Photo lightbox */}
       <AnimatePresence>

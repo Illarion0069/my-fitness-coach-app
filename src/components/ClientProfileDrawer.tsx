@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight } from 'lucide-react';
+import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight, History } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -85,6 +85,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const [measurements, setMeasurements] = useState<any[]>([]);
+  const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
 
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
 
@@ -160,6 +161,16 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
         .order('session_date', { ascending: true });
       setSessions((data as ScheduledSession[]) || []);
     };
+    const fetchPastSessions = async () => {
+      const { data } = await supabase
+        .from('scheduled_sessions')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_deducted', true)
+        .order('session_date', { ascending: false })
+        .limit(20);
+      setPastSessions((data as ScheduledSession[]) || []);
+    };
     const fetchMeasurements = async () => {
       const { data } = await supabase
         .from('body_measurements')
@@ -171,6 +182,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
     };
     fetchPkg();
     fetchSessions();
+    fetchPastSessions();
     fetchMeasurements();
 
     const channel = supabase
@@ -317,6 +329,34 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                         </div>
                       );
                     })}
+                  </div>
+                )}
+              </AccordionSection>
+
+              {/* Training History */}
+              <AccordionSection
+                icon={<History className="w-4 h-4 text-primary" />}
+                title={lang === 'en' ? 'Training History' : 'История тренировок'}
+                isOpen={openSection === 'history'}
+                onToggle={() => toggleSection('history')}
+                badge={pastSessions.length || undefined}
+              >
+                {pastSessions.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">
+                    {lang === 'en' ? 'No completed sessions yet' : 'Пока нет завершённых тренировок'}
+                  </p>
+                ) : (
+                  <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                    {pastSessions.map(s => (
+                      <div key={s.id} className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2.5">
+                        <CalendarDays className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(s.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })}
+                          {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
+                        </span>
+                        <span className="ml-auto text-[10px] text-primary/60 font-medium">✓</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </AccordionSection>
