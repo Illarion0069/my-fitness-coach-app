@@ -373,26 +373,35 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     setDragPreviewTime(minutesToTimeStr(snapped));
   }, [draggingSessionId]);
 
+  const dragEndInProgress = useRef(false);
+
   const handleDragEnd = useCallback(async () => {
+    if (dragEndInProgress.current) return; // prevent double-fire
     if (!draggingSessionId || !dragPreviewTime) {
       setDraggingSessionId(null);
       setDragPreviewTime(null);
       return;
     }
 
-    const session = sessions.find(s => s.id === draggingSessionId);
-    if (!session) return;
+    dragEndInProgress.current = true;
+    const sessionId = draggingSessionId;
+    const newTime = dragPreviewTime;
 
-    const updateField = session.is_recurring
-      ? { recurrence_time: dragPreviewTime }
-      : { session_time: dragPreviewTime };
-
-    await supabase.from('scheduled_sessions').update(updateField).eq('id', draggingSessionId);
-
+    const session = sessions.find(s => s.id === sessionId);
     setDraggingSessionId(null);
     setDragPreviewTime(null);
+
+    if (!session) { dragEndInProgress.current = false; return; }
+
+    const updateField = session.is_recurring
+      ? { recurrence_time: newTime }
+      : { session_time: newTime };
+
+    await supabase.from('scheduled_sessions').update(updateField).eq('id', sessionId);
+
     fetchSessions();
-    toast({ title: lang === 'en' ? `Moved to ${dragPreviewTime}` : `Перенесено на ${dragPreviewTime}` });
+    toast({ title: lang === 'en' ? `Moved to ${newTime}` : `Перенесено на ${newTime}` });
+    dragEndInProgress.current = false;
   }, [draggingSessionId, dragPreviewTime, sessions, lang, toast]);
 
   // Touch handlers for drag
