@@ -600,10 +600,13 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         handleDragEnd();
         return;
       }
+      // If context menu is already showing, don't toggle it off —
+      // let the button onClick handlers work naturally
+      if (contextMenuSessionId === s.id) return;
       // If it was a short tap (not a drag), toggle context menu
       if (!didActivateDrag) {
         e.preventDefault();
-        setContextMenuSessionId(prev => prev === s.id ? null : s.id);
+        setContextMenuSessionId(s.id);
       }
     };
 
