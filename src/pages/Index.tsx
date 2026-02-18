@@ -169,8 +169,8 @@ const AppContent = () => {
         }}
       />
       {/* Show consultation banner — always for trainer, otherwise only for non-logged-in */}
-      {(isTrainer || (!user && !loading)) && (
-        <ConsultationBanner onBook={() => setShowConsultation(true)} />
+      {!loading && (isTrainer || !user) && (
+        <ConsultationBanner onBook={() => setShowConsultation(true)} alwaysShow={isTrainer} />
       )}
     </div>
   );

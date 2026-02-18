@@ -5,22 +5,22 @@ import { useLanguage } from '@/contexts/LanguageContext';
 
 interface ConsultationBannerProps {
   onBook: () => void;
+  alwaysShow?: boolean;
 }
 
 const STORAGE_KEY = 'consultation_banner_dismissed';
 const VISITED_KEY = 'has_visited_before';
 
-const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
+const ConsultationBanner = ({ onBook, alwaysShow = false }: ConsultationBannerProps) => {
   const { lang } = useLanguage();
   const [visible, setVisible] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
-    // In development/preview, always show the banner
-    const isPreview = window.location.hostname.includes('preview') || window.location.hostname === 'localhost';
-    if (isPreview) {
-      const timer = setTimeout(() => setVisible(true), 1500);
+    // Always show for trainer / preview
+    if (alwaysShow) {
+      const timer = setTimeout(() => setVisible(true), 1000);
       return () => clearTimeout(timer);
     }
 
@@ -35,7 +35,7 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
     localStorage.setItem(VISITED_KEY, 'true');
     const timer = setTimeout(() => setVisible(true), 3000);
     return () => clearTimeout(timer);
-  }, []);
+  }, [alwaysShow]);
 
   // Auto-expand after 2s to draw attention, then collapse after 4s
   useEffect(() => {
@@ -46,7 +46,7 @@ const ConsultationBanner = ({ onBook }: ConsultationBannerProps) => {
   }, [visible]);
 
   const handleDismiss = () => {
-    localStorage.setItem(STORAGE_KEY, 'true');
+    if (!alwaysShow) localStorage.setItem(STORAGE_KEY, 'true');
     setDismissed(true);
   };
 
