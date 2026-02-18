@@ -560,16 +560,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       );
     }
 
-    // Long-press to activate drag (iPhone-style)
-    let dragLPTimer: ReturnType<typeof setTimeout> | null = null;
-    let dragTouchOrigin: { x: number; y: number } | null = null;
+    // Tap vs long-press differentiation
+    let touchTimer: ReturnType<typeof setTimeout> | null = null;
+    let touchOrigin: { x: number; y: number } | null = null;
+    let didActivateDrag = false;
 
     const handleCardTouchStart = (e: React.TouchEvent) => {
       e.stopPropagation();
       const touch = e.touches[0];
-      dragTouchOrigin = { x: touch.clientX, y: touch.clientY };
-      
-      dragLPTimer = setTimeout(() => {
+      touchOrigin = { x: touch.clientX, y: touch.clientY };
+      didActivateDrag = false;
+
+      touchTimer = setTimeout(() => {
+        didActivateDrag = true;
         if (navigator.vibrate) navigator.vibrate(10);
         handleDragStart(s.id, timeStr, touch.clientY);
       }, 500);
@@ -581,38 +584,38 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         handleDragMove(e.touches[0].clientY);
         return;
       }
-      if (dragTouchOrigin) {
-        const dx = e.touches[0].clientX - dragTouchOrigin.x;
-        const dy = e.touches[0].clientY - dragTouchOrigin.y;
+      // Cancel long-press if finger moved
+      if (touchOrigin) {
+        const dx = e.touches[0].clientX - touchOrigin.x;
+        const dy = e.touches[0].clientY - touchOrigin.y;
         if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-          if (dragLPTimer) {
-            clearTimeout(dragLPTimer);
-            dragLPTimer = null;
-          }
+          if (touchTimer) { clearTimeout(touchTimer); touchTimer = null; }
         }
       }
     };
 
-    const handleCardTouchEnd = () => {
-      if (dragLPTimer) {
-        clearTimeout(dragLPTimer);
-        dragLPTimer = null;
+    const handleCardTouchEnd = (e: React.TouchEvent) => {
+      if (touchTimer) { clearTimeout(touchTimer); touchTimer = null; }
+      if (draggingSessionId === s.id) {
+        handleDragEnd();
+        return;
       }
-      if (draggingSessionId === s.id) handleDragEnd();
+      // If it was a short tap (not a drag), toggle context menu
+      if (!didActivateDrag) {
+        e.preventDefault();
+        setContextMenuSessionId(prev => prev === s.id ? null : s.id);
+      }
     };
 
-    const handleLongPressStart = () => {
-      if (draggingSessionId) return;
-      longPressTimer.current = setTimeout(() => {
-        if (!draggingSessionId) setContextMenuSessionId(s.id);
-      }, 500);
+    // Mouse: click = context menu, no immediate drag on mousedown
+    const handleMouseDown = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
     };
 
-    const handleLongPressEnd = () => {
-      if (longPressTimer.current) {
-        clearTimeout(longPressTimer.current);
-        longPressTimer.current = null;
-      }
+    const handleClick = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setContextMenuSessionId(prev => prev === s.id ? null : s.id);
     };
 
     return (
@@ -626,14 +629,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         onTouchStart={handleCardTouchStart}
         onTouchMove={handleCardTouchMove}
         onTouchEnd={handleCardTouchEnd}
-        onMouseDown={(e) => {
-          handleLongPressStart();
-          e.preventDefault();
-          handleDragStart(s.id, timeStr, e.clientY);
-        }}
-        onMouseUp={handleLongPressEnd}
-        onMouseLeave={handleLongPressEnd}
-        style={{ touchAction: isDragging ? 'none' : 'auto' }}
+        onMouseDown={handleMouseDown}
+        onClick={handleClick}
+        style={{ touchAction: isDragging ? 'none' : 'auto', cursor: 'pointer' }}
       >
         <div className="w-1 h-5 rounded-full bg-primary shrink-0" />
         <div className="flex-1 min-w-0">
