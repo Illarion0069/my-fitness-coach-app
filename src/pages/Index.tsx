@@ -156,6 +156,7 @@ const AppContent = () => {
         open={showBooking}
         onClose={() => setShowBooking(false)}
         onLoginRequest={() => { setShowBooking(false); setShowWelcome(true); }}
+        onBooked={() => handleNavigate('test')}
       />
     </div>
   );
