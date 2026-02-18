@@ -1,6 +1,5 @@
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Reorder, useDragControls } from 'framer-motion';
-import { GripVertical } from 'lucide-react';
 
 interface DraggableClientRowProps {
   value: string;
@@ -10,15 +9,23 @@ interface DraggableClientRowProps {
 
 const DraggableClientRow = ({ value, disabled, children }: DraggableClientRowProps) => {
   const controls = useDragControls();
+  const [isDragging, setIsDragging] = useState(false);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     if (disabled) return;
     e.preventDefault();
+    setIsDragging(true);
     controls.start(e);
   };
 
   return (
-    <Reorder.Item value={value} dragListener={false} dragControls={controls}>
+    <Reorder.Item
+      value={value}
+      dragListener={false}
+      dragControls={controls}
+      onDragEnd={() => setIsDragging(false)}
+      style={{ touchAction: isDragging ? 'none' : 'auto' }}
+    >
       {children({ onPointerDown: handlePointerDown })}
     </Reorder.Item>
   );
