@@ -168,8 +168,8 @@ const AppContent = () => {
           setShowWelcome(true);
         }}
       />
-      {/* Show consultation banner — in preview always, in prod only for non-logged-in */}
-      {(!user || window.location.hostname.includes('preview') || window.location.hostname === 'localhost') && !loading && (
+      {/* Show consultation banner — always for trainer, otherwise only for non-logged-in */}
+      {(isTrainer || (!user && !loading)) && (
         <ConsultationBanner onBook={() => setShowConsultation(true)} />
       )}
     </div>
