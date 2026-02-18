@@ -368,8 +368,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const deltaY = clientY - dragStartY.current;
     const deltaMinutes = (deltaY / ROW_HEIGHT) * 60;
     const newMinutes = Math.max(6 * 60, Math.min(22 * 60, dragStartMinutes.current + deltaMinutes));
-    // 1-minute precision like iPhone calendar
-    const snapped = Math.round(newMinutes);
+    // 30-minute snap for easy targeting
+    const snapped = Math.round(newMinutes / 30) * 30;
     setDragPreviewTime(minutesToTimeStr(snapped));
   }, [draggingSessionId]);
 
@@ -908,14 +908,14 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                       <div className="h-full bg-primary/5 border-2 border-dashed border-primary/20 rounded-lg" />
                     </div>
                   )}
-                  {/* Actual card (at preview position when dragging) */}
+                  {/* Actual card (at preview position when dragging, shifted left so finger doesn't cover it) */}
                   <div
                     className={`absolute transition-none ${isDragging ? 'z-50' : ''}`}
                     style={{
                       top: displayTopPx,
                       height: heightPx,
-                      left: `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
-                      width: `calc((100% - 48px) / ${slotCount})`,
+                      left: isDragging ? '12px' : `calc(48px + (100% - 48px) * ${slotIndex / slotCount})`,
+                      width: isDragging ? 'calc(100% - 24px)' : `calc((100% - 48px) / ${slotCount})`,
                       zIndex: isDragging ? 50 : 10,
                       padding: '1px 2px',
                     }}
