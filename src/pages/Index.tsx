@@ -153,10 +153,13 @@ const AppContent = () => {
         onRegistered={() => setShowOnboarding(true)}
       />
       <OnboardingModal
-        open={showOnboarding && !showBooking}
+        open={showOnboarding}
         onClose={() => setShowOnboarding(false)}
         onOpenBooking={() => setShowBooking(true)}
-        onNavigateToTest={() => handleNavigate('test')}
+        onNavigateToTest={() => {
+          setShowOnboarding(false);
+          handleNavigate('test');
+        }}
       />
       <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
       <BookingModal

@@ -246,7 +246,10 @@ const OnboardingModal = ({ open, onClose, onOpenBooking, onNavigateToTest }: Onb
                     ) : (
                       <>
                         <button
-                          onClick={onOpenBooking}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenBooking();
+                          }}
                           className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl flex items-center justify-center gap-3 text-base hover:scale-[1.01] active:scale-[0.99] transition-all"
                         >
                           <CalendarDays className="w-5 h-5" />
@@ -266,7 +269,8 @@ const OnboardingModal = ({ open, onClose, onOpenBooking, onNavigateToTest }: Onb
                 {step === 2 && (
                   <div className="space-y-3">
                     <button
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         handleComplete();
                         onNavigateToTest();
                       }}
