@@ -11,9 +11,9 @@ export const translations = {
   },
   hero: {
     title: {
-      line1: { en: 'STRONG', ru: 'СИЛЬНОЕ' },
-      line2: { en: 'BODY. CLEAR', ru: 'ТЕЛО. ЯСНЫЙ' },
-      line3: { en: 'MIND.', ru: 'УМ.' },
+      line1: { en: 'PERSONAL', ru: 'ПЕРСОНАЛЬНЫЙ' },
+      line2: { en: 'FITNESS', ru: 'ФИТНЕС' },
+      line3: { en: 'ASSISTANT', ru: 'АССИСТЕНТ' },
     },
     subtitle: {
       en: 'Personal training that fits your life — not the other way around',
