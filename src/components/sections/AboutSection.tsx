@@ -5,6 +5,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
+import nataliaBefore from '@/assets/transformation-natalia-before.jpeg';
+import nataliaAfter from '@/assets/transformation-natalia-after.jpeg';
+
+const transformationPhotos: Record<number, { before: string; after: string }> = {
+  0: { before: nataliaBefore, after: nataliaAfter },
+};
 
 const reasons = [
   {
@@ -118,32 +124,51 @@ const AboutSection = () => {
         <h3 className="text-sm font-extrabold uppercase tracking-wider mb-1">{t(transformations.title)}</h3>
         <p className="text-xs text-muted-foreground mb-3">{t(transformations.subtitle)}</p>
         <div className="space-y-3">
-          {transformations.items.map((item, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: -15 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.2 + i * 0.08 }}
-              className="bg-card rounded-2xl border border-border/50 p-4"
-            >
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                    {t(item.name).charAt(0)}
+          {transformations.items.map((item, i) => {
+            const photos = transformationPhotos[i];
+            return (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, x: -15 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.08 }}
+                className="bg-card rounded-2xl border border-border/50 p-4"
+              >
+                {photos && (
+                  <div className="grid grid-cols-2 gap-2 mb-3">
+                    <div className="relative rounded-xl overflow-hidden">
+                      <img src={photos.before} alt="Before" className="w-full h-32 object-cover" />
+                      <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
+                        {lang === 'en' ? 'Before' : 'До'}
+                      </span>
+                    </div>
+                    <div className="relative rounded-xl overflow-hidden">
+                      <img src={photos.after} alt="After" className="w-full h-32 object-cover" />
+                      <span className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
+                        {lang === 'en' ? 'After' : 'После'}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold">{t(item.name)}</h4>
-                    <p className="text-[10px] text-muted-foreground">{t(item.duration)}</p>
+                )}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                      {t(item.name).charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold">{t(item.name)}</h4>
+                      <p className="text-[10px] text-muted-foreground">{t(item.duration)}</p>
+                    </div>
+                  </div>
+                  <div className="bg-primary/15 text-primary text-xs font-extrabold px-2.5 py-1 rounded-lg">
+                    {item.metric}
                   </div>
                 </div>
-                <div className="bg-primary/15 text-primary text-xs font-extrabold px-2.5 py-1 rounded-lg">
-                  {item.metric}
-                </div>
-              </div>
-              <p className="text-xs font-bold text-primary mb-1">{t(item.result)}</p>
-              <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
-            </motion.div>
-          ))}
+                <p className="text-xs font-bold text-primary mb-1">{t(item.result)}</p>
+                <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+              </motion.div>
+            );
+          })}
         </div>
       </motion.div>
 
