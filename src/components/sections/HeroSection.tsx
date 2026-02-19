@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, UserRound } from 'lucide-react';
+import { ChevronDown, UserRound, CalendarDays } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import BookingModal from '@/components/BookingModal';
 import SessionWidget from '@/components/SessionWidget';
 import BodyMeasurementsView from '@/components/BodyMeasurementsView';
+import { supabase } from '@/integrations/supabase/client';
 
 interface HeroSectionProps {
   onNavigate: (section: string) => void;
@@ -20,6 +21,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
   const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [hasActivePackage, setHasActivePackage] = useState(false);
 
   const getInitials = () => {
     const name = profile?.full_name || user?.user_metadata?.full_name || '';
@@ -39,6 +41,28 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [expandedCard]);
+
+  // Check if client has an active package
+  useEffect(() => {
+    if (!user || isTrainer) return;
+    const checkPackage = async () => {
+      const { data } = await supabase
+        .from('client_packages')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('is_active', true)
+        .limit(1)
+        .maybeSingle();
+      setHasActivePackage(!!data);
+    };
+    checkPackage();
+
+    const channel = supabase
+      .channel('hero-packages')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, checkPackage)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user, isTrainer]);
 
   return (
     <section className="relative min-h-screen flex flex-col bg-background">
@@ -110,15 +134,41 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
         </motion.div>
 
         {/* CTA Button */}
-        <motion.button
+        <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          onClick={() => setBookingOpen(true)}
-          className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-6"
+          className="mb-6"
         >
-          {t(hero.cta)}
-        </motion.button>
+          <AnimatePresence mode="wait">
+            {user && !isTrainer && hasActivePackage ? (
+              <motion.button
+                key="schedule"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={onProfileClick}
+                className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center gap-2"
+              >
+                <CalendarDays className="w-5 h-5" />
+                {lang === 'en' ? 'My Schedule' : 'Моё расписание'}
+              </motion.button>
+            ) : (
+              <motion.button
+                key="book"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                onClick={() => setBookingOpen(true)}
+                className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+              >
+                {t(hero.cta)}
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </motion.div>
 
         {/* Client progress widgets */}
         {user && !isTrainer && (
@@ -167,10 +217,10 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                     >
                       <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
                       <button
-                        onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                        onClick={(e) => { e.stopPropagation(); if (user && hasActivePackage) { onProfileClick(); } else { setBookingOpen(true); } }}
                         className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                       >
-                        {lang === 'en' ? 'Book session' : 'Записаться'}
+                        {user && hasActivePackage ? (lang === 'en' ? 'My Schedule' : 'Расписание') : (lang === 'en' ? 'Book session' : 'Записаться')}
                       </button>
                     </motion.div>
                   ) : (
@@ -210,12 +260,12 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                         className="overflow-hidden"
                       >
                         <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                          className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
-                        >
-                          {lang === 'en' ? 'Book session' : 'Записаться'}
-                        </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); if (user && hasActivePackage) { onProfileClick(); } else { setBookingOpen(true); } }}
+                            className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
+                          >
+                            {user && hasActivePackage ? (lang === 'en' ? 'My Schedule' : 'Расписание') : (lang === 'en' ? 'Book session' : 'Записаться')}
+                          </button>
                       </motion.div>
                     ) : (
                       <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
