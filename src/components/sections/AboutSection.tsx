@@ -7,9 +7,12 @@ import { translations } from '@/i18n/translations';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import nataliaBefore from '@/assets/transformation-natalia-before.jpeg';
 import nataliaAfter from '@/assets/transformation-natalia-after.jpeg';
+import veronikaBefore from '@/assets/transformation-veronika-before.jpeg';
+import veronikaAfter from '@/assets/transformation-veronika-after.jpeg';
 
 const transformationPhotos: Record<number, { before: string; after: string }> = {
   0: { before: nataliaBefore, after: nataliaAfter },
+  2: { before: veronikaBefore, after: veronikaAfter },
 };
 
 const reasons = [
