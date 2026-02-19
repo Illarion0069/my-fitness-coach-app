@@ -664,22 +664,23 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: 
             {/* === MY SESSIONS === */}
             {step === 'my-sessions' && (
               <div>
-                <button
-                  onClick={() => setStep('date')}
-                  className="text-xs text-primary font-semibold mb-4 flex items-center gap-1"
-                >
-                  <ChevronLeft className="w-3.5 h-3.5" />
-                  {lang === 'en' ? 'Back to booking' : 'Назад к записи'}
-                </button>
-
                 {loading ? (
                   <div className="flex justify-center py-10">
                     <Loader2 className="w-6 h-6 animate-spin text-primary" />
                   </div>
                 ) : mySessions.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-10">
-                    {lang === 'en' ? 'No upcoming sessions' : 'Нет предстоящих записей'}
-                  </p>
+                  <div className="text-center py-8">
+                    <p className="text-sm text-muted-foreground mb-6">
+                      {lang === 'en' ? 'No upcoming sessions' : 'Нет предстоящих записей'}
+                    </p>
+                    <button
+                      onClick={() => setStep('date')}
+                      className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+                    >
+                      <CalendarDays className="w-5 h-5" />
+                      {lang === 'en' ? 'Book a session' : 'Забронировать занятие'}
+                    </button>
+                  </div>
                 ) : (
                   <div className="space-y-2">
                     {mySessions.map(s => {
@@ -717,6 +718,17 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: 
                         </div>
                       );
                     })}
+
+                    {/* Book new session CTA */}
+                    <div className="pt-4">
+                      <button
+                        onClick={() => setStep('date')}
+                        className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+                      >
+                        <CalendarDays className="w-5 h-5" />
+                        {lang === 'en' ? 'Book another session' : 'Добавить занятие'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
