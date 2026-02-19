@@ -9,9 +9,12 @@ import nataliaBefore from '@/assets/transformation-natalia-before.jpeg';
 import nataliaAfter from '@/assets/transformation-natalia-after.jpeg';
 import veronikaBefore from '@/assets/transformation-veronika-before.jpeg';
 import veronikaAfter from '@/assets/transformation-veronika-after.jpeg';
+import pavelBefore from '@/assets/transformation-pavel-before.jpeg';
+import pavelAfter from '@/assets/transformation-pavel-after.jpeg';
 
 const transformationPhotos: Record<number, { before: string; after: string }> = {
   0: { before: nataliaBefore, after: nataliaAfter },
+  1: { before: pavelBefore, after: pavelAfter },
   2: { before: veronikaBefore, after: veronikaAfter },
 };
 
