@@ -21,6 +21,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
   const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [bookingInitialStep, setBookingInitialStep] = useState<'date' | 'my-sessions'>('date');
   const [hasActivePackage, setHasActivePackage] = useState(false);
 
   const getInitials = () => {
@@ -148,7 +149,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => setBookingOpen(true)}
+                onClick={() => { setBookingInitialStep('my-sessions'); setBookingOpen(true); }}
                 className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center gap-2"
               >
                 <CalendarDays className="w-5 h-5" />
@@ -161,7 +162,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                onClick={() => setBookingOpen(true)}
+                onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
                 className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
               >
                 {t(hero.cta)}
@@ -286,7 +287,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
       </div>
 
       {/* Booking Modal */}
-      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} onLoginRequest={onProfileClick} />
+      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} onLoginRequest={onProfileClick} initialStep={bookingInitialStep} />
     </section>
   );
 };

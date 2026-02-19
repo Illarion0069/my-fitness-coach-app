@@ -13,6 +13,7 @@ interface BookingModalProps {
   onClose: () => void;
   onLoginRequest?: () => void;
   onBooked?: () => void;
+  initialStep?: 'date' | 'my-sessions';
 }
 
 interface TimeSlot {
@@ -39,7 +40,7 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: BookingModalProps) => {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -74,7 +75,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked }: BookingModalP
   // Reset on open
   useEffect(() => {
     if (open) {
-      setStep('date');
+      const startStep = initialStep || 'date';
+      setStep(startStep);
       setCurrentMonth(new Date());
       setSelectedDate(null);
       setSelectedTime(null);
@@ -82,8 +84,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked }: BookingModalP
       setHasActivePackage(null);
       setSelectedPackage(null);
       setPaymentOpened(false);
+      if (startStep === 'my-sessions') {
+        fetchMySessions();
+      }
     }
-  }, [open]);
+  }, [open, initialStep]);
 
   const monthDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
