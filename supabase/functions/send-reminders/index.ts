@@ -68,19 +68,8 @@ Deno.serve(async (req) => {
         const currentMinutes = hour * 60 + minute;
         const diff = sessionMinutes - currentMinutes; // minutes until session
 
-        // Send 24h reminder (actually check if ~23-25h window, run hourly)
         // Send 1h reminder (50-70 min before)
-        let reminderType: '24h' | '1h' | null = null;
-        if (diff >= 50 && diff <= 70) {
-          reminderType = '1h';
-        }
-        // For 24h: we can't easily do this with same-day check, 
-        // so we check tomorrow's sessions when diff would be ~1380-1440 range
-        // Actually, let's handle 24h by checking if current time is ~24h before
-        // Since we run every hour, check tomorrow's sessions too
-
-        // For same-day sessions, only 1h reminder applies
-        if (!reminderType) continue;
+        if (diff < 50 || diff > 70) continue;
 
         // Get profile via join or separate query
         const { data: profile } = await supabase
@@ -92,9 +81,7 @@ Deno.serve(async (req) => {
         if (!profile?.telegram_chat_id) continue;
 
         const timeFormatted = `${String(sHour).padStart(2, '0')}:${String(sMinute).padStart(2, '0')}`;
-        const msg = reminderType === '1h'
-          ? `⏰ <b>Reminder!</b>\n\nYour training session is in <b>1 hour</b> at <b>${timeFormatted}</b>.\n\n💪 Get ready!`
-          : `📅 <b>Tomorrow's training</b>\n\nYou have a session at <b>${timeFormatted}</b>.\n\nSee you there! 💪`;
+        const msg = `⏰ <b>Reminder!</b>\n\nYour training session is in <b>1 hour</b> at <b>${timeFormatted}</b>.\n\n💪 Get ready!`;
 
         await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: 'POST',
@@ -107,71 +94,9 @@ Deno.serve(async (req) => {
         });
 
         sent++;
-        console.log(`  ✓ Sent ${reminderType} reminder to ${profile.full_name}`);
+        console.log(`  ✓ Sent 1h reminder to ${profile.full_name}`);
       } catch (e) {
         console.error(`  ✗ Error for session ${session.id}:`, e);
-      }
-    }
-
-    // Also check TOMORROW for 24h reminders
-    const tomorrow = new Date(`${dateStr}T12:00:00`);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const tomorrowStr = tomorrow.toISOString().split('T')[0];
-    const tomorrowDow = tomorrow.getDay();
-
-    const { data: tomorrowOneOff } = await supabase
-      .from('scheduled_sessions')
-      .select('*')
-      .eq('session_date', tomorrowStr)
-      .eq('is_recurring', false);
-
-    const { data: tomorrowRecurring } = await supabase
-      .from('scheduled_sessions')
-      .select('*')
-      .eq('is_recurring', true)
-      .eq('recurrence_day', tomorrowDow);
-
-    const tomorrowFiltered = (tomorrowRecurring || []).filter(s =>
-      !s.recurring_exceptions?.includes(tomorrowStr)
-    );
-
-    const tomorrowAll = [...(tomorrowOneOff || []), ...tomorrowFiltered];
-
-    for (const session of tomorrowAll) {
-      try {
-        const sessionTime = session.session_time || session.recurrence_time;
-        if (!sessionTime) continue;
-
-        const [sHour, sMinute] = sessionTime.split(':').map(Number);
-        // Send 24h reminder: session tomorrow at sHour, current time is hour
-        // Only send if current hour matches session hour (± 1)
-        if (Math.abs(sHour - hour) > 1) continue;
-
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name, telegram_chat_id')
-          .eq('user_id', session.user_id)
-          .maybeSingle();
-
-        if (!profile?.telegram_chat_id) continue;
-
-        const timeFormatted = `${String(sHour).padStart(2, '0')}:${String(sMinute).padStart(2, '0')}`;
-        const msg = `📅 <b>Tomorrow's training</b>\n\nYou have a session at <b>${timeFormatted}</b>.\n\nSee you there! 💪`;
-
-        await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chat_id: profile.telegram_chat_id,
-            text: msg,
-            parse_mode: 'HTML',
-          }),
-        });
-
-        sent++;
-        console.log(`  ✓ Sent 24h reminder to ${profile.full_name} for tomorrow at ${timeFormatted}`);
-      } catch (e) {
-        console.error(`  ✗ Error for tomorrow session ${session.id}:`, e);
       }
     }
 
