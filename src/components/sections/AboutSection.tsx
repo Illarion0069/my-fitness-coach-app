@@ -76,16 +76,16 @@ const AboutSection = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="relative rounded-3xl overflow-hidden mb-6"
+        onClick={() => setPhotoExpanded(true)}
+        className="relative rounded-3xl overflow-hidden mb-6 cursor-pointer active:scale-[0.98] transition-transform"
       >
         <img
           src={trainerPhoto}
           alt="Illarion Ientin"
-          onClick={() => setPhotoExpanded(true)}
-          className="w-full h-48 object-cover object-top cursor-pointer"
+          className="w-full h-48 object-cover object-top"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 p-5">
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent pointer-events-none" />
+        <div className="absolute bottom-0 left-0 right-0 p-5 pointer-events-none">
           <h2 className="text-2xl font-extrabold uppercase tracking-tight font-heading">
             {lang === 'en' ? 'ILLARION IENTIN' : 'ИЛЛАРИОН ЕНТИН'}
           </h2>
