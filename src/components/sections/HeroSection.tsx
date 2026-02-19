@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronDown, UserRound } from 'lucide-react';
-import trainerPhoto from '@/assets/trainer-photo.jpg';
+import { ChevronDown, UserRound } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
@@ -64,32 +63,15 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
         <LanguageSwitch />
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-5">
-        {/* Circular trainer photo with glow */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.8 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.6 }}
-          className="mt-6 mb-6 relative"
-        >
-          <div className="w-40 h-40 rounded-full p-1 bg-gradient-to-b from-primary/60 via-primary/20 to-transparent shadow-[0_8px_40px_-8px_hsl(var(--primary)/0.4)]">
-            <img
-              src={trainerPhoto}
-              alt={t(hero.trainer)}
-              className="w-full h-full rounded-full object-cover bg-card border-4 border-card"
-              style={{ objectPosition: '60% center' }}
-            />
-          </div>
-        </motion.div>
-
+      <div className="flex-1 flex flex-col items-center justify-center px-5">
         {/* Title */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
-          className="text-center mb-4"
+          className="text-center mb-3"
         >
-          <h1 className="text-4xl font-extrabold uppercase tracking-tight font-heading leading-[1.1]">
+          <h1 className="text-5xl font-extrabold uppercase tracking-tight font-heading leading-[1.1]">
             <span className="text-primary">{t(hero.title.line1)}</span>
             <br />
             <span className="text-foreground">{t(hero.title.line2)}</span>
@@ -103,7 +85,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.35, duration: 0.5 }}
-          className="text-center mb-6"
+          className="text-center mb-4"
         >
           <p className="text-sm text-muted-foreground">{t(hero.subtitle)}</p>
           <p className="text-xs text-muted-foreground/70 mt-1">— {t(hero.trainer)}</p>
@@ -115,7 +97,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
           onClick={() => setBookingOpen(true)}
-          className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-6"
+          className="gradient-primary text-primary-foreground font-bold py-3 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-4"
         >
           {t(hero.cta)}
         </motion.button>
@@ -138,7 +120,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65, duration: 0.5 }}
-          className="w-full pb-28"
+          className="w-full pb-20"
         >
           <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3">
             {t(workouts.title)}
@@ -227,11 +209,6 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
               </div>
             </motion.div>
           )}
-
-          {/* Scroll hint */}
-          <div className="flex justify-center mt-4">
-            <ChevronDown className="w-5 h-5 text-muted-foreground/30 animate-bounce" />
-          </div>
         </motion.div>
       </div>
 
