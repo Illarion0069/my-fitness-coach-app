@@ -143,13 +143,13 @@ const AboutSection = () => {
                 {photos && (
                   <div className="grid grid-cols-2 gap-2 mb-3">
                     <div className="relative rounded-xl overflow-hidden">
-                      <img src={photos.before} alt="Before" className="w-full h-32 object-cover" />
+                      <img src={photos.before} alt="Before" className="w-full h-44 object-cover object-top" />
                       <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
                         {lang === 'en' ? 'Before' : 'До'}
                       </span>
                     </div>
                     <div className="relative rounded-xl overflow-hidden">
-                      <img src={photos.after} alt="After" className="w-full h-32 object-cover" />
+                      <img src={photos.after} alt="After" className="w-full h-44 object-cover object-top" />
                       <span className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
                         {lang === 'en' ? 'After' : 'После'}
                       </span>
