@@ -7,8 +7,7 @@ import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingModal from '@/components/BookingModal';
-import SessionWidget from '@/components/SessionWidget';
-import BodyMeasurementsView from '@/components/BodyMeasurementsView';
+import ClientDashboard from '@/components/ClientDashboard';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HeroSectionProps {
@@ -65,6 +64,20 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [user, isTrainer]);
 
+  // Authenticated client — show full dashboard
+  if (user && !isTrainer) {
+    return (
+      <section className="relative bg-background">
+        {/* Top bar */}
+        <div className="flex items-center justify-between px-5 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top, 12px), 12px)' }}>
+          <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
+          <LanguageSwitch />
+        </div>
+        <ClientDashboard />
+      </section>
+    );
+  }
+
   return (
     <section className="relative min-h-screen flex flex-col bg-background">
       {/* Top bar */}
@@ -74,15 +87,9 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
             onClick={onProfileClick}
             className="w-8 h-8 rounded-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0"
           >
-            {user ? (
-              <div className="w-8 h-8 rounded-xl gradient-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-extrabold text-[11px]">{getInitials()}</span>
-              </div>
-            ) : (
-              <div className="w-8 h-8 rounded-xl bg-secondary border border-border/50 flex items-center justify-center">
-                <UserRound className="w-4 h-4 text-muted-foreground" />
-              </div>
-            )}
+            <div className="w-8 h-8 rounded-xl bg-secondary border border-border/50 flex items-center justify-center">
+              <UserRound className="w-4 h-4 text-muted-foreground" />
+            </div>
           </button>
           <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         </div>
@@ -141,48 +148,18 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           transition={{ delay: 0.5, duration: 0.5 }}
           className="mb-6"
         >
-          <AnimatePresence mode="wait">
-            {user && !isTrainer && hasActivePackage ? (
-              <motion.button
-                key="schedule"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => { setBookingInitialStep('my-sessions'); setBookingOpen(true); }}
-                className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center gap-2"
-              >
-                <CalendarDays className="w-5 h-5" />
-                {lang === 'en' ? 'My Schedule' : 'Моё расписание'}
-              </motion.button>
-            ) : (
-              <motion.button
-                key="book"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
-                className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
-              >
-                {t(hero.cta)}
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Client progress widgets */}
-        {user && !isTrainer && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.5 }}
-            className="w-full mb-4"
+          <motion.button
+            key="book"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
+            className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
           >
-            <SessionWidget />
-            <BodyMeasurementsView userId={user.id} lang={lang} />
-          </motion.div>
-        )}
+            {t(hero.cta)}
+          </motion.button>
+        </motion.div>
 
         {/* Workouts section */}
         <motion.div
@@ -221,7 +198,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                         onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
                         className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                       >
-                        {user && hasActivePackage ? (lang === 'en' ? 'My Schedule' : 'Расписание') : (lang === 'en' ? 'Book session' : 'Записаться')}
+                        {lang === 'en' ? 'Book session' : 'Записаться'}
                       </button>
                     </motion.div>
                   ) : (
@@ -265,7 +242,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                             onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
                             className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                           >
-                            {user && hasActivePackage ? (lang === 'en' ? 'My Schedule' : 'Расписание') : (lang === 'en' ? 'Book session' : 'Записаться')}
+                            {lang === 'en' ? 'Book session' : 'Записаться'}
                           </button>
                       </motion.div>
                     ) : (

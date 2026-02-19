@@ -10,7 +10,6 @@ import AboutSection from '@/components/sections/AboutSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
-import ClientProfileDrawer from '@/components/ClientProfileDrawer';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -18,7 +17,6 @@ const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
   const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
@@ -67,10 +65,7 @@ const AppContent = () => {
 
   // Reset state on logout
   useEffect(() => {
-    if (!user) {
-      setActiveSection('home');
-      setShowProfile(false);
-    }
+    if (!user) setActiveSection('home');
   }, [user]);
 
   // Handle cancel_session URL parameter (from Telegram cancel button)
@@ -97,13 +92,8 @@ const AppContent = () => {
       case 'home':
         return (
           <HeroSection onNavigate={handleNavigate} onProfileClick={() => {
-            if (isTrainer) {
-              handleNavigate('admin');
-            } else if (!!user) {
-              setShowProfile(true);
-            } else {
-              setShowWelcome(true);
-            }
+            if (isTrainer) handleNavigate('admin');
+            else setShowWelcome(true);
           }} />
         );
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
@@ -153,7 +143,7 @@ const AppContent = () => {
         }}
         bookingJustCompleted={bookingJustCompleted}
       />
-      <ClientProfileDrawer open={showProfile} onClose={() => setShowProfile(false)} />
+      
       <BookingModal
         open={showBooking}
         onClose={() => setShowBooking(false)}
