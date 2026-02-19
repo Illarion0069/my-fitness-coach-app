@@ -10,10 +10,14 @@ export const translations = {
     contact: { en: 'Contact', ru: 'Контакты' },
   },
   hero: {
-    title: { en: 'PERSONAL FITNESS ASSISTANT', ru: 'ПЕРСОНАЛЬНЫЙ ФИТНЕС-АССИСТЕНТ' },
+    title: {
+      line1: { en: 'STRONG', ru: 'СИЛЬНОЕ' },
+      line2: { en: 'BODY. CLEAR', ru: 'ТЕЛО. ЯСНЫЙ' },
+      line3: { en: 'MIND.', ru: 'УМ.' },
+    },
     subtitle: {
-      en: 'Provides high-quality fitness service in Limassol',
-      ru: 'Высококачественные фитнес-услуги в Лимассоле',
+      en: 'Personal training that fits your life — not the other way around',
+      ru: 'Персональные тренировки, которые подстраиваются под вашу жизнь, а не наоборот',
     },
     cta: { en: 'Book your session', ru: 'Забронировать тренировку' },
     trainer: { en: 'Illarion Ientin', ru: 'Илларион Иентин' },
@@ -146,6 +150,42 @@ export const translations = {
       ru: 'Европейская аккредитация EQF 3 и EQF 4',
     },
   },
+  transformations: {
+    title: { en: 'TRANSFORMATIONS', ru: 'ТРАНСФОРМАЦИИ' },
+    subtitle: { en: 'Real results from real people', ru: 'Реальные результаты реальных людей' },
+    items: [
+      {
+        name: { en: 'Natalia K.', ru: 'Наталья К.' },
+        result: { en: '-12 kg in 3 months', ru: '-12 кг за 3 месяца' },
+        desc: {
+          en: 'Housewife, 43 years old. Completely transformed her lifestyle. From no exercise to 3x/week training routine.',
+          ru: 'Домохозяйка, 43 года. Полностью изменила образ жизни. С нуля до 3 тренировок в неделю.',
+        },
+        duration: { en: '3 months', ru: '3 месяца' },
+        metric: '-12 kg',
+      },
+      {
+        name: { en: 'Pavel K.', ru: 'Павел К.' },
+        result: { en: '-8 kg, +4 kg muscle in 4 months', ru: '-8 кг, +4 кг мышц за 4 месяца' },
+        desc: {
+          en: 'Busy CEO working 12h/day. Proved that you can transform even with the tightest schedule.',
+          ru: 'Занятой CEO, работает по 12ч/день. Доказал, что трансформация возможна при любом графике.',
+        },
+        duration: { en: '4 months', ru: '4 месяца' },
+        metric: '-8 kg',
+      },
+      {
+        name: { en: 'Veronika O.', ru: 'Вероника О.' },
+        result: { en: '-6 kg, waist -8 cm in 2 months', ru: '-6 кг, талия -8 см за 2 месяца' },
+        desc: {
+          en: 'Office worker, 32. Found perfect balance between desk work and active lifestyle.',
+          ru: 'Офисный работник, 32 года. Нашла баланс между сидячей работой и активным образом жизни.',
+        },
+        duration: { en: '2 months', ru: '2 месяца' },
+        metric: '-8 cm',
+      },
+    ],
+  },
   reviews: {
     title: { en: 'REVIEWS', ru: 'ОТЗЫВЫ' },
     subtitle: { en: 'We are proud of you', ru: 'Мы гордимся вами' },
@@ -188,6 +228,9 @@ export const translations = {
       ru: 'Пройдите быстрый тест для оценки привычек питания и здоровья',
     },
     start: { en: 'Start Test', ru: 'Начать тест' },
+    saveResults: { en: 'Create account to save your results and track progress', ru: 'Создайте аккаунт, чтобы сохранить результаты и отслеживать прогресс' },
+    register: { en: 'Save & Register', ru: 'Сохранить и зарегистрироваться' },
+    continueWithout: { en: 'Continue without saving', ru: 'Продолжить без сохранения' },
     next: { en: 'Next', ru: 'Далее' },
     back: { en: 'Back', ru: 'Назад' },
     submit: { en: 'Get Results', ru: 'Получить результаты' },

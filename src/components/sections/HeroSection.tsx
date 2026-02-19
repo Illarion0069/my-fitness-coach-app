@@ -7,6 +7,8 @@ import { translations } from '@/i18n/translations';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingModal from '@/components/BookingModal';
+import SessionWidget from '@/components/SessionWidget';
+import BodyMeasurementsView from '@/components/BodyMeasurementsView';
 
 interface HeroSectionProps {
   onNavigate: (section: string) => void;
@@ -15,7 +17,7 @@ interface HeroSectionProps {
 
 const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
   const { t, lang } = useLanguage();
-  const { user, profile } = useAuth();
+  const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
   const [bookingOpen, setBookingOpen] = useState(false);
 
@@ -88,11 +90,11 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           className="text-center mb-4"
         >
           <h1 className="text-4xl font-extrabold uppercase tracking-tight font-heading leading-[1.1]">
-            <span className="text-primary">{lang === 'en' ? 'PERSONAL' : 'ПЕРСОНАЛЬНЫЙ'}</span>
+            <span className="text-primary">{t(hero.title.line1)}</span>
             <br />
-            <span className="text-foreground">{lang === 'en' ? 'FITNESS' : 'ФИТНЕС'}</span>
+            <span className="text-foreground">{t(hero.title.line2)}</span>
             <br />
-            <span className="text-primary">{lang === 'en' ? 'ASSISTANT' : 'АССИСТЕНТ'}</span>
+            <span className="text-primary">{t(hero.title.line3)}</span>
           </h1>
         </motion.div>
 
@@ -113,10 +115,23 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
           onClick={() => setBookingOpen(true)}
-          className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-10"
+          className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mb-6"
         >
           {t(hero.cta)}
         </motion.button>
+
+        {/* Client progress widgets */}
+        {user && !isTrainer && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6, duration: 0.5 }}
+            className="w-full mb-4"
+          >
+            <SessionWidget />
+            <BodyMeasurementsView userId={user.id} lang={lang} />
+          </motion.div>
+        )}
 
         {/* Workouts section */}
         <motion.div
