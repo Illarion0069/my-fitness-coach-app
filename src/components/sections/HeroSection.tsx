@@ -148,7 +148,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                onClick={onProfileClick}
+                onClick={() => setBookingOpen(true)}
                 className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center gap-2"
               >
                 <CalendarDays className="w-5 h-5" />
@@ -217,7 +217,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                     >
                       <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
                       <button
-                        onClick={(e) => { e.stopPropagation(); if (user && hasActivePackage) { onProfileClick(); } else { setBookingOpen(true); } }}
+                        onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
                         className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                       >
                         {user && hasActivePackage ? (lang === 'en' ? 'My Schedule' : 'Расписание') : (lang === 'en' ? 'Book session' : 'Записаться')}
@@ -261,7 +261,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
                       >
                         <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
                           <button
-                            onClick={(e) => { e.stopPropagation(); if (user && hasActivePackage) { onProfileClick(); } else { setBookingOpen(true); } }}
+                            onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
                             className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
                           >
                             {user && hasActivePackage ? (lang === 'en' ? 'My Schedule' : 'Расписание') : (lang === 'en' ? 'Book session' : 'Записаться')}
