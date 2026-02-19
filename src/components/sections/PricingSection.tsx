@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Check, Crown, AlertCircle, ArrowRight } from 'lucide-react';
+import { Check, Crown, AlertCircle, ArrowRight, MessageSquare } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -29,66 +29,93 @@ const PricingSection = () => {
       </motion.div>
 
       <div className="space-y-4">
-        {pricing.packages.map((pkg, i) => (
-          <motion.div
-            key={i}
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: i * 0.1 }}
-            className={`bg-card rounded-2xl p-5 relative overflow-hidden border ${
-              pkg.popular ? 'border-primary/50 glow-primary' : 'border-border/50'
-            }`}
-          >
-            {pkg.popular && (
-              <div className="absolute top-0 right-0 gradient-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl">
-                <Crown className="w-3 h-3 inline mr-1" />
-                {lang === 'en' ? 'Popular' : 'Популярно'}
-              </div>
-            )}
+        {pricing.packages.map((pkg, i) => {
+          const isConsultation = 'isConsultation' in pkg && pkg.isConsultation;
+          const hasLabel = 'label' in pkg;
+          const period = t(pkg.period);
 
-            <div className="flex items-end justify-between mb-4">
-              <div>
-                <span className="text-4xl font-extrabold text-gradient">{pkg.sessions}</span>
-                <span className="text-sm text-muted-foreground ml-2">
-                  {lang === 'en' ? 'sessions' : 'тренировок'}
-                </span>
-                <p className="text-xs text-muted-foreground mt-0.5">{t(pkg.period)}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-extrabold text-foreground">{pkg.price}€</div>
-                <div className="text-[10px] text-muted-foreground">
-                  {Math.round(pkg.price / pkg.sessions)}€/{lang === 'en' ? 'session' : 'трен.'}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-2 mb-5">
-              {pkg.features[lang].map((feature, j) => (
-                <div key={j} className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-                    <Check className="w-3 h-3 text-primary" />
-                  </div>
-                  <span className="text-xs text-muted-foreground">{feature}</span>
-                </div>
-              ))}
-            </div>
-
-            <a
-              href="https://revolut.me/illarion"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold transition-all ${
-                pkg.popular
-                  ? 'gradient-primary text-primary-foreground glow-primary hover:scale-[1.02]'
-                  : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+          return (
+            <motion.div
+              key={i}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.1 }}
+              className={`bg-card rounded-2xl p-5 relative overflow-hidden border ${
+                'popular' in pkg && pkg.popular ? 'border-primary/50 glow-primary' : 'border-border/50'
               }`}
             >
-              {t(pricing.buy)}
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-            </a>
-          </motion.div>
-        ))}
+              {'popular' in pkg && pkg.popular && (
+                <div className="absolute top-0 right-0 gradient-primary text-primary-foreground text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-bl-xl">
+                  <Crown className="w-3 h-3 inline mr-1" />
+                  {lang === 'en' ? 'Popular' : 'Популярно'}
+                </div>
+              )}
+
+              <div className="flex items-end justify-between mb-4">
+                <div>
+                  {isConsultation ? (
+                    <>
+                      <div className="flex items-center gap-2 mb-1">
+                        <MessageSquare className="w-5 h-5 text-primary" />
+                        <span className="text-lg font-extrabold text-foreground">
+                          {hasLabel ? (pkg as any).label[lang] : ''}
+                        </span>
+                      </div>
+                    </>
+                  ) : hasLabel && pkg.sessions === 1 ? (
+                    <>
+                      <span className="text-lg font-extrabold text-foreground">
+                        {(pkg as any).label[lang]}
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-4xl font-extrabold text-gradient">{pkg.sessions}</span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        {lang === 'en' ? 'sessions' : 'тренировок'}
+                      </span>
+                      {period && <p className="text-xs text-muted-foreground mt-0.5">{period}</p>}
+                    </>
+                  )}
+                </div>
+                <div className="text-right">
+                  <div className="text-2xl font-extrabold text-foreground">{pkg.price}€</div>
+                  {pkg.sessions > 1 && (
+                    <div className="text-[10px] text-muted-foreground">
+                      {Math.round(pkg.price / pkg.sessions)}€/{lang === 'en' ? 'session' : 'трен.'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2 mb-5">
+                {pkg.features[lang].map((feature, j) => (
+                  <div key={j} className="flex items-center gap-2.5">
+                    <div className="w-5 h-5 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
+                      <Check className="w-3 h-3 text-primary" />
+                    </div>
+                    <span className="text-xs text-muted-foreground">{feature}</span>
+                  </div>
+                ))}
+              </div>
+
+              <a
+                href="https://revolut.me/illarion"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold transition-all ${
+                  'popular' in pkg && pkg.popular
+                    ? 'gradient-primary text-primary-foreground glow-primary hover:scale-[1.02]'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                }`}
+              >
+                {t(pricing.buy)}
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              </a>
+            </motion.div>
+          );
+        })}
       </div>
     </section>
   );
