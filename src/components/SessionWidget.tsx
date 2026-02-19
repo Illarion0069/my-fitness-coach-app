@@ -82,7 +82,7 @@ const SessionWidget = () => {
           </p>
           {exhausted && (
             <p className="text-xs text-destructive font-semibold mt-0.5">
-              {lang === 'en' ? '⚠ Package exhausted — contact trainer' : '⚠ Пакет исчерпан — обратитесь к тренеру'}
+              {lang === 'en' ? '⚠ Package exhausted — buy more sessions' : '⚠ Пакет исчерпан — докупите тренировки'}
             </p>
           )}
         </div>
