@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight, Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
@@ -8,6 +8,7 @@ import TrainerWhoopWidget from './TrainerWhoopWidget';
 import ClientTestHistory from './ClientTestHistory';
 import BodyMeasurementsInput from './BodyMeasurementsInput';
 import BodyMeasurementsView from './BodyMeasurementsView';
+import ClientProgressPhotos from './ClientProgressPhotos';
 
 interface ClientPackage {
   id: string;
@@ -328,6 +329,16 @@ const ClientDetailAccordion = ({
         onToggle={() => toggleSection('tests')}
       >
         <ClientTestHistory userId={client.user_id} lang={lang} />
+      </AccordionSection>
+
+      {/* Progress Photos */}
+      <AccordionSection
+        icon={<Camera className="w-4 h-4 text-primary" />}
+        title={lang === 'en' ? 'Progress Photos' : 'Фото прогресса'}
+        isOpen={openSection === 'photos'}
+        onToggle={() => toggleSection('photos')}
+      >
+        <ClientProgressPhotos userId={client.user_id} lang={lang} />
       </AccordionSection>
 
       {/* Notifications */}

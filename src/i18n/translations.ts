@@ -102,6 +102,32 @@ export const translations = {
     buy: { en: 'Buy Now', ru: 'Купить' },
     packages: [
       {
+        id: 'consultation',
+        sessions: 1,
+        period: { en: '', ru: '' },
+        price: 50,
+        popular: false,
+        isConsultation: true,
+        label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' },
+        features: {
+          en: ['Fitness assessment', 'Goal setting', 'Program recommendation'],
+          ru: ['Оценка физической формы', 'Постановка целей', 'Рекомендация программы'],
+        },
+      },
+      {
+        id: 'single',
+        sessions: 1,
+        period: { en: '', ru: '' },
+        price: 100,
+        popular: false,
+        label: { en: 'Single Session', ru: 'Разовая тренировка' },
+        features: {
+          en: ['Personal assistance', 'Water & Towel'],
+          ru: ['Персональный ассистент', 'Вода и полотенце'],
+        },
+      },
+      {
+        id: 'pack8',
         sessions: 8,
         period: { en: '1 month', ru: '1 месяц' },
         price: 750,
@@ -112,6 +138,7 @@ export const translations = {
         },
       },
       {
+        id: 'pack12',
         sessions: 12,
         period: { en: '1 month', ru: '1 месяц' },
         price: 1030,
@@ -122,6 +149,7 @@ export const translations = {
         },
       },
       {
+        id: 'pack20',
         sessions: 20,
         period: { en: '2 months', ru: '2 месяца' },
         price: 1599,

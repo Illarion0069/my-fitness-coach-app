@@ -110,6 +110,42 @@ export type Database = {
         }
         Relationships: []
       }
+      client_progress_photos: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          photo_type: string
+          photo_url: string
+          taken_at: string
+          trainer_user_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photo_type: string
+          photo_url: string
+          taken_at?: string
+          trainer_user_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          photo_type?: string
+          photo_url?: string
+          taken_at?: string
+          trainer_user_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       password_reset_codes: {
         Row: {
           code: string

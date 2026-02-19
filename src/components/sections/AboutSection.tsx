@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Shield, Target, Handshake, Gem, ChevronRight, Star, ExternalLink, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, Quote } from 'lucide-react';
+import { Award, Shield, Target, Handshake, Gem, ChevronRight, ChevronDown, Star, ExternalLink, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, Quote } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
@@ -57,6 +57,7 @@ const AboutSection = () => {
   const transformations = translations.transformations;
   const [photoExpanded, setPhotoExpanded] = useState(false);
   const [expandedReason, setExpandedReason] = useState<number | null>(null);
+  const [transformationsOpen, setTransformationsOpen] = useState(false);
 
   const botLink = profile?.telegram_link_code
     ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
@@ -120,62 +121,82 @@ const AboutSection = () => {
         ))}
       </motion.div>
 
-      {/* ─── Transformations ─── */}
+      {/* ─── Transformations (collapsible) ─── */}
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
         className="mb-6"
       >
-        <h3 className="text-sm font-extrabold uppercase tracking-wider mb-1">{t(transformations.title)}</h3>
-        <p className="text-xs text-muted-foreground mb-3">{t(transformations.subtitle)}</p>
-        <div className="space-y-3">
-          {transformations.items.map((item, i) => {
-            const photos = transformationPhotos[i];
-            return (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, x: -15 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + i * 0.08 }}
-                className="bg-card rounded-2xl border border-border/50 p-4"
-              >
-                {photos && (
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <div className="relative rounded-xl overflow-hidden">
-                      <img src={photos.before} alt="Before" className="w-full h-44 object-cover object-top" />
-                      <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
-                        {lang === 'en' ? 'Before' : 'До'}
-                      </span>
-                    </div>
-                    <div className="relative rounded-xl overflow-hidden">
-                      <img src={photos.after} alt="After" className="w-full h-44 object-cover object-top" />
-                      <span className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
-                        {lang === 'en' ? 'After' : 'После'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
-                      {t(item.name).charAt(0)}
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-bold">{t(item.name)}</h4>
-                      <p className="text-[10px] text-muted-foreground">{t(item.duration)}</p>
-                    </div>
-                  </div>
-                  <div className="bg-primary/15 text-primary text-xs font-extrabold px-2.5 py-1 rounded-lg">
-                    {item.metric}
-                  </div>
-                </div>
-                <p className="text-xs font-bold text-primary mb-1">{t(item.result)}</p>
-                <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
-              </motion.div>
-            );
-          })}
-        </div>
+        <button
+          onClick={() => setTransformationsOpen(!transformationsOpen)}
+          className="w-full flex items-center justify-between mb-1"
+        >
+          <div>
+            <h3 className="text-sm font-extrabold uppercase tracking-wider text-left">{t(transformations.title)}</h3>
+            <p className="text-xs text-muted-foreground text-left">{t(transformations.subtitle)}</p>
+          </div>
+          <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform shrink-0 ml-2 ${transformationsOpen ? 'rotate-180' : ''}`} />
+        </button>
+        <AnimatePresence>
+          {transformationsOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden"
+            >
+              <div className="space-y-3 mt-3">
+                {transformations.items.map((item, i) => {
+                  const photos = transformationPhotos[i];
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, x: -15 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.08 }}
+                      className="bg-card rounded-2xl border border-border/50 p-4"
+                    >
+                      {photos && (
+                        <div className="grid grid-cols-2 gap-2 mb-3">
+                          <div className="relative rounded-xl overflow-hidden">
+                            <img src={photos.before} alt="Before" className="w-full h-44 object-cover object-top" />
+                            <span className="absolute bottom-1 left-1 bg-black/60 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
+                              {lang === 'en' ? 'Before' : 'До'}
+                            </span>
+                          </div>
+                          <div className="relative rounded-xl overflow-hidden">
+                            <img src={photos.after} alt="After" className="w-full h-44 object-cover object-top" />
+                            <span className="absolute bottom-1 left-1 bg-primary/80 text-primary-foreground text-[9px] font-bold px-1.5 py-0.5 rounded-md uppercase">
+                              {lang === 'en' ? 'After' : 'После'}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                            {t(item.name).charAt(0)}
+                          </div>
+                          <div>
+                            <h4 className="text-sm font-bold">{t(item.name)}</h4>
+                            <p className="text-[10px] text-muted-foreground">{t(item.duration)}</p>
+                          </div>
+                        </div>
+                        <div className="bg-primary/15 text-primary text-xs font-extrabold px-2.5 py-1 rounded-lg">
+                          {item.metric}
+                        </div>
+                      </div>
+                      <p className="text-xs font-bold text-primary mb-1">{t(item.result)}</p>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+                    </motion.div>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       {/* ─── Reviews (Google Maps embed) ─── */}

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight, History } from 'lucide-react';
+import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight, History, Camera } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -8,6 +8,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import WhoopWidget from './WhoopWidget';
 import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
+import ClientProgressView from './ClientProgressView';
 
 interface ScheduledSession {
   id: string;
@@ -372,6 +373,18 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
               </button>
 
               {/* Health Tests */}
+
+              {/* Progress Photos */}
+              <AccordionSection
+                icon={<Camera className="w-4 h-4 text-primary" />}
+                title={lang === 'en' ? 'Progress Photos' : 'Фото прогресса'}
+                isOpen={openSection === 'photos'}
+                onToggle={() => toggleSection('photos')}
+              >
+                <ClientProgressView userId={user.id} lang={lang} />
+              </AccordionSection>
+
+              {/* Health Tests */}
               <AccordionSection
                 icon={<ClipboardCheck className="w-4 h-4 text-primary" />}
                 title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
@@ -398,18 +411,20 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                 </p>
                 <div className="space-y-1.5">
                   {[
-                    { sessions: 8, price: 750 },
-                    { sessions: 12, price: 1030 },
-                    { sessions: 20, price: 1599 },
+                    { id: 'consultation', label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, price: 50 },
+                    { id: 'single', label: { en: 'Single Session', ru: 'Разовая тренировка' }, price: 100 },
+                    { id: 'pack8', label: { en: '8 sessions', ru: '8 занятий' }, price: 750 },
+                    { id: 'pack12', label: { en: '12 sessions', ru: '12 занятий' }, price: 1030 },
+                    { id: 'pack20', label: { en: '20 sessions', ru: '20 занятий' }, price: 1599 },
                   ].map((p) => (
                     <a
-                      key={p.sessions}
+                      key={p.id}
                       href="https://revolut.me/illarion"
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center justify-between bg-secondary/20 rounded-lg p-2.5 hover:bg-secondary/40 transition-colors"
                     >
-                      <span className="text-xs font-bold">{p.sessions} {lang === 'en' ? 'sessions' : 'занятий'}</span>
+                      <span className="text-xs font-bold">{p.label[lang]}</span>
                       <span className="text-xs font-extrabold text-primary">{p.price}€</span>
                     </a>
                   ))}
