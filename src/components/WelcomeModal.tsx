@@ -103,6 +103,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
 
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [countryCode, setCountryCode] = useState('+357');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -122,6 +123,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       // In consultation flow, skip welcome and go straight to register
       setStep(consultationFlow ? 'register' : 'welcome');
       setFormError(null);
+      setConfirmPassword('');
     }
   }, [open, consultationFlow]);
 
@@ -131,6 +133,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     if (!name.trim()) return t('Please enter your name', 'Введите ваше имя');
     if (!phoneNumber.trim() || phoneNumber.length < 5) return t('Please enter a valid phone number', 'Введите корректный номер телефона');
     if (password.length < 6) return t('Password must be at least 6 characters', 'Пароль минимум 6 символов');
+    if (password !== confirmPassword) return t('Passwords do not match', 'Пароли не совпадают');
     return null;
   };
 
@@ -392,6 +395,21 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   <div>
                     <PasswordInput value={password} onChange={setPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
                     <PasswordStrength password={password} lang={lang} />
+                  </div>
+                  <div className="relative">
+                    <PasswordInput
+                      value={confirmPassword}
+                      onChange={setConfirmPassword}
+                      placeholder={t('Repeat password', 'Повторите пароль')}
+                      className={`${inputClass} ${confirmPassword && confirmPassword !== password ? 'border-destructive/70' : confirmPassword && confirmPassword === password ? 'border-emerald-500/70' : ''}`}
+                    />
+                    {confirmPassword && (
+                      <p className={`text-[11px] mt-1.5 px-1 ${confirmPassword === password ? 'text-emerald-400' : 'text-destructive'}`}>
+                        {confirmPassword === password
+                          ? t('✓ Passwords match', '✓ Пароли совпадают')
+                          : t('Passwords do not match', 'Пароли не совпадают')}
+                      </p>
+                    )}
                   </div>
 
                   <InlineMessage message={formError} variant="error" />
