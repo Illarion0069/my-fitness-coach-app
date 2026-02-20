@@ -133,50 +133,22 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
   const deleteSession = async (id: string) => {
     const session = sessions.find(s => s.id === id);
 
-    await supabase.from('scheduled_sessions').delete().eq('id', id);
+    // Call edge function with service_role — guaranteed to bypass RLS and restore balance
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const token = authSession?.access_token;
 
-    // Trainer deletes session → ALWAYS restore balance (no 24h restriction for trainer)
-    // Only for one-off sessions (recurring don't deduct immediately)
-    if (session && !session.is_recurring) {
-      let pkg = null;
+    const res = await supabase.functions.invoke('restore-session', {
+      body: { sessionId: id, userId },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
 
-      // Priority 1: find the specific package this session was billed to
-      if (session.package_id) {
-        const { data: linkedPkg } = await supabase
-          .from('client_packages')
-          .select('*')
-          .eq('id', session.package_id)
-          .maybeSingle();
-        if (linkedPkg && linkedPkg.used_sessions > 0) {
-          pkg = linkedPkg;
-        }
-      }
-
-      // Priority 2: find any package for this user with used_sessions > 0
-      // (no is_active filter — package may have been auto-deactivated when exhausted)
-      if (!pkg) {
-        const { data: anyPkgs } = await supabase
-          .from('client_packages')
-          .select('*')
-          .eq('user_id', userId)
-          .gt('used_sessions', 0)
-          .order('created_at', { ascending: false })
-          .limit(1);
-        pkg = anyPkgs?.[0] || null;
-      }
-
-      if (pkg) {
-        const newUsed = pkg.used_sessions - 1;
-        // Restore session + reactivate package if it was auto-deactivated when exhausted
-        await supabase
-          .from('client_packages')
-          .update({
-            used_sessions: newUsed,
-            is_active: true, // reactivate in case it was auto-deactivated
-          })
-          .eq('id', pkg.id);
-      }
+    if (res.error) {
+      console.error('[deleteSession] restore-session error:', res.error);
+      toast({ title: lang === 'en' ? 'Error removing session' : 'Ошибка при удалении', variant: 'destructive' });
+      return;
     }
+
+    console.log('[deleteSession] restore-session result:', res.data);
 
     // Notify about deletion
     if (session) {
