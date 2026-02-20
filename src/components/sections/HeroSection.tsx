@@ -90,13 +90,24 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           >
             {lang === 'en' ? 'RU' : 'EN'}
           </button>
-          <button
-            onClick={onProfileClick}
-            className="flex items-center gap-1.5 gradient-primary text-primary-foreground text-xs font-bold py-2 px-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-95 shadow-[0_2px_12px_hsl(var(--primary)/0.4)]"
-          >
-            <UserRound className="w-3.5 h-3.5" />
-            {lang === 'en' ? 'Sign In' : 'Войти'}
-          </button>
+          {user ? (
+            /* Logged-in: show initials avatar */
+            <button
+              onClick={onProfileClick}
+              className="w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-extrabold text-sm shadow-[0_2px_12px_hsl(var(--primary)/0.4)] hover:opacity-90 transition-opacity active:scale-95"
+            >
+              {getInitials()}
+            </button>
+          ) : (
+            /* Guest: show Sign In button */
+            <button
+              onClick={onProfileClick}
+              className="flex items-center gap-1.5 gradient-primary text-primary-foreground text-xs font-bold py-2 px-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-95 shadow-[0_2px_12px_hsl(var(--primary)/0.4)]"
+            >
+              <UserRound className="w-3.5 h-3.5" />
+              {lang === 'en' ? 'Sign In' : 'Войти'}
+            </button>
+          )}
         </div>
       </div>
 
