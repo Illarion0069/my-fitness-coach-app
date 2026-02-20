@@ -410,12 +410,19 @@ const AdminSection = () => {
                         <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                        {(weeklySessionCounts[client.user_id] || 0) > 0 && (
-                          <span className="text-[10px] bg-secondary text-muted-foreground px-1.5 py-0.5 rounded-md font-semibold flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" />
-                            {weeklySessionCounts[client.user_id]}/{lang === 'en' ? 'wk' : 'нед'}
-                          </span>
-                        )}
+                        {(() => {
+                          const count = weeklySessionCounts[client.user_id] || 0;
+                          return (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold flex items-center gap-0.5 ${
+                              count > 0
+                                ? 'bg-secondary text-muted-foreground'
+                                : 'bg-secondary/40 text-muted-foreground/40'
+                            }`}>
+                              <Clock className="w-2.5 h-2.5" />
+                              {count}/{lang === 'en' ? 'wk' : 'нед'}
+                            </span>
+                          );
+                        })()}
                         {clientPkgs.some((p) => p.is_active) && (
                           <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
                             {clientPkgs.find((p) => p.is_active)!.total_sessions - clientPkgs.find((p) => p.is_active)!.used_sessions} left
