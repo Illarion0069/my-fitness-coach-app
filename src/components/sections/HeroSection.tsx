@@ -125,7 +125,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center mb-4"
         >
-          <h1 className={`font-extrabold uppercase tracking-tight font-heading leading-[1.1] ${lang === 'ru' ? 'text-[2rem]' : 'text-4xl'}`}>
+          <h1 className={`font-extrabold uppercase tracking-tight font-heading leading-[1.05] ${lang === 'ru' ? 'text-[1.6rem]' : 'text-4xl'}`}>
             <span className="text-primary">{t(hero.title.line1)}</span>
             <br />
             <span className="text-foreground">{t(hero.title.line2)}</span>
@@ -141,7 +141,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           transition={{ delay: 0.35, duration: 0.5 }}
           className="text-center mb-6"
         >
-          <p className="text-sm text-muted-foreground">{t(hero.subtitle)}</p>
+          <p className={`text-muted-foreground ${lang === 'ru' ? 'text-[11px]' : 'text-sm'}`}>{t(hero.subtitle)}</p>
           <p className="text-xs text-muted-foreground/70 mt-1">— {t(hero.trainer)}</p>
         </motion.div>
 
@@ -159,7 +159,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
             exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
-            className="gradient-primary text-primary-foreground font-bold py-3.5 px-10 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+            className={`gradient-primary text-primary-foreground font-bold rounded-2xl glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] ${lang === 'ru' ? 'py-3 px-7 text-sm' : 'py-3.5 px-10 text-base'}`}
           >
             {t(hero.cta)}
           </motion.button>
