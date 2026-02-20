@@ -4,10 +4,10 @@ import { ChevronDown, UserRound, CalendarDays } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
-import LanguageSwitch from '@/components/LanguageSwitch';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingModal from '@/components/BookingModal';
 import ClientDashboard from '@/components/ClientDashboard';
+import LanguageSwitch from '@/components/LanguageSwitch';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HeroSectionProps {
@@ -16,7 +16,7 @@ interface HeroSectionProps {
 }
 
 const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
-  const { t, lang } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
   const [bookingOpen, setBookingOpen] = useState(false);
@@ -84,7 +84,12 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
       <div className="flex items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
         <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         <div className="flex items-center gap-2">
-          <LanguageSwitch />
+          <button
+            onClick={() => setLang(lang === 'en' ? 'ru' : 'en')}
+            className="text-[11px] font-bold text-muted-foreground hover:text-foreground border border-border/50 bg-secondary/50 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            {lang === 'en' ? 'RU' : 'EN'}
+          </button>
           <button
             onClick={onProfileClick}
             className="flex items-center gap-1.5 gradient-primary text-primary-foreground text-xs font-bold py-2 px-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-95 shadow-[0_2px_12px_hsl(var(--primary)/0.4)]"
