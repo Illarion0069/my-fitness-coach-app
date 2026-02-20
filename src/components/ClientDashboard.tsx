@@ -273,20 +273,44 @@ const ClientDashboard = () => {
       <div className="flex flex-col items-center px-5 pt-8 pb-5">
         {/* Avatar */}
         <div className="relative mb-4">
-          <div className="w-28 h-28 rounded-full overflow-hidden border-4 border-primary/40 shadow-[0_4px_30px_hsl(var(--primary)/0.3)]">
+          {/* Pulsing ring when no avatar */}
+          {!avatarUrl && (
+            <>
+              <div className="absolute inset-0 rounded-full gradient-primary opacity-30 animate-ping" style={{ animationDuration: '2s' }} />
+              <div className="absolute inset-0 rounded-full gradient-primary opacity-15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
+            </>
+          )}
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            className={`relative w-28 h-28 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
+              avatarUrl
+                ? 'border-4 border-primary/40 shadow-[0_4px_30px_hsl(var(--primary)/0.3)]'
+                : 'border-4 border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25),0_4px_30px_hsl(var(--primary)/0.4)]'
+            }`}
+          >
             {avatarUrl ? (
               <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full gradient-primary flex items-center justify-center">
-                <span className="text-primary-foreground font-extrabold text-3xl">{getInitials()}</span>
+              <div className="w-full h-full gradient-primary flex flex-col items-center justify-center gap-1">
+                <span className="text-primary-foreground font-extrabold text-2xl leading-none">{getInitials()}</span>
+                <span className="text-primary-foreground/80 text-[9px] font-bold uppercase tracking-wider">
+                  {lang === 'en' ? 'Add photo' : 'Фото'}
+                </span>
               </div>
             )}
+            {/* Overlay on hover */}
+            <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+              <Camera className="w-6 h-6 text-white" />
+            </div>
           </div>
           {/* Upload button */}
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploadingAvatar}
-            className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-md hover:scale-110 transition-transform active:scale-95"
+            className={`absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 ${
+              avatarUrl ? 'bg-primary' : 'gradient-primary ring-2 ring-background animate-bounce'
+            }`}
+            style={!avatarUrl ? { animationDuration: '1.5s' } : {}}
           >
             {uploadingAvatar
               ? <Loader2 className="w-4 h-4 text-primary-foreground animate-spin" />
@@ -299,6 +323,18 @@ const ClientDashboard = () => {
         {/* Name */}
         <h2 className="text-xl font-extrabold font-heading text-foreground">{profile?.full_name}</h2>
         <p className="text-xs text-muted-foreground mt-0.5">{profile?.phone}</p>
+
+        {/* Hint when no avatar */}
+        {!avatarUrl && (
+          <motion.p
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="text-xs text-primary font-semibold mt-2 animate-pulse"
+          >
+            👆 {lang === 'en' ? 'Tap to add your photo' : 'Нажмите, чтобы добавить фото'}
+          </motion.p>
+        )}
       </div>
 
       <div className="px-5 space-y-3">
