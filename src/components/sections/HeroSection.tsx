@@ -82,18 +82,17 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
     <section className="relative min-h-screen flex flex-col bg-background">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
-        <div className="flex items-center gap-2.5">
+        <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
+        <div className="flex items-center gap-2">
+          <LanguageSwitch />
           <button
             onClick={onProfileClick}
-            className="w-8 h-8 rounded-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 shrink-0"
+            className="flex items-center gap-1.5 gradient-primary text-primary-foreground text-xs font-bold py-2 px-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-95 shadow-[0_2px_12px_hsl(var(--primary)/0.4)]"
           >
-            <div className="w-8 h-8 rounded-xl bg-secondary border border-border/50 flex items-center justify-center">
-              <UserRound className="w-4 h-4 text-muted-foreground" />
-            </div>
+            <UserRound className="w-3.5 h-3.5" />
+            {lang === 'en' ? 'Sign In' : 'Войти'}
           </button>
-          <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         </div>
-        <LanguageSwitch />
       </div>
 
       <div className="flex-1 flex flex-col items-center px-5">
