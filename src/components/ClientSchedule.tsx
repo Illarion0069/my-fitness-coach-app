@@ -12,6 +12,7 @@ interface ScheduledSession {
   recurrence_day: number | null;
   recurrence_time: string | null;
   is_deducted: boolean;
+  package_id: string | null;
 }
 
 const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -134,16 +135,35 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
     await supabase.from('scheduled_sessions').delete().eq('id', id);
 
-    // Auto-restore to active package (only for one-off sessions)
+    // Auto-restore session to package (only for one-off sessions that had a session deducted)
     if (session && !session.is_recurring) {
-      const { data: pkgs } = await supabase
-        .from('client_packages')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      const pkg = pkgs?.[0];
+      let pkg = null;
+
+      // First try: find the specific package this session was linked to
+      if (session.package_id) {
+        const { data: linkedPkg } = await supabase
+          .from('client_packages')
+          .select('*')
+          .eq('id', session.package_id)
+          .maybeSingle();
+        if (linkedPkg && linkedPkg.used_sessions > 0) {
+          pkg = linkedPkg;
+        }
+      }
+
+      // Fallback: find any package for this user that has used sessions > 0
+      // (most recently created active package first, then any package)
+      if (!pkg) {
+        const { data: activePkgs } = await supabase
+          .from('client_packages')
+          .select('*')
+          .eq('user_id', userId)
+          .gt('used_sessions', 0)
+          .order('created_at', { ascending: false })
+          .limit(1);
+        pkg = activePkgs?.[0] || null;
+      }
+
       if (pkg && pkg.used_sessions > 0) {
         await supabase
           .from('client_packages')
