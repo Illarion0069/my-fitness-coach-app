@@ -305,6 +305,7 @@ Deno.serve(async (req) => {
           session_date: date,
           session_time: time,
           is_recurring: false,
+          package_id: pkg?.id || null, // link session to the package it will be billed to
           notes: pendingPayment ? `⏳ PENDING PAYMENT: ${selectedPackageSessions || '?'} sessions (${selectedPackagePrice || '?'}€)` : null,
         })
         .select()
@@ -321,16 +322,14 @@ Deno.serve(async (req) => {
       // Deduct from package (only if has balance)
       let remaining: number | string = '?';
       if (pkg) {
-        await supabase
-          .from('client_packages')
-          .update({ used_sessions: pkg.used_sessions + 1 })
-          .eq('id', pkg.id);
-        remaining = pkg.total_sessions - pkg.used_sessions - 1;
-
+        const newUsed = pkg.used_sessions + 1;
+        const updates: Record<string, unknown> = { used_sessions: newUsed };
         // Auto-deactivate if now exhausted
-        if (pkg.used_sessions + 1 >= pkg.total_sessions) {
-          await supabase.from('client_packages').update({ is_active: false }).eq('id', pkg.id);
+        if (newUsed >= pkg.total_sessions) {
+          updates.is_active = false;
         }
+        await supabase.from('client_packages').update(updates).eq('id', pkg.id);
+        remaining = pkg.total_sessions - newUsed;
       }
 
       // Get client profile for notifications
