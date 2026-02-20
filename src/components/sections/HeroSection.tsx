@@ -125,7 +125,7 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center mb-4"
         >
-          <h1 className="text-4xl font-extrabold uppercase tracking-tight font-heading leading-[1.1]">
+          <h1 className={`font-extrabold uppercase tracking-tight font-heading leading-[1.1] ${lang === 'ru' ? 'text-[2rem]' : 'text-4xl'}`}>
             <span className="text-primary">{t(hero.title.line1)}</span>
             <br />
             <span className="text-foreground">{t(hero.title.line2)}</span>
