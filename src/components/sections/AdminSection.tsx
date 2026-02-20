@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock, Search, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -44,6 +44,8 @@ const AdminSection = () => {
   const [inviting, setInviting] = useState(false);
   const [viewMode, setViewMode] = useState<'clients' | 'calendar'>('clients');
   const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
 
   const fetchData = async () => {
     const [{ data: profileData }, { data: pkgData }, { data: orderData }, { data: sessData }] = await Promise.all([
@@ -157,6 +159,31 @@ const AdminSection = () => {
     return counts;
   }, [allSessions]);
 
+  // Filtered + searched client order
+  const filteredClientOrder = useMemo(() => {
+    return clientOrder.filter(userId => {
+      const client = clients.find(c => c.user_id === userId);
+      if (!client) return false;
+
+      // Search filter
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const match = client.full_name.toLowerCase().includes(q) || client.email.toLowerCase().includes(q) || client.phone?.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+
+      // Active package filter
+      if (filterActive !== 'all') {
+        const clientPkgs = packages[userId] || [];
+        const hasActive = clientPkgs.some(p => p.is_active);
+        if (filterActive === 'active' && !hasActive) return false;
+        if (filterActive === 'inactive' && hasActive) return false;
+      }
+
+      return true;
+    });
+  }, [clientOrder, clients, packages, searchQuery, filterActive]);
+
 
   const sendNotification = async (client: Profile, message: string) => {
     const { data } = await supabase.functions.invoke('send-telegram', {
@@ -264,7 +291,7 @@ const AdminSection = () => {
             <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
           </div>
         ) : (
-        <>
+        <div className="space-y-0">
         {/* Add client form */}
         {showAddClient && (
           <motion.div
@@ -312,8 +339,55 @@ const AdminSection = () => {
         {clients.length === 0 ? (
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
+          <>
+          {/* Search + filter bar */}
+          <div className="space-y-2 mb-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder={lang === 'en' ? 'Search clients...' : 'Поиск клиентов...'}
+                className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-9 pr-9 py-2.5 text-xs focus:outline-none focus:border-primary/50 transition-colors"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {(['all', 'active', 'inactive'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setFilterActive(f)}
+                  className={`flex-1 text-[11px] font-bold py-1.5 rounded-lg transition-colors ${
+                    filterActive === f
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {f === 'all'
+                    ? (lang === 'en' ? 'All' : 'Все')
+                    : f === 'active'
+                    ? (lang === 'en' ? 'Active pkg' : 'С пакетом')
+                    : (lang === 'en' ? 'No pkg' : 'Без пакета')}
+                </button>
+              ))}
+            </div>
+            {(searchQuery || filterActive !== 'all') && (
+              <p className="text-[11px] text-muted-foreground text-center">
+                {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
+              </p>
+            )}
+          </div>
+
           <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-3">
-            {clientOrder.map((userId) => {
+            {filteredClientOrder.map((userId) => {
               const client = clients.find(c => c.user_id === userId);
               if (!client) return null;
               const isOpen = selectedClient === client.user_id;
@@ -380,8 +454,9 @@ const AdminSection = () => {
               );
             })}
           </Reorder.Group>
+          </>
         )}
-        </>
+        </div>
         )}
       </div>
     </section>
