@@ -163,14 +163,12 @@ const AppContent = () => {
         }}
       />
 
-      <AnimatePresence>
-        {showGuide && (
-          <AppGuide onComplete={() => {
-            setShowGuide(false);
-            localStorage.setItem('app_guide_seen', '1');
-          }} />
-        )}
-      </AnimatePresence>
+      {showGuide && (
+        <AppGuide onComplete={() => {
+          setShowGuide(false);
+          localStorage.setItem('app_guide_seen', '1');
+        }} />
+      )}
     </div>
   );
 };
