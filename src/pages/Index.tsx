@@ -10,6 +10,7 @@ import AboutSection from '@/components/sections/AboutSection';
 import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
+import AppGuide from '@/components/AppGuide';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -21,6 +22,9 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
+  const [showGuide, setShowGuide] = useState(() => {
+    return !localStorage.getItem('app_guide_seen') && !user;
+  });
   const containerRef = useRef<HTMLDivElement>(null);
 
   const sections = ['home', 'test', 'pricing', 'about', ...(isTrainer ? ['admin'] : [])];
@@ -66,6 +70,7 @@ const AppContent = () => {
   // Reset state on logout
   useEffect(() => {
     if (!user) setActiveSection('home');
+    if (user) setShowGuide(false);
   }, [user]);
 
   // Handle cancel_session URL parameter (from Telegram cancel button)
@@ -157,6 +162,15 @@ const AppContent = () => {
           }
         }}
       />
+
+      <AnimatePresence>
+        {showGuide && (
+          <AppGuide onComplete={() => {
+            setShowGuide(false);
+            localStorage.setItem('app_guide_seen', '1');
+          }} />
+        )}
+      </AnimatePresence>
     </div>
   );
 };
