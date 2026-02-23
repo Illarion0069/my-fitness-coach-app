@@ -58,7 +58,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          // Await profile fetch BEFORE setting loading to false
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
           setIsTrainer(false);
@@ -93,12 +94,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
     } else {
       // Normal session recovery
-      supabase.auth.getSession().then(({ data: { session } }) => {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         console.log('[Auth] getSession:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          fetchProfile(session.user.id);
+          await fetchProfile(session.user.id);
         }
         setLoading(false);
       });
