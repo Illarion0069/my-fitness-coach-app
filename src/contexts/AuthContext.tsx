@@ -51,6 +51,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // Safety timeout — never stay on splash longer than 3s
+    const safetyTimer = setTimeout(() => {
+      setLoading(false);
+    }, 3000);
+
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -58,12 +63,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // Await profile fetch BEFORE setting loading to false
-          await fetchProfile(session.user.id);
+          // Fetch profile but don't block forever
+          try {
+            await fetchProfile(session.user.id);
+          } catch (e) {
+            console.error('[Auth] fetchProfile failed:', e);
+          }
         } else {
           setProfile(null);
           setIsTrainer(false);
         }
+        clearTimeout(safetyTimer);
         setLoading(false);
       }
     );
@@ -76,7 +86,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const refreshToken = hashParams.get('refresh_token');
 
     if (accessToken && refreshToken) {
-      // Implicit flow: tokens in hash fragment
       console.log('[Auth] Implicit flow tokens detected in URL hash');
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
         if (error) console.error('[Auth] setSession failed:', error);
@@ -84,7 +93,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState(null, '', window.location.pathname);
       });
     } else if (code) {
-      // PKCE flow: code in query params
       console.log('[Auth] PKCE code detected in URL');
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) console.error('[Auth] Code exchange failed:', error);
@@ -93,19 +101,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState(null, '', url.pathname + url.search);
       });
     } else {
-      // Normal session recovery
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
-        console.log('[Auth] getSession:', !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-        }
-        setLoading(false);
-      });
+      // Normal session recovery — no separate getSession needed,
+      // onAuthStateChange INITIAL_SESSION handles it
     }
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(safetyTimer);
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
