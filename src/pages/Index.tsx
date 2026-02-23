@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import BookingModal from '@/components/BookingModal';
+import trainerLogo from '@/assets/trainer-logo.png';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
@@ -12,7 +14,6 @@ import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { AnimatePresence, motion } from 'framer-motion';
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
@@ -109,11 +110,25 @@ const AppContent = () => {
     }
   };
 
-  // Show a neutral loading screen while auth is resolving to prevent UI flash
+  // Branded loading screen while auth is resolving
   if (loading) {
     return (
       <div className="dark h-screen bg-background flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+        <motion.img
+          src={trainerLogo}
+          alt="Loading"
+          className="w-20 h-20 object-contain"
+          initial={{ opacity: 0.4, scale: 0.9 }}
+          animate={{
+            opacity: [0.4, 1, 0.4],
+            scale: [0.9, 1.1, 0.9],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
       </div>
     );
   }
