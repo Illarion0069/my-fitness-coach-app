@@ -110,8 +110,10 @@ const AppContent = () => {
     }
   };
 
-  // Skip loading screen entirely — render immediately
-
+  // While auth is resolving, show empty dark screen (instant, no animation)
+  if (loading) {
+    return <div className="dark h-screen bg-background" />;
+  }
   return (
     <div className="dark h-screen bg-background text-foreground flex flex-col">
       <div
