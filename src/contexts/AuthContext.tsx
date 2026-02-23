@@ -60,10 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         console.log('[Auth] onAuthStateChange:', _event, 'hasSession:', !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
         if (session?.user) {
-          // Fetch profile but don't block forever
+          // Fetch profile BEFORE setting user to avoid flash of wrong UI
           try {
             await fetchProfile(session.user.id);
           } catch (e) {
@@ -73,6 +71,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setProfile(null);
           setIsTrainer(false);
         }
+        // Set user/session AFTER profile+role are resolved
+        setSession(session);
+        setUser(session?.user ?? null);
         clearTimeout(safetyTimer);
         setLoading(false);
       }
