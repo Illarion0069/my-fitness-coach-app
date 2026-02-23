@@ -110,28 +110,7 @@ const AppContent = () => {
     }
   };
 
-  // Branded loading screen while auth is resolving
-  if (loading) {
-    return (
-      <div className="dark h-screen bg-background flex items-center justify-center">
-        <motion.img
-          src={trainerLogo}
-          alt="Loading"
-          className="w-20 h-20 object-contain"
-          initial={{ opacity: 0.4, scale: 0.9 }}
-          animate={{
-            opacity: [0.4, 1, 0.4],
-            scale: [0.9, 1.1, 0.9],
-          }}
-          transition={{
-            duration: 1.5,
-            repeat: Infinity,
-            ease: 'easeInOut',
-          }}
-        />
-      </div>
-    );
-  }
+  // Skip loading screen entirely — render immediately
 
   return (
     <div className="dark h-screen bg-background text-foreground flex flex-col">
