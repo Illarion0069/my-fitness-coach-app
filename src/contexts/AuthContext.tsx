@@ -112,11 +112,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    console.log('[Auth] signOut called');
+    try {
+      await supabase.auth.signOut();
+      console.log('[Auth] signOut success');
+    } catch (e) {
+      console.error('[Auth] signOut error:', e);
+    }
+    // Always clear state regardless of API result
     setUser(null);
     setSession(null);
     setProfile(null);
     setIsTrainer(false);
+    // Force clear localStorage as fallback
+    localStorage.removeItem('sb-yzzgkjwyhnvlyqldvzxf-auth-token');
   };
 
   return (
