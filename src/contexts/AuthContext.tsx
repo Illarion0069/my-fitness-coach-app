@@ -50,36 +50,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    let profileFetchId = 0; // prevent stale fetches
+    let profileFetchId = 0;
+    let initialHandled = false;
+
+    const handleSession = async (session: Session | null) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        const currentFetchId = ++profileFetchId;
+        try {
+          const [profileRes, rolesRes] = await Promise.all([
+            supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle(),
+            supabase.from('user_roles').select('role').eq('user_id', session.user.id),
+          ]);
+          if (currentFetchId !== profileFetchId) return;
+          const data = profileRes.data;
+          setProfile(data ? { id: data.id, user_id: data.user_id, full_name: data.full_name, email: data.email, phone: data.phone, telegram_link_code: data.telegram_link_code, telegram_chat_id: data.telegram_chat_id } : null);
+          setIsTrainer(rolesRes.data?.some((r) => r.role === 'trainer') ?? false);
+        } finally {
+          if (currentFetchId === profileFetchId) setLoading(false);
+        }
+      } else {
+        profileFetchId++;
+        setProfile(null);
+        setIsTrainer(false);
+        setLoading(false);
+      }
+    };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         console.log('[Auth] onAuthStateChange:', _event, 'hasSession:', !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          const currentFetchId = ++profileFetchId;
-          try {
-            const [profileRes, rolesRes] = await Promise.all([
-              supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle(),
-              supabase.from('user_roles').select('role').eq('user_id', session.user.id),
-            ]);
-            // Only apply if this is still the latest fetch
-            if (currentFetchId !== profileFetchId) return;
-            const data = profileRes.data;
-            setProfile(data ? { id: data.id, user_id: data.user_id, full_name: data.full_name, email: data.email, phone: data.phone, telegram_link_code: data.telegram_link_code, telegram_chat_id: data.telegram_chat_id } : null);
-            setIsTrainer(rolesRes.data?.some((r) => r.role === 'trainer') ?? false);
-          } finally {
-            if (currentFetchId === profileFetchId) setLoading(false);
-          }
-        } else {
-          profileFetchId++;
-          setProfile(null);
-          setIsTrainer(false);
-          setLoading(false);
+        if (_event === 'INITIAL_SESSION') {
+          initialHandled = true;
         }
+        handleSession(session);
       }
     );
+
+    // Fallback: if INITIAL_SESSION hasn't fired yet, manually recover
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('[Auth] getSession:', !!session, 'initialHandled:', initialHandled);
+      if (!initialHandled) {
+        handleSession(session);
+      }
+    });
 
     // Check for magic link tokens in URL
     const url = new URL(window.location.href);
@@ -102,7 +117,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState(null, '', url.pathname + url.search);
       });
     }
-    // No need to call getSession — onAuthStateChange fires INITIAL_SESSION automatically
 
     return () => subscription.unsubscribe();
   }, []);
