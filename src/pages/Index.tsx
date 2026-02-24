@@ -1,7 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import BookingModal from '@/components/BookingModal';
-import trainerLogo from '@/assets/trainer-logo.png';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
@@ -14,6 +12,7 @@ import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { AnimatePresence, motion } from 'framer-motion';
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
@@ -110,10 +109,6 @@ const AppContent = () => {
     }
   };
 
-  // While auth is resolving, show empty dark screen (instant, no animation)
-  if (loading) {
-    return <div className="dark h-screen bg-background" />;
-  }
   return (
     <div className="dark h-screen bg-background text-foreground flex flex-col">
       <div

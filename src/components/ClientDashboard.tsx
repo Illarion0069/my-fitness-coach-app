@@ -490,18 +490,8 @@ const ClientDashboard = () => {
 
         {/* Sign out */}
         <button
-          onClick={async (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            try {
-              await signOut();
-            } catch (err) {
-              console.error('SignOut error:', err);
-            }
-            // Force reload as ultimate fallback
-            window.location.reload();
-          }}
-          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors py-4 mt-2 active:scale-95"
+          onClick={signOut}
+          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors py-3 mt-2"
         >
           <LogOut className="w-4 h-4" />
           {lang === 'en' ? 'Sign out' : 'Выйти'}

@@ -51,30 +51,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Safety timeout — never stay on splash longer than 3s
-    const safetyTimer = setTimeout(() => {
-      setLoading(false);
-    }, 3000);
-
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         console.log('[Auth] onAuthStateChange:', _event, 'hasSession:', !!session);
+        setSession(session);
+        setUser(session?.user ?? null);
         if (session?.user) {
-          // Fetch profile BEFORE setting user to avoid flash of wrong UI
-          try {
-            await fetchProfile(session.user.id);
-          } catch (e) {
-            console.error('[Auth] fetchProfile failed:', e);
-          }
+          setTimeout(() => fetchProfile(session.user.id), 0);
         } else {
           setProfile(null);
           setIsTrainer(false);
         }
-        // Set user/session AFTER profile+role are resolved
-        setSession(session);
-        setUser(session?.user ?? null);
-        clearTimeout(safetyTimer);
         setLoading(false);
       }
     );
@@ -87,6 +75,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const refreshToken = hashParams.get('refresh_token');
 
     if (accessToken && refreshToken) {
+      // Implicit flow: tokens in hash fragment
       console.log('[Auth] Implicit flow tokens detected in URL hash');
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
         if (error) console.error('[Auth] setSession failed:', error);
@@ -94,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState(null, '', window.location.pathname);
       });
     } else if (code) {
+      // PKCE flow: code in query params
       console.log('[Auth] PKCE code detected in URL');
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) console.error('[Auth] Code exchange failed:', error);
@@ -102,31 +92,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         window.history.replaceState(null, '', url.pathname + url.search);
       });
     } else {
-      // Normal session recovery — no separate getSession needed,
-      // onAuthStateChange INITIAL_SESSION handles it
+      // Normal session recovery
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        console.log('[Auth] getSession:', !!session);
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          fetchProfile(session.user.id);
+        }
+        setLoading(false);
+      });
     }
 
-    return () => {
-      clearTimeout(safetyTimer);
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signOut = async () => {
-    console.log('[Auth] signOut called');
-    try {
-      await supabase.auth.signOut();
-      console.log('[Auth] signOut success');
-    } catch (e) {
-      console.error('[Auth] signOut error:', e);
-    }
-    // Always clear state regardless of API result
+    await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setProfile(null);
     setIsTrainer(false);
-    // Force clear localStorage as fallback
-    localStorage.removeItem('sb-yzzgkjwyhnvlyqldvzxf-auth-token');
   };
 
   return (
