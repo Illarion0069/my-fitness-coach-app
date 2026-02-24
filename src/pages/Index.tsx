@@ -1,18 +1,19 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, lazy, Suspense } from 'react';
 import BookingModal from '@/components/BookingModal';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
 import HeroSection from '@/components/sections/HeroSection';
-import TestSection from '@/components/sections/TestSection';
-import PricingSection from '@/components/sections/PricingSection';
-import AboutSection from '@/components/sections/AboutSection';
-import AdminSection from '@/components/sections/AdminSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence, motion } from 'framer-motion';
+
+const TestSection = lazy(() => import('@/components/sections/TestSection'));
+const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
+const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
+const AdminSection = lazy(() => import('@/components/sections/AdminSection'));
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
@@ -127,7 +128,9 @@ const AppContent = () => {
             exit="exit"
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
           >
-            {renderSection()}
+            <Suspense fallback={<div className="min-h-screen bg-background" />}>
+              {renderSection()}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </div>
