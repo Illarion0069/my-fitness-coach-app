@@ -50,16 +50,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Set up auth state listener FIRST
+    let profileFetchId = 0; // prevent stale fetches
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         console.log('[Auth] onAuthStateChange:', _event, 'hasSession:', !!session);
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          // loading stays true until fetchProfile completes
-          fetchProfile(session.user.id);
+          const currentFetchId = ++profileFetchId;
+          try {
+            const [profileRes, rolesRes] = await Promise.all([
+              supabase.from('profiles').select('*').eq('user_id', session.user.id).maybeSingle(),
+              supabase.from('user_roles').select('role').eq('user_id', session.user.id),
+            ]);
+            // Only apply if this is still the latest fetch
+            if (currentFetchId !== profileFetchId) return;
+            const data = profileRes.data;
+            setProfile(data ? { id: data.id, user_id: data.user_id, full_name: data.full_name, email: data.email, phone: data.phone, telegram_link_code: data.telegram_link_code, telegram_chat_id: data.telegram_chat_id } : null);
+            setIsTrainer(rolesRes.data?.some((r) => r.role === 'trainer') ?? false);
+          } finally {
+            if (currentFetchId === profileFetchId) setLoading(false);
+          }
         } else {
+          profileFetchId++;
           setProfile(null);
           setIsTrainer(false);
           setLoading(false);
@@ -75,35 +89,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const refreshToken = hashParams.get('refresh_token');
 
     if (accessToken && refreshToken) {
-      // Implicit flow: tokens in hash fragment
       console.log('[Auth] Implicit flow tokens detected in URL hash');
       supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken }).then(({ error }) => {
         if (error) console.error('[Auth] setSession failed:', error);
-        else console.log('[Auth] Session set from hash tokens');
         window.history.replaceState(null, '', window.location.pathname);
       });
     } else if (code) {
-      // PKCE flow: code in query params
       console.log('[Auth] PKCE code detected in URL');
       supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
         if (error) console.error('[Auth] Code exchange failed:', error);
-        else console.log('[Auth] Code exchange success');
         url.searchParams.delete('code');
         window.history.replaceState(null, '', url.pathname + url.search);
       });
-    } else {
-      // Normal session recovery
-      supabase.auth.getSession().then(({ data: { session } }) => {
-        console.log('[Auth] getSession:', !!session);
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        } else {
-          setLoading(false);
-        }
-      });
     }
+    // No need to call getSession — onAuthStateChange fires INITIAL_SESSION automatically
 
     return () => subscription.unsubscribe();
   }, []);
