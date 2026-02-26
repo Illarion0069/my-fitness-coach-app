@@ -5,10 +5,29 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+type ScheduledSession = {
+  id: string;
+  user_id: string;
+  session_date: string;
+  is_recurring: boolean;
+  recurrence_day: number | null;
+  recurring_exceptions: string[] | null;
+  is_deducted: boolean;
+  deducted_at: string | null;
+};
+
+type ClientPackage = {
+  id: string;
+  user_id: string;
+  is_active: boolean;
+  used_sessions: number;
+  total_sessions: number;
+  expires_at: string | null;
+};
+
 /** Get current date/time in Cyprus timezone */
 function getCyprusDate(): Date {
   const now = new Date();
-  // Format in Cyprus timezone to get the local date components
   const parts = new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Nicosia',
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -17,6 +36,45 @@ function getCyprusDate(): Date {
 
   const get = (type: string) => parts.find(p => p.type === type)?.value || '';
   return new Date(`${get('year')}-${get('month')}-${get('day')}T${get('hour')}:${get('minute')}:00`);
+}
+
+function toDateStr(date: Date): string {
+  return date.toISOString().split('T')[0];
+}
+
+function addDays(dateStr: string, days: number): string {
+  const date = new Date(`${dateStr}T00:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return toDateStr(date);
+}
+
+function dayOfWeek(dateStr: string): number {
+  return new Date(`${dateStr}T00:00:00Z`).getUTCDay();
+}
+
+function buildRecurringDueDates(session: ScheduledSession, todayStr: string): string[] {
+  if (!session.is_recurring || session.recurrence_day === null) return [];
+
+  const exceptions = new Set((session.recurring_exceptions || []).map(String));
+  const lastDeductedDate = session.deducted_at ? toDateStr(new Date(session.deducted_at)) : null;
+
+  let cursor = session.session_date;
+  if (lastDeductedDate) {
+    const nextAfterLastDeduction = addDays(lastDeductedDate, 1);
+    cursor = nextAfterLastDeduction > cursor ? nextAfterLastDeduction : cursor;
+  }
+
+  if (cursor > todayStr) return [];
+
+  const dueDates: string[] = [];
+  while (cursor <= todayStr) {
+    if (dayOfWeek(cursor) === session.recurrence_day && !exceptions.has(cursor)) {
+      dueDates.push(cursor);
+    }
+    cursor = addDays(cursor, 1);
+  }
+
+  return dueDates;
 }
 
 Deno.serve(async (req) => {
@@ -30,118 +88,162 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceKey);
 
     const cyprusNow = getCyprusDate();
-    const todayStr = cyprusNow.toISOString().split('T')[0]; // YYYY-MM-DD in Cyprus TZ
-    const dayOfWeek = cyprusNow.getDay(); // 0=Sun .. 6=Sat
+    const todayStr = toDateStr(cyprusNow);
 
-    console.log(`[deduct-sessions] Running for Cyprus date ${todayStr}, dayOfWeek=${dayOfWeek}`);
+    console.log(`[deduct-sessions] Running for Cyprus date ${todayStr}`);
 
-    // 1. One-off sessions for today, not yet deducted
-    const { data: oneOffSessions, error: e1 } = await supabase
+    // 1) One-off sessions: deduct any pending session up to today (catch-up)
+    const { data: oneOffSessions, error: oneOffError } = await supabase
       .from('scheduled_sessions')
-      .select('*')
-      .eq('session_date', todayStr)
+      .select('id,user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
       .eq('is_recurring', false)
-      .eq('is_deducted', false);
+      .eq('is_deducted', false)
+      .lte('session_date', todayStr);
 
-    if (e1) console.error('[deduct-sessions] Error fetching one-off:', e1.message);
+    if (oneOffError) console.error('[deduct-sessions] Error fetching one-off:', oneOffError.message);
 
-    // 2. Recurring sessions for today's day of week
-    const { data: recurringSessions, error: e2 } = await supabase
+    // 2) Recurring sessions: process all and calculate due occurrences up to today
+    const { data: recurringSessions, error: recurringError } = await supabase
       .from('scheduled_sessions')
-      .select('*')
-      .eq('is_recurring', true)
-      .eq('recurrence_day', dayOfWeek);
+      .select('id,user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
+      .eq('is_recurring', true);
 
-    if (e2) console.error('[deduct-sessions] Error fetching recurring:', e2.message);
+    if (recurringError) console.error('[deduct-sessions] Error fetching recurring:', recurringError.message);
 
-    // Filter recurring: skip exceptions & already deducted today
-    const recurringToDeduct = (recurringSessions || []).filter(s => {
-      if (s.recurring_exceptions?.includes(todayStr)) {
-        console.log(`  Session ${s.id} — exception for ${todayStr}, skip`);
-        return false;
+    type DeductionCandidate = {
+      session: ScheduledSession;
+      dueDates: string[];
+      dueCount: number;
+    };
+
+    const candidates: DeductionCandidate[] = [];
+
+    for (const session of (oneOffSessions || []) as ScheduledSession[]) {
+      candidates.push({ session, dueDates: [session.session_date], dueCount: 1 });
+    }
+
+    for (const session of (recurringSessions || []) as ScheduledSession[]) {
+      const dueDates = buildRecurringDueDates(session, todayStr);
+      if (dueDates.length > 0) {
+        candidates.push({ session, dueDates, dueCount: dueDates.length });
       }
-      if (s.deducted_at) {
-        const lastDeducted = new Date(s.deducted_at).toISOString().split('T')[0];
-        if (lastDeducted === todayStr) {
-          console.log(`  Session ${s.id} — already deducted today, skip`);
-          return false;
-        }
-      }
-      return true;
-    });
+    }
 
-    const allToDeduct = [...(oneOffSessions || []), ...recurringToDeduct];
-    console.log(`[deduct-sessions] Total to deduct: ${allToDeduct.length}`);
+    console.log(`[deduct-sessions] Total sessions with pending deductions: ${candidates.length}`);
 
-    let deducted = 0;
+    let deductedSessions = 0;
     let skipped = 0;
     const errors: string[] = [];
 
-    for (const session of allToDeduct) {
+    for (const candidate of candidates) {
+      const { session, dueCount, dueDates } = candidate;
+
       try {
-        // Find active, non-expired package for this user
-        const { data: packages } = await supabase
+        const { data: packages, error: packageError } = await supabase
           .from('client_packages')
-          .select('*')
+          .select('id,user_id,is_active,used_sessions,total_sessions,expires_at')
           .eq('user_id', session.user_id)
           .eq('is_active', true)
           .order('created_at', { ascending: true })
           .limit(1);
 
-        const pkg = packages?.[0];
-        if (!pkg) {
-          console.log(`  User ${session.user_id} — no active package, skip`);
-          skipped++;
+        if (packageError) {
+          errors.push(`session ${session.id}: package fetch failed (${packageError.message})`);
           continue;
         }
 
-        // Check expiration
+        const pkg = (packages?.[0] as ClientPackage | undefined);
+        if (!pkg) {
+          console.log(`  User ${session.user_id} — no active package, skip (${dueCount} due)`);
+          skipped += dueCount;
+          continue;
+        }
+
         if (pkg.expires_at && new Date(pkg.expires_at) < new Date()) {
           console.log(`  User ${session.user_id} — package ${pkg.id} expired (${pkg.expires_at}), skip`);
-          skipped++;
+          skipped += dueCount;
           continue;
         }
 
-        if (pkg.used_sessions >= pkg.total_sessions) {
+        const remaining = Math.max(pkg.total_sessions - pkg.used_sessions, 0);
+        if (remaining <= 0) {
           console.log(`  User ${session.user_id} — package ${pkg.id} fully used (${pkg.used_sessions}/${pkg.total_sessions}), skip`);
-          skipped++;
+          skipped += dueCount;
           continue;
         }
 
-        // Deduct one session from package
-        const { error: updPkgErr } = await supabase
+        const toDeductNow = Math.min(dueCount, remaining);
+        const newUsedSessions = pkg.used_sessions + toDeductNow;
+
+        const { error: updatePackageError } = await supabase
           .from('client_packages')
-          .update({ used_sessions: pkg.used_sessions + 1 })
+          .update({ used_sessions: newUsedSessions })
           .eq('id', pkg.id)
-          .eq('used_sessions', pkg.used_sessions); // optimistic lock — prevents double deduction
+          .eq('used_sessions', pkg.used_sessions); // optimistic lock
 
-        if (updPkgErr) {
-          console.error(`  Failed to update package ${pkg.id}:`, updPkgErr.message);
-          errors.push(`pkg ${pkg.id}: ${updPkgErr.message}`);
+        if (updatePackageError) {
+          errors.push(`pkg ${pkg.id}: ${updatePackageError.message}`);
           continue;
         }
 
-        // Mark session as deducted
-        await supabase
-          .from('scheduled_sessions')
-          .update({
-            is_deducted: !session.is_recurring,
-            deducted_at: new Date().toISOString(),
-            package_id: pkg.id,
-          })
-          .eq('id', session.id);
+        if (!session.is_recurring) {
+          const { error: updateSessionError } = await supabase
+            .from('scheduled_sessions')
+            .update({
+              is_deducted: true,
+              deducted_at: new Date().toISOString(),
+              package_id: pkg.id,
+            })
+            .eq('id', session.id)
+            .eq('is_deducted', false);
 
-        deducted++;
-        console.log(`  ✓ Deducted user=${session.user_id}, pkg=${pkg.id} (${pkg.used_sessions + 1}/${pkg.total_sessions})`);
+          if (updateSessionError) {
+            errors.push(`session ${session.id}: ${updateSessionError.message}`);
+            continue;
+          }
+        } else {
+          const lastProcessedDate = dueDates[toDeductNow - 1];
+          const deductedAt = `${lastProcessedDate}T12:00:00.000Z`;
+
+          const { error: updateSessionError } = await supabase
+            .from('scheduled_sessions')
+            .update({
+              is_deducted: false,
+              deducted_at: deductedAt,
+              package_id: pkg.id,
+            })
+            .eq('id', session.id);
+
+          if (updateSessionError) {
+            errors.push(`session ${session.id}: ${updateSessionError.message}`);
+            continue;
+          }
+        }
+
+        deductedSessions += toDeductNow;
+        const notCovered = dueCount - toDeductNow;
+        if (notCovered > 0) {
+          skipped += notCovered;
+          console.log(`  User ${session.user_id} — partial deduction ${toDeductNow}/${dueCount}, waiting for package top-up`);
+        }
+
+        console.log(`  ✓ Deducted user=${session.user_id}, pkg=${pkg.id}, count=${toDeductNow}`);
       } catch (sessionErr) {
         const msg = sessionErr instanceof Error ? sessionErr.message : String(sessionErr);
-        console.error(`  ✗ Error processing session ${session.id}:`, msg);
         errors.push(`session ${session.id}: ${msg}`);
       }
     }
 
-    const result = { success: true, date: todayStr, dayOfWeek, total: allToDeduct.length, deducted, skipped, errors };
-    console.log(`[deduct-sessions] Done:`, JSON.stringify(result));
+    const result = {
+      success: true,
+      date: todayStr,
+      candidates: candidates.length,
+      deducted: deductedSessions,
+      skipped,
+      errors,
+    };
+
+    console.log('[deduct-sessions] Done:', JSON.stringify(result));
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -149,7 +251,7 @@ Deno.serve(async (req) => {
   } catch (error) {
     console.error('[deduct-sessions] Fatal error:', error);
     return new Response(
-      JSON.stringify({ success: false, error: error.message }),
+      JSON.stringify({ success: false, error: error instanceof Error ? error.message : String(error) }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
