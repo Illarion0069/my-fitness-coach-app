@@ -299,6 +299,45 @@ export type Database = {
         }
         Relationships: []
       }
+      session_ledger: {
+        Row: {
+          created_at: string
+          delta: number
+          id: string
+          idempotency_key: string | null
+          package_id: string
+          reason: string
+          session_id: string | null
+          used_after: number
+          used_before: number
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          delta: number
+          id?: string
+          idempotency_key?: string | null
+          package_id: string
+          reason: string
+          session_id?: string | null
+          used_after: number
+          used_before: number
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          delta?: number
+          id?: string
+          idempotency_key?: string | null
+          package_id?: string
+          reason?: string
+          session_id?: string | null
+          used_after?: number
+          used_before?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       test_results: {
         Row: {
           answers: number[]

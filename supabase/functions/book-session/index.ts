@@ -324,11 +324,26 @@ Deno.serve(async (req) => {
       if (pkg) {
         const newUsed = pkg.used_sessions + 1;
         const updates: Record<string, unknown> = { used_sessions: newUsed };
-        // Auto-deactivate if now exhausted
         if (newUsed >= pkg.total_sessions) {
           updates.is_active = false;
         }
-        await supabase.from('client_packages').update(updates).eq('id', pkg.id);
+        await supabase.from('client_packages')
+          .update(updates)
+          .eq('id', pkg.id)
+          .eq('used_sessions', pkg.used_sessions); // optimistic lock
+
+        // Write ledger entry
+        await supabase.from('session_ledger').insert({
+          user_id: user.id,
+          package_id: pkg.id,
+          delta: 1,
+          reason: 'client_book',
+          session_id: session.id,
+          used_before: pkg.used_sessions,
+          used_after: newUsed,
+          idempotency_key: `client_book_${session.id}`,
+        });
+
         remaining = pkg.total_sessions - newUsed;
       }
 
@@ -408,25 +423,51 @@ Deno.serve(async (req) => {
       // Restore package balance (only for non-pending-payment sessions)
       const isPendingPayment = session.notes?.includes('PENDING PAYMENT');
       if (!session.is_recurring && !isPendingPayment) {
-        // Find the package that was most recently deducted (oldest active)
-        const { data: pkgs } = await supabase
-          .from('client_packages')
-          .select('*')
-          .eq('user_id', user.id)
-          .order('created_at', { ascending: true })
-          .limit(5);
+        // Priority: use the exact package linked to this session
+        let target = null;
+        if (session.package_id) {
+          const { data: linkedPkg } = await supabase
+            .from('client_packages')
+            .select('*')
+            .eq('id', session.package_id)
+            .maybeSingle();
+          if (linkedPkg && linkedPkg.used_sessions > 0) target = linkedPkg;
+        }
 
-        // Try active ones first, then recently deactivated ones (in case auto-deactivated)
-        const target = pkgs?.find(p => p.is_active && p.used_sessions > 0) 
-          || pkgs?.find(p => p.used_sessions > 0);
-        
+        // Fallback: any package with used > 0
+        if (!target) {
+          const { data: pkgs } = await supabase
+            .from('client_packages')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: true })
+            .limit(5);
+          target = pkgs?.find(p => p.is_active && p.used_sessions > 0)
+            || pkgs?.find(p => p.used_sessions > 0) || null;
+        }
+
         if (target) {
-          const updates: any = { used_sessions: target.used_sessions - 1 };
-          // Re-activate if it was auto-deactivated
-          if (!target.is_active && target.used_sessions - 1 < target.total_sessions) {
+          const newUsed = target.used_sessions - 1;
+          const updates: any = { used_sessions: newUsed };
+          if (!target.is_active && newUsed < target.total_sessions) {
             updates.is_active = true;
           }
-          await supabase.from('client_packages').update(updates).eq('id', target.id);
+          await supabase.from('client_packages')
+            .update(updates)
+            .eq('id', target.id)
+            .eq('used_sessions', target.used_sessions); // optimistic lock
+
+          // Write ledger entry
+          await supabase.from('session_ledger').insert({
+            user_id: user.id,
+            package_id: target.id,
+            delta: -1,
+            reason: 'client_cancel',
+            session_id: session_id,
+            used_before: target.used_sessions,
+            used_after: newUsed,
+            idempotency_key: `client_cancel_${session_id}`,
+          });
         }
       }
 
