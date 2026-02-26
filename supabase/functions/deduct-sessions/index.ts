@@ -180,15 +180,58 @@ Deno.serve(async (req) => {
         const toDeductNow = Math.min(dueCount, remaining);
         const newUsedSessions = pkg.used_sessions + toDeductNow;
 
+        // Idempotency: for each due date, check if already logged
+        const idempotencyKeys = dueDates.slice(0, toDeductNow).map(
+          d => `cron_${session.id}_${d}`
+        );
+
+        // Check which ones already exist
+        const { data: existingEntries } = await supabase
+          .from('session_ledger')
+          .select('idempotency_key')
+          .in('idempotency_key', idempotencyKeys);
+
+        const alreadyDone = new Set((existingEntries || []).map(e => e.idempotency_key));
+        const newKeys = idempotencyKeys.filter(k => !alreadyDone.has(k));
+
+        if (newKeys.length === 0) {
+          console.log(`  Session ${session.id} — all ${toDeductNow} dates already processed, skip`);
+          continue;
+        }
+
+        const actualDeduct = newKeys.length;
+        const actualNewUsed = pkg.used_sessions + actualDeduct;
+
         const { error: updatePackageError } = await supabase
           .from('client_packages')
-          .update({ used_sessions: newUsedSessions })
+          .update({ used_sessions: actualNewUsed })
           .eq('id', pkg.id)
           .eq('used_sessions', pkg.used_sessions); // optimistic lock
 
         if (updatePackageError) {
           errors.push(`pkg ${pkg.id}: ${updatePackageError.message}`);
           continue;
+        }
+
+        // Write ledger entries
+        const ledgerEntries = newKeys.map((key, i) => ({
+          user_id: session.user_id,
+          package_id: pkg.id,
+          delta: 1,
+          reason: 'cron_deduct',
+          session_id: session.id,
+          used_before: pkg.used_sessions + i,
+          used_after: pkg.used_sessions + i + 1,
+          idempotency_key: key,
+        }));
+
+        const { error: ledgerError } = await supabase
+          .from('session_ledger')
+          .insert(ledgerEntries);
+
+        if (ledgerError) {
+          console.error(`  Ledger write failed for session ${session.id}:`, ledgerError.message);
+          // Package already updated — log but don't fail
         }
 
         if (!session.is_recurring) {
@@ -207,7 +250,7 @@ Deno.serve(async (req) => {
             continue;
           }
         } else {
-          const lastProcessedDate = dueDates[toDeductNow - 1];
+          const lastProcessedDate = dueDates[actualDeduct - 1];
           const deductedAt = `${lastProcessedDate}T12:00:00.000Z`;
 
           const { error: updateSessionError } = await supabase
@@ -225,14 +268,14 @@ Deno.serve(async (req) => {
           }
         }
 
-        deductedSessions += toDeductNow;
-        const notCovered = dueCount - toDeductNow;
+        deductedSessions += actualDeduct;
+        const notCovered = dueCount - actualDeduct;
         if (notCovered > 0) {
           skipped += notCovered;
-          console.log(`  User ${session.user_id} — partial deduction ${toDeductNow}/${dueCount}, waiting for package top-up`);
+          console.log(`  User ${session.user_id} — partial deduction ${actualDeduct}/${dueCount}`);
         }
 
-        console.log(`  ✓ Deducted user=${session.user_id}, pkg=${pkg.id}, count=${toDeductNow}`);
+        console.log(`  ✓ Deducted user=${session.user_id}, pkg=${pkg.id}, count=${actualDeduct}`);
       } catch (sessionErr) {
         const msg = sessionErr instanceof Error ? sessionErr.message : String(sessionErr);
         errors.push(`session ${session.id}: ${msg}`);

@@ -110,14 +110,27 @@ Deno.serve(async (req) => {
           .from('client_packages')
           .update({
             used_sessions: newUsed,
-            is_active: true, // reactivate if it was auto-deactivated when exhausted
+            is_active: true,
           })
-          .eq('id', pkg.id);
+          .eq('id', pkg.id)
+          .eq('used_sessions', pkg.used_sessions); // optimistic lock
 
         if (restoreErr) {
           console.error('[restore-session] Restore error:', restoreErr.message);
           return new Response(JSON.stringify({ error: restoreErr.message }), { status: 500, headers: corsHeaders });
         }
+
+        // Write ledger entry
+        await supabase.from('session_ledger').insert({
+          user_id: userId,
+          package_id: pkg.id,
+          delta: -1,
+          reason: 'trainer_cancel',
+          session_id: sessionId,
+          used_before: pkg.used_sessions,
+          used_after: newUsed,
+          idempotency_key: `trainer_cancel_${sessionId}`,
+        });
 
         console.log(`[restore-session] ✓ Restored: pkg=${pkg.id} used ${pkg.used_sessions} → ${newUsed}, is_active=true`);
         return new Response(JSON.stringify({ success: true, restored: true, packageId: pkg.id, newUsed }), {

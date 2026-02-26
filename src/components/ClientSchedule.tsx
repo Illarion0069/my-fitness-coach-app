@@ -76,7 +76,7 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         is_recurring: false,
       });
 
-      // Auto-deduct from active package
+      // Auto-deduct from active package with optimistic lock + ledger
       const { data: pkgs } = await supabase
         .from('client_packages')
         .select('*')
@@ -86,10 +86,44 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         .limit(1);
       const pkg = pkgs?.[0];
       if (pkg && pkg.used_sessions < pkg.total_sessions) {
+        const newUsed = pkg.used_sessions + 1;
         await supabase
           .from('client_packages')
-          .update({ used_sessions: pkg.used_sessions + 1 })
-          .eq('id', pkg.id);
+          .update({ used_sessions: newUsed })
+          .eq('id', pkg.id)
+          .eq('used_sessions', pkg.used_sessions); // optimistic lock
+
+        // Get the session id we just inserted to link in ledger
+        const { data: insertedSessions } = await supabase
+          .from('scheduled_sessions')
+          .select('id')
+          .eq('user_id', userId)
+          .eq('session_date', date)
+          .eq('is_recurring', false)
+          .order('created_at', { ascending: false })
+          .limit(1);
+
+        const sessionId = insertedSessions?.[0]?.id;
+
+        // Write ledger — use supabase functions invoke since client can't write directly
+        const { data: { session: authSession } } = await supabase.auth.getSession();
+        if (authSession?.access_token && sessionId) {
+          // We'll insert via edge function or just log — trainers can't write to ledger via RLS
+          // Since trainer has service role access via edge functions, we log the deduction info
+          // The ledger is written by edge functions only. For manual adds, we queue it.
+          await supabase.from('pending_notifications').insert({
+            client_user_id: userId,
+            trainer_user_id: user.id,
+            action_type: 'ledger_manual_add',
+            details: JSON.stringify({
+              package_id: pkg.id,
+              delta: 1,
+              used_before: pkg.used_sessions,
+              used_after: newUsed,
+              session_id: sessionId,
+            }),
+          });
+        }
       }
     } else {
       await supabase.from('scheduled_sessions').insert({
