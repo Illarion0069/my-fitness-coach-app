@@ -58,10 +58,15 @@ function buildRecurringDueDates(session: ScheduledSession, todayStr: string): st
   const exceptions = new Set((session.recurring_exceptions || []).map(String));
   const lastDeductedDate = session.deducted_at ? toDateStr(new Date(session.deducted_at)) : null;
 
-  let cursor = session.session_date;
+  // Only catch up within the last 7 days to prevent over-deduction
+  const maxCatchupStart = addDays(todayStr, -7);
+
+  let cursor: string;
   if (lastDeductedDate) {
-    const nextAfterLastDeduction = addDays(lastDeductedDate, 1);
-    cursor = nextAfterLastDeduction > cursor ? nextAfterLastDeduction : cursor;
+    cursor = addDays(lastDeductedDate, 1);
+  } else {
+    // Never go further back than 7 days from today
+    cursor = session.session_date > maxCatchupStart ? session.session_date : maxCatchupStart;
   }
 
   if (cursor > todayStr) return [];
