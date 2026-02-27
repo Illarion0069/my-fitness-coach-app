@@ -134,11 +134,17 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Priority: explicit one-off sessions before recurring templates
+    candidates.sort((a, b) => Number(a.session.is_recurring) - Number(b.session.is_recurring));
+
     console.log(`[deduct-sessions] Total sessions with pending deductions: ${candidates.length}`);
 
     let deductedSessions = 0;
     let skipped = 0;
     const errors: string[] = [];
+
+    // In-run guard: never deduct more than once per user per date in a single execution
+    const reservedKeys = new Set<string>();
 
     for (const candidate of candidates) {
       const { session, dueCount, dueDates } = candidate;
@@ -178,28 +184,31 @@ Deno.serve(async (req) => {
         }
 
         const toDeductNow = Math.min(dueCount, remaining);
-        const newUsedSessions = pkg.used_sessions + toDeductNow;
 
-        // Idempotency: for each due date, check if already logged
-        const idempotencyKeys = dueDates.slice(0, toDeductNow).map(
-          d => `cron_${session.id}_${d}`
-        );
+        const dueEntries = dueDates.slice(0, toDeductNow).map((date) => ({
+          date,
+          key: `cron_user_${session.user_id}_${date}`,
+        }));
 
-        // Check which ones already exist
+        const idempotencyKeys = dueEntries.map((entry) => entry.key);
+
+        // Check already processed in DB
         const { data: existingEntries } = await supabase
           .from('session_ledger')
           .select('idempotency_key')
           .in('idempotency_key', idempotencyKeys);
 
         const alreadyDone = new Set((existingEntries || []).map(e => e.idempotency_key));
-        const newKeys = idempotencyKeys.filter(k => !alreadyDone.has(k));
+        const newEntries = dueEntries.filter(
+          (entry) => !alreadyDone.has(entry.key) && !reservedKeys.has(entry.key)
+        );
 
-        if (newKeys.length === 0) {
-          console.log(`  Session ${session.id} — all ${toDeductNow} dates already processed, skip`);
+        if (newEntries.length === 0) {
+          console.log(`  Session ${session.id} — all due dates already processed, skip`);
           continue;
         }
 
-        const actualDeduct = newKeys.length;
+        const actualDeduct = newEntries.length;
         const actualNewUsed = pkg.used_sessions + actualDeduct;
 
         const { error: updatePackageError } = await supabase
@@ -213,8 +222,11 @@ Deno.serve(async (req) => {
           continue;
         }
 
+        // Reserve keys in this run right after successful package update
+        for (const entry of newEntries) reservedKeys.add(entry.key);
+
         // Write ledger entries
-        const ledgerEntries = newKeys.map((key, i) => ({
+        const ledgerEntries = newEntries.map((entry, i) => ({
           user_id: session.user_id,
           package_id: pkg.id,
           delta: 1,
@@ -222,7 +234,7 @@ Deno.serve(async (req) => {
           session_id: session.id,
           used_before: pkg.used_sessions + i,
           used_after: pkg.used_sessions + i + 1,
-          idempotency_key: key,
+          idempotency_key: entry.key,
         }));
 
         const { error: ledgerError } = await supabase
@@ -230,8 +242,16 @@ Deno.serve(async (req) => {
           .insert(ledgerEntries);
 
         if (ledgerError) {
-          console.error(`  Ledger write failed for session ${session.id}:`, ledgerError.message);
-          // Package already updated — log but don't fail
+          // Rollback package update on any ledger write failure
+          await supabase
+            .from('client_packages')
+            .update({ used_sessions: pkg.used_sessions })
+            .eq('id', pkg.id)
+            .eq('used_sessions', actualNewUsed);
+
+          for (const entry of newEntries) reservedKeys.delete(entry.key);
+          errors.push(`session ${session.id}: ledger write failed (${ledgerError.message})`);
+          continue;
         }
 
         if (!session.is_recurring) {
@@ -250,7 +270,7 @@ Deno.serve(async (req) => {
             continue;
           }
         } else {
-          const lastProcessedDate = dueDates[actualDeduct - 1];
+          const lastProcessedDate = newEntries[newEntries.length - 1].date;
           const deductedAt = `${lastProcessedDate}T12:00:00.000Z`;
 
           const { error: updateSessionError } = await supabase
