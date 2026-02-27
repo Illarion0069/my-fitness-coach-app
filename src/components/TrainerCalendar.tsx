@@ -212,34 +212,22 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const addSession = async () => {
-    if (!selectedClientId) return;
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!selectedClientId || !addTime) return;
 
-    await supabase.from('scheduled_sessions').insert({
-      user_id: selectedClientId,
-      trainer_user_id: user.id,
-      session_date: selectedDateStr,
-      session_time: addTime || null,
-      is_recurring: false,
+    const res = await supabase.functions.invoke('book-session', {
+      body: {
+        action: 'trainerBook',
+        client_user_id: selectedClientId,
+        date: selectedDateStr,
+        time: addTime,
+      },
     });
 
-    // Auto-deduct from active package
-    const { data: pkgs } = await supabase
-      .from('client_packages')
-      .select('*')
-      .eq('user_id', selectedClientId)
-      .eq('is_active', true)
-      .order('created_at', { ascending: true })
-      .limit(1);
-    const pkg = pkgs?.[0];
-    if (pkg && pkg.used_sessions < pkg.total_sessions) {
-      await supabase
-        .from('client_packages')
-        .update({ used_sessions: pkg.used_sessions + 1 })
-        .eq('id', pkg.id);
+    if (res.error || !res.data?.success) {
+      const message = res.error?.message || res.data?.error || (lang === 'en' ? 'Failed to add session' : 'Не удалось добавить тренировку');
+      toast({ title: message, variant: 'destructive' });
+      return;
     }
-
 
     setShowAddForm(null);
     setSelectedClientId('');
@@ -265,25 +253,20 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const deleteSession = async (id: string) => {
     const session = sessions.find(s => s.id === id);
+    if (!session) return;
 
-    await supabase.from('scheduled_sessions').delete().eq('id', id);
+    const { data: { session: authSession } } = await supabase.auth.getSession();
+    const token = authSession?.access_token;
 
-    // Auto-restore to active package
-    if (session) {
-      const { data: pkgs } = await supabase
-        .from('client_packages')
-        .select('*')
-        .eq('user_id', session.user_id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1);
-      const pkg = pkgs?.[0];
-      if (pkg && pkg.used_sessions > 0) {
-        await supabase
-          .from('client_packages')
-          .update({ used_sessions: pkg.used_sessions - 1 })
-          .eq('id', pkg.id);
-      }
+    const res = await supabase.functions.invoke('restore-session', {
+      body: { sessionId: id, userId: session.user_id },
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+    });
+
+    if (res.error) {
+      console.error('[TrainerCalendar.deleteSession] restore-session error:', res.error);
+      toast({ title: lang === 'en' ? 'Error removing session' : 'Ошибка при удалении', variant: 'destructive' });
+      return;
     }
 
     fetchSessions();

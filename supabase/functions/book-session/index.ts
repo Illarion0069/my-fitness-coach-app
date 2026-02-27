@@ -225,6 +225,135 @@ Deno.serve(async (req) => {
       });
     }
 
+    // === BOOK A SESSION BY TRAINER (for specific client) ===
+    if (action === 'trainerBook') {
+      const trainerUser = await getAuthUser();
+      if (!trainerUser) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { data: trainerRole } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', trainerUser.id)
+        .eq('role', 'trainer')
+        .maybeSingle();
+
+      if (!trainerRole) {
+        return new Response(JSON.stringify({ error: 'Forbidden: trainer only' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const { client_user_id, date, time } = body;
+
+      if (!client_user_id) {
+        return new Response(JSON.stringify({ error: 'client_user_id required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return new Response(JSON.stringify({ error: 'Invalid date' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (time && !/^\d{2}:\d{2}$/.test(time)) {
+        return new Response(JSON.stringify({ error: 'Invalid time' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const dayOfWeek = new Date(date + 'T12:00:00').getDay();
+      const trainer = await getTrainerInfo();
+      if (!trainer) {
+        return new Response(JSON.stringify({ error: 'No trainer found' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      if (time) {
+        const bookedSessions = await getBookedSessions(date, dayOfWeek);
+        const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
+        const requestedMinutes = timeToMinutes(time);
+
+        if (isSlotBlockedByTrainer(requestedMinutes, DEFAULT_DURATION, trainerBlocks)) {
+          return new Response(JSON.stringify({ error: 'Slot is blocked by trainer' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+
+        const currentCount = countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions);
+        if (currentCount >= MAX_CLIENTS_PER_SLOT) {
+          return new Response(JSON.stringify({ error: 'Slot is not available' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+      }
+
+      const pkg = await getActivePackageWithBalance(client_user_id);
+      if (!pkg) {
+        return new Response(JSON.stringify({ error: 'No active package with remaining sessions' }), {
+          status: 402,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { data: createdSession, error: insertError } = await supabase
+        .from('scheduled_sessions')
+        .insert({
+          user_id: client_user_id,
+          trainer_user_id: trainer.trainerId,
+          session_date: date,
+          session_time: time,
+          is_recurring: false,
+          package_id: pkg.id,
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          return new Response(JSON.stringify({ error: 'Slot already taken' }), { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        throw insertError;
+      }
+
+      const newUsed = pkg.used_sessions + 1;
+      const { error: updateError } = await supabase
+        .from('client_packages')
+        .update({
+          used_sessions: newUsed,
+          is_active: newUsed < pkg.total_sessions,
+        })
+        .eq('id', pkg.id)
+        .eq('used_sessions', pkg.used_sessions);
+
+      if (updateError) {
+        await supabase.from('scheduled_sessions').delete().eq('id', createdSession.id);
+        return new Response(JSON.stringify({ error: 'Package update conflict, retry please' }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { error: ledgerError } = await supabase
+        .from('session_ledger')
+        .insert({
+          user_id: client_user_id,
+          package_id: pkg.id,
+          delta: 1,
+          reason: 'trainer_book',
+          session_id: createdSession.id,
+          used_before: pkg.used_sessions,
+          used_after: newUsed,
+          idempotency_key: `trainer_book_${createdSession.id}`,
+        });
+
+      if (ledgerError) {
+        await supabase
+          .from('client_packages')
+          .update({ used_sessions: pkg.used_sessions, is_active: true })
+          .eq('id', pkg.id)
+          .eq('used_sessions', newUsed);
+        await supabase.from('scheduled_sessions').delete().eq('id', createdSession.id);
+
+        return new Response(JSON.stringify({ error: `Ledger write failed: ${ledgerError.message}` }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      return new Response(JSON.stringify({ success: true, session_id: createdSession.id }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // === BOOK A SESSION ===
     if (action === 'book') {
       const user = await getAuthUser();
