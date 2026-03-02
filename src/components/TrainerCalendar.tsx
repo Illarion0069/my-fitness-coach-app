@@ -167,17 +167,66 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     });
   }, [sessions, selectedDateStr, dayOfWeek]);
 
+  // Compute which session occurrences are the "last" for each client
+  const lastSessionKeys = useMemo(() => {
+    const keys = new Set<string>(); // "sessionId_yyyy-MM-dd"
+    const today = new Date();
+    const todayStr = format(today, 'yyyy-MM-dd');
+
+    // For each client with remaining sessions, find their Nth future session (N = remaining)
+    const clientUserIds = new Set(sessions.map(s => s.user_id));
+    clientUserIds.forEach(userId => {
+      const pkg = clientRemaining[userId];
+      if (!pkg || pkg.remaining <= 0) return;
+
+      // Collect all future session occurrences for this client (next 8 weeks)
+      const occurrences: { sessionId: string; date: string }[] = [];
+      const clientSessions = sessions.filter(s => s.user_id === userId && !s.is_deducted);
+
+      clientSessions.forEach(s => {
+        if (s.is_recurring && s.recurrence_day != null) {
+          // Expand recurring into next 8 weeks
+          for (let w = 0; w < 8; w++) {
+            const weekStart = addDays(today, w * 7);
+            for (let d = 0; d < 7; d++) {
+              const day = addDays(weekStart, d);
+              const dayStr = format(day, 'yyyy-MM-dd');
+              if (dayStr < todayStr) continue;
+              if (day.getDay() === s.recurrence_day && !s.recurring_exceptions?.includes(dayStr)) {
+                occurrences.push({ sessionId: s.id, date: dayStr });
+              }
+            }
+          }
+        } else if (!s.is_recurring && s.session_date >= todayStr) {
+          occurrences.push({ sessionId: s.id, date: s.session_date });
+        }
+      });
+
+      // Sort by date
+      occurrences.sort((a, b) => a.date.localeCompare(b.date));
+
+      // The "last" session is at index (remaining - 1)
+      if (occurrences.length >= pkg.remaining && pkg.remaining > 0) {
+        const lastOcc = occurrences[pkg.remaining - 1];
+        keys.add(`${lastOcc.sessionId}_${lastOcc.date}`);
+      }
+    });
+
+    return keys;
+  }, [sessions, clientRemaining]);
+
   const enrichedSessions = useMemo(() => {
     return daySessions.map(s => {
       const manualMatch = s.notes?.match(/^👤 (.+?) \(manual\)$/);
       const client = manualMatch ? null : clients.find(c => c.user_id === s.user_id);
       const clientName = manualMatch?.[1] || client?.full_name || '?';
-      return { ...s, clientName };
+      const isLastSession = lastSessionKeys.has(`${s.id}_${selectedDateStr}`);
+      return { ...s, clientName, isLastSession };
     });
-  }, [daySessions, clients]);
+  }, [daySessions, clients, lastSessionKeys, selectedDateStr]);
 
   const sessionsByHour = useMemo(() => {
-    const map: Record<number, (ScheduledSession & { clientName: string })[]> = {};
+    const map: Record<number, (ScheduledSession & { clientName: string; isLastSession: boolean })[]> = {};
     enrichedSessions.forEach(s => {
       const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
       const hour = timeStr ? parseInt(timeStr.split(':')[0], 10) : -1;
@@ -511,7 +560,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     );
   };
 
-  const renderSessionCard = (s: ScheduledSession & { clientName: string }) => {
+  const renderSessionCard = (s: ScheduledSession & { clientName: string; isLastSession?: boolean }) => {
     const timeStr = s.is_recurring ? s.recurrence_time : s.session_time;
     const isDragging = draggingSessionId === s.id;
     const isEditing = editingSessionId === s.id;
@@ -642,22 +691,11 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <p className="text-xs font-semibold truncate">{s.clientName}</p>
-            {(() => {
-              const pkg = clientRemaining[s.user_id];
-              if (!pkg || pkg.remaining > 3) return null;
-              const isLast = pkg.remaining <= 1;
-              return (
-                <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  isLast
-                    ? 'bg-destructive/20 text-destructive'
-                    : 'bg-amber-500/20 text-amber-600'
-                }`}>
-                  {isLast
-                    ? (lang === 'en' ? 'LAST' : 'ПОСЛ.')
-                    : `${pkg.remaining} ${lang === 'en' ? 'left' : 'ост.'}`}
-                </span>
-              );
-            })()}
+            {s.isLastSession && (
+              <span className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive">
+                {lang === 'en' ? 'LAST' : 'ПОСЛ.'}
+              </span>
+            )}
           </div>
           <p className="text-[10px] text-muted-foreground">
             {isDragging && dragPreviewTime
