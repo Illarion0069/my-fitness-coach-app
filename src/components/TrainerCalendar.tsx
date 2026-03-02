@@ -62,6 +62,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
+  const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
   const [showAddForm, setShowAddForm] = useState<number | null>(null);
   const [showBlockModal, setShowBlockModal] = useState<number | null>(null); // hour for block modal
   const [selectedClientId, setSelectedClientId] = useState('');
@@ -115,7 +116,25 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     setBlocks((data as TrainerBlock[]) || []);
   };
 
-  useEffect(() => { fetchSessions(); fetchBlocks(); }, []);
+  const fetchClientPackages = async () => {
+    const { data } = await supabase
+      .from('client_packages')
+      .select('user_id, total_sessions, used_sessions, is_active')
+      .eq('is_active', true);
+    if (data) {
+      const map: Record<string, { remaining: number; total: number }> = {};
+      data.forEach(p => {
+        const remaining = p.total_sessions - p.used_sessions;
+        // Keep the one with fewer remaining (most urgent)
+        if (!map[p.user_id] || remaining < map[p.user_id].remaining) {
+          map[p.user_id] = { remaining, total: p.total_sessions };
+        }
+      });
+      setClientRemaining(map);
+    }
+  };
+
+  useEffect(() => { fetchSessions(); fetchBlocks(); fetchClientPackages(); }, []);
 
   const navigateMonth = (dir: number) => {
     const newDate = addMonths(currentMonth, dir);
@@ -232,7 +251,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     setShowAddForm(null);
     setSelectedClientId('');
     setAddTime('');
-    fetchSessions();
+    fetchSessions(); fetchClientPackages();
     if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
   };
@@ -269,7 +288,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       return;
     }
 
-    fetchSessions();
+    fetchSessions(); fetchClientPackages();
     if (onSessionChange) onSessionChange();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
   };
@@ -621,7 +640,25 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       >
         <div className="w-1 h-5 rounded-full bg-primary shrink-0" />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold truncate">{s.clientName}</p>
+          <div className="flex items-center gap-1.5">
+            <p className="text-xs font-semibold truncate">{s.clientName}</p>
+            {(() => {
+              const pkg = clientRemaining[s.user_id];
+              if (!pkg || pkg.remaining > 3) return null;
+              const isLast = pkg.remaining <= 1;
+              return (
+                <span className={`shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  isLast
+                    ? 'bg-destructive/20 text-destructive'
+                    : 'bg-amber-500/20 text-amber-600'
+                }`}>
+                  {isLast
+                    ? (lang === 'en' ? 'LAST' : 'ПОСЛ.')
+                    : `${pkg.remaining} ${lang === 'en' ? 'left' : 'ост.'}`}
+                </span>
+              );
+            })()}
+          </div>
           <p className="text-[10px] text-muted-foreground">
             {isDragging && dragPreviewTime
               ? <span className="text-primary font-bold">{dragPreviewTime}</span>
