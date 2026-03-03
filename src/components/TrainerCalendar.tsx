@@ -460,6 +460,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
     await supabase.from('scheduled_sessions').update(updateField).eq('id', sessionId);
 
+    // Queue notification about time change
+    const oldTime = session.is_recurring ? session.recurrence_time : session.session_time;
+    const oldTimeDisplay = oldTime ? oldTime.slice(0, 5) : '—';
+    const dateDisplay = session.is_recurring
+      ? `каждый ${['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][session.recurrence_day || 0]}`
+      : new Date(session.session_date + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+
+    queueNotification(
+      session.user_id,
+      'session_moved',
+      `🔄 <b>Тренировка перенесена</b>\n📅 ${dateDisplay}\n⏰ ${oldTimeDisplay} → ${newTime}`
+    );
+
     fetchSessions();
     toast({ title: lang === 'en' ? `Moved to ${newTime}` : `Перенесено на ${newTime}` });
     dragEndInProgress.current = false;
