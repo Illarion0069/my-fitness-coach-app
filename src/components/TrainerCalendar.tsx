@@ -293,6 +293,15 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       return;
     }
 
+    // Queue notification about new session
+    const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+    const timeDisplay = addTime ? ` в ${addTime}` : '';
+    queueNotification(
+      selectedClientId,
+      'session_added',
+      `✅ <b>Тренировка добавлена</b>\n📅 ${dateDisplay}${timeDisplay}`
+    );
+
     setShowAddForm(null);
     setSelectedClientId('');
     setAddTime('');
@@ -1166,6 +1175,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                 block_date: recurring ? null : selectedDateStr,
               });
               fetchBlocks();
+            }
+
+            // Queue notification for real clients
+            if (clientId) {
+              const dateDisplay = recurring
+                ? `каждый ${['Вс','Пн','Вт','Ср','Чт','Пт','Сб'][recurrenceDay || 0]}`
+                : new Date(selectedDateStr + 'T00:00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+              const timeDisplay = time ? ` в ${time}` : '';
+              queueNotification(
+                clientId,
+                'session_added',
+                `✅ <b>Тренировка добавлена</b>\n📅 ${dateDisplay}${timeDisplay}${recurring ? '\n🔄 Повторяющаяся' : ''}`
+              );
             }
 
             fetchSessions();
