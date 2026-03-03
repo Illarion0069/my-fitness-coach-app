@@ -177,7 +177,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const clientUserIds = new Set(sessions.map(s => s.user_id));
     clientUserIds.forEach(userId => {
       const pkg = clientRemaining[userId];
-      if (!pkg || pkg.remaining <= 0) return;
+      if (!pkg || pkg.remaining !== 1) return;
 
       // Collect all future session occurrences for this client (next 8 weeks)
       const occurrences: { sessionId: string; date: string }[] = [];
