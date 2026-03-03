@@ -260,22 +260,18 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const noTimeSessions = sessionsByHour[-1] || [];
 
-  const sendSessionNotification = async (clientUserId: string, message: string, trainerMessage?: string) => {
+  const queueNotification = async (clientUserId: string, actionType: string, details: string) => {
     try {
-      const { data: { session: authSession } } = await supabase.auth.getSession();
-      if (!authSession?.access_token) return;
-      // Send to client
-      await supabase.functions.invoke('send-telegram', {
-        body: { action: 'sendReminder', client_user_id: clientUserId, message },
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      await supabase.from('pending_notifications').insert({
+        client_user_id: clientUserId,
+        trainer_user_id: user.id,
+        action_type: actionType,
+        details,
       });
-      // Send to trainer (via default chat)
-      if (trainerMessage) {
-        await supabase.functions.invoke('send-telegram', {
-          body: { message: trainerMessage },
-        });
-      }
     } catch (e) {
-      console.error('Failed to send notification', e);
+      console.error('Queue notification failed', e);
     }
   };
 
@@ -306,16 +302,14 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const sendCancelNotification = async (session: ScheduledSession, dateStr: string) => {
-    const client = clients.find(c => c.user_id === session.user_id);
-    const clientName = client?.full_name || '?';
     const displayDate = new Date(dateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
     const timeStr = session.is_recurring ? session.recurrence_time : session.session_time;
     const timeDisplay = timeStr ? ` в ${timeStr.slice(0, 5)}` : '';
 
-    sendSessionNotification(
+    queueNotification(
       session.user_id,
-      `❌ <b>Тренировка отменена тренером</b>\n\n📅 ${displayDate}${timeDisplay}\n\nЕсли у вас есть вопросы, свяжитесь с тренером.`,
-      `❌ <b>Тренировка отменена</b>\n\n👤 ${clientName}\n📅 ${displayDate}${timeDisplay}`
+      'session_deleted',
+      `❌ <b>Тренировка отменена</b>\n📅 ${displayDate}${timeDisplay}`
     );
   };
 
