@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
@@ -14,6 +14,26 @@ import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
 import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
+
+/* ──────────────────────── Sparkline ──────────────────────── */
+const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
+  if (data.length < 2) return null;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * (height - 4) - 2;
+    return `${x},${y}`;
+  }).join(' ');
+  return (
+    <svg width={width} height={height} className="overflow-visible">
+      <polyline fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" points={points} />
+      {/* Dot on last point */}
+      <circle cx={(data.length - 1) / (data.length - 1) * width} cy={height - ((data[data.length - 1] - min) / range) * (height - 4) - 2} r="2.5" fill={color} />
+    </svg>
+  );
+};
 
 interface ScheduledSession {
   id: string;
@@ -119,6 +139,7 @@ const ClientDashboard = () => {
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
@@ -175,7 +196,14 @@ const ClientDashboard = () => {
       setMeasurements(data || []);
     };
 
-    loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements();
+    const fetchTests = async () => {
+      const { data } = await supabase
+        .from('test_results').select('overall_percentage, created_at').eq('user_id', user.id)
+        .order('created_at', { ascending: true }).limit(20);
+      setTestResults(data || []);
+    };
+
+    loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
 
     const channel = supabase
       .channel('dashboard-sessions')
@@ -247,6 +275,24 @@ const ClientDashboard = () => {
     return name.slice(0, 2).toUpperCase() || '?';
   };
 
+  // Weight sparkline data + trend
+  const weightSparkData = useMemo(() => {
+    const sorted = [...measurements].filter(m => m.weight_kg).sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
+    return sorted.map(m => Number(m.weight_kg));
+  }, [measurements]);
+
+  const weightTrend = useMemo(() => {
+    if (weightSparkData.length < 2) return null;
+    const first = weightSparkData[0];
+    const last = weightSparkData[weightSparkData.length - 1];
+    const diff = last - first;
+    return { current: last, diff: Math.round(diff * 10) / 10 };
+  }, [weightSparkData]);
+
+  // Test sparkline data
+  const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
+  const lastTestPct = testSparkData.length > 0 ? testSparkData[testSparkData.length - 1] : null;
+
   if (!user) return null;
 
   const remaining = pkg ? pkg.total_sessions - pkg.used_sessions : 0;
@@ -254,17 +300,6 @@ const ClientDashboard = () => {
   const pct = total > 0 ? Math.round((remaining / total) * 100) : 0;
   const low = remaining <= 2;
   const exhausted = remaining <= 0 && !!pkg;
-
-  // Weight trend for measurements preview
-  const weightTrend = (() => {
-    if (measurements.length < 2) return null;
-    const sorted = [...measurements].filter(m => m.weight_kg).sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
-    if (sorted.length < 2) return null;
-    const first = sorted[0].weight_kg;
-    const last = sorted[sorted.length - 1].weight_kg;
-    const diff = last - first;
-    return { current: last, diff: Math.round(diff * 10) / 10 };
-  })();
 
   const formatSessionDate = (s: ScheduledSession) => {
     if (s.is_recurring) {
@@ -458,14 +493,17 @@ const ClientDashboard = () => {
                 ? `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`
                 : (lang === 'en' ? 'No data yet' : 'Нет данных')}
               onClick={() => setMeasurementsOpen(true)}
-              preview={weightTrend ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg font-extrabold font-heading text-foreground">{weightTrend.current}</span>
-                  <span className="text-[10px] text-muted-foreground">kg</span>
-                  <span className={`text-[10px] font-bold flex items-center gap-0.5 ml-auto ${weightTrend.diff < 0 ? 'text-green-400' : weightTrend.diff > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
-                    {weightTrend.diff > 0 ? <TrendingUp className="w-3 h-3" /> : weightTrend.diff < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                    {weightTrend.diff > 0 ? '+' : ''}{weightTrend.diff}
-                  </span>
+              preview={weightSparkData.length >= 2 ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg font-extrabold font-heading text-foreground">{weightTrend!.current}</span>
+                    <span className="text-[10px] text-muted-foreground">kg</span>
+                    <span className={`text-[10px] font-bold flex items-center gap-0.5 ml-auto ${weightTrend!.diff < 0 ? 'text-green-400' : weightTrend!.diff > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                      {weightTrend!.diff > 0 ? <TrendingUp className="w-3 h-3" /> : weightTrend!.diff < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                      {weightTrend!.diff > 0 ? '+' : ''}{weightTrend!.diff}
+                    </span>
+                  </div>
+                  <Sparkline data={weightSparkData} />
                 </div>
               ) : undefined}
             />
@@ -493,8 +531,23 @@ const ClientDashboard = () => {
             <ModuleCard
               icon={<ClipboardCheck className="w-4.5 h-4.5 text-primary" />}
               title={lang === 'en' ? 'Tests' : 'Тесты'}
-              subtitle={lang === 'en' ? 'Health assessment' : 'Оценка здоровья'}
+              subtitle={lastTestPct != null
+                ? `${lang === 'en' ? 'Last score' : 'Последний'}: ${lastTestPct}%`
+                : (lang === 'en' ? 'Health assessment' : 'Оценка здоровья')}
               onClick={() => setTestsOpen(true)}
+              preview={testSparkData.length >= 2 ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-lg font-extrabold font-heading text-foreground">{lastTestPct}%</span>
+                    {testSparkData.length >= 2 && (
+                      <span className={`text-[10px] font-bold ml-auto ${testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? 'text-green-400' : 'text-orange-400'}`}>
+                        {testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />}
+                      </span>
+                    )}
+                  </div>
+                  <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />
+                </div>
+              ) : undefined}
             />
           </div>
 
