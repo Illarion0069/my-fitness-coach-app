@@ -283,16 +283,23 @@ const ClientDashboard = () => {
   const low = remaining <= 2;
   const exhausted = remaining <= 0 && !!pkg;
 
-  // Weight trend for measurements preview
-  const weightTrend = (() => {
-    if (measurements.length < 2) return null;
+  // Weight sparkline data + trend
+  const weightSparkData = useMemo(() => {
     const sorted = [...measurements].filter(m => m.weight_kg).sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
-    if (sorted.length < 2) return null;
-    const first = sorted[0].weight_kg;
-    const last = sorted[sorted.length - 1].weight_kg;
+    return sorted.map(m => Number(m.weight_kg));
+  }, [measurements]);
+
+  const weightTrend = useMemo(() => {
+    if (weightSparkData.length < 2) return null;
+    const first = weightSparkData[0];
+    const last = weightSparkData[weightSparkData.length - 1];
     const diff = last - first;
     return { current: last, diff: Math.round(diff * 10) / 10 };
-  })();
+  }, [weightSparkData]);
+
+  // Test sparkline data
+  const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
+  const lastTestPct = testSparkData.length > 0 ? testSparkData[testSparkData.length - 1] : null;
 
   const formatSessionDate = (s: ScheduledSession) => {
     if (s.is_recurring) {
