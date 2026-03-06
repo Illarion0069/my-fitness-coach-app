@@ -74,7 +74,7 @@ const AppContent = () => {
 
   // Reset state on logout
   useEffect(() => {
-    if (!user) setActiveSection('home');
+    if (!user) { setActiveSection('home'); setClientPreview(false); }
     if (user) setShowGuide(false);
   }, [user]);
 
