@@ -2,8 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
-  History, ChevronDown, ChevronRight, RotateCw, XCircle, Loader2,
-  Upload, User
+  History, ChevronRight, RotateCw, XCircle, Loader2,
+  Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,46 +36,77 @@ interface ClientPackage {
 const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const DAY_NAMES_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-interface AccordionSectionProps {
+/* ──────────────────────── Module Card ──────────────────────── */
+interface ModuleCardProps {
   icon: React.ReactNode;
   title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: React.ReactNode;
+  subtitle?: string;
+  preview?: React.ReactNode;
+  onClick: () => void;
+  accentColor?: string;
   badge?: string | number;
 }
 
-const AccordionSection = ({ icon, title, isOpen, onToggle, children, badge }: AccordionSectionProps) => (
-  <div className="border border-border/30 rounded-xl overflow-hidden">
-    <button
-      onClick={onToggle}
-      className="w-full flex items-center gap-2.5 px-4 py-3.5 hover:bg-secondary/30 transition-colors"
-    >
-      {icon}
-      <span className="text-sm font-semibold flex-1 text-left">{title}</span>
+const ModuleCard = ({ icon, title, subtitle, preview, onClick, accentColor, badge }: ModuleCardProps) => (
+  <motion.button
+    onClick={onClick}
+    whileTap={{ scale: 0.97 }}
+    className="w-full bg-card border border-border/40 rounded-2xl p-4 text-left hover:border-primary/30 transition-all group"
+  >
+    <div className="flex items-start justify-between mb-2">
+      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accentColor || 'bg-primary/15'}`}>
+        {icon}
+      </div>
       {badge != null && (
-        <span className="text-[10px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-md font-bold">{badge}</span>
+        <span className="text-[10px] bg-primary/15 text-primary px-2 py-0.5 rounded-full font-bold">{badge}</span>
       )}
-      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-    </button>
-    <AnimatePresence>
-      {isOpen && (
-        <motion.div
-          initial={{ height: 0, opacity: 0 }}
-          animate={{ height: 'auto', opacity: 1 }}
-          exit={{ height: 0, opacity: 0 }}
-          transition={{ duration: 0.2 }}
-          className="overflow-hidden"
-        >
-          <div className="px-4 pb-4">
-            {children}
-          </div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  </div>
+    </div>
+    <h3 className="text-[13px] font-bold text-foreground leading-tight">{title}</h3>
+    {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
+    {preview && <div className="mt-2">{preview}</div>}
+    <div className="flex items-center gap-1 mt-2 text-[10px] text-primary/70 font-semibold group-hover:text-primary transition-colors">
+      <ChevronRight className="w-3 h-3" />
+    </div>
+  </motion.button>
 );
 
+/* ──────────────────────── Fullscreen Module ──────────────────────── */
+interface FullscreenModuleProps {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}
+
+const FullscreenModule = ({ open, onClose, title, icon, children }: FullscreenModuleProps) => (
+  <AnimatePresence>
+    {open && (
+      <motion.div
+        initial={{ opacity: 0, y: '100%' }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: '100%' }}
+        transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+        className="fixed inset-0 z-50 bg-background overflow-y-auto"
+      >
+        <div className="sticky top-0 z-10 bg-background/90 backdrop-blur-md border-b border-border/30">
+          <div className="flex items-center gap-3 px-5 py-4" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
+            <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+              <ChevronRight className="w-5 h-5 rotate-180" />
+            </button>
+            {icon}
+            <h2 className="text-base font-bold text-foreground">{title}</h2>
+          </div>
+        </div>
+        <div className="px-5 py-4 pb-32">
+          {children}
+        </div>
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
+
+/* ──────────────────────── Main Dashboard ──────────────────────── */
 const ClientDashboard = () => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { lang } = useLanguage();
@@ -87,127 +118,90 @@ const ClientDashboard = () => {
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
-  const [openSection, setOpenSection] = useState<string | null>(null);
-  const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
+  // Fullscreen module states
+  const [measurementsOpen, setMeasurementsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [photosOpen, setPhotosOpen] = useState(false);
+  const [testsOpen, setTestsOpen] = useState(false);
+  const [whoopOpen, setWhoopOpen] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
 
-  const toggleSection = (id: string) => setOpenSection(prev => prev === id ? null : id);
-
-  // Load avatar from profile
+  // ─── Data loading ───
   useEffect(() => {
     if (!user) return;
 
     const loadAvatar = async () => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('avatar_url')
-        .eq('user_id', user.id)
-        .maybeSingle();
+      const { data } = await supabase.from('profiles').select('avatar_url').eq('user_id', user.id).maybeSingle();
       setAvatarUrl(data?.avatar_url || null);
     };
 
     const fetchPkg = async () => {
       const { data: active } = await supabase
-        .from('client_packages')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('created_at', { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
+        .from('client_packages').select('*').eq('user_id', user.id).eq('is_active', true)
+        .order('created_at', { ascending: true }).limit(1).maybeSingle();
       if (active) { setPkg(active); return; }
-
       const { data: latest } = await supabase
-        .from('client_packages')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .from('client_packages').select('*').eq('user_id', user.id)
+        .order('created_at', { ascending: false }).limit(1).maybeSingle();
       setPkg(latest);
     };
 
     const fetchSessions = async () => {
       const today = new Date().toISOString().split('T')[0];
       const { data } = await supabase
-        .from('scheduled_sessions')
-        .select('*')
-        .eq('user_id', user.id)
+        .from('scheduled_sessions').select('*').eq('user_id', user.id)
         .or(`is_recurring.eq.true,session_date.gte.${today}`)
-        .eq('is_deducted', false)
-        .order('session_date', { ascending: true });
+        .eq('is_deducted', false).order('session_date', { ascending: true });
       setSessions((data as ScheduledSession[]) || []);
     };
 
     const fetchPast = async () => {
       const { data } = await supabase
-        .from('scheduled_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('is_deducted', true)
-        .order('session_date', { ascending: false })
-        .limit(20);
+        .from('scheduled_sessions').select('*').eq('user_id', user.id).eq('is_deducted', true)
+        .order('session_date', { ascending: false }).limit(20);
       setPastSessions((data as ScheduledSession[]) || []);
     };
 
     const fetchMeasurements = async () => {
       const { data } = await supabase
-        .from('body_measurements')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('measured_at', { ascending: false })
-        .limit(50);
+        .from('body_measurements').select('*').eq('user_id', user.id)
+        .order('measured_at', { ascending: false }).limit(50);
       setMeasurements(data || []);
     };
 
-    loadAvatar();
-    fetchPkg();
-    fetchSessions();
-    fetchPast();
-    fetchMeasurements();
+    loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements();
 
     const channel = supabase
       .channel('dashboard-sessions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => {
-        fetchSessions();
-        fetchPkg();
-      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => { fetchSessions(); fetchPkg(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, fetchPkg)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // ─── Avatar upload ───
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !user) return;
-
     if (file.size > 5 * 1024 * 1024) {
       toast({ title: lang === 'en' ? 'File too large (max 5MB)' : 'Файл слишком большой (макс. 5МБ)', variant: 'destructive' });
       return;
     }
-
     setUploadingAvatar(true);
     try {
       const ext = file.name.split('.').pop();
       const path = `${user.id}/avatar.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, file, { upsert: true });
-
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
-
       const { data: { publicUrl } } = supabase.storage.from('avatars').getPublicUrl(path);
-      // Add cache-busting
       const urlWithBust = `${publicUrl}?t=${Date.now()}`;
-
       await supabase.from('profiles').update({ avatar_url: urlWithBust }).eq('user_id', user.id);
       setAvatarUrl(urlWithBust);
       await refreshProfile();
@@ -218,28 +212,22 @@ const ClientDashboard = () => {
     setUploadingAvatar(false);
   };
 
+  // ─── Cancel session ───
   const canCancel = (s: ScheduledSession) => {
     if (s.is_recurring) return true;
     if (!s.session_time) return true;
     const sessionDateTime = new Date(`${s.session_date}T${s.session_time}`);
-    const hoursLeft = (sessionDateTime.getTime() - Date.now()) / (1000 * 60 * 60);
-    return hoursLeft > 24;
+    return (sessionDateTime.getTime() - Date.now()) / (1000 * 60 * 60) > 24;
   };
 
   const handleCancel = async (session: ScheduledSession) => {
     if (!canCancel(session)) {
-      toast({
-        title: lang === 'en' ? 'Cannot cancel' : 'Отмена невозможна',
-        description: lang === 'en' ? 'Sessions can only be cancelled 24h+ in advance.' : 'Отмена возможна только за 24 часа до тренировки.',
-        variant: 'destructive',
-      });
+      toast({ title: lang === 'en' ? 'Cannot cancel' : 'Отмена невозможна', description: lang === 'en' ? 'Sessions can only be cancelled 24h+ in advance.' : 'Отмена возможна только за 24 часа до тренировки.', variant: 'destructive' });
       return;
     }
     setCancellingId(session.id);
     try {
-      const { data, error } = await supabase.functions.invoke('book-session', {
-        body: { action: 'cancel', session_id: session.id },
-      });
+      const { data, error } = await supabase.functions.invoke('book-session', { body: { action: 'cancel', session_id: session.id } });
       if (error || data?.error) {
         toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data?.error || error?.message, variant: 'destructive' });
       } else {
@@ -267,241 +255,331 @@ const ClientDashboard = () => {
   const low = remaining <= 2;
   const exhausted = remaining <= 0 && !!pkg;
 
+  // Weight trend for measurements preview
+  const weightTrend = (() => {
+    if (measurements.length < 2) return null;
+    const sorted = [...measurements].filter(m => m.weight_kg).sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
+    if (sorted.length < 2) return null;
+    const first = sorted[0].weight_kg;
+    const last = sorted[sorted.length - 1].weight_kg;
+    const diff = last - first;
+    return { current: last, diff: Math.round(diff * 10) / 10 };
+  })();
+
+  const formatSessionDate = (s: ScheduledSession) => {
+    if (s.is_recurring) {
+      return `${lang === 'en' ? 'Every' : 'Кажд.'} ${dayNames[s.recurrence_day!]}${s.recurrence_time ? ` · ${s.recurrence_time.slice(0, 5)}` : ''}`;
+    }
+    const d = new Date(s.session_date + 'T00:00:00');
+    const dateStr = d.toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+    return `${dateStr}${s.session_time ? ` · ${s.session_time.slice(0, 5)}` : ''}`;
+  };
+
   return (
     <div className="min-h-screen bg-background pb-32">
-      {/* Avatar section */}
-      <div className="flex flex-col items-center px-5 pt-8 pb-5">
-        {/* Avatar */}
-        <div className="relative mb-4">
-          {/* Pulsing ring when no avatar */}
-          {!avatarUrl && (
-            <>
-              <div className="absolute inset-0 rounded-full gradient-primary opacity-30 animate-ping" style={{ animationDuration: '2s' }} />
-              <div className="absolute inset-0 rounded-full gradient-primary opacity-15 animate-ping" style={{ animationDuration: '2s', animationDelay: '0.5s' }} />
-            </>
-          )}
-          <div
-            onClick={() => fileInputRef.current?.click()}
-            className={`relative w-28 h-28 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
-              avatarUrl
-                ? 'border-4 border-primary/40 shadow-[0_4px_30px_hsl(var(--primary)/0.3)]'
-                : 'border-4 border-primary shadow-[0_0_0_4px_hsl(var(--primary)/0.25),0_4px_30px_hsl(var(--primary)/0.4)]'
-            }`}
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
-            ) : (
-              <div className="w-full h-full gradient-primary flex flex-col items-center justify-center gap-1">
-                <span className="text-primary-foreground font-extrabold text-2xl leading-none">{getInitials()}</span>
-                <span className="text-primary-foreground/80 text-[9px] font-bold uppercase tracking-wider">
-                  {lang === 'en' ? 'Add photo' : 'Фото'}
-                </span>
-              </div>
+      {/* ═══════════ Profile Header ═══════════ */}
+      <div className="px-5 pt-4 pb-2">
+        <div className="flex items-center gap-4">
+          {/* Compact avatar */}
+          <div className="relative shrink-0">
+            {!avatarUrl && (
+              <div className="absolute inset-0 rounded-full gradient-primary opacity-25 animate-ping" style={{ animationDuration: '2.5s' }} />
             )}
-            {/* Overlay on hover */}
-            <div className="absolute inset-0 bg-black/20 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Camera className="w-6 h-6 text-white" />
+            <div
+              onClick={() => fileInputRef.current?.click()}
+              className={`relative w-16 h-16 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
+                avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
+              }`}
+            >
+              {avatarUrl ? (
+                <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full gradient-primary flex items-center justify-center">
+                  <span className="text-primary-foreground font-extrabold text-lg">{getInitials()}</span>
+                </div>
+              )}
             </div>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-md"
+            >
+              {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Camera className="w-3.5 h-3.5 text-primary-foreground" />}
+            </button>
+            <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           </div>
-          {/* Upload button */}
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploadingAvatar}
-            className={`absolute bottom-0 right-0 w-9 h-9 rounded-full flex items-center justify-center shadow-lg transition-transform hover:scale-110 active:scale-95 ${
-              avatarUrl ? 'bg-primary' : 'gradient-primary ring-2 ring-background animate-bounce'
-            }`}
-            style={!avatarUrl ? { animationDuration: '1.5s' } : {}}
-          >
-            {uploadingAvatar
-              ? <Loader2 className="w-4 h-4 text-primary-foreground animate-spin" />
-              : <Camera className="w-4 h-4 text-primary-foreground" />
-            }
-          </button>
-          <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+          {/* Name + greeting */}
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted-foreground">
+              {lang === 'en' ? 'Welcome back' : 'С возвращением'} 👋
+            </p>
+            <h2 className="text-lg font-extrabold font-heading text-foreground truncate">{profile?.full_name}</h2>
+          </div>
         </div>
-
-        {/* Name */}
-        <h2 className="text-xl font-extrabold font-heading text-foreground">{profile?.full_name}</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">{profile?.phone}</p>
-
-        {/* Hint when no avatar */}
-        {!avatarUrl && (
-          <motion.p
-            initial={{ opacity: 0, y: 4 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-xs text-primary font-semibold mt-2 animate-pulse"
-          >
-            👆 {lang === 'en' ? 'Tap to add your photo' : 'Нажмите, чтобы добавить фото'}
-          </motion.p>
-        )}
       </div>
 
-      <div className="px-5 space-y-3">
-        {/* Session balance widget */}
+      <div className="px-5 space-y-4 mt-2">
+        {/* ═══════════ Session Balance Card ═══════════ */}
         {pkg && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-border/50 rounded-2xl p-4"
+            className={`relative overflow-hidden rounded-2xl p-5 ${
+              exhausted ? 'bg-destructive/10 border border-destructive/30' : 'gradient-primary'
+            }`}
           >
-            <div className="flex items-center gap-3 mb-2">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${exhausted || low ? 'bg-destructive/20' : 'gradient-primary'}`}>
-                <Activity className={`w-5 h-5 ${exhausted || low ? 'text-destructive' : 'text-primary-foreground'}`} />
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">{pkg.package_name}</p>
-                <p className="text-xl font-extrabold font-heading">
-                  {remaining} <span className="text-sm font-normal text-muted-foreground">/ {total} {lang === 'en' ? 'sessions left' : 'занятий осталось'}</span>
-                </p>
-              </div>
-            </div>
-            {exhausted && (
-              <p className="text-xs text-destructive font-semibold mb-2">
-                ⚠ {lang === 'en' ? 'Package exhausted — buy more sessions' : 'Пакет исчерпан — докупите тренировки'}
-              </p>
+            {/* Decorative circles */}
+            {!exhausted && (
+              <>
+                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
+                <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5" />
+              </>
             )}
-            <div className="h-2 bg-secondary rounded-full overflow-hidden">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.max(pct, 0)}%` }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-                className={`h-full rounded-full ${exhausted || low ? 'bg-destructive' : 'gradient-primary'}`}
-              />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-3">
+                <p className={`text-xs font-medium ${exhausted ? 'text-destructive' : 'text-primary-foreground/80'}`}>
+                  {pkg.package_name}
+                </p>
+                <Activity className={`w-5 h-5 ${exhausted ? 'text-destructive' : 'text-primary-foreground/60'}`} />
+              </div>
+              <div className="flex items-baseline gap-1.5 mb-3">
+                <span className={`text-3xl font-extrabold font-heading ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
+                  {remaining}
+                </span>
+                <span className={`text-sm ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`}>
+                  / {total} {lang === 'en' ? 'sessions' : 'занятий'}
+                </span>
+              </div>
+              {exhausted && (
+                <p className="text-xs text-destructive font-semibold mb-2">
+                  ⚠ {lang === 'en' ? 'Package exhausted' : 'Пакет исчерпан'}
+                </p>
+              )}
+              <div className={`h-1.5 rounded-full overflow-hidden ${exhausted ? 'bg-destructive/20' : 'bg-white/20'}`}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${Math.max(pct, 0)}%` }}
+                  transition={{ duration: 1, ease: 'easeOut' }}
+                  className={`h-full rounded-full ${exhausted ? 'bg-destructive' : 'bg-white/90'}`}
+                />
+              </div>
             </div>
           </motion.div>
         )}
 
-        {/* Schedule CTA */}
-        <button
+        {/* ═══════════ Schedule Button ═══════════ */}
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          whileTap={{ scale: 0.98 }}
           onClick={() => { setBookingStep('my-sessions'); setBookingOpen(true); }}
-          className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full bg-card border border-border/40 rounded-2xl p-4 flex items-center gap-3 hover:border-primary/30 transition-all"
         >
-          <CalendarDays className="w-5 h-5" />
-          {lang === 'en' ? 'My Schedule' : 'Моё расписание'}
-        </button>
+          <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shrink-0 glow-primary">
+            <CalendarDays className="w-5 h-5 text-primary-foreground" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'My Schedule' : 'Моё расписание'}</p>
+            <p className="text-[11px] text-muted-foreground">
+              {sessions.length > 0
+                ? (lang === 'en' ? `${sessions.length} upcoming` : `${sessions.length} запланировано`)
+                : (lang === 'en' ? 'No sessions yet' : 'Нет записей')}
+            </p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </motion.button>
 
-        {/* Upcoming sessions quick view */}
+        {/* ═══════════ Upcoming Sessions ═══════════ */}
         {sessions.length > 0 && (
-          <div className="space-y-1.5">
-            {sessions.slice(0, 3).map(s => (
-              <div key={s.id} className="flex items-center justify-between bg-card border border-border/30 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-2">
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+            className="space-y-2"
+          >
+            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+              {lang === 'en' ? 'Upcoming' : 'Ближайшие'}
+            </p>
+            {sessions.slice(0, 3).map((s, i) => (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 + i * 0.05 }}
+                className="flex items-center gap-3 bg-card/60 border border-border/30 rounded-xl px-4 py-3"
+              >
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   {s.is_recurring
-                    ? <RotateCw className="w-3.5 h-3.5 text-primary shrink-0" />
-                    : <CalendarDays className="w-3.5 h-3.5 text-primary shrink-0" />
+                    ? <RotateCw className="w-3.5 h-3.5 text-primary" />
+                    : <Dumbbell className="w-3.5 h-3.5 text-primary" />
                   }
-                  <span className="text-sm font-medium">
-                    {s.is_recurring
-                      ? `${lang === 'en' ? 'Every' : 'Каждый'} ${dayNames[s.recurrence_day!]}${s.recurrence_time ? ` ${s.recurrence_time.slice(0, 5)}` : ''}`
-                      : `${new Date(s.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'short', day: 'numeric', month: 'short' })}${s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}`
-                    }
-                  </span>
                 </div>
+                <span className="text-[13px] font-medium flex-1">{formatSessionDate(s)}</span>
                 {canCancel(s) ? (
                   <button
                     onClick={() => handleCancel(s)}
                     disabled={cancellingId === s.id}
-                    className="text-xs text-destructive font-semibold bg-destructive/10 px-2.5 py-1 rounded-lg hover:bg-destructive/20 transition-colors"
+                    className="text-[11px] text-destructive/80 font-semibold bg-destructive/8 px-2.5 py-1 rounded-lg hover:bg-destructive/15 transition-colors"
                   >
-                    {cancellingId === s.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : lang === 'en' ? 'Cancel' : 'Отменить'}
+                    {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
                   </button>
                 ) : (
-                  <span className="text-[10px] text-muted-foreground">{'< 24ч'}</span>
+                  <span className="text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{'<24h'}</span>
                 )}
-              </div>
+              </motion.div>
             ))}
             {sessions.length > 3 && (
               <button
                 onClick={() => { setBookingStep('my-sessions'); setBookingOpen(true); }}
-                className="w-full text-xs text-primary font-semibold py-2 text-center"
+                className="w-full text-xs text-primary font-semibold py-1.5 text-center hover:underline"
               >
-                {lang === 'en' ? `+${sessions.length - 3} more sessions` : `+${sessions.length - 3} ещё`}
+                +{sessions.length - 3} {lang === 'en' ? 'more' : 'ещё'}
               </button>
             )}
-          </div>
+          </motion.div>
         )}
 
-        {/* Body Measurements */}
-        <button
-          onClick={() => setMeasurementsOpen(true)}
-          className="w-full border border-border/30 rounded-xl flex items-center gap-2.5 px-4 py-3.5 hover:bg-secondary/30 transition-colors bg-card"
+        {/* ═══════════ Modules Grid ═══════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
         >
-          <Ruler className="w-4 h-4 text-primary" />
-          <span className="text-sm font-semibold flex-1 text-left">{lang === 'en' ? 'Body Progress' : 'Замеры тела'}</span>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-        </button>
-
-        {/* Training History */}
-        <AccordionSection
-          icon={<History className="w-4 h-4 text-primary" />}
-          title={lang === 'en' ? 'Training History' : 'История тренировок'}
-          isOpen={openSection === 'history'}
-          onToggle={() => toggleSection('history')}
-          badge={pastSessions.length || undefined}
-        >
-          {pastSessions.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-2">{lang === 'en' ? 'No completed sessions yet' : 'Пока нет завершённых тренировок'}</p>
-          ) : (
-            <div className="space-y-1.5 max-h-52 overflow-y-auto">
-              {pastSessions.map(s => (
-                <div key={s.id} className="flex items-center gap-2 bg-secondary/30 rounded-lg p-2.5">
-                  <CalendarDays className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(s.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })}
-                    {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
+          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-3">
+            {lang === 'en' ? 'My Progress' : 'Мой прогресс'}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {/* Body Measurements */}
+            <ModuleCard
+              icon={<Ruler className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'Body Progress' : 'Замеры тела'}
+              subtitle={measurements.length > 0
+                ? `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`
+                : (lang === 'en' ? 'No data yet' : 'Нет данных')}
+              onClick={() => setMeasurementsOpen(true)}
+              preview={weightTrend ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-lg font-extrabold font-heading text-foreground">{weightTrend.current}</span>
+                  <span className="text-[10px] text-muted-foreground">kg</span>
+                  <span className={`text-[10px] font-bold flex items-center gap-0.5 ml-auto ${weightTrend.diff < 0 ? 'text-green-400' : weightTrend.diff > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                    {weightTrend.diff > 0 ? <TrendingUp className="w-3 h-3" /> : weightTrend.diff < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                    {weightTrend.diff > 0 ? '+' : ''}{weightTrend.diff}
                   </span>
-                  <span className="ml-auto text-[10px] text-primary/60 font-medium">✓</span>
                 </div>
-              ))}
-            </div>
-          )}
-        </AccordionSection>
+              ) : undefined}
+            />
 
-        {/* Progress Photos */}
-        <AccordionSection
-          icon={<Camera className="w-4 h-4 text-primary" />}
-          title={lang === 'en' ? 'Progress Photos' : 'Фото прогресса'}
-          isOpen={openSection === 'photos'}
-          onToggle={() => toggleSection('photos')}
-        >
-          <ClientProgressView userId={user.id} lang={lang} />
-        </AccordionSection>
+            {/* Training History */}
+            <ModuleCard
+              icon={<History className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'History' : 'История'}
+              subtitle={pastSessions.length > 0
+                ? `${pastSessions.length} ${lang === 'en' ? 'sessions done' : 'тренировок'}`
+                : (lang === 'en' ? 'No sessions yet' : 'Нет данных')}
+              onClick={() => setHistoryOpen(true)}
+              badge={pastSessions.length || undefined}
+            />
 
-        {/* Health Tests */}
-        <AccordionSection
-          icon={<ClipboardCheck className="w-4 h-4 text-primary" />}
-          title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
-          isOpen={openSection === 'tests'}
-          onToggle={() => toggleSection('tests')}
-        >
-          <ClientTestHistory userId={user.id} lang={lang} />
-        </AccordionSection>
+            {/* Progress Photos */}
+            <ModuleCard
+              icon={<Camera className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'Photos' : 'Фото'}
+              subtitle={lang === 'en' ? 'Progress photos' : 'Фото прогресса'}
+              onClick={() => setPhotosOpen(true)}
+            />
 
-        {/* Whoop */}
-        <AccordionSection
-          icon={<Activity className="w-4 h-4 text-primary" />}
-          title="Whoop"
-          isOpen={openSection === 'whoop'}
-          onToggle={() => toggleSection('whoop')}
-        >
-          <WhoopWidget />
-        </AccordionSection>
+            {/* Health Tests */}
+            <ModuleCard
+              icon={<ClipboardCheck className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'Tests' : 'Тесты'}
+              subtitle={lang === 'en' ? 'Health assessment' : 'Оценка здоровья'}
+              onClick={() => setTestsOpen(true)}
+            />
+          </div>
 
-        {/* Sign out */}
+          {/* Whoop — full width */}
+          <div className="mt-3">
+            <ModuleCard
+              icon={<Activity className="w-4.5 h-4.5 text-primary" />}
+              title="Whoop"
+              subtitle={lang === 'en' ? 'Recovery & strain tracking' : 'Восстановление и нагрузка'}
+              onClick={() => setWhoopOpen(true)}
+              accentColor="bg-green-500/15"
+            />
+          </div>
+        </motion.div>
+
+        {/* ═══════════ Sign Out ═══════════ */}
         <button
           onClick={signOut}
-          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors py-3 mt-2"
+          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors py-4 mt-2"
         >
           <LogOut className="w-4 h-4" />
           {lang === 'en' ? 'Sign out' : 'Выйти'}
         </button>
       </div>
 
-      {/* Body Measurements Detail */}
+      {/* ═══════════ Fullscreen Modules ═══════════ */}
       {measurementsOpen && (
         <BodyMeasurementsDetail open={measurementsOpen} measurements={measurements} lang={lang} onClose={() => setMeasurementsOpen(false)} />
       )}
+
+      <FullscreenModule
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        title={lang === 'en' ? 'Training History' : 'История тренировок'}
+        icon={<History className="w-5 h-5 text-primary" />}
+      >
+        {pastSessions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <Dumbbell className="w-10 h-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">{lang === 'en' ? 'No completed sessions yet' : 'Пока нет завершённых тренировок'}</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {pastSessions.map(s => (
+              <div key={s.id} className="flex items-center gap-3 bg-card border border-border/30 rounded-xl p-3.5">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                  <CalendarDays className="w-3.5 h-3.5 text-primary/60" />
+                </div>
+                <span className="text-sm text-foreground font-medium flex-1">
+                  {new Date(s.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })}
+                  {s.session_time ? ` · ${s.session_time.slice(0, 5)}` : ''}
+                </span>
+                <span className="text-xs text-primary/50">✓</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </FullscreenModule>
+
+      <FullscreenModule
+        open={photosOpen}
+        onClose={() => setPhotosOpen(false)}
+        title={lang === 'en' ? 'Progress Photos' : 'Фото прогресса'}
+        icon={<Camera className="w-5 h-5 text-primary" />}
+      >
+        <ClientProgressView userId={user.id} lang={lang} />
+      </FullscreenModule>
+
+      <FullscreenModule
+        open={testsOpen}
+        onClose={() => setTestsOpen(false)}
+        title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
+        icon={<ClipboardCheck className="w-5 h-5 text-primary" />}
+      >
+        <ClientTestHistory userId={user.id} lang={lang} />
+      </FullscreenModule>
+
+      <FullscreenModule
+        open={whoopOpen}
+        onClose={() => setWhoopOpen(false)}
+        title="Whoop"
+        icon={<Activity className="w-5 h-5 text-green-400" />}
+      >
+        <WhoopWidget />
+      </FullscreenModule>
 
       {/* Booking Modal */}
       <BookingModal
