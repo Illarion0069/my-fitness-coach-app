@@ -138,7 +138,27 @@ const AppContent = () => {
           </motion.div>
         </AnimatePresence>
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={isTrainer} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
+
+      {/* Client preview toggle for trainers */}
+      {isTrainer && (
+        <button
+          onClick={() => {
+            setClientPreview(prev => {
+              if (!prev) setActiveSection('home');
+              return !prev;
+            });
+          }}
+          className={`fixed top-4 right-4 z-[100] px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+            clientPreview
+              ? 'bg-destructive text-destructive-foreground animate-pulse'
+              : 'bg-muted text-muted-foreground border border-border/50'
+          }`}
+          style={{ top: 'max(env(safe-area-inset-top, 12px), 12px)' }}
+        >
+          {clientPreview ? '← Назад к тренеру' : '👁 Вид клиента'}
+        </button>
+      )}
       
       <WelcomeModal
         open={showWelcome}
