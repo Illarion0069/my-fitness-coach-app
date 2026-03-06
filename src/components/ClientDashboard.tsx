@@ -196,7 +196,14 @@ const ClientDashboard = () => {
       setMeasurements(data || []);
     };
 
-    loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements();
+    const fetchTests = async () => {
+      const { data } = await supabase
+        .from('test_results').select('overall_percentage, created_at').eq('user_id', user.id)
+        .order('created_at', { ascending: true }).limit(20);
+      setTestResults(data || []);
+    };
+
+    loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
 
     const channel = supabase
       .channel('dashboard-sessions')
