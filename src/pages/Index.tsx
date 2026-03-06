@@ -23,12 +23,16 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
+  const [clientPreview, setClientPreview] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
     return !localStorage.getItem('app_guide_seen') && !user;
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const sections = ['home', 'test', 'pricing', 'about', ...(isTrainer ? ['admin'] : [])];
+  // In client preview mode, trainer sees the app as a client
+  const effectiveIsTrainer = isTrainer && !clientPreview;
+
+  const sections = ['home', 'test', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
 
   const handleNavigate = (section: string) => {
     const currentIdx = sections.indexOf(activeSection);
