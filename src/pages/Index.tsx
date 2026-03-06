@@ -23,12 +23,16 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
+  const [clientPreview, setClientPreview] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
     return !localStorage.getItem('app_guide_seen') && !user;
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const sections = ['home', 'test', 'pricing', 'about', ...(isTrainer ? ['admin'] : [])];
+  // In client preview mode, trainer sees the app as a client
+  const effectiveIsTrainer = isTrainer && !clientPreview;
+
+  const sections = ['home', 'test', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
 
   const handleNavigate = (section: string) => {
     const currentIdx = sections.indexOf(activeSection);
@@ -70,7 +74,7 @@ const AppContent = () => {
 
   // Reset state on logout
   useEffect(() => {
-    if (!user) setActiveSection('home');
+    if (!user) { setActiveSection('home'); setClientPreview(false); }
     if (user) setShowGuide(false);
   }, [user]);
 
@@ -98,14 +102,14 @@ const AppContent = () => {
       case 'home':
         return (
           <HeroSection onNavigate={handleNavigate} onProfileClick={() => {
-            if (isTrainer) handleNavigate('admin');
+            if (effectiveIsTrainer) handleNavigate('admin');
             else setShowWelcome(true);
           }} />
         );
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
-      case 'admin': return isTrainer ? <AdminSection /> : null;
+      case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
       default: return null;
     }
   };
@@ -134,7 +138,27 @@ const AppContent = () => {
           </motion.div>
         </AnimatePresence>
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={isTrainer} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
+
+      {/* Client preview toggle for trainers */}
+      {isTrainer && (
+        <button
+          onClick={() => {
+            setClientPreview(prev => {
+              if (!prev) setActiveSection('home');
+              return !prev;
+            });
+          }}
+          className={`fixed top-4 right-4 z-[100] px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+            clientPreview
+              ? 'bg-destructive text-destructive-foreground animate-pulse'
+              : 'bg-muted text-muted-foreground border border-border/50'
+          }`}
+          style={{ top: 'max(env(safe-area-inset-top, 12px), 12px)' }}
+        >
+          {clientPreview ? '← Назад к тренеру' : '👁 Вид клиента'}
+        </button>
+      )}
       
       <WelcomeModal
         open={showWelcome}
