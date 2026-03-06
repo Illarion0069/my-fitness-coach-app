@@ -860,15 +860,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             <p className="text-sm font-semibold capitalize">
               {format(selectedDate, 'EEEE, d MMMM', { locale })}
             </p>
-            <button
-              onClick={() => {
-                setShowAddForm(-1);
-                setAddTime('');
-              }}
-              className="w-7 h-7 rounded-lg gradient-primary flex items-center justify-center text-primary-foreground"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
           </div>
 
           {/* Add form */}
