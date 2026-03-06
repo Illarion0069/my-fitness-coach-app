@@ -307,8 +307,8 @@ const ClientDetailAccordion = ({
         onToggle={() => toggleSection('measurements')}
       >
         <div className="space-y-3">
-          <BodyMeasurementsView userId={client.user_id} lang={lang} />
-          <BodyMeasurementsInput userId={client.user_id} lang={lang} />
+          <BodyMeasurementsView key={measurementKey} userId={client.user_id} lang={lang} />
+          <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
         </div>
       </AccordionSection>
 
