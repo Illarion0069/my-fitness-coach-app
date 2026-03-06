@@ -102,14 +102,14 @@ const AppContent = () => {
       case 'home':
         return (
           <HeroSection onNavigate={handleNavigate} onProfileClick={() => {
-            if (isTrainer) handleNavigate('admin');
+            if (effectiveIsTrainer) handleNavigate('admin');
             else setShowWelcome(true);
           }} />
         );
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
-      case 'admin': return isTrainer ? <AdminSection /> : null;
+      case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
       default: return null;
     }
   };
