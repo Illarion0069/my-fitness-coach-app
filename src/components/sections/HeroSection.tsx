@@ -65,8 +65,8 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
     return () => { supabase.removeChannel(channel); };
   }, [user, isTrainer]);
 
-  // Authenticated client — show full dashboard
-  if (user && !isTrainer) {
+  // Authenticated client (or trainer in preview mode) — show full dashboard
+  if (user && (!isTrainer || clientPreview)) {
     return (
       <section className="relative bg-background">
         {/* Top bar */}
