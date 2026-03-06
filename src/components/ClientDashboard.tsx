@@ -493,14 +493,17 @@ const ClientDashboard = () => {
                 ? `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`
                 : (lang === 'en' ? 'No data yet' : 'Нет данных')}
               onClick={() => setMeasurementsOpen(true)}
-              preview={weightTrend ? (
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg font-extrabold font-heading text-foreground">{weightTrend.current}</span>
-                  <span className="text-[10px] text-muted-foreground">kg</span>
-                  <span className={`text-[10px] font-bold flex items-center gap-0.5 ml-auto ${weightTrend.diff < 0 ? 'text-green-400' : weightTrend.diff > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
-                    {weightTrend.diff > 0 ? <TrendingUp className="w-3 h-3" /> : weightTrend.diff < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                    {weightTrend.diff > 0 ? '+' : ''}{weightTrend.diff}
-                  </span>
+              preview={weightSparkData.length >= 2 ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg font-extrabold font-heading text-foreground">{weightTrend!.current}</span>
+                    <span className="text-[10px] text-muted-foreground">kg</span>
+                    <span className={`text-[10px] font-bold flex items-center gap-0.5 ml-auto ${weightTrend!.diff < 0 ? 'text-green-400' : weightTrend!.diff > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                      {weightTrend!.diff > 0 ? <TrendingUp className="w-3 h-3" /> : weightTrend!.diff < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
+                      {weightTrend!.diff > 0 ? '+' : ''}{weightTrend!.diff}
+                    </span>
+                  </div>
+                  <Sparkline data={weightSparkData} />
                 </div>
               ) : undefined}
             />
@@ -528,8 +531,23 @@ const ClientDashboard = () => {
             <ModuleCard
               icon={<ClipboardCheck className="w-4.5 h-4.5 text-primary" />}
               title={lang === 'en' ? 'Tests' : 'Тесты'}
-              subtitle={lang === 'en' ? 'Health assessment' : 'Оценка здоровья'}
+              subtitle={lastTestPct != null
+                ? `${lang === 'en' ? 'Last score' : 'Последний'}: ${lastTestPct}%`
+                : (lang === 'en' ? 'Health assessment' : 'Оценка здоровья')}
               onClick={() => setTestsOpen(true)}
+              preview={testSparkData.length >= 2 ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-lg font-extrabold font-heading text-foreground">{lastTestPct}%</span>
+                    {testSparkData.length >= 2 && (
+                      <span className={`text-[10px] font-bold ml-auto ${testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? 'text-green-400' : 'text-orange-400'}`}>
+                        {testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />}
+                      </span>
+                    )}
+                  </div>
+                  <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />
+                </div>
+              ) : undefined}
             />
           </div>
 
