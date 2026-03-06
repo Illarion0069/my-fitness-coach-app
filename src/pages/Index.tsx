@@ -104,7 +104,7 @@ const AppContent = () => {
           <HeroSection onNavigate={handleNavigate} onProfileClick={() => {
             if (effectiveIsTrainer) handleNavigate('admin');
             else setShowWelcome(true);
-          }} />
+          }} clientPreview={clientPreview} />
         );
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
