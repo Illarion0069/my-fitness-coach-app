@@ -98,6 +98,7 @@ const ClientDetailAccordion = ({
   const [resetPw, setResetPw] = useState('');
   const [resettingPw, setResettingPw] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
+  const [measurementKey, setMeasurementKey] = useState(0);
 
   const toggleSection = (id: string) => setOpenSection(prev => prev === id ? null : id);
 
@@ -306,8 +307,8 @@ const ClientDetailAccordion = ({
         onToggle={() => toggleSection('measurements')}
       >
         <div className="space-y-3">
-          <BodyMeasurementsView userId={client.user_id} lang={lang} />
-          <BodyMeasurementsInput userId={client.user_id} lang={lang} />
+          <BodyMeasurementsView key={measurementKey} userId={client.user_id} lang={lang} />
+          <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
         </div>
       </AccordionSection>
 
