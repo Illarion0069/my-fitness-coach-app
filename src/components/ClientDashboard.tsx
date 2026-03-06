@@ -275,14 +275,6 @@ const ClientDashboard = () => {
     return name.slice(0, 2).toUpperCase() || '?';
   };
 
-  if (!user) return null;
-
-  const remaining = pkg ? pkg.total_sessions - pkg.used_sessions : 0;
-  const total = pkg?.total_sessions || 0;
-  const pct = total > 0 ? Math.round((remaining / total) * 100) : 0;
-  const low = remaining <= 2;
-  const exhausted = remaining <= 0 && !!pkg;
-
   // Weight sparkline data + trend
   const weightSparkData = useMemo(() => {
     const sorted = [...measurements].filter(m => m.weight_kg).sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
@@ -300,6 +292,14 @@ const ClientDashboard = () => {
   // Test sparkline data
   const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
   const lastTestPct = testSparkData.length > 0 ? testSparkData[testSparkData.length - 1] : null;
+
+  if (!user) return null;
+
+  const remaining = pkg ? pkg.total_sessions - pkg.used_sessions : 0;
+  const total = pkg?.total_sessions || 0;
+  const pct = total > 0 ? Math.round((remaining / total) * 100) : 0;
+  const low = remaining <= 2;
+  const exhausted = remaining <= 0 && !!pkg;
 
   const formatSessionDate = (s: ScheduledSession) => {
     if (s.is_recurring) {
