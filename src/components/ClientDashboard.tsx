@@ -139,8 +139,8 @@ const ClientDashboard = () => {
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
+  const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
   const [bookingOpen, setBookingOpen] = useState(false);
-  const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
   // Fullscreen module states
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
