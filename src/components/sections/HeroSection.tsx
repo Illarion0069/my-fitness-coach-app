@@ -13,9 +13,10 @@ import { supabase } from '@/integrations/supabase/client';
 interface HeroSectionProps {
   onNavigate: (section: string) => void;
   onProfileClick: () => void;
+  clientPreview?: boolean;
 }
 
-const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
+const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionProps) => {
   const { t, lang, setLang } = useLanguage();
   const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
@@ -64,8 +65,8 @@ const HeroSection = ({ onNavigate, onProfileClick }: HeroSectionProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [user, isTrainer]);
 
-  // Authenticated client — show full dashboard
-  if (user && !isTrainer) {
+  // Authenticated client (or trainer in preview mode) — show full dashboard
+  if (user && (!isTrainer || clientPreview)) {
     return (
       <section className="relative bg-background">
         {/* Top bar */}
