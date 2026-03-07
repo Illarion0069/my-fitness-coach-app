@@ -149,6 +149,7 @@ const ClientDashboard = () => {
   const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [whoopOpen, setWhoopOpen] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
