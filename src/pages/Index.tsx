@@ -149,7 +149,7 @@ const AppContent = () => {
               return !prev;
             });
           }}
-          className={`fixed top-4 right-4 z-[100] px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+          className={`fixed top-4 left-4 z-[100] px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
             clientPreview
               ? 'bg-destructive text-destructive-foreground animate-pulse'
               : 'bg-muted text-muted-foreground border border-border/50'
