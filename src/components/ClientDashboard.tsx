@@ -149,6 +149,7 @@ const ClientDashboard = () => {
   const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [whoopOpen, setWhoopOpen] = useState(false);
+  const [showAllSessions, setShowAllSessions] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
@@ -436,7 +437,7 @@ const ClientDashboard = () => {
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
               {lang === 'en' ? 'Upcoming' : 'Ближайшие'}
             </p>
-            {sessions.slice(0, 3).map((s, i) => (
+            {sessions.slice(0, showAllSessions ? sessions.length : 3).map((s, i) => (
               <motion.div
                 key={s.id}
                 initial={{ opacity: 0, x: -10 }}
@@ -466,10 +467,12 @@ const ClientDashboard = () => {
             ))}
             {sessions.length > 3 && (
               <button
-                onClick={() => { setBookingStep('my-sessions'); setBookingOpen(true); }}
+                onClick={() => setShowAllSessions(prev => !prev)}
                 className="w-full text-xs text-primary font-semibold py-1.5 text-center hover:underline"
               >
-                +{sessions.length - 3} {lang === 'en' ? 'more' : 'ещё'}
+                {showAllSessions
+                  ? (lang === 'en' ? 'Show less' : 'Свернуть')
+                  : `+${sessions.length - 3} ${lang === 'en' ? 'more' : 'ещё'}`}
               </button>
             )}
           </motion.div>
