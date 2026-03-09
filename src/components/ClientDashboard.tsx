@@ -443,6 +443,26 @@ const ClientDashboard = () => {
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </motion.button>
 
+        {/* ═══════════ Contact Trainer ═══════════ */}
+        <motion.a
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          href="https://t.me/LimassolFitness_bot"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full bg-card border border-border/40 rounded-2xl p-4 flex items-center gap-3 hover:border-primary/30 transition-all no-underline"
+        >
+          <div className="w-11 h-11 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+            <MessageCircle className="w-5 h-5 text-accent-foreground" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Contact Trainer' : 'Связь с тренером'}</p>
+            <p className="text-[11px] text-muted-foreground">Telegram</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </motion.a>
+
         {/* ═══════════ Upcoming Sessions ═══════════ */}
         {sessions.length > 0 && (
           <motion.div
