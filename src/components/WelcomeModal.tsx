@@ -558,7 +558,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   />
                   <div>
                     <PasswordInput value={newPassword} onChange={setNewPassword} placeholder={t('New password', 'Новый пароль')} className={inputClass} />
-                    <PassworCdChecklistpassword={newPassword} lang={lang} />
+                    <PasswordChecklist password={newPassword} lang={lang} />
                   </div>
 
                   <InlineMessage message={formError} variant="error" />
