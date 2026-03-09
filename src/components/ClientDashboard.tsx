@@ -399,6 +399,22 @@ const ClientDashboard = () => {
                   className={`h-full rounded-full ${exhausted ? 'bg-destructive' : 'bg-white/90'}`}
                 />
               </div>
+              {/* Package expiry */}
+              {pkg.expires_at && (() => {
+                const daysLeft = Math.ceil((new Date(pkg.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                if (daysLeft <= 0) return (
+                  <p className={`text-[10px] mt-2 font-medium ${exhausted ? 'text-destructive/80' : 'text-primary-foreground/60'}`}>
+                    {lang === 'en' ? 'Expired' : 'Срок истёк'}
+                  </p>
+                );
+                return (
+                  <p className={`text-[10px] mt-2 font-medium ${exhausted ? 'text-destructive/60' : 'text-primary-foreground/50'}`}>
+                    {lang === 'en'
+                      ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`
+                      : `${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'} осталось`}
+                  </p>
+                );
+              })()}
             </div>
           </motion.div>
         )}
