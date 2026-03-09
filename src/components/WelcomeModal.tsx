@@ -426,7 +426,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   />
                   <div>
                     <PasswordInput value={password} onChange={setPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
-                    <PasswordStrength password={password} lang={lang} />
+                    <PasswordChecklist password={password} lang={lang} />
                   </div>
                   <div className="relative">
                     <PasswordInput
