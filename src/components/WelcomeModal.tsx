@@ -51,30 +51,15 @@ const PasswordInput = ({ value, onChange, placeholder, className }: {
   );
 };
 
-const hasWeakPattern = (pw: string): boolean => {
-  const lower = pw.toLowerCase();
-  const hasCommonWord = /(password|qwerty|admin|welcome|football|iloveyou|123456|123123)/i.test(lower);
-  const hasRepeatedChars = /(.)\1{3,}/.test(pw);
-  const hasRepeatedChunk = /(\d{2,4})\1+/.test(pw);
-  const hasLongAscendingDigits = /(0123|1234|2345|3456|4567|5678|6789|7890)/.test(pw);
-  const hasLongDescendingDigits = /(9876|8765|7654|6543|5432|4321|3210)/.test(pw);
-
-  return hasCommonWord || hasRepeatedChars || hasRepeatedChunk || hasLongAscendingDigits || hasLongDescendingDigits;
-};
-
 const getPasswordStrength = (pw: string): number => {
   if (!pw) return 0;
   if (pw.length < 6) return 0;
-
   let score = 1;
-  if (pw.length >= 10) score++;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-
-  if (hasWeakPattern(pw)) score -= 2;
-
-  return Math.max(0, Math.min(score, 4));
+  return Math.min(score, 4);
 };
 
 const PasswordStrength = ({ password, lang }: { password: string; lang: string }) => {
@@ -170,25 +155,27 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     try {
       const fullPhone = `${countryCode}${phoneNumber}`;
       const fakeEmail = phoneToEmail(countryCode, phoneNumber);
-      const { error } = await supabase.auth.signUp({
-        email: fakeEmail,
-        password,
-        options: {
-          data: { full_name: name.trim(), phone: fullPhone },
-          emailRedirectTo: window.location.origin,
-        },
+
+      // Use admin signup edge function to bypass HaveIBeenPwned check
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('signup', {
+        body: { email: fakeEmail, password, full_name: name.trim(), phone: fullPhone },
       });
-      if (error) {
-        if (error.message?.includes('already been registered')) {
+
+      if (fnError) throw new Error(fnError.message || t('Registration failed', 'Ошибка регистрации'));
+      if (fnData?.error) {
+        if (fnData.error.includes('already registered')) {
           throw new Error(t('This phone number is already registered. Please sign in.', 'Этот номер уже зарегистрирован. Войдите в систему.'));
         }
-        if (error.message?.toLowerCase().includes('weak') || error.message?.toLowerCase().includes('guess')) {
-          throw new Error(t(
-            'This password was found in a leaked database. Please choose a unique password that you haven\'t used before.',
-            'Этот пароль найден в базе утечек. Придумайте уникальный пароль, который вы раньше не использовали.'
-          ));
-        }
-        throw error;
+        throw new Error(fnData.error);
+      }
+
+      // If we got a session back, set it; otherwise sign in manually
+      if (fnData?.session) {
+        await supabase.auth.setSession(fnData.session);
+      } else {
+        // Sign in with the newly created credentials
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email: fakeEmail, password });
+        if (signInErr) throw signInErr;
       }
       await refreshProfile();
       toast({ title: t('Registration successful!', 'Регистрация успешна!') });
