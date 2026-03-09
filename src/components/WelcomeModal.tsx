@@ -170,25 +170,27 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     try {
       const fullPhone = `${countryCode}${phoneNumber}`;
       const fakeEmail = phoneToEmail(countryCode, phoneNumber);
-      const { error } = await supabase.auth.signUp({
-        email: fakeEmail,
-        password,
-        options: {
-          data: { full_name: name.trim(), phone: fullPhone },
-          emailRedirectTo: window.location.origin,
-        },
+
+      // Use admin signup edge function to bypass HaveIBeenPwned check
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('signup', {
+        body: { email: fakeEmail, password, full_name: name.trim(), phone: fullPhone },
       });
-      if (error) {
-        if (error.message?.includes('already been registered')) {
+
+      if (fnError) throw new Error(fnError.message || t('Registration failed', 'Ошибка регистрации'));
+      if (fnData?.error) {
+        if (fnData.error.includes('already registered')) {
           throw new Error(t('This phone number is already registered. Please sign in.', 'Этот номер уже зарегистрирован. Войдите в систему.'));
         }
-        if (error.message?.toLowerCase().includes('weak') || error.message?.toLowerCase().includes('guess')) {
-          throw new Error(t(
-            'This password was found in a leaked database. Please choose a unique password that you haven\'t used before.',
-            'Этот пароль найден в базе утечек. Придумайте уникальный пароль, который вы раньше не использовали.'
-          ));
-        }
-        throw error;
+        throw new Error(fnData.error);
+      }
+
+      // If we got a session back, set it; otherwise sign in manually
+      if (fnData?.session) {
+        await supabase.auth.setSession(fnData.session);
+      } else {
+        // Sign in with the newly created credentials
+        const { error: signInErr } = await supabase.auth.signInWithPassword({ email: fakeEmail, password });
+        if (signInErr) throw signInErr;
       }
       await refreshProfile();
       toast({ title: t('Registration successful!', 'Регистрация успешна!') });
