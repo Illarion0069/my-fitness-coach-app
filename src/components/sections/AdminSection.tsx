@@ -17,6 +17,7 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string;
+  avatar_url: string | null;
 }
 
 interface ClientPackage {
@@ -398,17 +399,30 @@ const AdminSection = () => {
                 {(dragHandle) => (
                 <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
                   <div className="w-full p-4 flex items-center gap-3">
-                    <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
-                      <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
-                    </div>
-                    <button
-                      onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
-                      className="flex-1 text-left flex items-center justify-between min-w-0"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm truncate">{client.full_name}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
-                      </div>
+                     <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
+                       <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
+                     </div>
+                     {client.avatar_url ? (
+                       <img
+                         src={client.avatar_url}
+                         alt={client.full_name}
+                         className="w-9 h-9 rounded-full object-cover shrink-0"
+                       />
+                     ) : (
+                       <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                         <span className="text-xs font-bold text-primary">
+                           {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                         </span>
+                       </div>
+                     )}
+                     <button
+                       onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
+                       className="flex-1 text-left flex items-center justify-between min-w-0"
+                     >
+                       <div className="min-w-0">
+                         <p className="font-bold text-sm truncate">{client.full_name}</p>
+                         <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
+                       </div>
                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
                         {(() => {
                           const count = weeklySessionCounts[client.user_id] || 0;
