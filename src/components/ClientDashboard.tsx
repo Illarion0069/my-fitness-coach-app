@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, RotateCw, XCircle, Loader2,
-  Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, MessageCircle
+  Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
