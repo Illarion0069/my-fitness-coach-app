@@ -51,30 +51,15 @@ const PasswordInput = ({ value, onChange, placeholder, className }: {
   );
 };
 
-const hasWeakPattern = (pw: string): boolean => {
-  const lower = pw.toLowerCase();
-  const hasCommonWord = /(password|qwerty|admin|welcome|football|iloveyou|123456|123123)/i.test(lower);
-  const hasRepeatedChars = /(.)\1{3,}/.test(pw);
-  const hasRepeatedChunk = /(\d{2,4})\1+/.test(pw);
-  const hasLongAscendingDigits = /(0123|1234|2345|3456|4567|5678|6789|7890)/.test(pw);
-  const hasLongDescendingDigits = /(9876|8765|7654|6543|5432|4321|3210)/.test(pw);
-
-  return hasCommonWord || hasRepeatedChars || hasRepeatedChunk || hasLongAscendingDigits || hasLongDescendingDigits;
-};
-
 const getPasswordStrength = (pw: string): number => {
   if (!pw) return 0;
   if (pw.length < 6) return 0;
-
   let score = 1;
-  if (pw.length >= 10) score++;
-  if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+  if (pw.length >= 8) score++;
+  if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
   if (/[0-9]/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
-
-  if (hasWeakPattern(pw)) score -= 2;
-
-  return Math.max(0, Math.min(score, 4));
+  return Math.min(score, 4);
 };
 
 const PasswordStrength = ({ password, lang }: { password: string; lang: string }) => {
