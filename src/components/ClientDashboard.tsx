@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, RotateCw, XCircle, Loader2,
-  Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell
+  Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, MessageCircle
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -51,6 +51,7 @@ interface ClientPackage {
   total_sessions: number;
   used_sessions: number;
   is_active: boolean;
+  expires_at: string | null;
 }
 
 const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
@@ -399,6 +400,22 @@ const ClientDashboard = () => {
                   className={`h-full rounded-full ${exhausted ? 'bg-destructive' : 'bg-white/90'}`}
                 />
               </div>
+              {/* Package expiry */}
+              {pkg.expires_at && (() => {
+                const daysLeft = Math.ceil((new Date(pkg.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                if (daysLeft <= 0) return (
+                  <p className={`text-[10px] mt-2 font-medium ${exhausted ? 'text-destructive/80' : 'text-primary-foreground/60'}`}>
+                    {lang === 'en' ? 'Expired' : 'Срок истёк'}
+                  </p>
+                );
+                return (
+                  <p className={`text-[10px] mt-2 font-medium ${exhausted ? 'text-destructive/60' : 'text-primary-foreground/50'}`}>
+                    {lang === 'en'
+                      ? `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`
+                      : `${daysLeft} ${daysLeft === 1 ? 'день' : daysLeft < 5 ? 'дня' : 'дней'} осталось`}
+                  </p>
+                );
+              })()}
             </div>
           </motion.div>
         )}
@@ -425,6 +442,26 @@ const ClientDashboard = () => {
           </div>
           <ChevronRight className="w-4 h-4 text-muted-foreground" />
         </motion.button>
+
+        {/* ═══════════ Contact Trainer ═══════════ */}
+        <motion.a
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+          href="https://t.me/LimassolFitness_bot"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full bg-card border border-border/40 rounded-2xl p-4 flex items-center gap-3 hover:border-primary/30 transition-all no-underline"
+        >
+          <div className="w-11 h-11 rounded-xl bg-accent/20 flex items-center justify-center shrink-0">
+            <MessageCircle className="w-5 h-5 text-accent-foreground" />
+          </div>
+          <div className="flex-1 text-left">
+            <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Contact Trainer' : 'Связь с тренером'}</p>
+            <p className="text-[11px] text-muted-foreground">Telegram</p>
+          </div>
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </motion.a>
 
         {/* ═══════════ Upcoming Sessions ═══════════ */}
         {sessions.length > 0 && (
