@@ -51,6 +51,7 @@ interface ClientPackage {
   total_sessions: number;
   used_sessions: number;
   is_active: boolean;
+  expires_at: string | null;
 }
 
 const DAY_NAMES_RU = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
