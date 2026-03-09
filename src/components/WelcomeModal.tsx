@@ -167,6 +167,12 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
         if (error.message?.includes('already been registered')) {
           throw new Error(t('This phone number is already registered. Please sign in.', 'Этот номер уже зарегистрирован. Войдите в систему.'));
         }
+        if (error.message?.toLowerCase().includes('weak') || error.message?.toLowerCase().includes('guess')) {
+          throw new Error(t(
+            'This password was found in a leaked database. Please choose a unique password that you haven\'t used before.',
+            'Этот пароль найден в базе утечек. Придумайте уникальный пароль, который вы раньше не использовали.'
+          ));
+        }
         throw error;
       }
       await refreshProfile();
