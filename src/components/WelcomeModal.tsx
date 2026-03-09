@@ -62,29 +62,53 @@ const getPasswordStrength = (pw: string): number => {
   return Math.min(score, 4);
 };
 
-const PasswordStrength = ({ password, lang }: { password: string; lang: string }) => {
+const PasswordChecklist = ({ password, lang }: { password: string; lang: string }) => {
   if (!password) return (
     <p className="text-[11px] text-muted-foreground mt-1.5 px-1">
       {lang === 'en' ? 'At least 6 characters — letters, numbers, or symbols' : 'Минимум 6 символов — буквы, цифры или символы'}
     </p>
   );
+
+  const t = (en: string, ru: string) => lang === 'en' ? en : ru;
+
+  const checks = [
+    { pass: password.length >= 6, label: t('At least 6 characters', 'Минимум 6 символов') },
+    { pass: /[A-Z]/.test(password), label: t('Uppercase letter', 'Заглавная буква') },
+    { pass: /[a-z]/.test(password), label: t('Lowercase letter', 'Строчная буква') },
+    { pass: /[0-9]/.test(password), label: t('Number', 'Цифра') },
+    { pass: /[^A-Za-z0-9]/.test(password), label: t('Symbol (!@#...)', 'Символ (!@#...)') },
+  ];
+
   const strength = getPasswordStrength(password);
   const levels = [
-    { label: lang === 'en' ? 'Too short' : 'Слишком короткий', color: 'bg-destructive' },
-    { label: lang === 'en' ? 'Weak' : 'Слабый', color: 'bg-destructive' },
-    { label: lang === 'en' ? 'Fair' : 'Средний', color: 'bg-yellow-500' },
-    { label: lang === 'en' ? 'Good' : 'Хороший', color: 'bg-emerald-500' },
-    { label: lang === 'en' ? 'Strong' : 'Сильный', color: 'bg-emerald-400' },
+    { label: t('Too short', 'Слишком короткий'), color: 'bg-destructive' },
+    { label: t('Weak', 'Слабый'), color: 'bg-destructive' },
+    { label: t('Fair', 'Средний'), color: 'bg-yellow-500' },
+    { label: t('Good', 'Хороший'), color: 'bg-emerald-500' },
+    { label: t('Strong', 'Сильный'), color: 'bg-emerald-400' },
   ];
-  const { label, color } = levels[strength];
+  const { label: strengthLabel, color } = levels[strength];
+
   return (
-    <div className="mt-2 px-1 space-y-1">
+    <div className="mt-2 px-1 space-y-1.5">
       <div className="flex gap-1">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className={`h-1 flex-1 rounded-full transition-colors duration-300 ${i < strength ? color : 'bg-border/50'}`} />
         ))}
       </div>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
+      <p className="text-[11px] text-muted-foreground">{strengthLabel}</p>
+      <div className="grid grid-cols-2 gap-x-2 gap-y-0.5">
+        {checks.map((c, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <span className={`text-[10px] ${c.pass ? 'text-emerald-500' : 'text-muted-foreground/50'}`}>
+              {c.pass ? '✓' : '○'}
+            </span>
+            <span className={`text-[10px] ${c.pass ? 'text-foreground' : 'text-muted-foreground/60'}`}>
+              {c.label}
+            </span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
