@@ -77,6 +77,7 @@ interface Props {
   onCreatePackage: (userId: string, sessions: number) => void;
   onSendRemaining: () => void;
   onSendRenewal: () => void;
+  onSendGymRenewal: () => void;
   onDeleteClient?: () => void;
 }
 
