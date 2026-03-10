@@ -203,11 +203,15 @@ const AdminSection = () => {
     const clientPkgs = packages[client.user_id] || [];
     const activePkg = clientPkgs.find((p) => p.is_active);
     const remaining = activePkg ? activePkg.total_sessions - activePkg.used_sessions : 0;
-    return sendNotification(client, `📊 <b>Limassol Fitness</b>\n\n${client.full_name}, у вас осталось <b>${remaining}</b> занятий из ${activePkg?.total_sessions || 0}.\nЗаписывайтесь на следующую тренировку! 💪`);
+    return sendNotification(client, `📊 <b>Limassol Fitness</b>\n\n${client.full_name}, у вас осталось <b>${remaining}</b> занятий из ${activePkg?.total_sessions || 0}.\nЗаписывайтесь на следующую тренировку! 💪\n\nОплата: <a href="https://revolut.me/illarion">Revolut</a>`);
   };
 
   const sendRenewalNotification = (client: Profile) => {
     return sendNotification(client, `🔄 <b>Limassol Fitness</b>\n\n${client.full_name}, пора продлить абонемент!\n\n📦 Пакеты:\n• 8 занятий — 750€\n• 12 занятий — 1030€\n• 20 занятий — 1599€\n\nОплата: <a href="https://revolut.me/illarion">Revolut</a>\nНапишите тренеру для продления! 💪`);
+  };
+
+  const sendGymRenewalNotification = (client: Profile) => {
+    return sendNotification(client, `🏋️ <b>Limassol Fitness</b>\n\n${client.full_name}, напоминаем о продлении абонемента в зал!\n\n💳 Стоимость: <b>150€/мес</b>\n\nОплата: <a href="https://revolut.me/illarion">Revolut</a>`);
   };
 
   const inviteClient = async () => {
