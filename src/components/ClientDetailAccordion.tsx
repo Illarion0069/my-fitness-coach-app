@@ -77,6 +77,7 @@ interface Props {
   onCreatePackage: (userId: string, sessions: number) => void;
   onSendRemaining: () => void;
   onSendRenewal: () => void;
+  onSendGymRenewal: () => void;
   onDeleteClient?: () => void;
 }
 
@@ -90,6 +91,7 @@ const ClientDetailAccordion = ({
   onCreatePackage,
   onSendRemaining,
   onSendRenewal,
+  onSendGymRenewal,
   onDeleteClient,
 }: Props) => {
   const { toast } = useToast();
@@ -357,6 +359,12 @@ const ClientDetailAccordion = ({
           <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
         </button>
       </div>
+      <button
+        onClick={onSendGymRenewal}
+        className="w-full bg-secondary/50 border border-border/50 text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
+      >
+        <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym membership 150€' : 'Абонемент зала 150€'}
+      </button>
 
       {/* Delete client */}
       {onDeleteClient && (
