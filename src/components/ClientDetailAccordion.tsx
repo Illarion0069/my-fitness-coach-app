@@ -91,6 +91,7 @@ const ClientDetailAccordion = ({
   onCreatePackage,
   onSendRemaining,
   onSendRenewal,
+  onSendGymRenewal,
   onDeleteClient,
 }: Props) => {
   const { toast } = useToast();
