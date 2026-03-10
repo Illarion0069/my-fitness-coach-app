@@ -470,6 +470,7 @@ const AdminSection = () => {
                       }}
                       onSendRemaining={() => sendRemainingNotification(client)}
                       onSendRenewal={() => sendRenewalNotification(client)}
+                      onSendGymRenewal={() => sendGymRenewalNotification(client)}
                       onDeleteClient={() => deleteClient(client)}
                     />
                   )}
