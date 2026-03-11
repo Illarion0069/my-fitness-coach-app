@@ -214,7 +214,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       const sessionCount = recurring.length * weeksInMonth + oneOff.length;
       const userPkg = packages.find(p => p.user_id === userId && p.is_active);
       if (userPkg) {
-        total += sessionCount * getPerSessionPrice(userPkg.total_sessions);
+        total += sessionCount * getPerSessionPrice(userPkg);
       }
     });
 
