@@ -130,22 +130,20 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
     const items: { title: string; hours: number; revenue: number; doneCount: number; totalCount: number }[] = [];
-    let totalMinutes = 0;
-    let doneMinutes = 0;
+    let totalClasses = 0;
+    let doneClasses = 0;
 
     reloadBlocks.forEach(b => {
       const label = b.title || 'Reload';
       if (b.is_recurring && b.recurrence_day != null) {
         const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day);
         const doneOccurrences = occurrences.filter(d => d <= today);
-        const totalMins = b.duration_minutes * occurrences.length;
-        const doneMins = b.duration_minutes * doneOccurrences.length;
-        totalMinutes += totalMins;
-        doneMinutes += doneMins;
+        totalClasses += occurrences.length;
+        doneClasses += doneOccurrences.length;
         items.push({
-          title: `${label} (${lang === 'en' ? 'weekly' : 'еженед.'})`,
-          hours: Math.round(totalMins / 60 * 10) / 10,
-          revenue: Math.round((totalMins / 60) * RELOAD_RATE_PER_HOUR),
+          title: label,
+          hours: occurrences.length,
+          revenue: occurrences.length * RELOAD_RATE_PER_HOUR,
           doneCount: doneOccurrences.length,
           totalCount: occurrences.length,
         });
@@ -153,13 +151,12 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         const d = new Date(b.block_date + 'T00:00:00');
         if (d >= monthStart && d <= monthEnd) {
           const isDone = d <= today;
-          totalMinutes += b.duration_minutes;
-          if (isDone) doneMinutes += b.duration_minutes;
-          const dateLabel = format(d, 'd MMM', { locale: lang === 'ru' ? ru : undefined });
+          totalClasses += 1;
+          if (isDone) doneClasses += 1;
           items.push({
-            title: `${label} — ${dateLabel}`,
-            hours: Math.round(b.duration_minutes / 60 * 10) / 10,
-            revenue: Math.round((b.duration_minutes / 60) * RELOAD_RATE_PER_HOUR),
+            title: label,
+            hours: 1,
+            revenue: RELOAD_RATE_PER_HOUR,
             doneCount: isDone ? 1 : 0,
             totalCount: 1,
           });
@@ -169,10 +166,10 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
 
     return {
       items,
-      totalHours: Math.round(totalMinutes / 60 * 10) / 10,
-      totalRevenue: Math.round((totalMinutes / 60) * RELOAD_RATE_PER_HOUR),
-      doneHours: Math.round(doneMinutes / 60 * 10) / 10,
-      doneRevenue: Math.round((doneMinutes / 60) * RELOAD_RATE_PER_HOUR),
+      totalHours: totalClasses,
+      totalRevenue: totalClasses * RELOAD_RATE_PER_HOUR,
+      doneHours: doneClasses,
+      doneRevenue: doneClasses * RELOAD_RATE_PER_HOUR,
     };
   }, [blocks, monthStart, monthEnd, lang]);
 
