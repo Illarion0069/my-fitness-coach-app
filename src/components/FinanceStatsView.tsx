@@ -384,15 +384,39 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           color="text-purple-500"
           bgColor="bg-purple-500/10"
         />
-        {reloadRevenue > 0 && (
-          <MetricCard
-            icon={<Users className="w-4 h-4" />}
-            label="Reload (группы)"
-            value={`€${reloadRevenue}`}
-            sub={`${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
-            color="text-teal-500"
-            bgColor="bg-teal-500/10"
-          />
+        <MetricCard
+          icon={<Users className="w-4 h-4" />}
+          label="Reload (группы)"
+          value={`€${reloadRevenue}`}
+          sub={`${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
+          color="text-teal-500"
+          bgColor="bg-teal-500/10"
+        />
+      </div>
+
+      {/* Reload details */}
+      <div className="bg-card border border-border/50 rounded-2xl p-4">
+        <h3 className="text-xs font-bold mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4 text-teal-500" />
+          {lang === 'en' ? 'Reload (group classes)' : 'Reload (групповые)'}
+          <span className="ml-auto text-xs font-bold text-teal-500">€{reloadRevenue}</span>
+        </h3>
+        {reloadDetails.items.length > 0 ? (
+          <div className="space-y-2">
+            {reloadDetails.items.map((item, i) => (
+              <div key={i} className="flex items-center justify-between text-xs bg-teal-500/5 rounded-xl px-3 py-2">
+                <div>
+                  <p className="font-semibold">{item.title}</p>
+                  <p className="text-muted-foreground">{item.hours} {lang === 'en' ? 'hrs' : 'ч.'} × €{RELOAD_RATE_PER_HOUR}</p>
+                </div>
+                <span className="font-bold text-teal-500">€{item.revenue}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {lang === 'en' ? 'No Reload classes this month. Add them in the calendar as "Reload" type.' : 'Нет Reload-классов в этом месяце. Добавь их в календаре как тип «Reload».'}
+          </p>
         )}
       </div>
 
