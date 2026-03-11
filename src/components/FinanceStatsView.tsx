@@ -65,13 +65,14 @@ function isFreeClient(name: string): boolean {
   return FREE_CLIENT_NAMES.some(n => lower.includes(n));
 }
 
-function getPackagePrice(totalSessions: number): number {
-  return PRICE_MAP[totalSessions] || totalSessions * 85;
+function getPackagePrice(pkg: PackageRecord): number {
+  if (pkg.price_paid != null) return pkg.price_paid;
+  return PRICE_MAP[pkg.total_sessions] || pkg.total_sessions * 85;
 }
 
-function getPerSessionPrice(totalSessions: number): number {
-  const price = getPackagePrice(totalSessions);
-  return Math.round(price / totalSessions);
+function getPerSessionPrice(pkg: PackageRecord): number {
+  const price = getPackagePrice(pkg);
+  return Math.round(price / pkg.total_sessions);
 }
 
 const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
