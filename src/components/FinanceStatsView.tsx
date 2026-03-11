@@ -182,7 +182,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       .forEach(entry => {
         const pkg = packages.find(p => p.id === entry.package_id);
         if (pkg) {
-          total += getPerSessionPrice(pkg.total_sessions);
+          total += getPerSessionPrice(pkg);
         }
       });
 
