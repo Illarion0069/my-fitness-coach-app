@@ -35,6 +35,7 @@ interface Props {
 
 const BLOCK_TYPES = [
   { type: 'session', icon: CalIcon, labelRu: 'Тренировка', labelEn: 'Session', color: 'bg-primary/15 text-primary' },
+  { type: 'reload', icon: CalIcon, labelRu: 'Reload (групповой)', labelEn: 'Reload (group)', color: 'bg-teal-500/15 text-teal-600' },
   { type: 'block', icon: Ban, labelRu: 'Закрыть слот', labelEn: 'Block slot', color: 'bg-destructive/15 text-destructive' },
   { type: 'personal', icon: CalIcon, labelRu: 'Личное событие', labelEn: 'Personal event', color: 'bg-blue-500/15 text-blue-600' },
 ];

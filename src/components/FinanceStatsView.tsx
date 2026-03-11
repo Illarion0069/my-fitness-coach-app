@@ -42,6 +42,17 @@ interface ProfileRecord {
   full_name: string;
 }
 
+interface BlockRecord {
+  id: string;
+  block_type: string;
+  block_date: string | null;
+  block_time: string;
+  duration_minutes: number;
+  is_recurring: boolean;
+  recurrence_day: number | null;
+  title: string | null;
+}
+
 const PRICE_MAP: Record<number, number> = {
   1: 100,
   8: 750,

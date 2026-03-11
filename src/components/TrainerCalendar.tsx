@@ -549,11 +549,13 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       block: 'bg-destructive/10 border-destructive/30 text-destructive',
       travel: 'bg-amber-500/10 border-amber-500/30 text-amber-600',
       personal: 'bg-blue-500/10 border-blue-500/30 text-blue-600',
+      reload: 'bg-teal-500/10 border-teal-500/30 text-teal-600',
     };
     const blockIcons: Record<string, typeof Ban> = {
       block: Ban,
       travel: Car,
       personal: CalIcon,
+      reload: CalIcon,
     };
     const Icon = blockIcons[b.block_type] || Ban;
     const colorClass = blockColors[b.block_type] || blockColors.block;
