@@ -75,7 +75,7 @@ interface Props {
   onSessionChange: () => void;
   onAddSession: (pkgId: string, delta: number) => void;
   onDeletePackage: (pkgId: string) => void;
-  onCreatePackage: (userId: string, sessions: number) => void;
+  onCreatePackage: (userId: string, sessions: number, pricePaid: number | null) => void;
   onSendRemaining: () => void;
   onSendRenewal: () => void;
   onSendGymRenewal: () => void;
