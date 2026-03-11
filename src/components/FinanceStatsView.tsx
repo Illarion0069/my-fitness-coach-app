@@ -282,7 +282,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       .map(p => ({
         ...p,
         clientName: profiles.find(pr => pr.user_id === p.user_id)?.full_name || '?',
-        price: getPackagePrice(p.total_sessions),
+        price: getPackagePrice(p),
       }))
       .sort((a, b) => new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime());
   }, [packages, profiles, monthStart, monthEnd]);
