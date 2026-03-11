@@ -100,27 +100,77 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
+  // Helper: get no-package sessions delivered this month (from scheduled_sessions, not ledger)
+  const noPackageMonthSessions = useMemo(() => {
+    // Find users who have sessions in calendar but NO packages at all
+    const usersWithPkgs = new Set(packages.map(p => p.user_id));
+    
+    return sessions.filter(s => {
+      if (usersWithPkgs.has(s.user_id)) return false; // has a package, handled by ledger
+      if (s.is_recurring) return false; // recurring without package — count separately below
+      const d = new Date(s.session_date + 'T00:00:00');
+      return d >= monthStart && d <= monthEnd;
+    });
+  }, [sessions, packages, monthStart, monthEnd]);
+
+  // Recurring sessions for no-package users this month
+  const noPackageRecurringSessions = useMemo(() => {
+    const usersWithPkgs = new Set(packages.map(p => p.user_id));
+    const recurring = sessions.filter(s => !usersWithPkgs.has(s.user_id) && s.is_recurring);
+    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    
+    const perUser: Record<string, number> = {};
+    recurring.forEach(s => {
+      perUser[s.user_id] = (perUser[s.user_id] || 0) + weeksInMonth;
+    });
+    return perUser;
+  }, [sessions, packages, monthStart, monthEnd]);
+
+  // All no-package session counts per user
+  const noPackageSessionCounts = useMemo(() => {
+    const counts: Record<string, number> = { ...noPackageRecurringSessions };
+    noPackageMonthSessions.forEach(s => {
+      counts[s.user_id] = (counts[s.user_id] || 0) + 1;
+    });
+    return counts;
+  }, [noPackageMonthSessions, noPackageRecurringSessions]);
+
   // Revenue from packages sold this month
   const monthlyRevenue = useMemo(() => {
-    return packages
+    const pkgRevenue = packages
       .filter(p => {
         const d = new Date(p.purchased_at);
         return d >= monthStart && d <= monthEnd;
       })
       .reduce((sum, p) => sum + getPackagePrice(p.total_sessions), 0);
-  }, [packages, monthStart, monthEnd]);
 
-  // Sessions delivered this month (from ledger, delta > 0 means deduction)
+    // Add pay-per-session revenue (€100 per session for non-free no-package clients)
+    let payPerSessionRevenue = 0;
+    Object.entries(noPackageSessionCounts).forEach(([userId, count]) => {
+      const name = profiles.find(p => p.user_id === userId)?.full_name || '';
+      if (!isFreeClient(name)) {
+        payPerSessionRevenue += count * 100;
+      }
+    });
+
+    return pkgRevenue + payPerSessionRevenue;
+  }, [packages, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+
+  // Total sessions delivered this month
   const sessionsDelivered = useMemo(() => {
-    return ledger.filter(e => {
+    const ledgerSessions = ledger.filter(e => {
       const d = new Date(e.created_at);
       return d >= monthStart && d <= monthEnd && e.delta > 0;
     }).length;
-  }, [ledger, monthStart, monthEnd]);
 
-  // Revenue per delivered session (earned revenue)
+    const noPackageTotal = Object.values(noPackageSessionCounts).reduce((s, c) => s + c, 0);
+    return ledgerSessions + noPackageTotal;
+  }, [ledger, noPackageSessionCounts, monthStart, monthEnd]);
+
+  // Earned revenue (factual)
   const earnedRevenue = useMemo(() => {
     let total = 0;
+    // From ledger (package clients)
     ledger
       .filter(e => {
         const d = new Date(e.created_at);
@@ -132,67 +182,92 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           total += getPerSessionPrice(pkg.total_sessions);
         }
       });
+
+    // From no-package clients
+    Object.entries(noPackageSessionCounts).forEach(([userId, count]) => {
+      const name = profiles.find(p => p.user_id === userId)?.full_name || '';
+      if (!isFreeClient(name)) {
+        total += count * 100;
+      }
+    });
+
     return total;
-  }, [ledger, packages, monthStart, monthEnd]);
+  }, [ledger, packages, noPackageSessionCounts, profiles, monthStart, monthEnd]);
 
-  // Expected revenue = all active packages' remaining sessions * per-session price
+  // Expected monthly revenue
   const expectedMonthlyRevenue = useMemo(() => {
-    // Based on active packages and weekly frequency, estimate this month's delivery
-    const activeClients = new Set(packages.filter(p => p.is_active).map(p => p.user_id));
-    let expectedSessions = 0;
+    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    let total = 0;
 
+    // Package clients
+    const activeClients = new Set(packages.filter(p => p.is_active).map(p => p.user_id));
     activeClients.forEach(userId => {
-      // Count recurring sessions for this user
       const recurring = sessions.filter(s => s.user_id === userId && s.is_recurring);
       const oneOff = sessions.filter(s => {
         if (s.is_recurring) return false;
         const d = new Date(s.session_date + 'T00:00:00');
         return s.user_id === userId && d >= monthStart && d <= monthEnd;
       });
-      
-      // Recurring = sessions per week * weeks in month
-      const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
-      expectedSessions += recurring.length * weeksInMonth + oneOff.length;
+      const sessionCount = recurring.length * weeksInMonth + oneOff.length;
+      const userPkg = packages.find(p => p.user_id === userId && p.is_active);
+      if (userPkg) {
+        total += sessionCount * getPerSessionPrice(userPkg.total_sessions);
+      }
     });
 
-    // Average per-session price across active packages
-    const activePkgs = packages.filter(p => p.is_active);
-    if (activePkgs.length === 0) return 0;
-    const avgPrice = activePkgs.reduce((s, p) => s + getPerSessionPrice(p.total_sessions), 0) / activePkgs.length;
-    
-    return Math.round(expectedSessions * avgPrice);
-  }, [packages, sessions, monthStart, monthEnd]);
+    // No-package clients
+    Object.entries(noPackageSessionCounts).forEach(([userId, count]) => {
+      const name = profiles.find(p => p.user_id === userId)?.full_name || '';
+      if (!isFreeClient(name)) {
+        total += count * 100;
+      }
+    });
 
-  // Active clients count
+    return Math.round(total);
+  }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+
+  // Active clients count (including no-package)
   const activeClientsCount = useMemo(() => {
-    return new Set(packages.filter(p => p.is_active).map(p => p.user_id)).size;
-  }, [packages]);
+    const pkgClients = new Set(packages.filter(p => p.is_active).map(p => p.user_id));
+    Object.keys(noPackageSessionCounts).forEach(id => pkgClients.add(id));
+    return pkgClients.size;
+  }, [packages, noPackageSessionCounts]);
 
-  // Client frequency stats
+  // Client frequency stats — include no-package clients
   const clientFrequency = useMemo(() => {
-    const monthDeductions = ledger.filter(e => {
+    const perClient: Record<string, number> = {};
+
+    // From ledger (package clients)
+    ledger.filter(e => {
       const d = new Date(e.created_at);
       return d >= monthStart && d <= monthEnd && e.delta > 0;
-    });
-
-    const perClient: Record<string, number> = {};
-    monthDeductions.forEach(e => {
+    }).forEach(e => {
       perClient[e.user_id] = (perClient[e.user_id] || 0) + 1;
     });
 
+    // From no-package clients
+    Object.entries(noPackageSessionCounts).forEach(([userId, count]) => {
+      perClient[userId] = (perClient[userId] || 0) + count;
+    });
+
     const entries = Object.entries(perClient)
-      .map(([userId, count]) => ({
-        userId,
-        name: profiles.find(p => p.user_id === userId)?.full_name || '?',
-        count,
-      }))
+      .map(([userId, count]) => {
+        const name = profiles.find(p => p.user_id === userId)?.full_name || '?';
+        return {
+          userId,
+          name,
+          count,
+          isFree: isFreeClient(name),
+          isPayPerSession: isPayPerSession(name),
+        };
+      })
       .sort((a, b) => b.count - a.count);
 
     const total = entries.reduce((s, e) => s + e.count, 0);
     const avg = entries.length > 0 ? (total / entries.length).toFixed(1) : '0';
 
     return { entries, avg, total };
-  }, [ledger, profiles, monthStart, monthEnd]);
+  }, [ledger, noPackageSessionCounts, profiles, monthStart, monthEnd]);
 
   // Packages sold this month
   const packagesSold = useMemo(() => {
