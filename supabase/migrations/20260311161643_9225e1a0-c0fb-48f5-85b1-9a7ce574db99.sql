@@ -1,0 +1,1 @@
+ALTER TABLE public.client_packages ADD COLUMN price_paid numeric NULL;

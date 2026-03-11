@@ -76,6 +76,7 @@ export type Database = {
           is_active: boolean
           notes: string | null
           package_name: string
+          price_paid: number | null
           purchased_at: string
           total_sessions: number
           updated_at: string
@@ -89,6 +90,7 @@ export type Database = {
           is_active?: boolean
           notes?: string | null
           package_name: string
+          price_paid?: number | null
           purchased_at?: string
           total_sessions: number
           updated_at?: string
@@ -102,6 +104,7 @@ export type Database = {
           is_active?: boolean
           notes?: string | null
           package_name?: string
+          price_paid?: number | null
           purchased_at?: string
           total_sessions?: number
           updated_at?: string
