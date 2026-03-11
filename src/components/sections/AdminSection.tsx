@@ -471,11 +471,12 @@ const AdminSection = () => {
                       onSessionChange={fetchData}
                       onAddSession={addSession}
                       onDeletePackage={deletePackage}
-                      onCreatePackage={(userId, sessions) => {
+                      onCreatePackage={(userId, sessions, pricePaid) => {
                         supabase.from('client_packages').insert({
                           user_id: userId,
                           package_name: `${sessions} ${lang === 'en' ? 'sessions' : 'занятий'}`,
                           total_sessions: sessions,
+                          price_paid: pricePaid,
                         }).then(() => {
                           fetchData();
                           toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
