@@ -112,8 +112,14 @@ const ClientDetailAccordion = ({
       toast({ title: lang === 'en' ? 'Enter a number' : 'Введите число', variant: 'destructive' });
       return;
     }
-    onCreatePackage(client.user_id, parsed);
+    const price = newPkgPrice.trim() ? parseFloat(newPkgPrice.trim()) : null;
+    if (price !== null && (isNaN(price) || price < 0)) {
+      toast({ title: lang === 'en' ? 'Invalid price' : 'Неверная сумма', variant: 'destructive' });
+      return;
+    }
+    onCreatePackage(client.user_id, parsed, price);
     setNewPkgName('');
+    setNewPkgPrice('');
   };
 
   const handleResetPassword = async () => {
