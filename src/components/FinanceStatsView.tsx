@@ -247,8 +247,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       }
     });
 
-    return total;
-  }, [ledger, packages, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+    return total + reloadRevenue;
+  }, [ledger, packages, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Expected monthly revenue
   const expectedMonthlyRevenue = useMemo(() => {
