@@ -44,7 +44,7 @@ const AdminSection = () => {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [inviting, setInviting] = useState(false);
-  const [viewMode, setViewMode] = useState<'clients' | 'calendar'>('clients');
+  const [viewMode, setViewMode] = useState<'clients' | 'calendar' | 'stats'>('clients');
   const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
