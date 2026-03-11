@@ -16,6 +16,7 @@ interface PackageRecord {
   is_active: boolean;
   purchased_at: string;
   package_name: string;
+  price_paid: number | null;
 }
 
 interface LedgerEntry {
@@ -64,13 +65,14 @@ function isFreeClient(name: string): boolean {
   return FREE_CLIENT_NAMES.some(n => lower.includes(n));
 }
 
-function getPackagePrice(totalSessions: number): number {
-  return PRICE_MAP[totalSessions] || totalSessions * 85;
+function getPackagePrice(pkg: PackageRecord): number {
+  if (pkg.price_paid != null) return pkg.price_paid;
+  return PRICE_MAP[pkg.total_sessions] || pkg.total_sessions * 85;
 }
 
-function getPerSessionPrice(totalSessions: number): number {
-  const price = getPackagePrice(totalSessions);
-  return Math.round(price / totalSessions);
+function getPerSessionPrice(pkg: PackageRecord): number {
+  const price = getPackagePrice(pkg);
+  return Math.round(price / pkg.total_sessions);
 }
 
 const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
@@ -143,7 +145,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         const d = new Date(p.purchased_at);
         return d >= monthStart && d <= monthEnd;
       })
-      .reduce((sum, p) => sum + getPackagePrice(p.total_sessions), 0);
+      .reduce((sum, p) => sum + getPackagePrice(p), 0);
 
     // Add pay-per-session revenue (€100 per session for non-free no-package clients)
     let payPerSessionRevenue = 0;
@@ -180,7 +182,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       .forEach(entry => {
         const pkg = packages.find(p => p.id === entry.package_id);
         if (pkg) {
-          total += getPerSessionPrice(pkg.total_sessions);
+          total += getPerSessionPrice(pkg);
         }
       });
 
@@ -212,7 +214,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       const sessionCount = recurring.length * weeksInMonth + oneOff.length;
       const userPkg = packages.find(p => p.user_id === userId && p.is_active);
       if (userPkg) {
-        total += sessionCount * getPerSessionPrice(userPkg.total_sessions);
+        total += sessionCount * getPerSessionPrice(userPkg);
       }
     });
 
@@ -280,7 +282,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       .map(p => ({
         ...p,
         clientName: profiles.find(pr => pr.user_id === p.user_id)?.full_name || '?',
-        price: getPackagePrice(p.total_sessions),
+        price: getPackagePrice(p),
       }))
       .sort((a, b) => new Date(b.purchased_at).getTime() - new Date(a.purchased_at).getTime());
   }, [packages, profiles, monthStart, monthEnd]);

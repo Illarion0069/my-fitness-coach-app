@@ -17,6 +17,7 @@ interface ClientPackage {
   total_sessions: number;
   used_sessions: number;
   is_active: boolean;
+  price_paid: number | null;
 }
 
 interface Profile {
@@ -74,7 +75,7 @@ interface Props {
   onSessionChange: () => void;
   onAddSession: (pkgId: string, delta: number) => void;
   onDeletePackage: (pkgId: string) => void;
-  onCreatePackage: (userId: string, sessions: number) => void;
+  onCreatePackage: (userId: string, sessions: number, pricePaid: number | null) => void;
   onSendRemaining: () => void;
   onSendRenewal: () => void;
   onSendGymRenewal: () => void;
@@ -97,6 +98,7 @@ const ClientDetailAccordion = ({
   const { toast } = useToast();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [newPkgName, setNewPkgName] = useState('');
+  const [newPkgPrice, setNewPkgPrice] = useState('');
   const [resetPw, setResetPw] = useState('');
   const [resettingPw, setResettingPw] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
@@ -110,8 +112,14 @@ const ClientDetailAccordion = ({
       toast({ title: lang === 'en' ? 'Enter a number' : 'Введите число', variant: 'destructive' });
       return;
     }
-    onCreatePackage(client.user_id, parsed);
+    const price = newPkgPrice.trim() ? parseFloat(newPkgPrice.trim()) : null;
+    if (price !== null && (isNaN(price) || price < 0)) {
+      toast({ title: lang === 'en' ? 'Invalid price' : 'Неверная сумма', variant: 'destructive' });
+      return;
+    }
+    onCreatePackage(client.user_id, parsed, price);
     setNewPkgName('');
+    setNewPkgPrice('');
   };
 
   const handleResetPassword = async () => {
@@ -231,7 +239,12 @@ const ClientDetailAccordion = ({
           {clientPkgs.filter(p => p.is_active).map(pkg => (
             <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold">{pkg.package_name}</p>
+                <div>
+                  <p className="text-xs font-semibold">{pkg.package_name}</p>
+                  {pkg.price_paid != null && (
+                    <p className="text-[10px] text-muted-foreground">€{pkg.price_paid}</p>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <p className="text-xs text-muted-foreground">{pkg.used_sessions}/{pkg.total_sessions}</p>
                   <button
@@ -274,10 +287,19 @@ const ClientDetailAccordion = ({
               <input
                 type="number"
                 min={1}
-                placeholder={lang === 'en' ? 'Number of sessions' : 'Количество занятий'}
+                placeholder={lang === 'en' ? 'Sessions' : 'Занятий'}
                 value={newPkgName}
                 onChange={(e) => setNewPkgName(e.target.value)}
                 className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+              />
+              <input
+                type="number"
+                min={0}
+                step={1}
+                placeholder="€"
+                value={newPkgPrice}
+                onChange={(e) => setNewPkgPrice(e.target.value)}
+                className="w-20 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
               />
               <button
                 onClick={handleCreatePackage}

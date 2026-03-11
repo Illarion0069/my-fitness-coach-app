@@ -28,6 +28,7 @@ interface ClientPackage {
   total_sessions: number;
   used_sessions: number;
   is_active: boolean;
+  price_paid: number | null;
 }
 
 const AdminSection = () => {
@@ -470,11 +471,12 @@ const AdminSection = () => {
                       onSessionChange={fetchData}
                       onAddSession={addSession}
                       onDeletePackage={deletePackage}
-                      onCreatePackage={(userId, sessions) => {
+                      onCreatePackage={(userId, sessions, pricePaid) => {
                         supabase.from('client_packages').insert({
                           user_id: userId,
                           package_name: `${sessions} ${lang === 'en' ? 'sessions' : 'занятий'}`,
                           total_sessions: sessions,
+                          price_paid: pricePaid,
                         }).then(() => {
                           fetchData();
                           toast({ title: lang === 'en' ? 'Package created' : 'Пакет создан' });
