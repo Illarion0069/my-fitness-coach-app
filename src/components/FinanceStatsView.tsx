@@ -135,30 +135,33 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
 
     reloadBlocks.forEach(b => {
       const label = b.title || 'Reload';
+      const classesPerBlock = Math.round(b.duration_minutes / 60);
       if (b.is_recurring && b.recurrence_day != null) {
         const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day);
         const doneOccurrences = occurrences.filter(d => d <= today);
-        totalClasses += occurrences.length;
-        doneClasses += doneOccurrences.length;
+        const total = classesPerBlock * occurrences.length;
+        const done = classesPerBlock * doneOccurrences.length;
+        totalClasses += total;
+        doneClasses += done;
         items.push({
           title: label,
-          hours: occurrences.length,
-          revenue: occurrences.length * RELOAD_RATE_PER_HOUR,
-          doneCount: doneOccurrences.length,
-          totalCount: occurrences.length,
+          hours: total,
+          revenue: total * RELOAD_RATE_PER_HOUR,
+          doneCount: done,
+          totalCount: total,
         });
       } else if (b.block_date) {
         const d = new Date(b.block_date + 'T00:00:00');
         if (d >= monthStart && d <= monthEnd) {
           const isDone = d <= today;
-          totalClasses += 1;
-          if (isDone) doneClasses += 1;
+          totalClasses += classesPerBlock;
+          if (isDone) doneClasses += classesPerBlock;
           items.push({
             title: label,
-            hours: 1,
-            revenue: RELOAD_RATE_PER_HOUR,
-            doneCount: isDone ? 1 : 0,
-            totalCount: 1,
+            hours: classesPerBlock,
+            revenue: classesPerBlock * RELOAD_RATE_PER_HOUR,
+            doneCount: isDone ? classesPerBlock : 0,
+            totalCount: classesPerBlock,
           });
         }
       }
