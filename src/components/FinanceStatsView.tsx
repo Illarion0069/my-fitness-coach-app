@@ -119,6 +119,43 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
+  // Reload (group classes) revenue for this month — €30/hour
+  const reloadRevenue = useMemo(() => {
+    const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
+    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    let totalMinutes = 0;
+
+    reloadBlocks.forEach(b => {
+      if (b.is_recurring) {
+        totalMinutes += b.duration_minutes * weeksInMonth;
+      } else if (b.block_date) {
+        const d = new Date(b.block_date + 'T00:00:00');
+        if (d >= monthStart && d <= monthEnd) {
+          totalMinutes += b.duration_minutes;
+        }
+      }
+    });
+
+    return Math.round((totalMinutes / 60) * RELOAD_RATE_PER_HOUR);
+  }, [blocks, monthStart, monthEnd]);
+
+  const reloadHours = useMemo(() => {
+    const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
+    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    let totalMinutes = 0;
+    reloadBlocks.forEach(b => {
+      if (b.is_recurring) {
+        totalMinutes += b.duration_minutes * weeksInMonth;
+      } else if (b.block_date) {
+        const d = new Date(b.block_date + 'T00:00:00');
+        if (d >= monthStart && d <= monthEnd) {
+          totalMinutes += b.duration_minutes;
+        }
+      }
+    });
+    return Math.round(totalMinutes / 60);
+  }, [blocks, monthStart, monthEnd]);
+
   // Helper: get no-package sessions delivered this month (from scheduled_sessions, not ledger)
   const noPackageMonthSessions = useMemo(() => {
     // Find users who have sessions in calendar but NO packages at all
