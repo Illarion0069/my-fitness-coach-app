@@ -421,26 +421,32 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         />
       </div>
 
-      {/* Reload details */}
+      {/* Reload monthly summary */}
       <div className="bg-card border border-border/50 rounded-2xl p-4">
         <h3 className="text-xs font-bold mb-3 flex items-center gap-2">
           <Users className="w-4 h-4 text-teal-500" />
           {lang === 'en' ? 'Reload (group classes)' : 'Reload (групповые)'}
-          <span className="ml-auto text-xs font-bold text-teal-500">€{reloadDetails.doneRevenue} / €{reloadRevenue}</span>
         </h3>
         {reloadDetails.items.length > 0 ? (
-          <div className="space-y-2">
-            {reloadDetails.items.map((item, i) => (
-              <div key={i} className="flex items-center justify-between text-xs bg-teal-500/5 rounded-xl px-3 py-2">
-                <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="text-muted-foreground">
-                    {item.doneCount}/{item.totalCount} {lang === 'en' ? 'done' : 'проведено'} · {item.hours} {lang === 'en' ? 'hrs' : 'ч.'} × €{RELOAD_RATE_PER_HOUR}
-                  </p>
-                </div>
-                <span className="font-bold text-teal-500">€{item.revenue}</span>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="bg-teal-500/5 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Done' : 'Проведено'}</p>
+                <p className="text-lg font-extrabold text-teal-500">{reloadDetails.items.reduce((s, i) => s + i.doneCount, 0)}</p>
               </div>
-            ))}
+              <div className="bg-teal-500/5 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Total plan' : 'Всего план'}</p>
+                <p className="text-lg font-extrabold">{reloadDetails.items.reduce((s, i) => s + i.totalCount, 0)}</p>
+              </div>
+              <div className="bg-teal-500/5 rounded-xl p-3">
+                <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Hours' : 'Часы'}</p>
+                <p className="text-lg font-extrabold">{reloadDetails.doneHours}<span className="text-muted-foreground font-normal text-xs">/{reloadHours}</span></p>
+              </div>
+            </div>
+            <div className="flex items-center justify-between bg-teal-500/10 rounded-xl px-4 py-3">
+              <span className="text-xs font-semibold">{lang === 'en' ? 'Earned / Expected' : 'Заработано / Ожидаемо'}</span>
+              <span className="text-sm font-extrabold text-teal-500">€{reloadDetails.doneRevenue} / €{reloadRevenue}</span>
+            </div>
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">
