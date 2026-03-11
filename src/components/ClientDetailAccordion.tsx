@@ -98,6 +98,7 @@ const ClientDetailAccordion = ({
   const { toast } = useToast();
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [newPkgName, setNewPkgName] = useState('');
+  const [newPkgPrice, setNewPkgPrice] = useState('');
   const [resetPw, setResetPw] = useState('');
   const [resettingPw, setResettingPw] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
