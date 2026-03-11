@@ -64,7 +64,9 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
       return;
     }
     setBlockType(type);
-    if (type === 'personal') {
+    if (type === 'reload') {
+      setTitle('Reload');
+    } else if (type === 'personal') {
       setTitle('');
     } else {
       setTitle(lang === 'en' ? 'Blocked' : 'Закрыто');
