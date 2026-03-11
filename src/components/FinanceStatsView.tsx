@@ -279,8 +279,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       }
     });
 
-    return Math.round(total);
-  }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+    return Math.round(total) + reloadRevenue;
+  }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Active clients count (including no-package)
   const activeClientsCount = useMemo(() => {
