@@ -119,42 +119,38 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Reload (group classes) revenue for this month — €30/hour
-  const reloadRevenue = useMemo(() => {
+  // Reload (group classes) details for this month — €30/hour
+  const reloadDetails = useMemo(() => {
     const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
     const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    const items: { title: string; hours: number; revenue: number; type: 'recurring' | 'oneoff' }[] = [];
     let totalMinutes = 0;
 
     reloadBlocks.forEach(b => {
+      const label = b.title || 'Reload';
       if (b.is_recurring) {
-        totalMinutes += b.duration_minutes * weeksInMonth;
+        const mins = b.duration_minutes * weeksInMonth;
+        totalMinutes += mins;
+        items.push({ title: `${label} (${lang === 'en' ? 'weekly' : 'еженед.'})`, hours: Math.round(mins / 60 * 10) / 10, revenue: Math.round((mins / 60) * RELOAD_RATE_PER_HOUR), type: 'recurring' });
       } else if (b.block_date) {
         const d = new Date(b.block_date + 'T00:00:00');
         if (d >= monthStart && d <= monthEnd) {
           totalMinutes += b.duration_minutes;
+          const dateLabel = format(d, 'd MMM', { locale: lang === 'ru' ? ru : undefined });
+          items.push({ title: `${label} — ${dateLabel}`, hours: Math.round(b.duration_minutes / 60 * 10) / 10, revenue: Math.round((b.duration_minutes / 60) * RELOAD_RATE_PER_HOUR), type: 'oneoff' });
         }
       }
     });
 
-    return Math.round((totalMinutes / 60) * RELOAD_RATE_PER_HOUR);
-  }, [blocks, monthStart, monthEnd]);
+    return {
+      items,
+      totalHours: Math.round(totalMinutes / 60),
+      totalRevenue: Math.round((totalMinutes / 60) * RELOAD_RATE_PER_HOUR),
+    };
+  }, [blocks, monthStart, monthEnd, lang]);
 
-  const reloadHours = useMemo(() => {
-    const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
-    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
-    let totalMinutes = 0;
-    reloadBlocks.forEach(b => {
-      if (b.is_recurring) {
-        totalMinutes += b.duration_minutes * weeksInMonth;
-      } else if (b.block_date) {
-        const d = new Date(b.block_date + 'T00:00:00');
-        if (d >= monthStart && d <= monthEnd) {
-          totalMinutes += b.duration_minutes;
-        }
-      }
-    });
-    return Math.round(totalMinutes / 60);
-  }, [blocks, monthStart, monthEnd]);
+  const reloadRevenue = reloadDetails.totalRevenue;
+  const reloadHours = reloadDetails.totalHours;
 
   // Helper: get no-package sessions delivered this month (from scheduled_sessions, not ledger)
   const noPackageMonthSessions = useMemo(() => {
@@ -388,15 +384,39 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           color="text-purple-500"
           bgColor="bg-purple-500/10"
         />
-        {reloadRevenue > 0 && (
-          <MetricCard
-            icon={<Users className="w-4 h-4" />}
-            label="Reload (группы)"
-            value={`€${reloadRevenue}`}
-            sub={`${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
-            color="text-teal-500"
-            bgColor="bg-teal-500/10"
-          />
+        <MetricCard
+          icon={<Users className="w-4 h-4" />}
+          label="Reload (группы)"
+          value={`€${reloadRevenue}`}
+          sub={`${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
+          color="text-teal-500"
+          bgColor="bg-teal-500/10"
+        />
+      </div>
+
+      {/* Reload details */}
+      <div className="bg-card border border-border/50 rounded-2xl p-4">
+        <h3 className="text-xs font-bold mb-3 flex items-center gap-2">
+          <Users className="w-4 h-4 text-teal-500" />
+          {lang === 'en' ? 'Reload (group classes)' : 'Reload (групповые)'}
+          <span className="ml-auto text-xs font-bold text-teal-500">€{reloadRevenue}</span>
+        </h3>
+        {reloadDetails.items.length > 0 ? (
+          <div className="space-y-2">
+            {reloadDetails.items.map((item, i) => (
+              <div key={i} className="flex items-center justify-between text-xs bg-teal-500/5 rounded-xl px-3 py-2">
+                <div>
+                  <p className="font-semibold">{item.title}</p>
+                  <p className="text-muted-foreground">{item.hours} {lang === 'en' ? 'hrs' : 'ч.'} × €{RELOAD_RATE_PER_HOUR}</p>
+                </div>
+                <span className="font-bold text-teal-500">€{item.revenue}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            {lang === 'en' ? 'No Reload classes this month. Add them in the calendar as "Reload" type.' : 'Нет Reload-классов в этом месяце. Добавь их в календаре как тип «Reload».'}
+          </p>
         )}
       </div>
 
