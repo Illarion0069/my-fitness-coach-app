@@ -348,7 +348,15 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           <div className="space-y-1.5">
             {clientFrequency.entries.map(e => (
               <div key={e.userId} className="flex items-center justify-between text-xs">
-                <span className="truncate mr-2">{e.name}</span>
+                <div className="flex items-center gap-1.5 truncate mr-2">
+                  <span className="truncate">{e.name}</span>
+                  {e.isFree && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground shrink-0">FREE</span>
+                  )}
+                  {e.isPayPerSession && (
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/15 text-primary shrink-0">€100</span>
+                  )}
+                </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
                     <div
