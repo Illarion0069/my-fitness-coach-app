@@ -47,8 +47,23 @@ const PRICE_MAP: Record<number, number> = {
   20: 1599,
 };
 
+// Clients who always pay €100 per session (no package)
+const PAY_PER_SESSION_NAMES = ['boris', 'nitay', 'eugeny'];
+// Clients who train for free
+const FREE_CLIENT_NAMES = ['rom', 'natali', 'alexander'];
+
+function isPayPerSession(name: string): boolean {
+  const lower = name.toLowerCase();
+  return PAY_PER_SESSION_NAMES.some(n => lower.includes(n));
+}
+
+function isFreeClient(name: string): boolean {
+  const lower = name.toLowerCase();
+  return FREE_CLIENT_NAMES.some(n => lower.includes(n));
+}
+
 function getPackagePrice(totalSessions: number): number {
-  return PRICE_MAP[totalSessions] || totalSessions * 85; // fallback per-session estimate
+  return PRICE_MAP[totalSessions] || totalSessions * 85;
 }
 
 function getPerSessionPrice(totalSessions: number): number {
