@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock, Search, X } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock, Search, X, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import TrainerWorkingHours from '@/components/TrainerWorkingHours';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
+import FinanceStatsView from '@/components/FinanceStatsView';
 
 interface Profile {
   id: string;
@@ -43,7 +44,7 @@ const AdminSection = () => {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [inviting, setInviting] = useState(false);
-  const [viewMode, setViewMode] = useState<'clients' | 'calendar'>('clients');
+  const [viewMode, setViewMode] = useState<'clients' | 'calendar' | 'stats'>('clients');
   const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
@@ -288,9 +289,20 @@ const AdminSection = () => {
             <CalendarDays className="w-3.5 h-3.5" />
             {lang === 'en' ? 'Calendar' : 'Календарь'}
           </button>
+          <button
+            onClick={() => setViewMode('stats')}
+            className={`flex-1 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+              viewMode === 'stats' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            {lang === 'en' ? 'Stats' : 'Финансы'}
+          </button>
         </div>
 
-        {viewMode === 'calendar' ? (
+        {viewMode === 'stats' ? (
+          <FinanceStatsView lang={lang} />
+        ) : viewMode === 'calendar' ? (
           <div className="space-y-4">
             <TrainerWorkingHours lang={lang} />
             <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
