@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { DollarSign, TrendingUp, Users, Calendar, ChevronLeft, ChevronRight, Activity } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, addMonths, eachWeekOfInterval, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
+import { format, startOfMonth, endOfMonth, subMonths, addMonths, eachWeekOfInterval, eachDayOfInterval, getDay, startOfWeek, endOfWeek, isWithinInterval } from 'date-fns';
 import { ru } from 'date-fns/locale';
 
 interface FinanceStatsViewProps {
