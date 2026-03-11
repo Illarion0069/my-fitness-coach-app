@@ -145,7 +145,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         const d = new Date(p.purchased_at);
         return d >= monthStart && d <= monthEnd;
       })
-      .reduce((sum, p) => sum + getPackagePrice(p.total_sessions), 0);
+      .reduce((sum, p) => sum + getPackagePrice(p), 0);
 
     // Add pay-per-session revenue (€100 per session for non-free no-package clients)
     let payPerSessionRevenue = 0;
