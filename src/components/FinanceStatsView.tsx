@@ -388,6 +388,16 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           color="text-purple-500"
           bgColor="bg-purple-500/10"
         />
+        {reloadRevenue > 0 && (
+          <MetricCard
+            icon={<Users className="w-4 h-4" />}
+            label="Reload (группы)"
+            value={`€${reloadRevenue}`}
+            sub={`${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
+            color="text-teal-500"
+            bgColor="bg-teal-500/10"
+          />
+        )}
       </div>
 
       {/* Active clients */}
