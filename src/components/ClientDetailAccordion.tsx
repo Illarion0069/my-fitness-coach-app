@@ -17,6 +17,7 @@ interface ClientPackage {
   total_sessions: number;
   used_sessions: number;
   is_active: boolean;
+  price_paid: number | null;
 }
 
 interface Profile {
