@@ -16,6 +16,7 @@ interface PackageRecord {
   is_active: boolean;
   purchased_at: string;
   package_name: string;
+  price_paid: number | null;
 }
 
 interface LedgerEntry {
