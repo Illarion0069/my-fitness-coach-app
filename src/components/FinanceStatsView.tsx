@@ -209,8 +209,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       }
     });
 
-    return pkgRevenue + payPerSessionRevenue;
-  }, [packages, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+    return pkgRevenue + payPerSessionRevenue + reloadRevenue;
+  }, [packages, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Total sessions delivered this month
   const sessionsDelivered = useMemo(() => {
