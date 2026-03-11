@@ -289,6 +289,15 @@ const AdminSection = () => {
             <CalendarDays className="w-3.5 h-3.5" />
             {lang === 'en' ? 'Calendar' : 'Календарь'}
           </button>
+          <button
+            onClick={() => setViewMode('stats')}
+            className={`flex-1 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
+              viewMode === 'stats' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <BarChart3 className="w-3.5 h-3.5" />
+            {lang === 'en' ? 'Stats' : 'Финансы'}
+          </button>
         </div>
 
         {viewMode === 'calendar' ? (
