@@ -300,7 +300,9 @@ const AdminSection = () => {
           </button>
         </div>
 
-        {viewMode === 'calendar' ? (
+        {viewMode === 'stats' ? (
+          <FinanceStatsView lang={lang} />
+        ) : viewMode === 'calendar' ? (
           <div className="space-y-4">
             <TrainerWorkingHours lang={lang} />
             <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
