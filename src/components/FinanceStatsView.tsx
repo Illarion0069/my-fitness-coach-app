@@ -42,6 +42,17 @@ interface ProfileRecord {
   full_name: string;
 }
 
+interface BlockRecord {
+  id: string;
+  block_type: string;
+  block_date: string | null;
+  block_time: string;
+  duration_minutes: number;
+  is_recurring: boolean;
+  recurrence_day: number | null;
+  title: string | null;
+}
+
 const PRICE_MAP: Record<number, number> = {
   1: 100,
   8: 750,
@@ -75,26 +86,31 @@ function getPerSessionPrice(pkg: PackageRecord): number {
   return Math.round(price / pkg.total_sessions);
 }
 
+const RELOAD_RATE_PER_HOUR = 30;
+
 const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const [packages, setPackages] = useState<PackageRecord[]>([]);
   const [ledger, setLedger] = useState<LedgerEntry[]>([]);
   const [sessions, setSessions] = useState<SessionRecord[]>([]);
   const [profiles, setProfiles] = useState<ProfileRecord[]>([]);
+  const [blocks, setBlocks] = useState<BlockRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
     const fetch = async () => {
-      const [{ data: pkgs }, { data: ldg }, { data: sess }, { data: profs }] = await Promise.all([
+      const [{ data: pkgs }, { data: ldg }, { data: sess }, { data: profs }, { data: blks }] = await Promise.all([
         supabase.from('client_packages').select('*').order('purchased_at', { ascending: false }),
         supabase.from('session_ledger').select('*').order('created_at', { ascending: false }),
         supabase.from('scheduled_sessions').select('id, user_id, session_date, is_recurring, is_deducted, notes'),
         supabase.from('profiles').select('user_id, full_name'),
+        supabase.from('trainer_blocks').select('id, block_type, block_date, block_time, duration_minutes, is_recurring, recurrence_day, title'),
       ]);
       setPackages((pkgs || []) as PackageRecord[]);
       setLedger((ldg || []) as LedgerEntry[]);
       setSessions((sess || []) as SessionRecord[]);
       setProfiles((profs || []) as ProfileRecord[]);
+      setBlocks((blks || []) as BlockRecord[]);
       setLoading(false);
     };
     fetch();
@@ -102,6 +118,43 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
 
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
+
+  // Reload (group classes) revenue for this month — €30/hour
+  const reloadRevenue = useMemo(() => {
+    const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
+    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    let totalMinutes = 0;
+
+    reloadBlocks.forEach(b => {
+      if (b.is_recurring) {
+        totalMinutes += b.duration_minutes * weeksInMonth;
+      } else if (b.block_date) {
+        const d = new Date(b.block_date + 'T00:00:00');
+        if (d >= monthStart && d <= monthEnd) {
+          totalMinutes += b.duration_minutes;
+        }
+      }
+    });
+
+    return Math.round((totalMinutes / 60) * RELOAD_RATE_PER_HOUR);
+  }, [blocks, monthStart, monthEnd]);
+
+  const reloadHours = useMemo(() => {
+    const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
+    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
+    let totalMinutes = 0;
+    reloadBlocks.forEach(b => {
+      if (b.is_recurring) {
+        totalMinutes += b.duration_minutes * weeksInMonth;
+      } else if (b.block_date) {
+        const d = new Date(b.block_date + 'T00:00:00');
+        if (d >= monthStart && d <= monthEnd) {
+          totalMinutes += b.duration_minutes;
+        }
+      }
+    });
+    return Math.round(totalMinutes / 60);
+  }, [blocks, monthStart, monthEnd]);
 
   // Helper: get no-package sessions delivered this month (from scheduled_sessions, not ledger)
   const noPackageMonthSessions = useMemo(() => {
@@ -156,8 +209,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       }
     });
 
-    return pkgRevenue + payPerSessionRevenue;
-  }, [packages, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+    return pkgRevenue + payPerSessionRevenue + reloadRevenue;
+  }, [packages, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Total sessions delivered this month
   const sessionsDelivered = useMemo(() => {
@@ -194,8 +247,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       }
     });
 
-    return total;
-  }, [ledger, packages, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+    return total + reloadRevenue;
+  }, [ledger, packages, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Expected monthly revenue
   const expectedMonthlyRevenue = useMemo(() => {
@@ -226,8 +279,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       }
     });
 
-    return Math.round(total);
-  }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+    return Math.round(total) + reloadRevenue;
+  }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Active clients count (including no-package)
   const activeClientsCount = useMemo(() => {
@@ -335,6 +388,16 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           color="text-purple-500"
           bgColor="bg-purple-500/10"
         />
+        {reloadRevenue > 0 && (
+          <MetricCard
+            icon={<Users className="w-4 h-4" />}
+            label="Reload (группы)"
+            value={`€${reloadRevenue}`}
+            sub={`${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
+            color="text-teal-500"
+            bgColor="bg-teal-500/10"
+          />
+        )}
       </div>
 
       {/* Active clients */}
