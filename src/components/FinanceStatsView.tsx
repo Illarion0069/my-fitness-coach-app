@@ -120,32 +120,59 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const monthEnd = endOfMonth(currentMonth);
 
   // Reload (group classes) details for this month — €30/hour
+  // Match block_type='reload' OR title containing 'reload' (legacy blocks)
   const reloadDetails = useMemo(() => {
-    const reloadBlocks = blocks.filter(b => b.block_type === 'reload');
-    const weeksInMonth = eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 }).length;
-    const items: { title: string; hours: number; revenue: number; type: 'recurring' | 'oneoff' }[] = [];
+    const reloadBlocks = blocks.filter(b =>
+      b.block_type === 'reload' || (b.title && b.title.toLowerCase().includes('reload'))
+    );
+    const today = new Date();
+    today.setHours(23, 59, 59, 999);
+    const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+
+    const items: { title: string; hours: number; revenue: number; doneCount: number; totalCount: number }[] = [];
     let totalMinutes = 0;
+    let doneMinutes = 0;
 
     reloadBlocks.forEach(b => {
       const label = b.title || 'Reload';
-      if (b.is_recurring) {
-        const mins = b.duration_minutes * weeksInMonth;
-        totalMinutes += mins;
-        items.push({ title: `${label} (${lang === 'en' ? 'weekly' : 'еженед.'})`, hours: Math.round(mins / 60 * 10) / 10, revenue: Math.round((mins / 60) * RELOAD_RATE_PER_HOUR), type: 'recurring' });
+      if (b.is_recurring && b.recurrence_day != null) {
+        const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day);
+        const doneOccurrences = occurrences.filter(d => d <= today);
+        const totalMins = b.duration_minutes * occurrences.length;
+        const doneMins = b.duration_minutes * doneOccurrences.length;
+        totalMinutes += totalMins;
+        doneMinutes += doneMins;
+        items.push({
+          title: `${label} (${lang === 'en' ? 'weekly' : 'еженед.'})`,
+          hours: Math.round(totalMins / 60 * 10) / 10,
+          revenue: Math.round((totalMins / 60) * RELOAD_RATE_PER_HOUR),
+          doneCount: doneOccurrences.length,
+          totalCount: occurrences.length,
+        });
       } else if (b.block_date) {
         const d = new Date(b.block_date + 'T00:00:00');
         if (d >= monthStart && d <= monthEnd) {
+          const isDone = d <= today;
           totalMinutes += b.duration_minutes;
+          if (isDone) doneMinutes += b.duration_minutes;
           const dateLabel = format(d, 'd MMM', { locale: lang === 'ru' ? ru : undefined });
-          items.push({ title: `${label} — ${dateLabel}`, hours: Math.round(b.duration_minutes / 60 * 10) / 10, revenue: Math.round((b.duration_minutes / 60) * RELOAD_RATE_PER_HOUR), type: 'oneoff' });
+          items.push({
+            title: `${label} — ${dateLabel}`,
+            hours: Math.round(b.duration_minutes / 60 * 10) / 10,
+            revenue: Math.round((b.duration_minutes / 60) * RELOAD_RATE_PER_HOUR),
+            doneCount: isDone ? 1 : 0,
+            totalCount: 1,
+          });
         }
       }
     });
 
     return {
       items,
-      totalHours: Math.round(totalMinutes / 60),
+      totalHours: Math.round(totalMinutes / 60 * 10) / 10,
       totalRevenue: Math.round((totalMinutes / 60) * RELOAD_RATE_PER_HOUR),
+      doneHours: Math.round(doneMinutes / 60 * 10) / 10,
+      doneRevenue: Math.round((doneMinutes / 60) * RELOAD_RATE_PER_HOUR),
     };
   }, [blocks, monthStart, monthEnd, lang]);
 
