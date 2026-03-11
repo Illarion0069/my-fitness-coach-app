@@ -44,6 +44,7 @@ interface ProfileRecord {
 const PRICE_MAP: Record<number, number> = {
   1: 100,
   8: 750,
+  10: 1000,
   12: 1030,
   20: 1599,
 };
