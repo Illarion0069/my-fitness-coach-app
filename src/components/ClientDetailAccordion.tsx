@@ -239,7 +239,12 @@ const ClientDetailAccordion = ({
           {clientPkgs.filter(p => p.is_active).map(pkg => (
             <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-semibold">{pkg.package_name}</p>
+                <div>
+                  <p className="text-xs font-semibold">{pkg.package_name}</p>
+                  {pkg.price_paid != null && (
+                    <p className="text-[10px] text-muted-foreground">€{pkg.price_paid}</p>
+                  )}
+                </div>
                 <div className="flex items-center gap-2">
                   <p className="text-xs text-muted-foreground">{pkg.used_sessions}/{pkg.total_sessions}</p>
                   <button
