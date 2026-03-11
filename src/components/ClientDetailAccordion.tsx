@@ -287,10 +287,19 @@ const ClientDetailAccordion = ({
               <input
                 type="number"
                 min={1}
-                placeholder={lang === 'en' ? 'Number of sessions' : 'Количество занятий'}
+                placeholder={lang === 'en' ? 'Sessions' : 'Занятий'}
                 value={newPkgName}
                 onChange={(e) => setNewPkgName(e.target.value)}
                 className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
+              />
+              <input
+                type="number"
+                min={0}
+                step={1}
+                placeholder="€"
+                value={newPkgPrice}
+                onChange={(e) => setNewPkgPrice(e.target.value)}
+                className="w-20 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
               />
               <button
                 onClick={handleCreatePackage}
