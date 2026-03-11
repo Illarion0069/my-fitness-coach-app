@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock, Search, X } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock, Search, X, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,6 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import TrainerWorkingHours from '@/components/TrainerWorkingHours';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
+import FinanceStatsView from '@/components/FinanceStatsView';
 
 interface Profile {
   id: string;
