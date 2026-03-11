@@ -84,7 +84,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       const [{ data: pkgs }, { data: ldg }, { data: sess }, { data: profs }] = await Promise.all([
         supabase.from('client_packages').select('*').order('purchased_at', { ascending: false }),
         supabase.from('session_ledger').select('*').order('created_at', { ascending: false }),
-        supabase.from('scheduled_sessions').select('id, user_id, session_date, is_recurring, is_deducted'),
+        supabase.from('scheduled_sessions').select('id, user_id, session_date, is_recurring, is_deducted, notes'),
         supabase.from('profiles').select('user_id, full_name'),
       ]);
       setPackages((pkgs || []) as PackageRecord[]);
