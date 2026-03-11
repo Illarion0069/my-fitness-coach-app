@@ -33,6 +33,7 @@ interface SessionRecord {
   session_date: string;
   is_recurring: boolean;
   is_deducted: boolean;
+  notes: string | null;
 }
 
 interface ProfileRecord {
