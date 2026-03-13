@@ -362,12 +362,23 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
   const totals = useMemo(() => {
     let calories = 0, protein = 0, carbs = 0, fat = 0;
-    // From AI analysis
+    // From AI analysis — use top-level totals, fallback to summing meals
     if (analysis && !analysis.invalidated) {
-      calories += (analysis.total_calories || 0);
-      protein += (analysis.total_protein_g || 0);
-      carbs += (analysis.total_carbs_g || 0);
-      fat += (analysis.total_fat_g || 0);
+      const meals = (analysis.meals || []) as any[];
+      if (analysis.total_calories > 0) {
+        calories += (analysis.total_calories || 0);
+        protein += (analysis.total_protein_g || 0);
+        carbs += (analysis.total_carbs_g || 0);
+        fat += (analysis.total_fat_g || 0);
+      } else {
+        // Fallback: sum from individual meals
+        for (const m of meals) {
+          calories += m.estimated_calories || 0;
+          protein += m.protein_g || 0;
+          carbs += m.carbs_g || 0;
+          fat += m.fat_g || 0;
+        }
+      }
     }
     // From manual entries
     for (const e of manualEntries) {
