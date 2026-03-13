@@ -6,18 +6,48 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+// Only allow URLs from our own Supabase storage
+const ALLOWED_URL_PREFIX = Deno.env.get("SUPABASE_URL")
+  ? `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/food-photos/`
+  : null;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    // Require auth header to prevent unauthenticated abuse
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
     const { photo_url } = await req.json();
-    if (!photo_url) {
+    if (!photo_url || typeof photo_url !== "string") {
       return new Response(JSON.stringify({ error: "photo_url required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Validate URL: must be from our storage bucket (prevent SSRF)
+    if (ALLOWED_URL_PREFIX && !photo_url.startsWith(ALLOWED_URL_PREFIX)) {
+      return new Response(JSON.stringify({ error: "Invalid photo URL" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // URL length sanity check
+    if (photo_url.length > 500) {
+      return new Response(JSON.stringify({ error: "URL too long" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
