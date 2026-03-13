@@ -43,12 +43,21 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
 ## Response format (JSON only, no markdown):
 {
   "overall_score": 0-100,
+  "total_calories": 0,
+  "total_protein_g": 0,
+  "total_carbs_g": 0,
+  "total_fat_g": 0,
   "meals": [
     {
       "photo_index": 0,
       "meal_type": "breakfast|lunch|dinner|snack",
-      "detected_foods": ["food1", "food2"],
+      "detected_foods": [
+        {"name": "food1", "portion_g": 150, "calories": 200, "protein_g": 15, "carbs_g": 20, "fat_g": 8}
+      ],
       "estimated_calories": 400,
+      "protein_g": 30,
+      "carbs_g": 40,
+      "fat_g": 15,
       "protein_adequate": true,
       "vegetables_present": true,
       "score": 0-100,
@@ -58,7 +67,9 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
   ],
   "summary_ru": "Краткий итог на русском языке (2-3 предложения). Что хорошо, что нужно улучшить.",
   "summary_en": "Brief summary in English (2-3 sentences). What's good, what needs improvement."
-}`;
+}
+
+IMPORTANT: For detected_foods, return an array of objects with name, portion_g, calories, protein_g, carbs_g, fat_g for each detected food item. Be as accurate as possible with portion estimates based on visual assessment. Also calculate total_calories, total_protein_g, total_carbs_g, total_fat_g as sums across all meals.`;
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
