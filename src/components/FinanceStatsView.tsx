@@ -460,33 +460,46 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           </h3>
         </div>
 
-        {/* Frequency breakdown */}
         {clientFrequency.entries.length > 0 ? (
           <div className="space-y-1.5">
-            {clientFrequency.entries.map(e => (
-              <div key={e.userId} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-1.5 truncate mr-2">
-                  <span className="truncate">{e.name}</span>
-                  {e.isFree && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground shrink-0">FREE</span>
-                  )}
-                  {e.isPayPerSession && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/15 text-primary shrink-0">€100</span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full"
-                      style={{ width: `${Math.min(100, (e.count / 20) * 100)}%` }}
-                    />
+            {clientFrequency.entries.map(e => {
+              const activePkg = packages.find(p => p.user_id === e.userId && p.is_active);
+              const hasPackage = !!activePkg;
+              const remaining = activePkg ? activePkg.total_sessions - activePkg.used_sessions : null;
+              const total = activePkg ? activePkg.total_sessions : null;
+              const progress = hasPackage && total ? Math.min(100, ((total - (remaining || 0)) / total) * 100) : 0;
+
+              return (
+                <div key={e.userId} className="flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 truncate mr-2">
+                    <span className="truncate">{e.name}</span>
+                    {e.isFree && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-secondary text-muted-foreground shrink-0">FREE</span>
+                    )}
+                    {e.isPayPerSession && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-primary/15 text-primary shrink-0">€100</span>
+                    )}
                   </div>
-                  <span className="text-muted-foreground w-12 text-right">
-                    {e.count} {lang === 'en' ? 'sess' : 'тр.'}
-                  </span>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {hasPackage ? (
+                      <>
+                        <div className="w-16 h-1.5 bg-secondary rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full ${remaining === 0 ? 'bg-destructive' : remaining !== null && remaining <= 2 ? 'bg-amber-500' : 'bg-primary'}`}
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                        <span className={`w-14 text-right font-medium ${remaining === 0 ? 'text-destructive' : remaining !== null && remaining <= 2 ? 'text-amber-500' : 'text-muted-foreground'}`}>
+                          {remaining}/{total}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground w-14 text-right text-lg leading-none">∞</span>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         ) : (
           <p className="text-xs text-muted-foreground">{lang === 'en' ? 'No sessions this month' : 'Нет тренировок в этом месяце'}</p>
