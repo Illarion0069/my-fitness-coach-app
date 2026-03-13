@@ -473,14 +473,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         <div className="grid grid-cols-3 gap-3">
           {macros.map(m => (
             <div key={m.label} className="text-center">
-              <div className="flex justify-center mb-1">
-                <div className="relative">
-                  <MacroRing value={m.value} max={m.value > 0 ? m.value * 1.2 : 100} color={m.color} size={44} />
-                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground">{m.value}</span>
-                </div>
-              </div>
+              <p className="text-lg font-black text-foreground" style={{ color: m.color }}>{m.value}<span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span></p>
               <p className="text-[10px] text-muted-foreground font-medium">{m.label}</p>
-              <p className="text-[10px] text-muted-foreground">{m.value}{m.unit}</p>
             </div>
           ))}
         </div>
