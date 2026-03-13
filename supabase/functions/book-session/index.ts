@@ -172,12 +172,14 @@ Deno.serve(async (req) => {
       }
 
       // Check if requester is trainer
+      const forceClientView = body?.forceClientView === true;
       const reqUser = await getAuthUser();
       let isTrainer = false;
       if (reqUser) {
         const { data: roles } = await supabase.from('user_roles').select('role').eq('user_id', reqUser.id).eq('role', 'trainer');
         isTrainer = (roles && roles.length > 0);
       }
+      const trainerViewEnabled = isTrainer && !forceClientView;
 
       const dayOfWeek = new Date(date + 'T12:00:00').getDay();
       const trainer = await getTrainerInfo();
@@ -214,13 +216,14 @@ Deno.serve(async (req) => {
         // Trainers: slot available if < MAX_CLIENTS_PER_SLOT and not blocked
         const available = isPast
           ? false
-          : isTrainer
+          : trainerViewEnabled
             ? bookedCount < MAX_CLIENTS_PER_SLOT && !blockedByTrainer
             : bookedCount === 0 && !blockedByTrainer;
-        slots.push({ time: timeStr, available, booked: isTrainer ? bookedCount : 0 });
+        slots.push({ time: timeStr, available, booked: trainerViewEnabled ? bookedCount : 0 });
       }
 
-      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: isTrainer ? MAX_CLIENTS_PER_SLOT : 1, timezone: 'Asia/Nicosia' }), {
+      return new Response(JSON.stringify({ slots, sessionDuration: DEFAULT_DURATION, maxPerSlot: trainerViewEnabled ? MAX_CLIENTS_PER_SLOT : 1, timezone: 'Asia/Nicosia' }), {
+
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

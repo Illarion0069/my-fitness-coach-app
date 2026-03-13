@@ -14,6 +14,7 @@ interface BookingModalProps {
   onLoginRequest?: () => void;
   onBooked?: () => void;
   initialStep?: 'date' | 'my-sessions';
+  forceClientView?: boolean;
 }
 
 interface TimeSlot {
@@ -40,7 +41,7 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -114,13 +115,18 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: 
     setIsDayOff(false);
     try {
       const { data } = await supabase.functions.invoke('book-session', {
-        body: { action: 'getSlots', date: dateStr },
+        body: { action: 'getSlots', date: dateStr, forceClientView },
       });
       if (data?.dayOff) {
         setIsDayOff(true);
         setSlots([]);
       } else {
-        setSlots(data?.slots || []);
+        const normalizedSlots = ((data?.slots || []) as TimeSlot[]).map((slot) =>
+          forceClientView
+            ? { ...slot, available: slot.available && (slot.booked ?? 0) === 0, booked: 0 }
+            : slot
+        );
+        setSlots(normalizedSlots);
       }
     } catch {
       setSlots([]);
@@ -458,7 +464,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: 
                         }`}
                       >
                         {slot.time}
-                        {slot.booked === 1 && slot.available && (
+                        {!forceClientView && slot.booked === 1 && slot.available && (
                           <span className="absolute top-0.5 right-1.5 text-[8px] font-bold text-primary/70">1/2</span>
                         )}
                       </button>
