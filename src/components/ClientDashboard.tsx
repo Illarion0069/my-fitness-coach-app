@@ -570,7 +570,9 @@ const ClientDashboard = () => {
                     )}
                   </div>
                   <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />
-
+                </div>
+              ) : undefined}
+            />
 
             {/* Nutrition Diary */}
             <ModuleCard
@@ -579,9 +581,6 @@ const ClientDashboard = () => {
               subtitle={lang === 'en' ? 'Food & drink log' : 'Еда и напитки'}
               onClick={() => setNutritionOpen(true)}
               accentColor="bg-orange-500/15"
-            />
-          </div>
-              ) : undefined}
             />
           </div>
 
