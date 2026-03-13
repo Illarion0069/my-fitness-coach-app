@@ -264,7 +264,7 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
     }
     try {
       const urlParts = photo.photo_url.split('/food-photos/');
-      const storagePath = urlParts[1];
+      const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
       
