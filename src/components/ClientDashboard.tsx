@@ -591,6 +591,7 @@ const ClientDashboard = () => {
               onClick={() => setWhoopOpen(true)}
               accentColor="bg-green-500/15"
             />
+          </div>
         </motion.div>
 
         {/* ═══════════ Contact Trainer ═══════════ */}
