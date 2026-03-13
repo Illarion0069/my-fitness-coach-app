@@ -38,3 +38,6 @@ verify_jwt = false
 
 [functions.analyze-nutrition]
 verify_jwt = false
+
+[functions.validate-food-photo]
+verify_jwt = false
