@@ -14,6 +14,7 @@ interface BookingModalProps {
   onLoginRequest?: () => void;
   onBooked?: () => void;
   initialStep?: 'date' | 'my-sessions';
+  forceClientView?: boolean;
 }
 
 interface TimeSlot {
@@ -40,7 +41,7 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
   const { user } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
