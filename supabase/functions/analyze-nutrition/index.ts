@@ -128,6 +128,22 @@ serve(async (req) => {
       }
     }
 
+    // Server-side rate limit: max 3 analyses per day
+    const MAX_ANALYSES = 3;
+    const { data: existingLog } = await supabase
+      .from("nutrition_logs")
+      .select("ai_analysis")
+      .eq("user_id", user_id)
+      .eq("log_date", log_date)
+      .maybeSingle();
+    const currentCount = (existingLog?.ai_analysis as any)?.analysis_count || 0;
+    if (currentCount >= MAX_ANALYSES) {
+      return new Response(JSON.stringify({ error: "Analysis limit reached (max 3 per day)" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Fetch food photos for the day
     const { data: photos, error: photosError } = await supabase
       .from("food_photos")
