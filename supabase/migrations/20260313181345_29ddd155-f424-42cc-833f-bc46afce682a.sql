@@ -1,0 +1,1 @@
+ALTER TABLE public.nutrition_logs ADD COLUMN IF NOT EXISTS manual_entries jsonb DEFAULT '[]'::jsonb;
