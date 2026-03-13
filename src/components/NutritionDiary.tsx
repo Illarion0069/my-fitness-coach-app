@@ -38,7 +38,7 @@ interface Props {
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 const MAX_PHOTOS_PER_DAY = 8;
-const MAX_ANALYSES_PER_DAY = 3;
+const MAX_ANALYSES_PER_DAY = 1;
 const VALID_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: string }[] = [
@@ -553,20 +553,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           ))
         )}
 
-        {/* Analyze Button */}
-        {photos.length > 0 && (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing || analysisAtLimit}
-            className={`w-full flex items-center justify-center gap-2 border rounded-xl p-3 transition-colors ${
-              analysisAtLimit 
-                ? 'bg-muted/20 border-border/20 cursor-not-allowed opacity-50' 
-                : 'bg-primary/15 hover:bg-primary/25 border-primary/30'
-            }`}>
+        {/* Analyze Button — only if no score yet */}
+        {photos.length > 0 && !analysisAtLimit && log?.ai_score == null && (
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing}
+            className="w-full flex items-center justify-center gap-2 border rounded-xl p-3 transition-colors bg-primary/15 hover:bg-primary/25 border-primary/30">
             {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
             <span className="text-xs font-bold text-primary">
-              {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : 
-               analysisAtLimit ? (lang === 'en' ? `Limit reached (${MAX_ANALYSES_PER_DAY}/day)` : `Лимит достигнут (${MAX_ANALYSES_PER_DAY}/день)`) :
-               log?.ai_score != null ? (lang === 'en' ? `Re-analyze (${MAX_ANALYSES_PER_DAY - analysisCount} left)` : `Переоценить (осталось ${MAX_ANALYSES_PER_DAY - analysisCount})`) : 
-               (lang === 'en' ? 'Get AI Score' : 'Получить оценку ИИ')}
+              {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : (lang === 'en' ? 'Get AI Score' : 'Получить оценку ИИ')}
             </span>
           </motion.button>
         )}
