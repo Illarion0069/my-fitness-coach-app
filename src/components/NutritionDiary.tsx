@@ -85,6 +85,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [analyzing, setAnalyzing] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<FoodPhoto | null>(null);
   const [scoreHistory, setScoreHistory] = useState<{ date: string; score: number }[]>([]);
+  const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
@@ -92,6 +93,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [overrideNote, setOverrideNote] = useState('');
   const [analysisCount, setAnalysisCount] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
     if (!effectiveUserId) return;
