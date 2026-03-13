@@ -819,10 +819,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       <AnimatePresence>
         {showQuickAdd && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowQuickAdd(false)}
-            className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center">
+            className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center pb-[calc(env(safe-area-inset-bottom,0px)+60px)]">
             <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }} transition={{ type: 'spring', damping: 25 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card rounded-t-3xl p-5 pb-8 space-y-4 border-t border-border/40">
+              className="w-full max-w-md bg-card rounded-3xl p-5 pb-6 space-y-4 border border-border/40">
               <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto" />
               <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'Quick Add' : 'Быстрый ввод'}</p>
 
