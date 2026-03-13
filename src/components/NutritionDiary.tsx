@@ -72,7 +72,7 @@ const scoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 50 ? 'text-y
 const scoreBg = (s: number) => s >= 80 ? 'bg-green-500/15' : s >= 50 ? 'bg-yellow-500/15' : 'bg-red-500/15';
 const scoreBarColor = (s: number) => s >= 80 ? 'bg-green-400' : s >= 50 ? 'bg-yellow-400' : 'bg-red-400';
 
-const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
+const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false }, ref) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
