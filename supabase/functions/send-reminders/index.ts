@@ -58,6 +58,15 @@ Deno.serve(async (req) => {
     const allSessions = [...(oneOff || []), ...filteredRecurring];
     let sent = 0;
 
+    // Get trainer's telegram_chat_id
+    const trainerChatId = Deno.env.get('TELEGRAM_CHAT_ID');
+    if (!trainerChatId) {
+      console.log('[send-reminders] No TELEGRAM_CHAT_ID configured, skipping');
+      return new Response(JSON.stringify({ success: true, sent: 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     for (const session of allSessions) {
       try {
         const sessionTime = session.session_time || session.recurrence_time;
@@ -71,30 +80,29 @@ Deno.serve(async (req) => {
         // Send 1h reminder (50-70 min before)
         if (diff < 50 || diff > 70) continue;
 
-        // Get profile via join or separate query
+        // Get client name for trainer notification
         const { data: profile } = await supabase
           .from('profiles')
-          .select('full_name, telegram_chat_id')
+          .select('full_name')
           .eq('user_id', session.user_id)
           .maybeSingle();
 
-        if (!profile?.telegram_chat_id) continue;
-
+        const clientName = profile?.full_name || 'Клиент';
         const timeFormatted = `${String(sHour).padStart(2, '0')}:${String(sMinute).padStart(2, '0')}`;
-        const msg = `⏰ <b>Reminder!</b>\n\nYour training session is in <b>1 hour</b> at <b>${timeFormatted}</b>.\n\n💪 Get ready!`;
+        const msg = `⏰ <b>Напоминание</b>\n\nТренировка с <b>${clientName}</b> через <b>1 час</b> в <b>${timeFormatted}</b>.`;
 
         await fetch(`https://api.telegram.org/bot${telegramBotToken}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: profile.telegram_chat_id,
+            chat_id: trainerChatId,
             text: msg,
             parse_mode: 'HTML',
           }),
         });
 
         sent++;
-        console.log(`  ✓ Sent 1h reminder to ${profile.full_name}`);
+        console.log(`  ✓ Sent 1h reminder to trainer for ${clientName}`);
       } catch (e) {
         console.error(`  ✗ Error for session ${session.id}:`, e);
       }
