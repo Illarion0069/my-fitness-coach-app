@@ -367,6 +367,16 @@ const ClientDetailAccordion = ({
         <ClientProgressPhotos userId={client.user_id} lang={lang} />
       </AccordionSection>
 
+      {/* Nutrition Diary */}
+      <AccordionSection
+        icon={<UtensilsCrossed className="w-4 h-4 text-orange-400" />}
+        title={lang === 'en' ? 'Nutrition' : 'Питание'}
+        isOpen={openSection === 'nutrition'}
+        onToggle={() => toggleSection('nutrition')}
+      >
+        <NutritionDiary userId={client.user_id} lang={lang} />
+      </AccordionSection>
+
       {/* Notifications */}
       <div className="flex gap-2 pt-1">
         <button
