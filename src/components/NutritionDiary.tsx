@@ -915,7 +915,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="relative max-w-full max-h-full">
               <img src={selectedPhoto.photo_url} alt="" className="max-w-full max-h-[80vh] rounded-2xl object-contain" />
-              {!isReadOnly && !userId && (
+              {(!isReadOnly || isTrainer) && (
                 <button onClick={() => handleDeletePhoto(selectedPhoto)} className="absolute top-3 right-3 w-10 h-10 bg-destructive/80 rounded-full flex items-center justify-center shadow-lg">
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>
