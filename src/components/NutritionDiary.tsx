@@ -865,8 +865,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3.5 transition-colors bg-primary/15 hover:bg-primary/25 border-primary/30">
           {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
           <span className="text-sm font-bold text-primary">
-            {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : (lang === 'en' ? 'Get AI Score' : 'Получить оценку ИИ')}
-          </span>
+             {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : (lang === 'en' ? 'Get Score' : 'Получить оценку')}
+           </span>
           {analysisCount > 0 && <span className="text-[10px] text-primary/60">({analysisCount}/{MAX_ANALYSES_PER_DAY})</span>}
         </motion.button>
       )}
