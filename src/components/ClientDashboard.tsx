@@ -136,6 +136,7 @@ const ClientDashboard = () => {
   const { toast } = useToast();
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
