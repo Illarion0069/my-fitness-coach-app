@@ -1,0 +1,221 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the food photos provided and evaluate each meal against established nutrition science and the following trainer guidelines.
+
+## Trainer's Nutrition Plan (baseline reference, not exhaustive):
+**Breakfast** — balanced meal: proteins + fats + carbs
+- Ideal: eggs, avocado, greens/salad (fiber), optional blueberries, buckwheat
+- Coffee without milk preferred
+
+**Lunch** — protein-focused
+- Must include: meat or fish + green salad with plenty of greens
+- A salad without a protein source is NOT acceptable
+
+**Dinner** — light, low-carb
+- Goal: no carbs in the evening to prevent fat gain
+- Good options: protein shake (whey + water, no milk), cottage cheese casserole (no sugar)
+- Any light protein-rich meal with minimal carbs is acceptable
+
+## Important principles:
+- These guidelines are a GENERAL framework. The client may eat different specific foods — judge by NUTRITIONAL QUALITY, not exact menu match.
+- Use world-class sports nutrition knowledge to evaluate: macronutrient balance, portion sizes, food quality, timing appropriateness.
+- Identify: processed foods, excess sugar, excess carbs at dinner, lack of protein, lack of vegetables/greens, junk food, alcohol-paired meals.
+- Be strict but fair. A healthy meal that doesn't exactly match the template but follows good nutrition principles should still score well.
+
+## Scoring (0-100):
+- Evaluate each visible meal photo separately
+- For each meal, assess: protein adequacy, vegetable/fiber content, carb appropriateness for time of day, food quality, portion size
+- Calculate overall daily score as weighted average
+- Breakfast: 30%, Lunch: 35%, Dinner: 25%, Snacks/drinks: 10%
+- If a meal category has no photo, score it 0 for that category
+
+## Response format (JSON only, no markdown):
+{
+  "overall_score": 0-100,
+  "meals": [
+    {
+      "photo_index": 0,
+      "meal_type": "breakfast|lunch|dinner|snack",
+      "detected_foods": ["food1", "food2"],
+      "estimated_calories": 400,
+      "protein_adequate": true,
+      "vegetables_present": true,
+      "score": 0-100,
+      "issues": ["issue1"],
+      "positives": ["positive1"]
+    }
+  ],
+  "summary_ru": "Краткий итог на русском языке (2-3 предложения). Что хорошо, что нужно улучшить.",
+  "summary_en": "Brief summary in English (2-3 sentences). What's good, what needs improvement."
+}`;
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "No authorization header" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { user_id, log_date } = await req.json();
+    if (!user_id || !log_date) {
+      return new Response(JSON.stringify({ error: "user_id and log_date required" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    // Verify the requesting user owns this data or is a trainer
+    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await anonClient.auth.getUser();
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Check: user is either the owner or a trainer
+    if (user.id !== user_id) {
+      const { data: isTrainer } = await supabase.rpc("has_role", { _user_id: user.id, _role: "trainer" });
+      if (!isTrainer) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // Fetch food photos for the day
+    const { data: photos, error: photosError } = await supabase
+      .from("food_photos")
+      .select("*")
+      .eq("user_id", user_id)
+      .eq("log_date", log_date)
+      .order("created_at", { ascending: true });
+
+    if (photosError) throw photosError;
+
+    if (!photos || photos.length === 0) {
+      // No photos = 0 score
+      const { error: upsertError } = await supabase
+        .from("nutrition_logs")
+        .upsert(
+          { user_id, log_date, ai_score: 0, ai_feedback: "Нет фото еды за этот день / No food photos for this day", ai_analysis: { overall_score: 0, meals: [] } },
+          { onConflict: "user_id,log_date" }
+        );
+      if (upsertError) throw upsertError;
+
+      return new Response(JSON.stringify({ score: 0, feedback: "No food photos for this day", analysis: { overall_score: 0, meals: [] } }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Build multimodal message with photo URLs
+    const userContent: any[] = [
+      {
+        type: "text",
+        text: `Analyze these ${photos.length} food photos from ${log_date}. The photos are in chronological order (earliest first). Determine which meal each photo represents (breakfast/lunch/dinner/snack) based on the order and content. Return ONLY valid JSON, no markdown.`,
+      },
+    ];
+
+    for (const photo of photos) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: photo.photo_url },
+      });
+    }
+
+    // Call Gemini Vision via Lovable AI Gateway
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user", content: userContent },
+        ],
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errText = await aiResponse.text();
+      console.error("AI Gateway error:", aiResponse.status, errText);
+
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a minute." }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted. Please top up." }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`AI gateway error: ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const rawContent = aiData.choices?.[0]?.message?.content || "";
+
+    // Parse JSON from response (strip markdown fences if present)
+    let analysis: any;
+    try {
+      const jsonStr = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      analysis = JSON.parse(jsonStr);
+    } catch {
+      console.error("Failed to parse AI response:", rawContent);
+      analysis = { overall_score: 50, meals: [], summary_ru: rawContent, summary_en: rawContent };
+    }
+
+    const score = Math.min(100, Math.max(0, Math.round(analysis.overall_score || 0)));
+    const feedback = analysis.summary_ru || analysis.summary_en || "";
+
+    // Upsert score into nutrition_logs
+    const { error: upsertError } = await supabase
+      .from("nutrition_logs")
+      .upsert(
+        { user_id, log_date, ai_score: score, ai_feedback: feedback, ai_analysis: analysis },
+        { onConflict: "user_id,log_date" }
+      );
+    if (upsertError) throw upsertError;
+
+    return new Response(JSON.stringify({ score, feedback, analysis }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("analyze-nutrition error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
