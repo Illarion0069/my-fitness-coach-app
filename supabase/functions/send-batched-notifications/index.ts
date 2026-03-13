@@ -63,23 +63,17 @@ serve(async (req) => {
 
       // Build consolidated message
       const lines = notifications.map((n) => n.details);
-      const consolidatedMessage = `📋 <b>Обновление расписания</b>\n\n${lines.join("\n\n")}`;
 
-      // Get client's telegram_chat_id
+      // Get client name
       const { data: profile } = await supabase
         .from("profiles")
-        .select("telegram_chat_id, full_name")
+        .select("full_name")
         .eq("user_id", clientId)
         .single();
 
-      if (profile?.telegram_chat_id) {
-        // Send to client directly
-        await sendTelegramMessage(TELEGRAM_BOT_TOKEN, profile.telegram_chat_id, consolidatedMessage);
-      }
-
-      // Also send summary to trainer
+      // Send only to trainer (not to client)
       const clientName = escapeHtml(profile?.full_name || "Клиент");
-      const trainerSummary = `📋 <b>Изменения отправлены клиенту ${clientName}</b>\n\n${lines.join("\n\n")}`;
+      const trainerSummary = `📋 <b>Изменения для ${clientName}</b>\n\n${lines.join("\n\n")}`;
       await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerSummary);
 
       sentIds.push(...notifications.map((n) => n.id));
