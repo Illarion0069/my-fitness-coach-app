@@ -579,9 +579,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         {showMealPicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowMealPicker(false); setPendingFile(null); }}
             className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
-            <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card rounded-2xl p-5 space-y-3 border border-border/40">
+              className="w-full max-w-sm bg-card rounded-2xl p-5 space-y-3 border border-border/40">
               <p className="text-sm font-bold text-foreground text-center">
                 {lang === 'en' ? 'What meal is this?' : 'Какой это приём пищи?'}
               </p>
