@@ -231,8 +231,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
   const handleDeletePhoto = async (photo: FoodPhoto) => {
-    if (log?.ai_score != null) {
-      const confirmed = window.confirm(lang === 'en' ? 'Deleting this photo will invalidate the AI score. Continue?' : 'Удаление фото сбросит AI-оценку. Продолжить?');
+    const hasAnalysis = log?.ai_score != null;
+    if (hasAnalysis) {
+      const confirmed = window.confirm(lang === 'en' ? 'Delete this photo? AI score will be recalculated on next analysis.' : 'Удалить фото? AI-оценка будет пересчитана при следующем анализе.');
       if (!confirmed) return;
     }
     try {
@@ -240,14 +241,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
-      if (log?.id && log?.ai_score != null) {
+      // Mark analysis as stale but keep data visible; don't reset analysis_count
+      if (log?.id && hasAnalysis) {
         const prevAnalysis = log.ai_analysis as Record<string, any> | null;
-        const preservedCount = prevAnalysis?.analysis_count || analysisCount;
+        const preservedCount = Math.max(0, (prevAnalysis?.analysis_count || analysisCount) - 1);
         await supabase.from('nutrition_logs').update({
           ai_score: null, ai_feedback: null,
-          ai_analysis: { invalidated: true, analysis_count: preservedCount },
+          ai_analysis: { ...prevAnalysis, invalidated: true, analysis_count: preservedCount },
           trainer_override_score: null, trainer_override_note: null,
         }).eq('id', log.id);
+        setAnalysisCount(preservedCount);
       }
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
       setSelectedPhoto(null);
