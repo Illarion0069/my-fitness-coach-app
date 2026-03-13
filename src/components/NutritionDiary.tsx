@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, forwardRef } from 'react';
-import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -504,19 +504,29 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           </span>
         </div>
 
-        {/* Upload button */}
-        {!isReadOnly && !userId && (
-          <label className={`flex items-center justify-center gap-2 rounded-xl p-3 cursor-pointer transition-colors active:scale-[0.98] ${
-            photosAtLimit ? 'bg-muted/30 cursor-not-allowed opacity-50' : 'bg-secondary/50 hover:bg-secondary/70'
-          }`}>
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} disabled={uploading || photosAtLimit} />
-            {uploading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Camera className="w-4 h-4 text-primary" />}
-            <span className="text-xs font-bold text-foreground">
-              {uploading ? (lang === 'en' ? 'Uploading...' : 'Загрузка...') : 
-               photosAtLimit ? (lang === 'en' ? 'Photo limit reached' : 'Лимит фото достигнут') :
-               (lang === 'en' ? 'Add food photo' : 'Добавить фото еды')}
-            </span>
-          </label>
+        {/* Upload buttons */}
+        {!isReadOnly && !userId && !photosAtLimit && (
+          <div className="grid grid-cols-2 gap-2">
+            <label className={`flex items-center justify-center gap-2 rounded-xl p-3 cursor-pointer transition-colors active:scale-[0.98] bg-secondary/50 hover:bg-secondary/70`}>
+              <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} disabled={uploading} />
+              {uploading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Camera className="w-4 h-4 text-primary" />}
+              <span className="text-xs font-bold text-foreground">
+                {uploading ? (lang === 'en' ? 'Uploading...' : 'Загрузка...') : (lang === 'en' ? 'Take photo' : 'Сделать фото')}
+              </span>
+            </label>
+            <label className={`flex items-center justify-center gap-2 rounded-xl p-3 cursor-pointer transition-colors active:scale-[0.98] bg-secondary/50 hover:bg-secondary/70`}>
+              <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} disabled={uploading} />
+              <ImagePlus className="w-4 h-4 text-primary" />
+              <span className="text-xs font-bold text-foreground">
+                {lang === 'en' ? 'From gallery' : 'Из галереи'}
+              </span>
+            </label>
+          </div>
+        )}
+        {!isReadOnly && !userId && photosAtLimit && (
+          <p className="text-[10px] text-center text-muted-foreground">
+            {lang === 'en' ? `Photo limit reached (${MAX_PHOTOS_PER_DAY}/day)` : `Лимит фото достигнут (${MAX_PHOTOS_PER_DAY}/день)`}
+          </p>
         )}
 
         {/* Photos grouped by meal */}
@@ -568,10 +578,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       <AnimatePresence>
         {showMealPicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowMealPicker(false); setPendingFile(null); }}
-            className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center p-4">
-            <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+            className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card rounded-2xl p-5 space-y-3 border border-border/40">
+              className="w-full max-w-sm bg-card rounded-2xl p-5 space-y-3 border border-border/40">
               <p className="text-sm font-bold text-foreground text-center">
                 {lang === 'en' ? 'What meal is this?' : 'Какой это приём пищи?'}
               </p>
