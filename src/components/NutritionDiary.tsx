@@ -660,17 +660,71 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                           </p>
                           {aiDetectedFoods.map((food: any, i: number) => {
                             const f = typeof food === 'string' ? { name: food } : food;
+                            const isEditing = editingFood?.mealType === mt.key && editingFood?.index === i;
+                            
+                            if (isEditing) {
+                              return (
+                                <div key={i} className="bg-secondary/50 rounded-xl p-3 space-y-2 border border-primary/30">
+                                  <input value={editFoodName} onChange={e => setEditFoodName(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
+                                    placeholder={lang === 'en' ? 'Food name' : 'Название'} />
+                                  <div className="grid grid-cols-5 gap-1.5">
+                                    <div>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
+                                      <input type="number" value={editFoodPortion} onChange={e => setEditFoodPortion(e.target.value)}
+                                        className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">kcal</label>
+                                      <input type="number" value={editFoodCal} onChange={e => setEditFoodCal(e.target.value)}
+                                        className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">P</label>
+                                      <input type="number" value={editFoodProtein} onChange={e => setEditFoodProtein(e.target.value)}
+                                        className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">C</label>
+                                      <input type="number" value={editFoodCarbs} onChange={e => setEditFoodCarbs(e.target.value)}
+                                        className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">F</label>
+                                      <input type="number" value={editFoodFat} onChange={e => setEditFoodFat(e.target.value)}
+                                        className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <button onClick={() => setEditingFood(null)} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
+                                      {lang === 'en' ? 'Cancel' : 'Отмена'}
+                                    </button>
+                                    <button onClick={handleEditAiFood} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
+                                      <Check className="w-3 h-3 inline mr-1" />{lang === 'en' ? 'Save' : 'OK'}
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             return (
-                              <div key={i} className="flex items-center justify-between bg-secondary/30 rounded-xl px-3 py-2">
-                                <div className="flex-1 min-w-0">
+                              <div key={i} className="flex items-center justify-between bg-secondary/30 rounded-xl px-3 py-2 group">
+                                <button onClick={() => !isReadOnly && startEditFood(mt.key, i, f)} className="flex-1 min-w-0 text-left">
                                   <p className="text-xs font-medium text-foreground truncate">{f.name}</p>
                                   {f.portion_g && <p className="text-[10px] text-muted-foreground">{f.portion_g}g</p>}
-                                </div>
-                                <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
-                                  {f.calories && <span className="font-bold text-foreground">{f.calories}</span>}
-                                  {f.protein_g != null && <span className="text-green-400">P{f.protein_g}</span>}
-                                  {f.carbs_g != null && <span className="text-yellow-400">C{f.carbs_g}</span>}
-                                  {f.fat_g != null && <span className="text-purple-400">F{f.fat_g}</span>}
+                                </button>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
+                                    {f.calories && <span className="font-bold text-foreground">{f.calories}</span>}
+                                    {f.protein_g != null && <span style={{ color: 'hsl(142, 71%, 45%)' }}>P{f.protein_g}</span>}
+                                    {f.carbs_g != null && <span style={{ color: 'hsl(45, 93%, 47%)' }}>C{f.carbs_g}</span>}
+                                    {f.fat_g != null && <span style={{ color: 'hsl(280, 65%, 60%)' }}>F{f.fat_g}</span>}
+                                  </div>
+                                  {(!isReadOnly || isTrainer) && (
+                                    <button onClick={() => handleDeleteAiFood(mt.key, i)} className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground/40 hover:text-destructive transition-colors">
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             );
