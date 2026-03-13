@@ -617,7 +617,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               </p>
                             </div>
                           </div>
-                          {!isReadOnly && !userId && (
+                          {(!isReadOnly || isTrainer) && (
                             <button onClick={() => handleDeleteManualEntry(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
                               <X className="w-3.5 h-3.5" />
                             </button>
