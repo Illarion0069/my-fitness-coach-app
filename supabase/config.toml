@@ -35,3 +35,6 @@ verify_jwt = false
 
 [functions.signup]
 verify_jwt = false
+
+[functions.analyze-nutrition]
+verify_jwt = false
