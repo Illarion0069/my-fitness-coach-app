@@ -687,7 +687,7 @@ const ClientDashboard = () => {
         title={lang === 'en' ? 'Nutrition Diary' : 'Дневник питания'}
         icon={<UtensilsCrossed className="w-5 h-5 text-orange-400" />}
       >
-        <NutritionDiary lang={lang} />
+        <NutritionDiary lang={lang} calorieGoal={calorieGoal} />
       </FullscreenModule>
 
       {/* Booking Modal */}
