@@ -178,6 +178,9 @@ export type Database = {
       }
       nutrition_logs: {
         Row: {
+          ai_analysis: Json | null
+          ai_feedback: string | null
+          ai_score: number | null
           alcohol_ml: number
           coffee_cups: number
           created_at: string
@@ -190,6 +193,9 @@ export type Database = {
           water_ml: number
         }
         Insert: {
+          ai_analysis?: Json | null
+          ai_feedback?: string | null
+          ai_score?: number | null
           alcohol_ml?: number
           coffee_cups?: number
           created_at?: string
@@ -202,6 +208,9 @@ export type Database = {
           water_ml?: number
         }
         Update: {
+          ai_analysis?: Json | null
+          ai_feedback?: string | null
+          ai_score?: number | null
           alcohol_ml?: number
           coffee_cups?: number
           created_at?: string

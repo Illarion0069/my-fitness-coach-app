@@ -1,0 +1,5 @@
+
+ALTER TABLE public.nutrition_logs 
+  ADD COLUMN ai_score INTEGER DEFAULT NULL,
+  ADD COLUMN ai_feedback TEXT DEFAULT NULL,
+  ADD COLUMN ai_analysis JSONB DEFAULT NULL;
