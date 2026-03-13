@@ -89,7 +89,7 @@ const MacroRing = ({ value, max, color, size = 40, strokeWidth = 3.5 }: { value:
   );
 };
 
-const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false }, ref) => {
+const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false, calorieGoal }, ref) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
