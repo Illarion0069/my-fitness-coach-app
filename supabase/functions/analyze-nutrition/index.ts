@@ -268,7 +268,11 @@ serve(async (req) => {
         const meals = (analysis.meals as Array<Record<string, unknown>>) || [];
         const mealsDetail = meals.map((m) => {
           const mealEmoji = (m.score as number) >= 80 ? "✅" : (m.score as number) >= 50 ? "⚠️" : "❌";
-          const foods = ((m.detected_foods as string[]) || []).join(", ");
+          const detectedFoods = (m.detected_foods as Array<Record<string, unknown>>) || [];
+          const foods = detectedFoods.map((f) => {
+            if (typeof f === "string") return f;
+            return `${f.name}${f.portion_g ? ` (${f.portion_g}g)` : ""} — ${f.calories || 0}kcal`;
+          }).join(", ");
           return `${mealEmoji} <b>${m.meal_type}</b> — ${m.score}/100\n   ${foods}`;
         }).join("\n");
 
