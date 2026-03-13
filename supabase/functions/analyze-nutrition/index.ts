@@ -252,11 +252,11 @@ serve(async (req) => {
       const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user_id)
-          .single();
+        // Fetch client name and manual entries
+        const [{ data: profile }, { data: logData }] = await Promise.all([
+          supabase.from("profiles").select("full_name").eq("user_id", user_id).single(),
+          supabase.from("nutrition_logs").select("manual_entries").eq("user_id", user_id).eq("log_date", log_date).single(),
+        ]);
 
         const clientName = profile?.full_name || "Клиент";
         const summaryRu = (analysis.summary_ru || analysis.summary_en || feedback || "") as string;
@@ -276,7 +276,17 @@ serve(async (req) => {
           return `${mealEmoji} <b>${m.meal_type}</b> — ${m.score}/100\n   ${foods}`;
         }).join("\n");
 
-        const msg = `🍽 <b>Дневник питания</b>\n\n👤 ${clientName}\n📅 ${log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n\n" : ""}💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
+        // Include manual entries
+        const manualEntries = ((logData?.manual_entries || []) as Array<Record<string, unknown>>);
+        let manualDetail = "";
+        if (manualEntries.length > 0) {
+          const manualLines = manualEntries.map((e) => 
+            `✏️ ${e.name || "Quick add"} — ${e.calories || 0}kcal (P${e.protein_g || 0} C${e.carbs_g || 0} F${e.fat_g || 0})`
+          ).join("\n");
+          manualDetail = `\n\n📝 <b>Ручной ввод:</b>\n${manualLines}`;
+        }
+
+        const msg = `🍽 <b>Дневник питания</b>\n\n👤 ${clientName}\n📅 ${log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n" : ""}${manualDetail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
 
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",
