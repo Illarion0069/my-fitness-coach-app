@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronRight, Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera } from 'lucide-react';
+import { ChevronDown, ChevronRight, Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
@@ -9,6 +9,7 @@ import ClientTestHistory from './ClientTestHistory';
 import BodyMeasurementsInput from './BodyMeasurementsInput';
 import BodyMeasurementsView from './BodyMeasurementsView';
 import ClientProgressPhotos from './ClientProgressPhotos';
+import NutritionDiary from './NutritionDiary';
 
 interface ClientPackage {
   id: string;
@@ -364,6 +365,16 @@ const ClientDetailAccordion = ({
         onToggle={() => toggleSection('photos')}
       >
         <ClientProgressPhotos userId={client.user_id} lang={lang} />
+      </AccordionSection>
+
+      {/* Nutrition Diary */}
+      <AccordionSection
+        icon={<UtensilsCrossed className="w-4 h-4 text-orange-400" />}
+        title={lang === 'en' ? 'Nutrition' : 'Питание'}
+        isOpen={openSection === 'nutrition'}
+        onToggle={() => toggleSection('nutrition')}
+      >
+        <NutritionDiary userId={client.user_id} lang={lang} />
       </AccordionSection>
 
       {/* Notifications */}

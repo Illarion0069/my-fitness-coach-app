@@ -14,6 +14,8 @@ import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
 import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
+import NutritionDiary from './NutritionDiary';
+import { UtensilsCrossed } from 'lucide-react';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
 const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
@@ -150,6 +152,7 @@ const ClientDashboard = () => {
   const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [whoopOpen, setWhoopOpen] = useState(false);
+  const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -567,7 +570,17 @@ const ClientDashboard = () => {
                     )}
                   </div>
                   <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />
-                </div>
+
+
+            {/* Nutrition Diary */}
+            <ModuleCard
+              icon={<UtensilsCrossed className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'Nutrition' : 'Питание'}
+              subtitle={lang === 'en' ? 'Food & drink log' : 'Еда и напитки'}
+              onClick={() => setNutritionOpen(true)}
+              accentColor="bg-orange-500/15"
+            />
+          </div>
               ) : undefined}
             />
           </div>
@@ -667,6 +680,15 @@ const ClientDashboard = () => {
         icon={<Activity className="w-5 h-5 text-green-400" />}
       >
         <WhoopWidget />
+      </FullscreenModule>
+
+      <FullscreenModule
+        open={nutritionOpen}
+        onClose={() => setNutritionOpen(false)}
+        title={lang === 'en' ? 'Nutrition Diary' : 'Дневник питания'}
+        icon={<UtensilsCrossed className="w-5 h-5 text-orange-400" />}
+      >
+        <NutritionDiary lang={lang} />
       </FullscreenModule>
 
       {/* Booking Modal */}

@@ -149,6 +149,72 @@ export type Database = {
         }
         Relationships: []
       }
+      food_photos: {
+        Row: {
+          created_at: string
+          id: string
+          log_date: string
+          meal_note: string | null
+          photo_url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          meal_note?: string | null
+          photo_url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          log_date?: string
+          meal_note?: string | null
+          photo_url?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      nutrition_logs: {
+        Row: {
+          alcohol_ml: number
+          coffee_cups: number
+          created_at: string
+          id: string
+          log_date: string
+          notes: string | null
+          tea_cups: number
+          updated_at: string
+          user_id: string
+          water_ml: number
+        }
+        Insert: {
+          alcohol_ml?: number
+          coffee_cups?: number
+          created_at?: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          tea_cups?: number
+          updated_at?: string
+          user_id: string
+          water_ml?: number
+        }
+        Update: {
+          alcohol_ml?: number
+          coffee_cups?: number
+          created_at?: string
+          id?: string
+          log_date?: string
+          notes?: string | null
+          tea_cups?: number
+          updated_at?: string
+          user_id?: string
+          water_ml?: number
+        }
+        Relationships: []
+      }
       password_reset_codes: {
         Row: {
           code: string
