@@ -682,6 +682,15 @@ const ClientDashboard = () => {
         <WhoopWidget />
       </FullscreenModule>
 
+      <FullscreenModule
+        open={nutritionOpen}
+        onClose={() => setNutritionOpen(false)}
+        title={lang === 'en' ? 'Nutrition Diary' : 'Дневник питания'}
+        icon={<UtensilsCrossed className="w-5 h-5 text-orange-400" />}
+      >
+        <NutritionDiary lang={lang} />
+      </FullscreenModule>
+
       {/* Booking Modal */}
       <BookingModal
         open={bookingOpen}
