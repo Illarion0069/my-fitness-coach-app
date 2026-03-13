@@ -534,13 +534,42 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       {/* Calories Dashboard */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5">
         <div className="flex items-center justify-between mb-4">
-          <div className="flex-1">
-            <div className="flex items-baseline gap-2">
-              <Flame className="w-5 h-5 text-primary" />
-              <span className="text-3xl font-black text-foreground tracking-tight">{totals.calories}</span>
-              <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'kcal' : 'ккал'}</span>
+          <div className="flex items-center gap-4 flex-1">
+            {/* Calorie ring */}
+            {calorieGoal && calorieGoal > 0 ? (
+              <div className="relative flex-shrink-0">
+                <MacroRing value={totals.calories} max={calorieGoal} color={totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'} size={72} strokeWidth={5} />
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <Flame className="w-3.5 h-3.5 text-primary" />
+                  <span className="text-[10px] font-bold text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
+                </div>
+              </div>
+            ) : (
+              <Flame className="w-6 h-6 text-primary flex-shrink-0" />
+            )}
+            <div>
+              {calorieGoal && calorieGoal > 0 ? (
+                <>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
+                      {Math.max(0, calorieGoal - totals.calories)}
+                    </span>
+                    <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'left' : 'осталось'}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {totals.calories} / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-3xl font-black text-foreground tracking-tight">{totals.calories}</span>
+                    <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'kcal' : 'ккал'}</span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">{lang === 'en' ? 'consumed today' : 'потреблено за день'}</p>
+                </>
+              )}
             </div>
-            <p className="text-[11px] text-muted-foreground mt-0.5">{lang === 'en' ? 'consumed today' : 'потреблено за день'}</p>
           </div>
 
           {/* AI Score badge */}
