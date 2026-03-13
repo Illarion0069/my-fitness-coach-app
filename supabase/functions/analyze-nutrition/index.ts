@@ -7,6 +7,10 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const MAX_ANALYSES_PER_DAY = 3;
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
 const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the food photos provided and evaluate each meal against established nutrition science and the following trainer guidelines.
 
 ## Trainer's Nutrition Plan (baseline reference, not exhaustive):
@@ -56,6 +60,13 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
   "summary_en": "Brief summary in English (2-3 sentences). What's good, what needs improvement."
 }`;
 
+function jsonResponse(body: Record<string, unknown>, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -64,38 +75,31 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: "No authorization header" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "No authorization header" }, 401);
     }
 
     const { user_id, log_date } = await req.json();
-    if (!user_id || !log_date) {
-      return new Response(JSON.stringify({ error: "user_id and log_date required" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    // Validate log_date format and range
-    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!dateRegex.test(log_date)) {
-      return new Response(JSON.stringify({ error: "Invalid date format" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // --- Input validation ---
+    if (!user_id || !log_date) {
+      return jsonResponse({ error: "user_id and log_date required" }, 400);
+    }
+    if (!UUID_REGEX.test(user_id)) {
+      return jsonResponse({ error: "Invalid user_id format" }, 400);
+    }
+    if (!DATE_REGEX.test(log_date)) {
+      return jsonResponse({ error: "Invalid date format" }, 400);
     }
     const parsedDate = new Date(log_date + "T00:00:00Z");
-    const today = new Date();
-    today.setUTCHours(23, 59, 59, 999);
+    if (isNaN(parsedDate.getTime())) {
+      return jsonResponse({ error: "Invalid date" }, 400);
+    }
+    const now = new Date();
+    now.setUTCHours(23, 59, 59, 999);
     const minDate = new Date();
     minDate.setFullYear(minDate.getFullYear() - 1);
-    if (parsedDate > today || parsedDate < minDate) {
-      return new Response(JSON.stringify({ error: "Date out of allowed range" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (parsedDate > now || parsedDate < minDate) {
+      return jsonResponse({ error: "Date out of allowed range" }, 400);
     }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -105,46 +109,38 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify the requesting user owns this data or is a trainer
+    // --- Auth: verify user ---
     const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
     const { data: { user } } = await anonClient.auth.getUser();
     if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Unauthorized" }, 401);
     }
 
     // Check: user is either the owner or a trainer
-    if (user.id !== user_id) {
-      const { data: isTrainer } = await supabase.rpc("has_role", { _user_id: user.id, _role: "trainer" });
-      if (!isTrainer) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
+    const isTrainer = user.id !== user_id
+      ? (await supabase.rpc("has_role", { _user_id: user.id, _role: "trainer" })).data === true
+      : false;
+
+    if (user.id !== user_id && !isTrainer) {
+      return jsonResponse({ error: "Forbidden" }, 403);
     }
 
-    // Server-side rate limit: max 3 analyses per day
-    const MAX_ANALYSES = 3;
-    const { data: existingLog } = await supabase
+    // --- Rate limit (server-side) ---
+    const { data: currentLog } = await supabase
       .from("nutrition_logs")
       .select("ai_analysis")
       .eq("user_id", user_id)
       .eq("log_date", log_date)
       .maybeSingle();
-    const currentCount = (existingLog?.ai_analysis as any)?.analysis_count || 0;
-    if (currentCount >= MAX_ANALYSES) {
-      return new Response(JSON.stringify({ error: "Analysis limit reached (max 3 per day)" }), {
-        status: 429,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+
+    const currentCount = (currentLog?.ai_analysis as Record<string, unknown>)?.analysis_count as number || 0;
+    if (currentCount >= MAX_ANALYSES_PER_DAY) {
+      return jsonResponse({ error: "Analysis limit reached (max 3 per day)" }, 429);
     }
 
-    // Fetch food photos for the day
+    // --- Fetch food photos ---
     const { data: photos, error: photosError } = await supabase
       .from("food_photos")
       .select("*")
@@ -155,36 +151,34 @@ serve(async (req) => {
     if (photosError) throw photosError;
 
     if (!photos || photos.length === 0) {
-      // No photos = 0 score
+      const emptyAnalysis = { overall_score: 0, meals: [], analysis_count: currentCount + 1 };
       const { error: upsertError } = await supabase
         .from("nutrition_logs")
         .upsert(
-          { user_id, log_date, ai_score: 0, ai_feedback: "Нет фото еды за этот день / No food photos for this day", ai_analysis: { overall_score: 0, meals: [] } },
+          { user_id, log_date, ai_score: 0, ai_feedback: "Нет фото еды за этот день / No food photos for this day", ai_analysis: emptyAnalysis },
           { onConflict: "user_id,log_date" }
         );
       if (upsertError) throw upsertError;
 
-      return new Response(JSON.stringify({ score: 0, feedback: "No food photos for this day", analysis: { overall_score: 0, meals: [] } }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ score: 0, feedback: "No food photos for this day", analysis: emptyAnalysis });
     }
 
-    // Build multimodal message with photo URLs and meal types
-    const userContent: any[] = [
+    // --- Build AI request ---
+    const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client. Evaluate each meal against nutrition guidelines. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: any, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}"`).join('\n')}`,
+        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client. Evaluate each meal against nutrition guidelines. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}"`).join('\n')}`,
       },
     ];
 
     for (const photo of photos) {
       userContent.push({
         type: "image_url",
-        image_url: { url: photo.photo_url },
+        image_url: { url: (photo as Record<string, unknown>).photo_url },
       });
     }
 
-    // Call Gemini Vision via Lovable AI Gateway
+    // --- Call AI ---
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -205,16 +199,10 @@ serve(async (req) => {
       console.error("AI Gateway error:", aiResponse.status, errText);
 
       if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded. Please try again in a minute." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "Rate limit exceeded. Please try again in a minute." }, 429);
       }
       if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "AI credits exhausted. Please top up." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "AI credits exhausted. Please top up." }, 402);
       }
       throw new Error(`AI gateway error: ${aiResponse.status}`);
     }
@@ -222,8 +210,8 @@ serve(async (req) => {
     const aiData = await aiResponse.json();
     const rawContent = aiData.choices?.[0]?.message?.content || "";
 
-    // Parse JSON from response (strip markdown fences if present)
-    let analysis: any;
+    // --- Parse AI response ---
+    let analysis: Record<string, unknown>;
     try {
       const jsonStr = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       analysis = JSON.parse(jsonStr);
@@ -232,20 +220,13 @@ serve(async (req) => {
       analysis = { overall_score: 50, meals: [], summary_ru: rawContent, summary_en: rawContent };
     }
 
-    const score = Math.min(100, Math.max(0, Math.round(analysis.overall_score || 0)));
-    const feedback = analysis.summary_ru || analysis.summary_en || "";
+    const score = Math.min(100, Math.max(0, Math.round((analysis.overall_score as number) || 0)));
+    const feedback = (analysis.summary_ru || analysis.summary_en || "") as string;
 
-    // Get current analysis count
-    const { data: existingLog } = await supabase
-      .from("nutrition_logs")
-      .select("ai_analysis")
-      .eq("user_id", user_id)
-      .eq("log_date", log_date)
-      .maybeSingle();
-    const prevCount = (existingLog?.ai_analysis as any)?.analysis_count || 0;
-    analysis.analysis_count = prevCount + 1;
+    // Increment analysis count
+    analysis.analysis_count = currentCount + 1;
 
-    // Upsert score into nutrition_logs
+    // --- Save to DB ---
     const { error: upsertError } = await supabase
       .from("nutrition_logs")
       .upsert(
@@ -254,24 +235,23 @@ serve(async (req) => {
       );
     if (upsertError) throw upsertError;
 
-    // Notify trainer if score is low (< 50)
+    // --- Notify trainer on low score ---
     if (score < 50) {
       try {
-        // Find trainer(s)
         const { data: trainers } = await supabase
           .from("user_roles")
           .select("user_id")
           .eq("role", "trainer");
-        
+
         if (trainers && trainers.length > 0) {
           const { data: clientProfile } = await supabase
             .from("profiles")
             .select("full_name")
             .eq("user_id", user_id)
             .maybeSingle();
-          
+
           const clientName = clientProfile?.full_name || "Клиент";
-          
+
           for (const trainer of trainers) {
             await supabase.from("pending_notifications").insert({
               client_user_id: user_id,
@@ -286,14 +266,9 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ score, feedback, analysis }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ score, feedback, analysis });
   } catch (e) {
     console.error("analyze-nutrition error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
