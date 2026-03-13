@@ -117,6 +117,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showLiquids, setShowLiquids] = useState(false);
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
+  const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
+  const [editFoodName, setEditFoodName] = useState('');
+  const [editFoodPortion, setEditFoodPortion] = useState('');
+  const [editFoodCal, setEditFoodCal] = useState('');
+  const [editFoodProtein, setEditFoodProtein] = useState('');
+  const [editFoodCarbs, setEditFoodCarbs] = useState('');
+  const [editFoodFat, setEditFoodFat] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
