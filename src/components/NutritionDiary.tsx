@@ -270,14 +270,16 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
       
       // Invalidate AI score if analysis existed
       if (log?.id && log?.ai_score != null) {
+        // Preserve analysis_count to prevent rate limit bypass
+        const prevAnalysis = log.ai_analysis as Record<string, any> | null;
+        const preservedCount = prevAnalysis?.analysis_count || analysisCount;
         await supabase.from('nutrition_logs').update({ 
           ai_score: null, 
           ai_feedback: null, 
-          ai_analysis: null,
+          ai_analysis: { invalidated: true, analysis_count: preservedCount },
           trainer_override_score: null,
           trainer_override_note: null,
         }).eq('id', log.id);
-        // Don't reset analysisCount — server tracks it, prevents bypass
       }
       
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
