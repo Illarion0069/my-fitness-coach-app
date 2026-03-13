@@ -156,20 +156,34 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
     }
   };
 
+  const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: lang === 'en' ? 'File too large (max 10MB)' : 'Файл слишком большой (макс 10МБ)', variant: 'destructive' });
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      toast({ title: lang === 'en' ? 'Only image files allowed' : 'Только изображения (jpg, png, webp)', variant: 'destructive' });
+      if (fileRef.current) fileRef.current.value = '';
       return;
     }
-    // Check photo limit
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: lang === 'en' ? 'File too large (max 10MB)' : 'Файл слишком большой (макс 10МБ)', variant: 'destructive' });
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     if (photos.length >= MAX_PHOTOS_PER_DAY) {
       toast({ 
         title: lang === 'en' ? 'Photo limit reached' : 'Лимит фото достигнут', 
         description: lang === 'en' ? `Maximum ${MAX_PHOTOS_PER_DAY} photos per day` : `Максимум ${MAX_PHOTOS_PER_DAY} фото в день`,
         variant: 'destructive' 
       });
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast({ title: lang === 'en' ? 'Only image files allowed' : 'Только изображения', variant: 'destructive' });
+      if (fileRef.current) fileRef.current.value = '';
       return;
     }
     setPendingFile(file);
