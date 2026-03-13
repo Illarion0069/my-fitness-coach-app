@@ -178,7 +178,7 @@ serve(async (req) => {
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client. Evaluate each meal against nutrition guidelines. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}"`).join('\n')}`,
+        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}" (uploaded at ${(p as any).created_at})`).join('\n')}`,
       },
     ];
 
