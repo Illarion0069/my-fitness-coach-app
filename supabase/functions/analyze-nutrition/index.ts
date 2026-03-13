@@ -235,36 +235,6 @@ serve(async (req) => {
       );
     if (upsertError) throw upsertError;
 
-    // --- Notify trainer on low score ---
-    if (score < 50) {
-      try {
-        const { data: trainers } = await supabase
-          .from("user_roles")
-          .select("user_id")
-          .eq("role", "trainer");
-
-        if (trainers && trainers.length > 0) {
-          const { data: clientProfile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", user_id)
-            .maybeSingle();
-
-          const clientName = clientProfile?.full_name || "Клиент";
-
-          for (const trainer of trainers) {
-            await supabase.from("pending_notifications").insert({
-              client_user_id: user_id,
-              trainer_user_id: trainer.user_id,
-              action_type: "low_nutrition_score",
-              details: `⚠️ ${clientName}: оценка питания ${score}% за ${log_date}`,
-            });
-          }
-        }
-      } catch (notifErr) {
-        console.error("Failed to send low score notification:", notifErr);
-      }
-    }
 
     return jsonResponse({ score, feedback, analysis });
   } catch (e) {
