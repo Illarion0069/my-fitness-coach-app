@@ -59,7 +59,7 @@ interface Props {
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 const MAX_PHOTOS_PER_DAY = 8;
-const MAX_ANALYSES_PER_DAY = 1;
+const MAX_ANALYSES_PER_DAY = 3;
 const VALID_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: string; icon: string }[] = [
@@ -231,8 +231,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
   const handleDeletePhoto = async (photo: FoodPhoto) => {
-    if (log?.ai_score != null) {
-      const confirmed = window.confirm(lang === 'en' ? 'Deleting this photo will invalidate the AI score. Continue?' : 'Удаление фото сбросит AI-оценку. Продолжить?');
+    const hasAnalysis = log?.ai_score != null;
+    if (hasAnalysis) {
+      const confirmed = window.confirm(lang === 'en' ? 'Delete this photo? AI score will be recalculated on next analysis.' : 'Удалить фото? AI-оценка будет пересчитана при следующем анализе.');
       if (!confirmed) return;
     }
     try {
@@ -240,14 +241,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
-      if (log?.id && log?.ai_score != null) {
+      // Mark analysis as stale but keep data visible; don't reset analysis_count
+      if (log?.id && hasAnalysis) {
         const prevAnalysis = log.ai_analysis as Record<string, any> | null;
-        const preservedCount = prevAnalysis?.analysis_count || analysisCount;
+        const preservedCount = Math.max(0, (prevAnalysis?.analysis_count || analysisCount) - 1);
         await supabase.from('nutrition_logs').update({
           ai_score: null, ai_feedback: null,
-          ai_analysis: { invalidated: true, analysis_count: preservedCount },
+          ai_analysis: { ...prevAnalysis, invalidated: true, analysis_count: preservedCount },
           trainer_override_score: null, trainer_override_note: null,
         }).eq('id', log.id);
+        setAnalysisCount(preservedCount);
       }
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
       setSelectedPhoto(null);
@@ -470,14 +473,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         <div className="grid grid-cols-3 gap-3">
           {macros.map(m => (
             <div key={m.label} className="text-center">
-              <div className="flex justify-center mb-1">
-                <div className="relative">
-                  <MacroRing value={m.value} max={m.value > 0 ? m.value * 1.2 : 100} color={m.color} size={44} />
-                  <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-foreground">{m.value}</span>
-                </div>
-              </div>
+              <p className="text-lg font-black text-foreground" style={{ color: m.color }}>{m.value}<span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span></p>
               <p className="text-[10px] text-muted-foreground font-medium">{m.label}</p>
-              <p className="text-[10px] text-muted-foreground">{m.value}{m.unit}</p>
             </div>
           ))}
         </div>
@@ -620,7 +617,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               </p>
                             </div>
                           </div>
-                          {!isReadOnly && !userId && (
+                          {(!isReadOnly || isTrainer) && (
                             <button onClick={() => handleDeleteManualEntry(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -690,14 +687,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
-      {/* Analyze Button */}
-      {photos.length > 0 && !analysisAtLimit && log?.ai_score == null && (
+      {/* Analyze Button — show when photos exist and either no score yet or score was invalidated */}
+      {photos.length > 0 && !analysisAtLimit && (log?.ai_score == null) && (
         <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing}
           className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3.5 transition-colors bg-primary/15 hover:bg-primary/25 border-primary/30">
           {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
           <span className="text-sm font-bold text-primary">
             {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : (lang === 'en' ? 'Get AI Score' : 'Получить оценку ИИ')}
           </span>
+          {analysisCount > 0 && <span className="text-[10px] text-primary/60">({analysisCount}/{MAX_ANALYSES_PER_DAY})</span>}
         </motion.button>
       )}
 
@@ -917,7 +915,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="relative max-w-full max-h-full">
               <img src={selectedPhoto.photo_url} alt="" className="max-w-full max-h-[80vh] rounded-2xl object-contain" />
-              {!isReadOnly && !userId && (
+              {(!isReadOnly || isTrainer) && (
                 <button onClick={() => handleDeletePhoto(selectedPhoto)} className="absolute top-3 right-3 w-10 h-10 bg-destructive/80 rounded-full flex items-center justify-center shadow-lg">
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>

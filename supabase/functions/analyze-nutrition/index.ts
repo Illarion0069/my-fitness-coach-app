@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_ANALYSES_PER_DAY = 1;
+const MAX_ANALYSES_PER_DAY = 3;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -178,7 +178,7 @@ serve(async (req) => {
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client. Evaluate each meal against nutrition guidelines. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}"`).join('\n')}`,
+        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}" (uploaded at ${(p as any).created_at})`).join('\n')}`,
       },
     ];
 
@@ -252,11 +252,11 @@ serve(async (req) => {
       const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
       if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user_id)
-          .single();
+        // Fetch client name and manual entries
+        const [{ data: profile }, { data: logData }] = await Promise.all([
+          supabase.from("profiles").select("full_name").eq("user_id", user_id).single(),
+          supabase.from("nutrition_logs").select("manual_entries").eq("user_id", user_id).eq("log_date", log_date).single(),
+        ]);
 
         const clientName = profile?.full_name || "Клиент";
         const summaryRu = (analysis.summary_ru || analysis.summary_en || feedback || "") as string;
@@ -276,7 +276,17 @@ serve(async (req) => {
           return `${mealEmoji} <b>${m.meal_type}</b> — ${m.score}/100\n   ${foods}`;
         }).join("\n");
 
-        const msg = `🍽 <b>Дневник питания</b>\n\n👤 ${clientName}\n📅 ${log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n\n" : ""}💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
+        // Include manual entries
+        const manualEntries = ((logData?.manual_entries || []) as Array<Record<string, unknown>>);
+        let manualDetail = "";
+        if (manualEntries.length > 0) {
+          const manualLines = manualEntries.map((e) => 
+            `✏️ ${e.name || "Quick add"} — ${e.calories || 0}kcal (P${e.protein_g || 0} C${e.carbs_g || 0} F${e.fat_g || 0})`
+          ).join("\n");
+          manualDetail = `\n\n📝 <b>Ручной ввод:</b>\n${manualLines}`;
+        }
+
+        const msg = `🍽 <b>Дневник питания</b>\n\n👤 ${clientName}\n📅 ${log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n" : ""}${manualDetail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
 
         const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: "POST",

@@ -1,0 +1,1 @@
+CREATE POLICY "Trainers can delete food photos" ON public.food_photos FOR DELETE USING (public.has_role(auth.uid(), 'trainer'::app_role));
