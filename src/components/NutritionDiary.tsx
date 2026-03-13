@@ -661,6 +661,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       </AnimatePresence>
     </div>
   );
-};
+});
+
+NutritionDiary.displayName = 'NutritionDiary';
 
 export default NutritionDiary;
