@@ -133,11 +133,11 @@ serve(async (req) => {
       });
     }
 
-    // Build multimodal message with photo URLs
+    // Build multimodal message with photo URLs and meal types
     const userContent: any[] = [
       {
         type: "text",
-        text: `Analyze these ${photos.length} food photos from ${log_date}. The photos are in chronological order (earliest first). Determine which meal each photo represents (breakfast/lunch/dinner/snack) based on the order and content. Return ONLY valid JSON, no markdown.`,
+        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client. Evaluate each meal against nutrition guidelines. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: any, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}"`).join('\n')}`,
       },
     ];
 
