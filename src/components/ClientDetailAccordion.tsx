@@ -394,7 +394,35 @@ const ClientDetailAccordion = ({
         isOpen={openSection === 'nutrition'}
         onToggle={() => toggleSection('nutrition')}
       >
-        <NutritionDiary userId={client.user_id} lang={lang} isTrainer={true} />
+        <div className="space-y-3">
+          {/* Calorie goal setting */}
+          <div className="bg-secondary/30 rounded-xl p-3">
+            <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+              {lang === 'en' ? 'Daily calorie goal' : 'Дневная норма калорий'}
+            </p>
+            <div className="flex gap-2 items-center">
+              <input
+                type="number"
+                min={0}
+                placeholder={lang === 'en' ? 'e.g. 2000' : 'напр. 2000'}
+                value={calorieGoalInput}
+                onChange={e => setCalorieGoalInput(e.target.value)}
+                className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
+              />
+              <span className="text-[10px] text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
+              <button onClick={saveCalorieGoal}
+                className="text-xs font-bold text-primary hover:text-primary/80 transition-colors px-2">
+                {lang === 'en' ? 'Save' : 'ОК'}
+              </button>
+            </div>
+            {calorieGoal && (
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {lang === 'en' ? `Current: ${calorieGoal} kcal/day` : `Текущая: ${calorieGoal} ккал/день`}
+              </p>
+            )}
+          </div>
+          <NutritionDiary userId={client.user_id} lang={lang} isTrainer={true} calorieGoal={calorieGoal} />
+        </div>
       </AccordionSection>
 
       {/* Notifications */}
