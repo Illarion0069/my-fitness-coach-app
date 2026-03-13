@@ -104,7 +104,8 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
     
     // Track how many times analysis was run today (from ai_analysis metadata)
     const analysis = logRes.data?.ai_analysis;
-    setAnalysisCount(analysis?.analysis_count || (logRes.data?.ai_score != null ? 1 : 0));
+    const analysisData = analysis as Record<string, any> | null;
+    setAnalysisCount(analysisData?.analysis_count || (logRes.data?.ai_score != null ? 1 : 0));
   };
 
   const fetchScoreHistory = async () => {
