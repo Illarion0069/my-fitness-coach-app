@@ -78,6 +78,26 @@ serve(async (req) => {
       });
     }
 
+    // Validate log_date format and range
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(log_date)) {
+      return new Response(JSON.stringify({ error: "Invalid date format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const parsedDate = new Date(log_date + "T00:00:00Z");
+    const today = new Date();
+    today.setUTCHours(23, 59, 59, 999);
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 1);
+    if (parsedDate > today || parsedDate < minDate) {
+      return new Response(JSON.stringify({ error: "Date out of allowed range" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -106,6 +126,22 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+    }
+
+    // Server-side rate limit: max 3 analyses per day
+    const MAX_ANALYSES = 3;
+    const { data: existingLog } = await supabase
+      .from("nutrition_logs")
+      .select("ai_analysis")
+      .eq("user_id", user_id)
+      .eq("log_date", log_date)
+      .maybeSingle();
+    const currentCount = (existingLog?.ai_analysis as any)?.analysis_count || 0;
+    if (currentCount >= MAX_ANALYSES) {
+      return new Response(JSON.stringify({ error: "Analysis limit reached (max 3 per day)" }), {
+        status: 429,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Fetch food photos for the day
@@ -217,6 +253,38 @@ serve(async (req) => {
         { onConflict: "user_id,log_date" }
       );
     if (upsertError) throw upsertError;
+
+    // Notify trainer if score is low (< 50)
+    if (score < 50) {
+      try {
+        // Find trainer(s)
+        const { data: trainers } = await supabase
+          .from("user_roles")
+          .select("user_id")
+          .eq("role", "trainer");
+        
+        if (trainers && trainers.length > 0) {
+          const { data: clientProfile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", user_id)
+            .maybeSingle();
+          
+          const clientName = clientProfile?.full_name || "Клиент";
+          
+          for (const trainer of trainers) {
+            await supabase.from("pending_notifications").insert({
+              client_user_id: user_id,
+              trainer_user_id: trainer.user_id,
+              action_type: "low_nutrition_score",
+              details: `⚠️ ${clientName}: оценка питания ${score}% за ${log_date}`,
+            });
+          }
+        }
+      } catch (notifErr) {
+        console.error("Failed to send low score notification:", notifErr);
+      }
+    }
 
     return new Response(JSON.stringify({ score, feedback, analysis }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

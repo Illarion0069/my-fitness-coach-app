@@ -239,14 +239,35 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
   };
 
   const handleDeletePhoto = async (photo: FoodPhoto) => {
+    // Warn if analysis exists
+    if (log?.ai_score != null) {
+      const confirmed = window.confirm(
+        lang === 'en' 
+          ? 'Deleting this photo will invalidate the AI score. Continue?' 
+          : 'Удаление фото сбросит AI-оценку. Продолжить?'
+      );
+      if (!confirmed) return;
+    }
     try {
       const urlParts = photo.photo_url.split('/food-photos/');
       const storagePath = urlParts[1];
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
+      
+      // Invalidate AI score if analysis existed
+      if (log?.id && log?.ai_score != null) {
+        await supabase.from('nutrition_logs').update({ 
+          ai_score: null, 
+          ai_feedback: null, 
+          ai_analysis: null 
+        }).eq('id', log.id);
+        setAnalysisCount(0);
+      }
+      
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
       setSelectedPhoto(null);
       fetchData();
+      fetchScoreHistory();
     } catch (err: any) {
       toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
     }
