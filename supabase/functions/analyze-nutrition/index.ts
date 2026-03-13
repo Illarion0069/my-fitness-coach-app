@@ -235,6 +235,46 @@ serve(async (req) => {
       );
     if (upsertError) throw upsertError;
 
+    // --- Notify trainer via Telegram ---
+    try {
+      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+      const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
+
+      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user_id)
+          .single();
+
+        const clientName = profile?.full_name || "Клиент";
+        const summaryRu = (analysis.summary_ru || analysis.summary_en || feedback || "") as string;
+        const appUrl = "https://my-fitness-coach-app.lovable.app";
+
+        const scoreEmoji = score >= 80 ? "🟢" : score >= 50 ? "🟡" : "🔴";
+
+        // Build meals detail
+        const meals = (analysis.meals as Array<Record<string, unknown>>) || [];
+        const mealsDetail = meals.map((m) => {
+          const mealEmoji = (m.score as number) >= 80 ? "✅" : (m.score as number) >= 50 ? "⚠️" : "❌";
+          const foods = ((m.detected_foods as string[]) || []).join(", ");
+          return `${mealEmoji} <b>${m.meal_type}</b> — ${m.score}/100\n   ${foods}`;
+        }).join("\n");
+
+        const msg = `🍽 <b>Дневник питания</b>\n\n👤 ${clientName}\n📅 ${log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n\n" : ""}💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
+
+        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: "HTML", disable_web_page_preview: true }),
+        });
+        if (!res.ok) {
+          console.error("Telegram notify error:", await res.text());
+        }
+      }
+    } catch (tgErr) {
+      console.error("Telegram notification failed (non-critical):", tgErr);
+    }
 
     return jsonResponse({ score, feedback, analysis });
   } catch (e) {
