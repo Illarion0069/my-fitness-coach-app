@@ -191,6 +191,8 @@ export type Database = {
           log_date: string
           notes: string | null
           tea_cups: number
+          trainer_override_note: string | null
+          trainer_override_score: number | null
           updated_at: string
           user_id: string
           water_ml: number
@@ -206,6 +208,8 @@ export type Database = {
           log_date?: string
           notes?: string | null
           tea_cups?: number
+          trainer_override_note?: string | null
+          trainer_override_score?: number | null
           updated_at?: string
           user_id: string
           water_ml?: number
@@ -221,6 +225,8 @@ export type Database = {
           log_date?: string
           notes?: string | null
           tea_cups?: number
+          trainer_override_note?: string | null
+          trainer_override_score?: number | null
           updated_at?: string
           user_id?: string
           water_ml?: number
