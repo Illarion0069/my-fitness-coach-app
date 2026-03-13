@@ -700,6 +700,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
         onClose={() => setBookingOpen(false)}
         initialStep={bookingStep}
         onBooked={() => setBookingOpen(false)}
+        forceClientView={forceClientView}
       />
     </div>
   );

@@ -74,7 +74,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
           <LanguageSwitch />
         </div>
-        <ClientDashboard />
+        <ClientDashboard forceClientView={!!clientPreview} />
       </section>
     );
   }

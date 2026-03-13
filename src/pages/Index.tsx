@@ -188,6 +188,7 @@ const AppContent = () => {
             handleNavigate('test');
           }
         }}
+        forceClientView={clientPreview}
       />
 
       {showGuide && (
