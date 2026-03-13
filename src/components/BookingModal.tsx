@@ -464,7 +464,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                         }`}
                       >
                         {slot.time}
-                        {slot.booked === 1 && slot.available && (
+                        {!forceClientView && slot.booked === 1 && slot.available && (
                           <span className="absolute top-0.5 right-1.5 text-[8px] font-bold text-primary/70">1/2</span>
                         )}
                       </button>
