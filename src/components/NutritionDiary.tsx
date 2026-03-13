@@ -143,15 +143,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const todayStr = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  })();
+
   const navigateDate = (dir: -1 | 1) => {
-    const d = new Date(date + 'T00:00:00');
+    const d = new Date(date + 'T12:00:00');
     d.setDate(d.getDate() + dir);
-    const newDate = d.toISOString().split('T')[0];
-    if (newDate > new Date().toISOString().split('T')[0]) return;
+    const newDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    if (newDate > todayStr) return;
     setDate(newDate);
   };
 
-  const isToday = date === new Date().toISOString().split('T')[0];
+  const isToday = date === todayStr;
 
   const upsertLog = async (field: string, value: number) => {
     if (isReadOnly || !user) return;
