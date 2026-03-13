@@ -130,7 +130,11 @@ const FullscreenModule = ({ open, onClose, title, icon, children }: FullscreenMo
 );
 
 /* ──────────────────────── Main Dashboard ──────────────────────── */
-const ClientDashboard = () => {
+interface ClientDashboardProps {
+  forceClientView?: boolean;
+}
+
+const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
