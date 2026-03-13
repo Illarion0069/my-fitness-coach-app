@@ -115,13 +115,18 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setIsDayOff(false);
     try {
       const { data } = await supabase.functions.invoke('book-session', {
-        body: { action: 'getSlots', date: dateStr },
+        body: { action: 'getSlots', date: dateStr, forceClientView },
       });
       if (data?.dayOff) {
         setIsDayOff(true);
         setSlots([]);
       } else {
-        setSlots(data?.slots || []);
+        const normalizedSlots = ((data?.slots || []) as TimeSlot[]).map((slot) =>
+          forceClientView
+            ? { ...slot, available: slot.available && (slot.booked ?? 0) === 0, booked: 0 }
+            : slot
+        );
+        setSlots(normalizedSlots);
       }
     } catch {
       setSlots([]);
