@@ -54,6 +54,7 @@ interface Props {
   userId?: string;
   lang: string;
   isTrainer?: boolean;
+  calorieGoal?: number | null;
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
