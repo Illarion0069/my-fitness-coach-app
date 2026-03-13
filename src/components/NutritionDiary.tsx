@@ -378,7 +378,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   ];
 
   return (
-    <div className="space-y-5">
+    <div ref={ref} className="space-y-5">
       {/* Score History Banner */}
       {sparkData.length >= 2 && (
         <div className="bg-card border border-border/40 rounded-2xl p-4">
