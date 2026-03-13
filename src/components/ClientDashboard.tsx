@@ -164,8 +164,9 @@ const ClientDashboard = () => {
     if (!user) return;
 
     const loadAvatar = async () => {
-      const { data } = await supabase.from('profiles').select('avatar_url').eq('user_id', user.id).maybeSingle();
+      const { data } = await supabase.from('profiles').select('avatar_url, daily_calorie_goal').eq('user_id', user.id).maybeSingle();
       setAvatarUrl(data?.avatar_url || null);
+      setCalorieGoal((data as any)?.daily_calorie_goal || null);
     };
 
     const fetchPkg = async () => {
