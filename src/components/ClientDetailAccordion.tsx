@@ -104,6 +104,26 @@ const ClientDetailAccordion = ({
   const [resettingPw, setResettingPw] = useState(false);
   const [showResetPw, setShowResetPw] = useState(false);
   const [measurementKey, setMeasurementKey] = useState(0);
+  const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
+  const [calorieGoalInput, setCalorieGoalInput] = useState('');
+  const [loadingGoal, setLoadingGoal] = useState(true);
+
+  useEffect(() => {
+    supabase.from('profiles').select('daily_calorie_goal').eq('user_id', client.user_id).maybeSingle()
+      .then(({ data }) => {
+        const goal = (data as any)?.daily_calorie_goal || null;
+        setCalorieGoal(goal);
+        setCalorieGoalInput(goal ? String(goal) : '');
+        setLoadingGoal(false);
+      });
+  }, [client.user_id]);
+
+  const saveCalorieGoal = async () => {
+    const val = parseInt(calorieGoalInput.trim()) || null;
+    await supabase.from('profiles').update({ daily_calorie_goal: val } as any).eq('user_id', client.user_id);
+    setCalorieGoal(val);
+    toast({ title: lang === 'en' ? 'Goal saved' : 'Цель сохранена' });
+  };
 
   const toggleSection = (id: string) => setOpenSection(prev => prev === id ? null : id);
 
