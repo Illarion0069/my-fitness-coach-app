@@ -532,15 +532,13 @@ const ClientDashboard = () => {
               ) : undefined}
             />
 
-            {/* Training History */}
+            {/* Nutrition Diary */}
             <ModuleCard
-              icon={<History className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'History' : 'История'}
-              subtitle={pastSessions.length > 0
-                ? `${pastSessions.length} ${lang === 'en' ? 'sessions done' : 'тренировок'}`
-                : (lang === 'en' ? 'No sessions yet' : 'Нет данных')}
-              onClick={() => setHistoryOpen(true)}
-              badge={pastSessions.length || undefined}
+              icon={<UtensilsCrossed className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'Nutrition' : 'Питание'}
+              subtitle={lang === 'en' ? 'Food & drink log' : 'Еда и напитки'}
+              onClick={() => setNutritionOpen(true)}
+              accentColor="bg-orange-500/15"
             />
 
             {/* Progress Photos */}
@@ -574,26 +572,25 @@ const ClientDashboard = () => {
               ) : undefined}
             />
 
-            {/* Nutrition Diary */}
+            {/* Training History */}
             <ModuleCard
-              icon={<UtensilsCrossed className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Nutrition' : 'Питание'}
-              subtitle={lang === 'en' ? 'Food & drink log' : 'Еда и напитки'}
-              onClick={() => setNutritionOpen(true)}
-              accentColor="bg-orange-500/15"
+              icon={<History className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'History' : 'История'}
+              subtitle={pastSessions.length > 0
+                ? `${pastSessions.length} ${lang === 'en' ? 'sessions done' : 'тренировок'}`
+                : (lang === 'en' ? 'No sessions yet' : 'Нет данных')}
+              onClick={() => setHistoryOpen(true)}
+              badge={pastSessions.length || undefined}
             />
-          </div>
 
-          {/* Whoop — full width */}
-          <div className="mt-3">
+            {/* Whoop */}
             <ModuleCard
               icon={<Activity className="w-4.5 h-4.5 text-primary" />}
               title="Whoop"
-              subtitle={lang === 'en' ? 'Recovery & strain tracking' : 'Восстановление и нагрузка'}
+              subtitle={lang === 'en' ? 'Recovery & strain' : 'Восстановление'}
               onClick={() => setWhoopOpen(true)}
               accentColor="bg-green-500/15"
             />
-          </div>
         </motion.div>
 
         {/* ═══════════ Contact Trainer ═══════════ */}
