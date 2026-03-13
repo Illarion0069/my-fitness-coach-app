@@ -199,6 +199,16 @@ serve(async (req) => {
     const score = Math.min(100, Math.max(0, Math.round(analysis.overall_score || 0)));
     const feedback = analysis.summary_ru || analysis.summary_en || "";
 
+    // Get current analysis count
+    const { data: existingLog } = await supabase
+      .from("nutrition_logs")
+      .select("ai_analysis")
+      .eq("user_id", user_id)
+      .eq("log_date", log_date)
+      .maybeSingle();
+    const prevCount = (existingLog?.ai_analysis as any)?.analysis_count || 0;
+    analysis.analysis_count = prevCount + 1;
+
     // Upsert score into nutrition_logs
     const { error: upsertError } = await supabase
       .from("nutrition_logs")
