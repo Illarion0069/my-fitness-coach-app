@@ -374,7 +374,7 @@ const ClientDetailAccordion = ({
         isOpen={openSection === 'nutrition'}
         onToggle={() => toggleSection('nutrition')}
       >
-        <NutritionDiary userId={client.user_id} lang={lang} />
+        <NutritionDiary userId={client.user_id} lang={lang} isTrainer={true} />
       </AccordionSection>
 
       {/* Notifications */}

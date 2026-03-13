@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,8 @@ interface NutritionLog {
   ai_score: number | null;
   ai_feedback: string | null;
   ai_analysis: any | null;
+  trainer_override_score: number | null;
+  trainer_override_note: string | null;
 }
 
 interface FoodPhoto {
@@ -30,9 +32,14 @@ interface FoodPhoto {
 interface Props {
   userId?: string;
   lang: string;
+  isTrainer?: boolean;
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+
+const MAX_PHOTOS_PER_DAY = 8;
+const MAX_ANALYSES_PER_DAY = 3;
+const VALID_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: string }[] = [
   { key: 'breakfast', labelRu: 'Завтрак', labelEn: 'Breakfast', emoji: '🌅' },
@@ -65,11 +72,11 @@ const scoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 50 ? 'text-y
 const scoreBg = (s: number) => s >= 80 ? 'bg-green-500/15' : s >= 50 ? 'bg-yellow-500/15' : 'bg-red-500/15';
 const scoreBarColor = (s: number) => s >= 80 ? 'bg-green-400' : s >= 50 ? 'bg-yellow-400' : 'bg-red-400';
 
-const NutritionDiary = ({ userId, lang }: Props) => {
+const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
-  const isReadOnly = !!userId;
+  const isReadOnly = !!userId && !isTrainer;
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [log, setLog] = useState<NutritionLog | null>(null);
@@ -80,6 +87,10 @@ const NutritionDiary = ({ userId, lang }: Props) => {
   const [scoreHistory, setScoreHistory] = useState<{ date: string; score: number }[]>([]);
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [showOverrideModal, setShowOverrideModal] = useState(false);
+  const [overrideScore, setOverrideScore] = useState('');
+  const [overrideNote, setOverrideNote] = useState('');
+  const [analysisCount, setAnalysisCount] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const fetchData = async () => {
@@ -90,18 +101,26 @@ const NutritionDiary = ({ userId, lang }: Props) => {
     ]);
     setLog((logRes.data as NutritionLog) || null);
     setPhotos((photosRes.data as FoodPhoto[]) || []);
+    
+    // Track how many times analysis was run today (from ai_analysis metadata)
+    const analysis = logRes.data?.ai_analysis;
+    const analysisData = analysis as Record<string, any> | null;
+    setAnalysisCount(analysisData?.analysis_count || (logRes.data?.ai_score != null ? 1 : 0));
   };
 
   const fetchScoreHistory = async () => {
     if (!effectiveUserId) return;
     const { data } = await supabase
       .from('nutrition_logs')
-      .select('log_date, ai_score')
+      .select('log_date, ai_score, trainer_override_score')
       .eq('user_id', effectiveUserId)
       .not('ai_score', 'is', null)
       .order('log_date', { ascending: true })
       .limit(30);
-    setScoreHistory((data || []).map(d => ({ date: d.log_date, score: d.ai_score! })));
+    setScoreHistory((data || []).map(d => ({ 
+      date: d.log_date, 
+      score: (d as any).trainer_override_score ?? d.ai_score! 
+    })));
   };
 
   useEffect(() => { fetchData(); }, [effectiveUserId, date]);
@@ -144,6 +163,15 @@ const NutritionDiary = ({ userId, lang }: Props) => {
       toast({ title: lang === 'en' ? 'File too large (max 10MB)' : 'Файл слишком большой (макс 10МБ)', variant: 'destructive' });
       return;
     }
+    // Check photo limit
+    if (photos.length >= MAX_PHOTOS_PER_DAY) {
+      toast({ 
+        title: lang === 'en' ? 'Photo limit reached' : 'Лимит фото достигнут', 
+        description: lang === 'en' ? `Maximum ${MAX_PHOTOS_PER_DAY} photos per day` : `Максимум ${MAX_PHOTOS_PER_DAY} фото в день`,
+        variant: 'destructive' 
+      });
+      return;
+    }
     setPendingFile(file);
     setShowMealPicker(true);
     if (fileRef.current) fileRef.current.value = '';
@@ -151,12 +179,17 @@ const NutritionDiary = ({ userId, lang }: Props) => {
 
   const handleUploadWithMealType = async (mealType: MealType) => {
     if (!pendingFile || !user) return;
+    // Validate meal_type
+    if (!VALID_MEAL_TYPES.includes(mealType)) return;
+    
     setShowMealPicker(false);
     setUploading(true);
+    
+    const ext = pendingFile.name.split('.').pop();
+    const path = `${user.id}/${date}_${Date.now()}.${ext}`;
+    
     try {
       // Upload to storage first
-      const ext = pendingFile.name.split('.').pop();
-      const path = `${user.id}/${date}_${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage.from('food-photos').upload(path, pendingFile, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('food-photos').getPublicUrl(path);
@@ -186,12 +219,19 @@ const NutritionDiary = ({ userId, lang }: Props) => {
         photo_url: publicUrl,
         meal_type: mealType,
       });
-      if (insertError) throw insertError;
+      
+      if (insertError) {
+        // DB insert failed — clean up orphaned storage file
+        await supabase.storage.from('food-photos').remove([path]);
+        throw insertError;
+      }
 
       const mealLabel = MEAL_TYPES.find(m => m.key === mealType);
       toast({ title: `${mealLabel?.emoji} ${lang === 'en' ? 'Photo added' : 'Фото добавлено'} — ${lang === 'en' ? mealLabel?.labelEn : mealLabel?.labelRu}` });
       fetchData();
     } catch (err: any) {
+      // Attempt cleanup on any error after upload
+      try { await supabase.storage.from('food-photos').remove([path]); } catch {}
       toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
     }
     setPendingFile(null);
@@ -214,6 +254,15 @@ const NutritionDiary = ({ userId, lang }: Props) => {
 
   const handleAnalyze = async () => {
     if (!effectiveUserId) return;
+    // Rate limit: max analyses per day
+    if (analysisCount >= MAX_ANALYSES_PER_DAY) {
+      toast({ 
+        title: lang === 'en' ? 'Analysis limit reached' : 'Лимит анализов достигнут',
+        description: lang === 'en' ? `Maximum ${MAX_ANALYSES_PER_DAY} analyses per day` : `Максимум ${MAX_ANALYSES_PER_DAY} анализа в день`,
+        variant: 'destructive' 
+      });
+      return;
+    }
     setAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-nutrition', {
@@ -224,6 +273,7 @@ const NutritionDiary = ({ userId, lang }: Props) => {
         toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
       } else {
         toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
+        setAnalysisCount(prev => prev + 1);
         fetchData();
         fetchScoreHistory();
       }
@@ -233,6 +283,31 @@ const NutritionDiary = ({ userId, lang }: Props) => {
     setAnalyzing(false);
   };
 
+  const handleTrainerOverride = async () => {
+    if (!log?.id || !isTrainer) return;
+    const score = parseInt(overrideScore);
+    if (isNaN(score) || score < 0 || score > 100) {
+      toast({ title: lang === 'en' ? 'Score must be 0-100' : 'Оценка должна быть 0-100', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase.from('nutrition_logs').update({
+      trainer_override_score: score,
+      trainer_override_note: overrideNote.trim() || null,
+    }).eq('id', log.id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: lang === 'en' ? 'Score overridden' : 'Оценка скорректирована' });
+      setShowOverrideModal(false);
+      setOverrideScore('');
+      setOverrideNote('');
+      fetchData();
+      fetchScoreHistory();
+    }
+  };
+
+  const displayScore = log?.trainer_override_score ?? log?.ai_score;
+  const isOverridden = log?.trainer_override_score != null;
   const waterMl = log?.water_ml || 0;
   const coffeeCups = log?.coffee_cups || 0;
   const teaCups = log?.tea_cups || 0;
@@ -242,6 +317,8 @@ const NutritionDiary = ({ userId, lang }: Props) => {
   const avgScore = sparkData.length > 0 ? Math.round(sparkData.reduce((a, b) => a + b, 0) / sparkData.length) : null;
   const analysis = log?.ai_analysis;
   const meals = analysis?.meals || [];
+  const photosAtLimit = photos.length >= MAX_PHOTOS_PER_DAY;
+  const analysisAtLimit = analysisCount >= MAX_ANALYSES_PER_DAY;
 
   // Group photos by meal type
   const groupedPhotos = useMemo(() => {
@@ -293,21 +370,43 @@ const NutritionDiary = ({ userId, lang }: Props) => {
       </div>
 
       {/* AI Score Card */}
-      {log?.ai_score != null && (
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl p-4 ${scoreBg(log.ai_score)} border border-border/30`}>
+      {displayScore != null && (
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className={`rounded-2xl p-4 ${scoreBg(displayScore)} border border-border/30`}>
           <div className="flex items-center gap-3 mb-2">
-            <div className={`w-12 h-12 rounded-xl ${scoreBg(log.ai_score)} flex items-center justify-center`}>
-              <span className={`text-xl font-extrabold ${scoreColor(log.ai_score)}`}>{log.ai_score}</span>
+            <div className={`w-12 h-12 rounded-xl ${scoreBg(displayScore)} flex items-center justify-center`}>
+              <span className={`text-xl font-extrabold ${scoreColor(displayScore)}`}>{displayScore}</span>
             </div>
             <div className="flex-1">
-              <p className="text-xs font-bold text-foreground">{lang === 'en' ? 'AI Nutrition Score' : 'ИИ оценка питания'}</p>
-              <p className={`text-[10px] font-semibold ${scoreColor(log.ai_score)}`}>
-                {log.ai_score >= 80 ? '🟢' : log.ai_score >= 50 ? '🟡' : '🔴'} {log.ai_score}%
+              <p className="text-xs font-bold text-foreground">
+                {isOverridden 
+                  ? (lang === 'en' ? 'Trainer Score' : 'Оценка тренера')
+                  : (lang === 'en' ? 'AI Nutrition Score' : 'ИИ оценка питания')
+                }
+              </p>
+              <p className={`text-[10px] font-semibold ${scoreColor(displayScore)}`}>
+                {displayScore >= 80 ? '🟢' : displayScore >= 50 ? '🟡' : '🔴'} {displayScore}%
+                {isOverridden && log?.ai_score != null && (
+                  <span className="text-muted-foreground ml-1">(AI: {log.ai_score}%)</span>
+                )}
               </p>
             </div>
-            <Sparkles className={`w-5 h-5 ${scoreColor(log.ai_score)}`} />
+            <div className="flex items-center gap-1">
+              {isTrainer && log?.ai_score != null && (
+                <button onClick={() => { 
+                  setOverrideScore(String(log?.trainer_override_score ?? log?.ai_score ?? '')); 
+                  setOverrideNote(log?.trainer_override_note || '');
+                  setShowOverrideModal(true); 
+                }} className="w-8 h-8 rounded-lg bg-background/50 flex items-center justify-center hover:bg-background/80 transition-colors">
+                  <Edit3 className="w-3.5 h-3.5 text-muted-foreground" />
+                </button>
+              )}
+              <Sparkles className={`w-5 h-5 ${scoreColor(displayScore)}`} />
+            </div>
           </div>
-          {log.ai_feedback && <p className="text-[11px] text-muted-foreground leading-relaxed">{log.ai_feedback}</p>}
+          {isOverridden && log?.trainer_override_note && (
+            <p className="text-[11px] text-foreground/80 leading-relaxed mb-1 italic">✏️ {log.trainer_override_note}</p>
+          )}
+          {log?.ai_feedback && <p className="text-[11px] text-muted-foreground leading-relaxed">{log.ai_feedback}</p>}
           {meals.length > 0 && (
             <div className="mt-3 space-y-1.5">
               {meals.map((meal: any, i: number) => (
@@ -341,7 +440,7 @@ const NutritionDiary = ({ userId, lang }: Props) => {
                   <p className="text-sm font-extrabold text-foreground">{item.display}</p>
                 </div>
               </div>
-              {!isReadOnly && (
+              {!isReadOnly && !userId && (
                 <div className="flex items-center gap-1.5">
                   <button onClick={() => upsertLog(item.key, Math.max(0, item.value - item.step))} disabled={item.value <= 0} className="flex-1 h-8 rounded-lg bg-secondary/50 flex items-center justify-center hover:bg-secondary/70 transition-colors disabled:opacity-30 active:scale-95">
                     <Minus className="w-3.5 h-3.5 text-muted-foreground" />
@@ -361,15 +460,23 @@ const NutritionDiary = ({ userId, lang }: Props) => {
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">{lang === 'en' ? 'Food Photos' : 'Фото еды'}</p>
-          <span className="text-[10px] text-muted-foreground">{photos.length} {lang === 'en' ? 'photos' : 'фото'}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {photos.length}/{MAX_PHOTOS_PER_DAY} {lang === 'en' ? 'photos' : 'фото'}
+          </span>
         </div>
 
         {/* Upload button */}
-        {!isReadOnly && (
-          <label className="flex items-center justify-center gap-2 bg-secondary/50 rounded-xl p-3 cursor-pointer hover:bg-secondary/70 transition-colors active:scale-[0.98]">
-            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} disabled={uploading} />
+        {!isReadOnly && !userId && (
+          <label className={`flex items-center justify-center gap-2 rounded-xl p-3 cursor-pointer transition-colors active:scale-[0.98] ${
+            photosAtLimit ? 'bg-muted/30 cursor-not-allowed opacity-50' : 'bg-secondary/50 hover:bg-secondary/70'
+          }`}>
+            <input ref={fileRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileSelect} disabled={uploading || photosAtLimit} />
             {uploading ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Camera className="w-4 h-4 text-primary" />}
-            <span className="text-xs font-bold text-foreground">{uploading ? (lang === 'en' ? 'Uploading...' : 'Загрузка...') : (lang === 'en' ? 'Add food photo' : 'Добавить фото еды')}</span>
+            <span className="text-xs font-bold text-foreground">
+              {uploading ? (lang === 'en' ? 'Uploading...' : 'Загрузка...') : 
+               photosAtLimit ? (lang === 'en' ? 'Photo limit reached' : 'Лимит фото достигнут') :
+               (lang === 'en' ? 'Add food photo' : 'Добавить фото еды')}
+            </span>
           </label>
         )}
 
@@ -401,11 +508,18 @@ const NutritionDiary = ({ userId, lang }: Props) => {
 
         {/* Analyze Button */}
         {photos.length > 0 && (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing}
-            className="w-full flex items-center justify-center gap-2 bg-primary/15 hover:bg-primary/25 border border-primary/30 rounded-xl p-3 transition-colors">
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing || analysisAtLimit}
+            className={`w-full flex items-center justify-center gap-2 border rounded-xl p-3 transition-colors ${
+              analysisAtLimit 
+                ? 'bg-muted/20 border-border/20 cursor-not-allowed opacity-50' 
+                : 'bg-primary/15 hover:bg-primary/25 border-primary/30'
+            }`}>
             {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
             <span className="text-xs font-bold text-primary">
-              {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : log?.ai_score != null ? (lang === 'en' ? 'Re-analyze' : 'Переоценить') : (lang === 'en' ? 'Get AI Score' : 'Получить оценку ИИ')}
+              {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : 
+               analysisAtLimit ? (lang === 'en' ? `Limit reached (${MAX_ANALYSES_PER_DAY}/day)` : `Лимит достигнут (${MAX_ANALYSES_PER_DAY}/день)`) :
+               log?.ai_score != null ? (lang === 'en' ? `Re-analyze (${MAX_ANALYSES_PER_DAY - analysisCount} left)` : `Переоценить (осталось ${MAX_ANALYSES_PER_DAY - analysisCount})`) : 
+               (lang === 'en' ? 'Get AI Score' : 'Получить оценку ИИ')}
             </span>
           </motion.button>
         )}
@@ -440,6 +554,51 @@ const NutritionDiary = ({ userId, lang }: Props) => {
         )}
       </AnimatePresence>
 
+      {/* Trainer Override Modal */}
+      <AnimatePresence>
+        {showOverrideModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowOverrideModal(false)}
+            className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center p-4">
+            <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-md bg-card rounded-2xl p-5 space-y-4 border border-border/40">
+              <p className="text-sm font-bold text-foreground text-center">
+                {lang === 'en' ? 'Override AI Score' : 'Корректировка оценки'}
+              </p>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                  {lang === 'en' ? 'New score (0-100)' : 'Новая оценка (0-100)'}
+                </label>
+                <input 
+                  type="number" min="0" max="100" value={overrideScore} 
+                  onChange={e => setOverrideScore(e.target.value)}
+                  className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+              </div>
+              <div>
+                <label className="text-[11px] font-semibold text-muted-foreground mb-1 block">
+                  {lang === 'en' ? 'Note (optional)' : 'Комментарий (необязательно)'}
+                </label>
+                <textarea 
+                  value={overrideNote} onChange={e => setOverrideNote(e.target.value)}
+                  rows={2}
+                  className="w-full bg-secondary/50 border border-border/40 rounded-xl px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none"
+                  placeholder={lang === 'en' ? 'Why are you changing the score?' : 'Почему меняете оценку?'}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => setShowOverrideModal(false)} className="flex-1 h-10 rounded-xl bg-secondary/50 text-xs font-bold text-muted-foreground">
+                  {lang === 'en' ? 'Cancel' : 'Отмена'}
+                </button>
+                <button onClick={handleTrainerOverride} className="flex-1 h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground">
+                  {lang === 'en' ? 'Save' : 'Сохранить'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Photo Lightbox */}
       <AnimatePresence>
         {selectedPhoto && (
@@ -447,7 +606,7 @@ const NutritionDiary = ({ userId, lang }: Props) => {
             className="fixed inset-0 z-[200] bg-black/90 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()} className="relative max-w-full max-h-full">
               <img src={selectedPhoto.photo_url} alt="" className="max-w-full max-h-[80vh] rounded-xl object-contain" />
-              {!isReadOnly && (
+              {!isReadOnly && !userId && (
                 <button onClick={() => handleDeletePhoto(selectedPhoto)} className="absolute top-3 right-3 w-10 h-10 bg-destructive/80 rounded-full flex items-center justify-center shadow-lg">
                   <Trash2 className="w-4 h-4 text-white" />
                 </button>
