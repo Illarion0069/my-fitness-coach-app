@@ -78,6 +78,26 @@ serve(async (req) => {
       });
     }
 
+    // Validate log_date format and range
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(log_date)) {
+      return new Response(JSON.stringify({ error: "Invalid date format" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const parsedDate = new Date(log_date + "T00:00:00Z");
+    const today = new Date();
+    today.setUTCHours(23, 59, 59, 999);
+    const minDate = new Date();
+    minDate.setFullYear(minDate.getFullYear() - 1);
+    if (parsedDate > today || parsedDate < minDate) {
+      return new Response(JSON.stringify({ error: "Date out of allowed range" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
