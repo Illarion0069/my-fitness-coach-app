@@ -59,7 +59,7 @@ interface Props {
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 const MAX_PHOTOS_PER_DAY = 8;
-const MAX_ANALYSES_PER_DAY = 1;
+const MAX_ANALYSES_PER_DAY = 3;
 const VALID_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: string; icon: string }[] = [
