@@ -156,20 +156,34 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
     }
   };
 
+  const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp', 'heic', 'heif'];
+
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: lang === 'en' ? 'File too large (max 10MB)' : 'Файл слишком большой (макс 10МБ)', variant: 'destructive' });
+    const ext = file.name.split('.').pop()?.toLowerCase() || '';
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      toast({ title: lang === 'en' ? 'Only image files allowed' : 'Только изображения (jpg, png, webp)', variant: 'destructive' });
+      if (fileRef.current) fileRef.current.value = '';
       return;
     }
-    // Check photo limit
+    if (file.size > 10 * 1024 * 1024) {
+      toast({ title: lang === 'en' ? 'File too large (max 10MB)' : 'Файл слишком большой (макс 10МБ)', variant: 'destructive' });
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
     if (photos.length >= MAX_PHOTOS_PER_DAY) {
       toast({ 
         title: lang === 'en' ? 'Photo limit reached' : 'Лимит фото достигнут', 
         description: lang === 'en' ? `Maximum ${MAX_PHOTOS_PER_DAY} photos per day` : `Максимум ${MAX_PHOTOS_PER_DAY} фото в день`,
         variant: 'destructive' 
       });
+      if (fileRef.current) fileRef.current.value = '';
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      toast({ title: lang === 'en' ? 'Only image files allowed' : 'Только изображения', variant: 'destructive' });
+      if (fileRef.current) fileRef.current.value = '';
       return;
     }
     setPendingFile(file);
@@ -256,12 +270,16 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
       
       // Invalidate AI score if analysis existed
       if (log?.id && log?.ai_score != null) {
+        // Preserve analysis_count to prevent rate limit bypass
+        const prevAnalysis = log.ai_analysis as Record<string, any> | null;
+        const preservedCount = prevAnalysis?.analysis_count || analysisCount;
         await supabase.from('nutrition_logs').update({ 
           ai_score: null, 
           ai_feedback: null, 
-          ai_analysis: null 
+          ai_analysis: { invalidated: true, analysis_count: preservedCount },
+          trainer_override_score: null,
+          trainer_override_note: null,
         }).eq('id', log.id);
-        setAnalysisCount(0);
       }
       
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
