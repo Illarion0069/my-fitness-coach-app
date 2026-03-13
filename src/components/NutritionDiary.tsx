@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, forwardRef } from 'react';
 import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -72,7 +72,7 @@ const scoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 50 ? 'text-y
 const scoreBg = (s: number) => s >= 80 ? 'bg-green-500/15' : s >= 50 ? 'bg-yellow-500/15' : 'bg-red-500/15';
 const scoreBarColor = (s: number) => s >= 80 ? 'bg-green-400' : s >= 50 ? 'bg-yellow-400' : 'bg-red-400';
 
-const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
+const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false }, ref) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
@@ -378,7 +378,7 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
   ];
 
   return (
-    <div className="space-y-5">
+    <div ref={ref} className="space-y-5">
       {/* Score History Banner */}
       {sparkData.length >= 2 && (
         <div className="bg-card border border-border/40 rounded-2xl p-4">
@@ -661,6 +661,8 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
       </AnimatePresence>
     </div>
   );
-};
+});
+
+NutritionDiary.displayName = 'NutritionDiary';
 
 export default NutritionDiary;
