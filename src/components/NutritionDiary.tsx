@@ -273,9 +273,11 @@ const NutritionDiary = ({ userId, lang, isTrainer = false }: Props) => {
         await supabase.from('nutrition_logs').update({ 
           ai_score: null, 
           ai_feedback: null, 
-          ai_analysis: null 
+          ai_analysis: null,
+          trainer_override_score: null,
+          trainer_override_note: null,
         }).eq('id', log.id);
-        setAnalysisCount(0);
+        // Don't reset analysisCount — server tracks it, prevents bypass
       }
       
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
