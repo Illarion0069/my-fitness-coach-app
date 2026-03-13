@@ -189,6 +189,7 @@ export type Database = {
           created_at: string
           id: string
           log_date: string
+          manual_entries: Json | null
           notes: string | null
           tea_cups: number
           trainer_override_note: string | null
@@ -206,6 +207,7 @@ export type Database = {
           created_at?: string
           id?: string
           log_date?: string
+          manual_entries?: Json | null
           notes?: string | null
           tea_cups?: number
           trainer_override_note?: string | null
@@ -223,6 +225,7 @@ export type Database = {
           created_at?: string
           id?: string
           log_date?: string
+          manual_entries?: Json | null
           notes?: string | null
           tea_cups?: number
           trainer_override_note?: string | null
