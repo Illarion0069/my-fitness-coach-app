@@ -147,6 +147,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
   const [loading, setLoading] = useState(true);
   const [showGoldReward, setShowGoldReward] = useState(false);
   const [selectedLocked, setSelectedLocked] = useState<typeof ALL_MILESTONES[0] | null>(null);
+  const [qualityStreak, setQualityStreak] = useState<{ consecutive_weeks: number; weeks_required: number; weeks_in_current_cycle: number; cycles_completed: number } | null>(null);
 
   useEffect(() => {
     checkAchievements();
