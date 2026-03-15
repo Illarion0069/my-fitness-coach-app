@@ -10,6 +10,7 @@ import BodyMeasurementsInput from './BodyMeasurementsInput';
 import BodyMeasurementsView from './BodyMeasurementsView';
 import ClientProgressPhotos from './ClientProgressPhotos';
 import NutritionDiary from './NutritionDiary';
+import TrainerClientAchievements from './TrainerClientAchievements';
 
 interface ClientPackage {
   id: string;
