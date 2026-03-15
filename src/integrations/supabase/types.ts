@@ -72,6 +72,7 @@ export type Database = {
         Row: {
           achievement_key: string
           achievement_type: string
+          celebrated: boolean
           description_en: string
           description_ru: string
           earned_at: string
@@ -84,6 +85,7 @@ export type Database = {
         Insert: {
           achievement_key: string
           achievement_type: string
+          celebrated?: boolean
           description_en: string
           description_ru: string
           earned_at?: string
@@ -96,6 +98,7 @@ export type Database = {
         Update: {
           achievement_key?: string
           achievement_type?: string
+          celebrated?: boolean
           description_en?: string
           description_ru?: string
           earned_at?: string
