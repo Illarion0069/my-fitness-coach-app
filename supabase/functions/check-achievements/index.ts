@@ -34,8 +34,9 @@ const NUTRITION_QUALITY_LEVELS: { threshold: number; icon: string; label_en: str
   { threshold: 95, icon: "🥇", label_en: "Gold", label_ru: "Золото" },
 ];
 
-// Free session rewards for Silver and Gold quality
-const FREE_SESSION_QUALITY_THRESHOLDS = [80, 95]; // Silver and Gold
+// Free session: every 3 consecutive weeks with avg ≥80% → +1 free session
+const FREE_SESSION_MIN_THRESHOLD = 80;
+const FREE_SESSION_WEEKS_REQUIRED = 3;
 
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
