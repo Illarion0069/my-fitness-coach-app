@@ -68,6 +68,45 @@ export type Database = {
         }
         Relationships: []
       }
+      client_achievements: {
+        Row: {
+          achievement_key: string
+          achievement_type: string
+          description_en: string
+          description_ru: string
+          earned_at: string
+          icon: string
+          id: string
+          title_en: string
+          title_ru: string
+          user_id: string
+        }
+        Insert: {
+          achievement_key: string
+          achievement_type: string
+          description_en: string
+          description_ru: string
+          earned_at?: string
+          icon?: string
+          id?: string
+          title_en: string
+          title_ru: string
+          user_id: string
+        }
+        Update: {
+          achievement_key?: string
+          achievement_type?: string
+          description_en?: string
+          description_ru?: string
+          earned_at?: string
+          icon?: string
+          id?: string
+          title_en?: string
+          title_ru?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       client_packages: {
         Row: {
           created_at: string
