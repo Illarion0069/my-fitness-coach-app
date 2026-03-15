@@ -368,48 +368,64 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
         </motion.button>
       )}
 
-      {/* ═══════════ Achievement Celebration Modal (premium fireworks) ═══════════ */}
+      {/* ═══════════ Achievement Celebration — Full-screen badge animation ═══════════ */}
       <AnimatePresence>
         {showCelebration && celebratingAchievement && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[150] flex items-center justify-center"
+            className="fixed inset-0 z-[150] flex flex-col items-center justify-center"
             onClick={dismissCelebration}
           >
-            {/* Overlay */}
+            {/* Dark overlay with blur */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 bg-background/90 backdrop-blur-lg"
+              className="absolute inset-0 bg-background/85 backdrop-blur-xl"
             />
 
-            {/* Pulsing aura */}
+            {/* Radial glow behind badge */}
             <motion.div
               initial={{ scale: 0, opacity: 0 }}
-              animate={{ scale: [1, 1.4, 1], opacity: [0.15, 0.3, 0.15] }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-              className="absolute w-80 h-80 rounded-full"
-              style={{ background: 'radial-gradient(circle, hsla(var(--primary)/0.4) 0%, transparent 70%)' }}
+              animate={{ scale: [0, 1.5, 1.2], opacity: [0, 0.6, 0.3] }}
+              transition={{ duration: 1.2, ease: 'easeOut' }}
+              className="absolute w-72 h-72 rounded-full"
+              style={{ background: 'radial-gradient(circle, hsla(var(--primary)/0.5) 0%, hsla(var(--primary)/0.1) 40%, transparent 70%)' }}
+            />
+
+            {/* Shockwave ring */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0.8 }}
+              animate={{ scale: [0, 3], opacity: [0.6, 0] }}
+              transition={{ duration: 1, delay: 0.3, ease: 'easeOut' }}
+              className="absolute w-40 h-40 rounded-full border-2 border-primary/40"
+            />
+            <motion.div
+              initial={{ scale: 0, opacity: 0.6 }}
+              animate={{ scale: [0, 4], opacity: [0.4, 0] }}
+              transition={{ duration: 1.2, delay: 0.5, ease: 'easeOut' }}
+              className="absolute w-32 h-32 rounded-full border border-primary/20"
             />
 
             {/* Fireworks */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
-              <CelebrationFirework x={-70} y={-100} delay={0.2} />
-              <CelebrationFirework x={80} y={-70} delay={0.5} />
-              <CelebrationFirework x={-20} y={-140} delay={0.8} />
-              <CelebrationFirework x={60} y={-120} delay={1.1} />
-              <CelebrationFirework x={-90} y={-50} delay={1.4} />
+              <CelebrationFirework x={-80} y={-120} delay={0.4} />
+              <CelebrationFirework x={90} y={-90} delay={0.6} />
+              <CelebrationFirework x={-30} y={-160} delay={0.9} />
+              <CelebrationFirework x={70} y={-140} delay={1.2} />
+              <CelebrationFirework x={-100} y={-60} delay={1.5} />
+              <CelebrationFirework x={50} y={60} delay={0.8} />
+              <CelebrationFirework x={-60} y={80} delay={1.1} />
             </div>
 
             {/* Confetti */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center">
-              <CelebrationConfetti count={70} />
+              <CelebrationConfetti count={80} />
             </div>
 
             {/* Sparkle rain */}
-            {Array.from({ length: 20 }).map((_, i) => (
+            {Array.from({ length: 25 }).map((_, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: -10 }}
@@ -421,106 +437,118 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                   width: 2 + Math.random() * 3, height: 2 + Math.random() * 3,
                   borderRadius: '50%',
                   backgroundColor: 'hsl(48, 96%, 53%)',
-                  boxShadow: '0 0 4px hsl(48, 96%, 53%)',
+                  boxShadow: '0 0 6px hsl(48, 96%, 53%)',
                 }}
               />
             ))}
 
-            {/* Main card */}
+            {/* ═══ THE BADGE — flies in from tiny, rotates 3D, lands big ═══ */}
             <motion.div
-              initial={{ scale: 0.3, opacity: 0, y: 50 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.3, opacity: 0, y: 50 }}
-              transition={{ type: 'spring', damping: 14, stiffness: 200, delay: 0.1 }}
-              className="relative bg-card border border-primary/30 rounded-3xl p-8 mx-6 max-w-xs w-full text-center overflow-hidden"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                boxShadow: '0 0 60px hsla(var(--primary)/0.15), 0 20px 60px hsla(0,0%,0%,0.3)',
+              initial={{ scale: 0.05, opacity: 0, rotateY: -180, rotateZ: -30 }}
+              animate={{ 
+                scale: [0.05, 1.3, 1.1, 1.15, 1.1],
+                opacity: [0, 1, 1, 1, 1],
+                rotateY: [-180, 360, 720],
+                rotateZ: [-30, 10, -5, 0],
               }}
+              transition={{ 
+                duration: 1.8, 
+                ease: [0.22, 1, 0.36, 1],
+                times: [0, 0.4, 0.65, 0.85, 1],
+                rotateY: { duration: 2, ease: 'easeOut' },
+              }}
+              className="relative z-[152]"
+              style={{ perspective: 1000 }}
             >
-              {/* Rotating shimmer */}
+              {/* Continuous gentle float after landing */}
               <motion.div
-                animate={{ rotate: [0, 360] }}
-                transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
-                className="absolute -top-24 -right-24 w-48 h-48 opacity-[0.06]"
-                style={{
-                  background: 'conic-gradient(from 0deg, transparent, hsla(var(--primary)/0.8), transparent, hsla(var(--primary)/0.8), transparent)',
+                animate={{ 
+                  y: [0, -8, 0],
+                  rotateZ: [0, 2, -2, 0],
                 }}
-              />
-
-              <button
-                onClick={dismissCelebration}
-                className="absolute top-3 right-3 text-muted-foreground hover:text-foreground z-10"
+                transition={{ 
+                  duration: 3, 
+                  repeat: Infinity, 
+                  ease: 'easeInOut',
+                  delay: 1.8,
+                }}
               >
-                <X className="w-4 h-4" />
-              </button>
+                <BadgeIcon icon={celebratingAchievement.icon} size="xl" className="w-36 h-36 mx-auto drop-shadow-[0_0_30px_hsla(var(--primary)/0.5)]" />
+              </motion.div>
 
-              {/* Icon with effects */}
-              <div className="relative inline-block mb-4">
+              {/* Orbiting stars */}
+              {[0, 1, 2, 3, 4, 5].map(i => (
                 <motion.div
-                  animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
-                  transition={{ repeat: Infinity, duration: 2.5 }}
+                  key={i}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1, rotate: [i * 60, i * 60 + 360] }}
+                  transition={{ opacity: { delay: 0.8 }, rotate: { duration: 4 + i * 0.5, repeat: Infinity, ease: 'linear' } }}
+                  className="absolute inset-0"
+                  style={{ transformOrigin: 'center center' }}
                 >
-                  <BadgeIcon icon={celebratingAchievement.icon} size="xl" className="mx-auto w-24 h-24" />
+                  <Star 
+                    className="absolute -top-5 left-1/2 -translate-x-1/2 text-yellow-400"
+                    style={{ width: 6 + (i % 3) * 3, height: 6 + (i % 3) * 3 }} 
+                    fill="currentColor" 
+                  />
                 </motion.div>
+              ))}
 
-                {[0, 1, 2, 3].map(i => (
-                  <motion.div
-                    key={i}
-                    animate={{ rotate: [i * 90, i * 90 + 360] }}
-                    transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
-                    className="absolute inset-0"
-                    style={{ transformOrigin: 'center center' }}
-                  >
-                    <Star className="absolute -top-3 left-1/2 -translate-x-1/2 text-yellow-400"
-                      style={{ width: 8 + i * 2, height: 8 + i * 2 }} fill="currentColor" />
-                  </motion.div>
-                ))}
-
-                <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}>
-                  <Sparkles className="absolute -top-2 -right-3 w-6 h-6 text-yellow-400" />
-                </motion.div>
-                <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }} transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}>
-                  <Sparkles className="absolute -bottom-1 -left-3 w-5 h-5 text-primary" />
-                </motion.div>
-              </div>
-
-              <motion.h3
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="text-lg font-extrabold font-heading text-foreground mb-1"
+              {/* Sparkle bursts */}
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ scale: [1, 1.5, 1], opacity: [0, 1, 0.6] }} 
+                transition={{ duration: 1.5, repeat: Infinity, delay: 1 }}
               >
-                {lang === 'en' ? '🎉 New Achievement!' : '🎉 Новое достижение!'}
-              </motion.h3>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.45 }}
-                className="text-base font-bold text-primary mb-2"
+                <Sparkles className="absolute -top-4 -right-6 w-7 h-7 text-yellow-400" />
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ scale: [1, 1.6, 1], opacity: [0, 1, 0.5] }} 
+                transition={{ duration: 2, repeat: Infinity, delay: 1.3 }}
               >
-                {lang === 'en' ? celebratingAchievement.title_en : celebratingAchievement.title_ru}
-              </motion.p>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.55 }}
-                className="text-sm text-muted-foreground leading-relaxed mb-6"
+                <Sparkles className="absolute -bottom-3 -left-5 w-6 h-6 text-primary" />
+              </motion.div>
+              <motion.div 
+                initial={{ opacity: 0 }}
+                animate={{ scale: [1, 1.3, 1], opacity: [0, 0.8, 0.4] }} 
+                transition={{ duration: 1.8, repeat: Infinity, delay: 0.8 }}
               >
-                {lang === 'en' ? celebratingAchievement.description_en : celebratingAchievement.description_ru}
-              </motion.p>
-
-              <motion.button
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.7 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={dismissCelebration}
-                className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl text-sm"
-              >
-                {lang === 'en' ? '🎉 Awesome!' : '🎉 Круто!'}
-              </motion.button>
+                <Sparkles className="absolute top-1/2 -right-8 w-5 h-5 text-yellow-300" />
+              </motion.div>
             </motion.div>
+
+            {/* ═══ Text appears below badge ═══ */}
+            <motion.div
+              initial={{ opacity: 0, y: 30, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ delay: 1.2, duration: 0.6, ease: 'easeOut' }}
+              className="relative z-[152] text-center mt-6 px-8"
+            >
+              <motion.p
+                animate={{ scale: [1, 1.05, 1] }}
+                transition={{ duration: 2, repeat: Infinity }}
+                className="text-2xl font-extrabold font-heading text-foreground mb-2"
+              >
+                {lang === 'en' ? '🎉 Congratulations!' : '🎉 Поздравляем!'}
+              </motion.p>
+              <p className="text-lg font-bold text-primary mb-1">
+                {lang === 'en' ? celebratingAchievement.title_en : celebratingAchievement.title_ru}
+              </p>
+              <p className="text-sm text-muted-foreground leading-relaxed max-w-[280px] mx-auto">
+                {lang === 'en' ? celebratingAchievement.description_en : celebratingAchievement.description_ru}
+              </p>
+            </motion.div>
+
+            {/* Tap to dismiss hint */}
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.5, 0.3] }}
+              transition={{ delay: 2.5, duration: 1.5 }}
+              className="relative z-[152] text-[11px] text-muted-foreground mt-8"
+            >
+              {lang === 'en' ? 'Tap anywhere to continue' : 'Нажмите, чтобы продолжить'}
+            </motion.p>
           </motion.div>
         )}
       </AnimatePresence>
