@@ -431,28 +431,12 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
           </motion.div>
         )}
 
-        {/* ═══════════ Book Session Button ═══════════ */}
-        <motion.button
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => { setBookingStep('date'); setBookingOpen(true); }}
-          className="w-full gradient-primary rounded-2xl p-4 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
-        >
-          <CalendarDays className="w-5 h-5 text-primary-foreground" />
-          <span className="text-base font-bold text-primary-foreground">
-            {lang === 'en' ? 'Book a Session' : 'Забронировать занятие'}
-          </span>
-        </motion.button>
-
-
         {/* ═══════════ Upcoming Sessions ═══════════ */}
         {sessions.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.15 }}
+            transition={{ delay: 0.1 }}
             className="space-y-2"
           >
             <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
@@ -463,7 +447,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
                 key={s.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.2 + i * 0.05 }}
+                transition={{ delay: 0.15 + i * 0.05 }}
                 className="flex items-center gap-3 bg-card/60 border border-border/30 rounded-xl px-4 py-3"
               >
                 <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
@@ -498,6 +482,21 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
             )}
           </motion.div>
         )}
+
+        {/* ═══════════ Book Session Button ═══════════ */}
+        <motion.button
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          whileTap={{ scale: 0.98 }}
+          onClick={() => { setBookingStep('date'); setBookingOpen(true); }}
+          className="w-full gradient-primary rounded-2xl py-4 px-6 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
+        >
+          <CalendarDays className="w-5 h-5 text-primary-foreground" />
+          <span className="text-base font-bold text-primary-foreground">
+            {lang === 'en' ? 'Book a Session' : 'Забронировать занятие'}
+          </span>
+        </motion.button>
 
         {/* ═══════════ Achievements ═══════════ */}
         <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
