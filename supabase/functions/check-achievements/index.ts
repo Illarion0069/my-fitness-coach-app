@@ -85,27 +85,6 @@ serve(async (req) => {
 
     const newAchievements: Achievement[] = [];
 
-    // ═══════════ 1. Session Milestones ═══════════
-    const { count: sessionCount } = await supabase
-      .from("scheduled_sessions")
-      .select("*", { count: "exact", head: true })
-      .eq("user_id", userId)
-      .eq("is_deducted", true);
-
-    for (const milestone of SESSION_MILESTONES) {
-      const key = `session_milestone_${milestone.count}`;
-      if (!existingKeys.has(key) && (sessionCount || 0) >= milestone.count) {
-        newAchievements.push({
-          achievement_key: key,
-          achievement_type: "session_milestone",
-          title_en: `${milestone.count} Sessions`,
-          title_ru: `${milestone.count} тренировок`,
-          description_en: `Completed ${milestone.count} training sessions!`,
-          description_ru: `Завершено ${milestone.count} тренировок!`,
-          icon: milestone.icon,
-        });
-      }
-    }
 
     // ═══════════ 2. Nutrition Logging Streak ═══════════
     const { data: foodPhotoDates } = await supabase
