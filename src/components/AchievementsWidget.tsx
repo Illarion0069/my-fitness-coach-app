@@ -5,6 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import GoldRewardCelebration from './GoldRewardCelebration';
 
+import badgeStreak3 from '@/assets/badges/streak-3.png';
+import badgeStreak7 from '@/assets/badges/streak-7.png';
+import badgeStreak14 from '@/assets/badges/streak-14.png';
+import badgeStreak30 from '@/assets/badges/streak-30.png';
+import badgeStreak60 from '@/assets/badges/streak-60.png';
+import badgeStreak90 from '@/assets/badges/streak-90.png';
+import badgeBronze from '@/assets/badges/nutrition-bronze.png';
+import badgeSilver from '@/assets/badges/nutrition-silver.png';
+import badgeGold from '@/assets/badges/nutrition-gold.png';
+
 interface Achievement {
   id: string;
   achievement_key: string;
@@ -21,6 +31,28 @@ interface AchievementsWidgetProps {
   userId: string;
   isTrainer?: boolean;
 }
+
+// Map emoji icon keys to custom badge images
+const BADGE_IMAGES: Record<string, string> = {
+  '📸': badgeStreak3,
+  '📷': badgeStreak7,
+  '🎞️': badgeStreak14,
+  '🌟': badgeStreak30,
+  '💎': badgeStreak60,
+  '🔱': badgeStreak90,
+  '🥉': badgeBronze,
+  '🥈': badgeSilver,
+  '🥇': badgeGold,
+};
+
+const BadgeIcon = ({ icon, size = 'md', className = '' }: { icon: string; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) => {
+  const src = BADGE_IMAGES[icon];
+  const sizeClasses = { sm: 'w-6 h-6', md: 'w-10 h-10', lg: 'w-14 h-14', xl: 'w-20 h-20' };
+  if (src) {
+    return <img src={src} alt="" className={`${sizeClasses[size]} object-contain ${className}`} />;
+  }
+  return <span className={`block ${size === 'xl' ? 'text-5xl' : size === 'lg' ? 'text-3xl' : 'text-2xl'} ${className}`}>{icon}</span>;
+};
 
 const TYPE_COLORS: Record<string, string> = {
   nutrition_streak: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
@@ -39,8 +71,6 @@ const ALL_MILESTONES = [
   { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
   { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve ≥ 80% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 80% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 95% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
-  // ═══ Gold серия → бесплатная тренировка ═══
-  
 ];
 
 /* ═══════════ Firework burst for celebration ═══════════ */
@@ -204,7 +234,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                 transition={{ delay: i * 0.05 }}
                 className={`shrink-0 bg-gradient-to-b ${TYPE_COLORS[a.achievement_type] || 'from-primary/20 to-primary/5 border-primary/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center`}
               >
-                <span className="text-2xl block mb-1">{a.icon}</span>
+                <BadgeIcon icon={a.icon} size="md" className="mx-auto mb-1" />
                 <p className="text-[10px] font-bold text-foreground leading-tight">
                   {lang === 'en' ? a.title_en : a.title_ru}
                 </p>
@@ -242,7 +272,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                       <span className="text-lg opacity-50">🔒</span>
                     </div>
                   )}
-                  <span className={`text-2xl block mb-1 ${isTrainer ? '' : 'blur-[2px]'}`}>{item.icon}</span>
+                  <BadgeIcon icon={item.icon} size="md" className={`mx-auto mb-1 ${isTrainer ? '' : 'blur-[2px]'}`} />
                   <p className={`text-[10px] font-bold leading-tight ${isTrainer ? 'text-foreground/70' : 'text-muted-foreground blur-[1px]'}`}>
                     {lang === 'en' ? item.title_en : item.title_ru}
                   </p>
@@ -291,7 +321,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               </button>
 
               <div className="relative inline-block mb-3">
-                <span className="text-5xl block opacity-40">{selectedLocked.icon}</span>
+                <BadgeIcon icon={selectedLocked.icon} size="xl" className="mx-auto opacity-40" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-2xl">🔒</span>
                 </div>
@@ -431,7 +461,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                   animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
                   transition={{ repeat: Infinity, duration: 2.5 }}
                 >
-                  <span className="text-7xl block">{celebratingAchievement.icon}</span>
+                  <BadgeIcon icon={celebratingAchievement.icon} size="xl" className="mx-auto w-24 h-24" />
                 </motion.div>
 
                 {[0, 1, 2, 3].map(i => (
