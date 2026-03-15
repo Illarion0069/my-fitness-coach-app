@@ -132,7 +132,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
         {/* Earned achievements */}
         {achievements.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
             {achievements.map((a, i) => (
               <motion.div
                 key={a.id}
@@ -163,7 +163,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                 {lang === 'en' ? 'Next goals:' : 'Следующие цели:'}
               </p>
             )}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
               {displayLocked.map((item, i) => (
                 <motion.button
                   key={i}
