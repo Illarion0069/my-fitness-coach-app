@@ -39,6 +39,13 @@ const FREE_SESSION_MIN_THRESHOLD = 80;
 const FREE_SESSION_WEEKS_REQUIRED = 3;
 
 
+// Cyprus timezone for correct date calculations
+const TIMEZONE = "Asia/Nicosia";
+
+function getLocalToday(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE }); // YYYY-MM-DD
+}
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
