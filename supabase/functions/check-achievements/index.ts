@@ -204,7 +204,7 @@ serve(async (req) => {
       .gte("log_date", weekAgoStr)
       .not("ai_score", "is", null);
 
-    if (nutritionLogs && nutritionLogs.length >= 3) {
+    if (nutritionLogs && nutritionLogs.length >= 5) {
       const avgScore = Math.round(
         nutritionLogs.reduce((sum: number, l: { ai_score: number }) => sum + l.ai_score, 0) / nutritionLogs.length
       );
