@@ -23,22 +23,24 @@ interface AchievementsWidgetProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  session_milestone: 'from-primary/20 to-primary/5 border-primary/30',
   nutrition_streak: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
+  gold_streak_reward: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30',
 };
 
 const ALL_MILESTONES = [
-  { icon: '🎯', title_en: '1 Session', title_ru: '1 тренировка', desc_en: 'Complete your first training session with the coach.', desc_ru: 'Завершите первую тренировку с тренером.' },
-  { icon: '💪', title_en: '5 Sessions', title_ru: '5 тренировок', desc_en: 'Complete 5 training sessions. Keep showing up!', desc_ru: 'Завершите 5 тренировок. Продолжайте приходить!' },
-  { icon: '🔥', title_en: '10 Sessions', title_ru: '10 тренировок', desc_en: 'Complete 10 sessions. You\'re building a habit!', desc_ru: 'Завершите 10 тренировок. Привычка формируется!' },
-  { icon: '⭐', title_en: '25 Sessions', title_ru: '25 тренировок', desc_en: 'Complete 25 sessions. Consistency is key!', desc_ru: 'Завершите 25 тренировок. Постоянство — залог успеха!' },
+  // ═══ Серия фото еды (стрики) ═══
   { icon: '📸', title_en: '3-Day Streak', title_ru: '3 дня подряд', desc_en: 'Log food photos for 3 consecutive days.', desc_ru: 'Фотографируйте еду 3 дня подряд.' },
   { icon: '📷', title_en: '7-Day Streak', title_ru: '7 дней подряд', desc_en: 'Log food photos for 7 consecutive days. A full week!', desc_ru: 'Фотографируйте еду 7 дней подряд. Целая неделя!' },
-  { icon: '🎞️', title_en: '14-Day Streak', title_ru: '14 дней подряд', desc_en: 'Log food photos for 14 days straight!', desc_ru: 'Фотографируйте еду 14 дней подряд!' },
-  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 60%.' },
-  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 80%.' },
-  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve a weekly average nutrition score ≥ 95%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 95%.' },
+  { icon: '🎞️', title_en: '14-Day Streak', title_ru: '14 дней подряд', desc_en: 'Log food photos for 14 consecutive days!', desc_ru: 'Фотографируйте еду 14 дней подряд!' },
+  { icon: '🌟', title_en: '30-Day Streak', title_ru: '30 дней подряд', desc_en: 'Log food photos for 30 consecutive days. A full month!', desc_ru: 'Фотографируйте еду 30 дней подряд. Целый месяц!' },
+  { icon: '💎', title_en: '60-Day Streak', title_ru: '60 дней подряд', desc_en: 'Log food photos for 60 consecutive days!', desc_ru: 'Фотографируйте еду 60 дней подряд!' },
+  { icon: '🔱', title_en: '90-Day Streak', title_ru: '90 дней подряд', desc_en: 'Log food photos for 90 consecutive days. Legendary!', desc_ru: 'Фотографируйте еду 90 дней подряд. Легенда!' },
+  // ═══ Качество питания (недельный средний балл) ═══
+  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
+  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%.', desc_ru: 'Средний балл питания за неделю ≥ 80%. Минимум 3 дня с оценками.' },
+  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve a weekly average nutrition score ≥ 95%.', desc_ru: 'Средний балл питания за неделю ≥ 95%. Минимум 3 дня с оценками.' },
+  // ═══ Gold серия → бесплатная тренировка ═══
   { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks to earn a FREE session!', desc_ru: 'Получите Gold рейтинг питания 3 недели подряд и получите БЕСПЛАТНУЮ тренировку!' },
 ];
 
