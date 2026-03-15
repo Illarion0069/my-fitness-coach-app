@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Sparkles, X } from 'lucide-react';
+import { Trophy, Sparkles, X, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import GoldRewardCelebration from './GoldRewardCelebration';
 
 interface Achievement {
   id: string;
@@ -33,6 +34,7 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebratingAchievement, setCelebratingAchievement] = useState<Achievement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showGoldReward, setShowGoldReward] = useState(false);
 
   useEffect(() => {
     checkAchievements();
@@ -49,16 +51,20 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
 
       if (res.data) {
         setAchievements(res.data.achievements || []);
+        
+        // Check for gold streak reward
+        if (res.data.gold_reward_granted) {
+          setShowGoldReward(true);
+        }
+        
         const newOnes = res.data.new_achievements || [];
         if (newOnes.length > 0) {
-          // Find the full achievement data for the new ones
           const allAch = res.data.achievements || [];
           const newFull = allAch.filter((a: Achievement) =>
             newOnes.some((n: { achievement_key: string }) => n.achievement_key === a.achievement_key)
           );
           setNewAchievements(newFull);
-          // Show celebration for first new achievement
-          if (newFull.length > 0) {
+          if (newFull.length > 0 && !res.data.gold_reward_granted) {
             setCelebratingAchievement(newFull[0]);
             setShowCelebration(true);
           }
@@ -167,6 +173,16 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
         )}
       </div>
 
+      {/* ═══════════ Test Gold Reward Button ═══════════ */}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowGoldReward(true)}
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border border-yellow-500/20 rounded-2xl py-2.5 px-4 text-xs font-bold text-yellow-500 hover:from-yellow-500/20 hover:to-yellow-600/20 transition-all"
+      >
+        <Gift className="w-3.5 h-3.5" />
+        {lang === 'en' ? '🎁 Preview Gold Reward' : '🎁 Превью Gold награды'}
+      </motion.button>
+
       {/* ═══════════ Celebration Modal ═══════════ */}
       <AnimatePresence>
         {showCelebration && celebratingAchievement && (
@@ -192,7 +208,6 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
                 <X className="w-4 h-4" />
               </button>
 
-              {/* Confetti-like sparkles */}
               <div className="relative inline-block mb-4">
                 <motion.div
                   animate={{ rotate: [0, 5, -5, 0] }}
@@ -225,6 +240,12 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ═══════════ Gold Reward Celebration ═══════════ */}
+      <GoldRewardCelebration
+        show={showGoldReward}
+        onDismiss={() => setShowGoldReward(false)}
+      />
     </>
   );
 };
