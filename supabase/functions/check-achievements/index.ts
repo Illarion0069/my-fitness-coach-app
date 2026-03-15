@@ -150,10 +150,16 @@ serve(async (req) => {
     let freeSessionGranted = false;
 
     // ═══════════ 1. Nutrition Logging Streak ═══════════
+    // Only fetch last 90 days instead of full history
+    const ninetyDaysAgo = new Date(getLocalToday() + "T12:00:00");
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().split("T")[0];
+
     const { data: foodPhotoDates } = await supabase
       .from("food_photos")
       .select("log_date")
       .eq("user_id", userId)
+      .gte("log_date", ninetyDaysAgoStr)
       .order("log_date", { ascending: false });
 
     if (foodPhotoDates && foodPhotoDates.length > 0) {
@@ -162,16 +168,39 @@ serve(async (req) => {
       let streak = 0;
       const todayStr = getLocalToday();
       
-      for (let i = 0; i < uniqueDates.length; i++) {
-        // Calculate expected date by subtracting i days from today (in local timezone)
-        const expectedDate = new Date(todayStr + "T12:00:00");
-        expectedDate.setDate(expectedDate.getDate() - i);
-        const expectedStr = expectedDate.toISOString().split("T")[0];
-        
-        if (uniqueDates.includes(expectedStr)) {
-          streak++;
+      // Determine start date: if today has a photo → start from today, else start from yesterday
+      const hasToday = uniqueDates.includes(todayStr);
+      const startDate = new Date(todayStr + "T12:00:00");
+      if (!hasToday) {
+        startDate.setDate(startDate.getDate() - 1);
+        // If yesterday also has no photo, streak is 0
+        const yesterdayStr = startDate.toISOString().split("T")[0];
+        if (!uniqueDates.includes(yesterdayStr)) {
+          // streak stays 0, skip loop
         } else {
-          break;
+          // Count from yesterday
+          for (let i = 0; i < uniqueDates.length; i++) {
+            const expectedDate = new Date(startDate);
+            expectedDate.setDate(expectedDate.getDate() - i);
+            const expectedStr = expectedDate.toISOString().split("T")[0];
+            if (uniqueDates.includes(expectedStr)) {
+              streak++;
+            } else {
+              break;
+            }
+          }
+        }
+      } else {
+        // Count from today
+        for (let i = 0; i < uniqueDates.length; i++) {
+          const expectedDate = new Date(startDate);
+          expectedDate.setDate(expectedDate.getDate() - i);
+          const expectedStr = expectedDate.toISOString().split("T")[0];
+          if (uniqueDates.includes(expectedStr)) {
+            streak++;
+          } else {
+            break;
+          }
         }
       }
 
