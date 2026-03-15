@@ -160,11 +160,11 @@ serve(async (req) => {
       const uniqueDates = [...new Set(foodPhotoDates.map((p: { log_date: string }) => p.log_date))].sort().reverse();
       
       let streak = 0;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayStr = getLocalToday();
       
       for (let i = 0; i < uniqueDates.length; i++) {
-        const expectedDate = new Date(today);
+        // Calculate expected date by subtracting i days from today (in local timezone)
+        const expectedDate = new Date(todayStr + "T12:00:00");
         expectedDate.setDate(expectedDate.getDate() - i);
         const expectedStr = expectedDate.toISOString().split("T")[0];
         
