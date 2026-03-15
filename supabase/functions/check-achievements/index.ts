@@ -116,14 +116,21 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Auth
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await anonClient.auth.getUser();
-    if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+    let userId: string;
 
-    const userId = user.id;
+    // Support cron-based calls: service role + x-cron-user-id header
+    const cronUserId = req.headers.get("x-cron-user-id");
+    if (cronUserId && authHeader === `Bearer ${supabaseKey}`) {
+      userId = cronUserId;
+    } else {
+      // Normal user auth
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await anonClient.auth.getUser();
+      if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+      userId = user.id;
+    }
 
     // ═══════════ Rate limit: max 1 check per 30 seconds per user ═══════════
     const { data: lastAchievement } = await supabase
