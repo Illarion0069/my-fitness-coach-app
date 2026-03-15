@@ -23,9 +23,9 @@ interface AchievementsWidgetProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  session_milestone: 'from-primary/20 to-primary/5 border-primary/30',
   nutrition_streak: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
+  gold_streak_reward: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30',
 };
 
 const ALL_MILESTONES = [
