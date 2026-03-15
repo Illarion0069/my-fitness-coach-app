@@ -41,3 +41,6 @@ verify_jwt = false
 
 [functions.validate-food-photo]
 verify_jwt = false
+
+[functions.check-achievements]
+verify_jwt = false

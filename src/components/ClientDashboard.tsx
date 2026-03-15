@@ -506,6 +506,9 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
           </motion.div>
         )}
 
+        {/* ═══════════ Achievements ═══════════ */}
+        <AchievementsWidget userId={user.id} />
+
         {/* ═══════════ Modules Grid ═══════════ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
