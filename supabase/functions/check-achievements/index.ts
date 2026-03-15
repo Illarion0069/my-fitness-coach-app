@@ -82,7 +82,7 @@ async function grantFreeSession(supabase: any, userId: string, reason: string): 
   await supabase.from("session_ledger").insert({
     user_id: userId,
     package_id: activePkg.id,
-    delta: -1,
+    delta: 0,
     reason,
     used_before: activePkg.used_sessions,
     used_after: activePkg.used_sessions,
