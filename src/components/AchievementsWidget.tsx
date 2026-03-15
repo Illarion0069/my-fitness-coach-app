@@ -461,7 +461,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                   animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
                   transition={{ repeat: Infinity, duration: 2.5 }}
                 >
-                  <span className="text-7xl block">{celebratingAchievement.icon}</span>
+                  <BadgeIcon icon={celebratingAchievement.icon} size="xl" className="mx-auto w-24 h-24" />
                 </motion.div>
 
                 {[0, 1, 2, 3].map(i => (
