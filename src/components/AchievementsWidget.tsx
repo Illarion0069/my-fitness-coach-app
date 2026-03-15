@@ -34,6 +34,7 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
   const [showCelebration, setShowCelebration] = useState(false);
   const [celebratingAchievement, setCelebratingAchievement] = useState<Achievement | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showGoldReward, setShowGoldReward] = useState(false);
 
   useEffect(() => {
     checkAchievements();
