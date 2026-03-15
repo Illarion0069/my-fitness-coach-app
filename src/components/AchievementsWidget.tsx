@@ -173,6 +173,16 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
         )}
       </div>
 
+      {/* ═══════════ Test Gold Reward Button ═══════════ */}
+      <motion.button
+        whileTap={{ scale: 0.95 }}
+        onClick={() => setShowGoldReward(true)}
+        className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border border-yellow-500/20 rounded-2xl py-2.5 px-4 text-xs font-bold text-yellow-500 hover:from-yellow-500/20 hover:to-yellow-600/20 transition-all"
+      >
+        <Gift className="w-3.5 h-3.5" />
+        {lang === 'en' ? '🎁 Preview Gold Reward' : '🎁 Превью Gold награды'}
+      </motion.button>
+
       {/* ═══════════ Celebration Modal ═══════════ */}
       <AnimatePresence>
         {showCelebration && celebratingAchievement && (
@@ -198,7 +208,6 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
                 <X className="w-4 h-4" />
               </button>
 
-              {/* Confetti-like sparkles */}
               <div className="relative inline-block mb-4">
                 <motion.div
                   animate={{ rotate: [0, 5, -5, 0] }}
@@ -231,6 +240,12 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* ═══════════ Gold Reward Celebration ═══════════ */}
+      <GoldRewardCelebration
+        show={showGoldReward}
+        onDismiss={() => setShowGoldReward(false)}
+      />
     </>
   );
 };
