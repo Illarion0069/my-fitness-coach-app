@@ -130,7 +130,8 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
           </span>
         </div>
 
-        {hasAchievements ? (
+        {/* Earned achievements */}
+        {achievements.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {achievements.map((a, i) => (
               <motion.div
@@ -152,36 +153,98 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               </motion.div>
             ))}
           </div>
-        ) : (
-          /* ═══════════ Empty state with locked previews ═══════════ */
-          <div className="space-y-2">
+        )}
+
+        {/* Locked milestones (always shown — tappable) */}
+        {displayLocked.length > 0 && (
+          <div className="space-y-1.5">
+            {achievements.length > 0 && (
+              <p className="text-[10px] text-muted-foreground px-1 font-semibold">
+                {lang === 'en' ? 'Next goals:' : 'Следующие цели:'}
+              </p>
+            )}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {LOCKED_PREVIEWS.map((item, i) => (
-                <motion.div
+              {displayLocked.map((item, i) => (
+                <motion.button
                   key={i}
                   initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 0.5, scale: 1 }}
+                  animate={{ opacity: 0.6, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  className="shrink-0 bg-gradient-to-b from-muted/40 to-muted/10 border border-border/30 rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden"
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => setSelectedLocked(item)}
+                  className="shrink-0 bg-gradient-to-b from-muted/40 to-muted/10 border border-border/30 rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden hover:border-primary/30 transition-colors"
                 >
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <span className="text-lg opacity-60">🔒</span>
+                    <span className="text-lg opacity-50">🔒</span>
                   </div>
                   <span className="text-2xl block mb-1 blur-[2px]">{item.icon}</span>
                   <p className="text-[10px] font-bold text-muted-foreground leading-tight blur-[1px]">
                     {lang === 'en' ? item.title_en : item.title_ru}
                   </p>
-                </motion.div>
+                </motion.button>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground text-center italic">
-              {lang === 'en'
-                ? 'Complete sessions & log food to unlock achievements!'
-                : 'Тренируйся и логируй питание, чтобы открыть награды!'}
-            </p>
+            {achievements.length === 0 && (
+              <p className="text-[10px] text-muted-foreground text-center italic">
+                {lang === 'en'
+                  ? 'Tap any badge to learn how to unlock it!'
+                  : 'Нажми на бейдж, чтобы узнать, как его получить!'}
+              </p>
+            )}
           </div>
         )}
       </div>
+
+      {/* ═══════════ Locked Achievement Detail Modal ═══════════ */}
+      <AnimatePresence>
+        {selectedLocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setSelectedLocked(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 300 }}
+              className="relative bg-card border border-border/50 rounded-3xl p-7 mx-6 max-w-xs w-full text-center shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedLocked(null)}
+                className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="relative inline-block mb-3">
+                <span className="text-5xl block opacity-40">{selectedLocked.icon}</span>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl">🔒</span>
+                </div>
+              </div>
+
+              <h3 className="text-base font-extrabold font-heading text-foreground mb-1">
+                {lang === 'en' ? selectedLocked.title_en : selectedLocked.title_ru}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                {lang === 'en' ? selectedLocked.desc_en : selectedLocked.desc_ru}
+              </p>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedLocked(null)}
+                className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-xl text-sm"
+              >
+                {lang === 'en' ? 'Got it!' : 'Понятно!'}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══════════ Test Gold Reward Button (trainer only) ═══════════ */}
       {isTrainer && (
