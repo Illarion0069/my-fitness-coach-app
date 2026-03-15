@@ -170,15 +170,12 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
           setShowGoldReward(true);
         }
         
-        const newOnes = res.data.new_achievements || [];
-        if (newOnes.length > 0) {
-          const allAch = res.data.achievements || [];
-          const newFull = allAch.filter((a: Achievement) =>
-            newOnes.some((n: { achievement_key: string }) => n.achievement_key === a.achievement_key)
-          );
-          setNewAchievements(newFull);
-          if (newFull.length > 0 && !res.data.free_session_granted) {
-            setCelebratingAchievement(newFull[0]);
+        // Show celebration for any uncelebrated achievements (new or previously unseen)
+        const uncelebrated: Achievement[] = res.data.uncelebrated || [];
+        if (uncelebrated.length > 0) {
+          setNewAchievements(uncelebrated);
+          if (!res.data.free_session_granted) {
+            setCelebratingAchievement(uncelebrated[0]);
             setShowCelebration(true);
           }
         }
@@ -190,7 +187,19 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
     }
   };
 
+  const markCelebrated = async (achievementId: string) => {
+    await supabase
+      .from('client_achievements')
+      .update({ celebrated: true })
+      .eq('id', achievementId);
+  };
+
   const dismissCelebration = () => {
+    // Mark current achievement as celebrated
+    if (celebratingAchievement) {
+      markCelebrated(celebratingAchievement.id);
+    }
+    
     setShowCelebration(false);
     setCelebratingAchievement(null);
     const remaining = newAchievements.filter(
