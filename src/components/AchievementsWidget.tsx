@@ -148,8 +148,16 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
   const [showGoldReward, setShowGoldReward] = useState(false);
   const [selectedLocked, setSelectedLocked] = useState<typeof ALL_MILESTONES[0] | null>(null);
   const [qualityStreak, setQualityStreak] = useState<{ consecutive_weeks: number; weeks_required: number; weeks_in_current_cycle: number; cycles_completed: number } | null>(null);
+  const hasCheckedRef = useRef(false);
+  const lastCheckRef = useRef(0);
 
   useEffect(() => {
+    // Prevent double-mount (React StrictMode) and rate-limit client-side to 30s
+    if (hasCheckedRef.current) return;
+    const now = Date.now();
+    if (now - lastCheckRef.current < 30000) return;
+    hasCheckedRef.current = true;
+    lastCheckRef.current = now;
     checkAchievements();
   }, [userId]);
 
