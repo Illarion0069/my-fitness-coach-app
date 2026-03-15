@@ -37,8 +37,6 @@ const NUTRITION_QUALITY_LEVELS: { threshold: number; icon: string; label_en: str
 // Free session rewards for Silver and Gold quality
 const FREE_SESSION_QUALITY_THRESHOLDS = [80, 95]; // Silver and Gold
 
-const GOLD_STREAK_WEEKS_FOR_REWARD = 3;
-const GOLD_THRESHOLD = 95;
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -277,61 +275,6 @@ serve(async (req) => {
         }
       }
 
-      let consecutiveGold = 0;
-      for (let i = weekAverages.length - 1; i >= 0; i--) {
-        if (weekAverages[i].avg >= GOLD_THRESHOLD) {
-          consecutiveGold++;
-        } else {
-          break;
-        }
-      }
-
-      if (consecutiveGold >= GOLD_STREAK_WEEKS_FOR_REWARD) {
-        const rewardCycle = Math.floor(consecutiveGold / GOLD_STREAK_WEEKS_FOR_REWARD);
-        const rewardKey = `gold_streak_reward_${rewardCycle}`;
-
-        if (!existingKeys.has(rewardKey)) {
-          newAchievements.push({
-            achievement_key: rewardKey,
-            achievement_type: "gold_streak_reward",
-            title_en: `Gold Streak x${rewardCycle}`,
-            title_ru: `Gold серия x${rewardCycle}`,
-            description_en: `${consecutiveGold} consecutive weeks of Gold nutrition! Free session earned!`,
-            description_ru: `${consecutiveGold} недель Gold питания подряд! Бесплатная тренировка!`,
-            icon: "🎁",
-          });
-
-          const granted = await grantFreeSession(
-            supabase, userId,
-            `Gold nutrition streak reward (${consecutiveGold} weeks)`
-          );
-          if (granted) freeSessionGranted = true;
-
-          try {
-            const { data: clientProfile } = await supabase
-              .from("profiles")
-              .select("full_name, telegram_chat_id")
-              .eq("user_id", userId)
-              .single();
-
-            const clientName = clientProfile?.full_name || "Unknown";
-            const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-            const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
-
-            if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-              const trainerMsg = `🎁 <b>Gold Streak Reward!</b>\n\n👤 <b>${clientName}</b> получил Gold рейтинг питания <b>${consecutiveGold} недель подряд!</b>\n\n🏋️ +1 бесплатная тренировка автоматически добавлена в пакет.\n\n🥇🥇🥇`;
-              await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
-
-              if (clientProfile?.telegram_chat_id) {
-                const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы получили Gold рейтинг питания <b>${consecutiveGold} недель подряд!</b>\n\n🏋️ В награду +1 бесплатная тренировка добавлена в ваш пакет!\n\nПродолжайте в том же духе! 💪🥇`;
-                await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
-              }
-            }
-          } catch (tgErr) {
-            console.error("Failed to send gold reward Telegram notification:", tgErr);
-          }
-        }
-      }
     }
 
     // ═══════════ Save new achievements ═══════════

@@ -25,7 +25,6 @@ interface AchievementsWidgetProps {
 const TYPE_COLORS: Record<string, string> = {
   nutrition_streak: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
-  gold_streak_reward: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30',
 };
 
 const ALL_MILESTONES = [
@@ -41,7 +40,7 @@ const ALL_MILESTONES = [
   { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve ≥ 80% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 80% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 95% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   // ═══ Gold серия → бесплатная тренировка ═══
-  { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks → another FREE session!', desc_ru: 'Gold рейтинг 3 недели подряд → ещё одна БЕСПЛАТНАЯ тренировка!' },
+  
 ];
 
 /* ═══════════ Firework burst for celebration ═══════════ */
@@ -306,7 +305,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               </p>
 
               {/* Show free session indicator for Silver, Gold, Gold Streak */}
-              {(selectedLocked.icon === '🥈' || selectedLocked.icon === '🥇' || selectedLocked.icon === '🎁') && (
+              {(selectedLocked.icon === '🥈' || selectedLocked.icon === '🥇') && (
                 <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2 mb-4">
                   <Gift className="w-4 h-4 text-yellow-500" />
                   <span className="text-xs font-bold text-yellow-500">
