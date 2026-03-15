@@ -5,6 +5,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import GoldRewardCelebration from './GoldRewardCelebration';
 
+import badgeStreak3 from '@/assets/badges/streak-3.png';
+import badgeStreak7 from '@/assets/badges/streak-7.png';
+import badgeStreak14 from '@/assets/badges/streak-14.png';
+import badgeStreak30 from '@/assets/badges/streak-30.png';
+import badgeStreak60 from '@/assets/badges/streak-60.png';
+import badgeStreak90 from '@/assets/badges/streak-90.png';
+import badgeBronze from '@/assets/badges/nutrition-bronze.png';
+import badgeSilver from '@/assets/badges/nutrition-silver.png';
+import badgeGold from '@/assets/badges/nutrition-gold.png';
+
 interface Achievement {
   id: string;
   achievement_key: string;
@@ -21,6 +31,28 @@ interface AchievementsWidgetProps {
   userId: string;
   isTrainer?: boolean;
 }
+
+// Map emoji icon keys to custom badge images
+const BADGE_IMAGES: Record<string, string> = {
+  '📸': badgeStreak3,
+  '📷': badgeStreak7,
+  '🎞️': badgeStreak14,
+  '🌟': badgeStreak30,
+  '💎': badgeStreak60,
+  '🔱': badgeStreak90,
+  '🥉': badgeBronze,
+  '🥈': badgeSilver,
+  '🥇': badgeGold,
+};
+
+const BadgeIcon = ({ icon, size = 'md', className = '' }: { icon: string; size?: 'sm' | 'md' | 'lg' | 'xl'; className?: string }) => {
+  const src = BADGE_IMAGES[icon];
+  const sizeClasses = { sm: 'w-6 h-6', md: 'w-10 h-10', lg: 'w-14 h-14', xl: 'w-20 h-20' };
+  if (src) {
+    return <img src={src} alt="" className={`${sizeClasses[size]} object-contain ${className}`} />;
+  }
+  return <span className={`block ${size === 'xl' ? 'text-5xl' : size === 'lg' ? 'text-3xl' : 'text-2xl'} ${className}`}>{icon}</span>;
+};
 
 const TYPE_COLORS: Record<string, string> = {
   nutrition_streak: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
@@ -39,8 +71,6 @@ const ALL_MILESTONES = [
   { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
   { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve ≥ 80% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 80% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 95% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
-  // ═══ Gold серия → бесплатная тренировка ═══
-  
 ];
 
 /* ═══════════ Firework burst for celebration ═══════════ */
