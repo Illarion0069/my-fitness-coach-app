@@ -257,7 +257,7 @@ serve(async (req) => {
       const weekAverages: { week: string; avg: number; qualified: boolean }[] = [];
       for (const week of sortedWeeks) {
         const scores = weekScores[week];
-        if (scores.length >= 3) {
+        if (scores.length >= 5) {
           const avg = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
           weekAverages.push({ week, avg, qualified: avg >= FREE_SESSION_MIN_THRESHOLD });
         }

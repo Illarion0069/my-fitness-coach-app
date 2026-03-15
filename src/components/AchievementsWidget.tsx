@@ -68,9 +68,9 @@ const ALL_MILESTONES = [
   { icon: '💎', title_en: '60-Day Streak', title_ru: '60 дней подряд', desc_en: 'Log food photos for 60 consecutive days!', desc_ru: 'Фотографируйте еду 60 дней подряд!' },
   { icon: '🔱', title_en: '90-Day Streak', title_ru: '90 дней подряд', desc_en: 'Log food photos for 90 consecutive days. Legendary!', desc_ru: 'Фотографируйте еду 90 дней подряд. Легенда!' },
   // ═══ Качество питания ═══
-  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
-  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 80%. Минимум 3 дня с оценками.' },
-  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score. Min 3 days with scores.', desc_ru: 'Средний балл ≥ 95% за неделю. Мин. 3 дня с оценками.' },
+  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%. Min 5 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 5 дней с оценками.' },
+  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%. Min 5 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 80%. Минимум 5 дней с оценками.' },
+  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score. Min 5 days with scores.', desc_ru: 'Средний балл ≥ 95% за неделю. Мин. 5 дней с оценками.' },
 ];
 
 /* ═══════════ Firework burst for celebration ═══════════ */
