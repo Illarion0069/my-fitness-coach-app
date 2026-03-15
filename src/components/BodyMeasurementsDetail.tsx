@@ -158,7 +158,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
           </div>
 
           {/* Metric tabs — horizontal scroll */}
-          <div className="flex gap-1.5 px-4 py-2.5 overflow-x-auto no-scrollbar">
+          <div className="flex gap-1.5 px-4 py-2.5 overflow-x-auto no-scrollbar" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
             {METRICS.map(m => (
               <button
                 key={m.key}

@@ -794,6 +794,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       <div
         ref={scrollRef}
         className="flex gap-1 mb-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1 -mx-1 px-1"
+        onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {monthDays.map(day => {
