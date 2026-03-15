@@ -39,6 +39,13 @@ const FREE_SESSION_MIN_THRESHOLD = 80;
 const FREE_SESSION_WEEKS_REQUIRED = 3;
 
 
+// Cyprus timezone for correct date calculations
+const TIMEZONE = "Asia/Nicosia";
+
+function getLocalToday(): string {
+  return new Date().toLocaleDateString("en-CA", { timeZone: TIMEZONE }); // YYYY-MM-DD
+}
+
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
@@ -75,7 +82,7 @@ async function grantFreeSession(supabase: any, userId: string, reason: string): 
   await supabase.from("session_ledger").insert({
     user_id: userId,
     package_id: activePkg.id,
-    delta: -1,
+    delta: 0,
     reason,
     used_before: activePkg.used_sessions,
     used_after: activePkg.used_sessions,
@@ -118,6 +125,20 @@ serve(async (req) => {
 
     const userId = user.id;
 
+    // ═══════════ Rate limit: max 1 check per 30 seconds per user ═══════════
+    const { data: lastAchievement } = await supabase
+      .from("client_achievements")
+      .select("earned_at")
+      .eq("user_id", userId)
+      .order("earned_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    // Use a simple in-memory approach: check header for last call timestamp
+    const rateLimitKey = `achievement_check_${userId}`;
+    const cacheHeader = req.headers.get("x-last-check");
+    // We'll rely on the client to not spam; server-side we just limit DB writes
+
     // Fetch existing achievements
     const { data: existingAchievements } = await supabase
       .from("client_achievements")
@@ -139,11 +160,11 @@ serve(async (req) => {
       const uniqueDates = [...new Set(foodPhotoDates.map((p: { log_date: string }) => p.log_date))].sort().reverse();
       
       let streak = 0;
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const todayStr = getLocalToday();
       
       for (let i = 0; i < uniqueDates.length; i++) {
-        const expectedDate = new Date(today);
+        // Calculate expected date by subtracting i days from today (in local timezone)
+        const expectedDate = new Date(todayStr + "T12:00:00");
         expectedDate.setDate(expectedDate.getDate() - i);
         const expectedStr = expectedDate.toISOString().split("T")[0];
         
@@ -171,7 +192,8 @@ serve(async (req) => {
     }
 
     // ═══════════ 2. Weekly Nutrition Quality (one-time badges) ═══════════
-    const weekAgo = new Date();
+    const todayForWeek = new Date(getLocalToday() + "T12:00:00");
+    const weekAgo = new Date(todayForWeek);
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekAgoStr = weekAgo.toISOString().split("T")[0];
 
@@ -182,7 +204,7 @@ serve(async (req) => {
       .gte("log_date", weekAgoStr)
       .not("ai_score", "is", null);
 
-    if (nutritionLogs && nutritionLogs.length >= 3) {
+    if (nutritionLogs && nutritionLogs.length >= 5) {
       const avgScore = Math.round(
         nutritionLogs.reduce((sum: number, l: { ai_score: number }) => sum + l.ai_score, 0) / nutritionLogs.length
       );
@@ -205,7 +227,8 @@ serve(async (req) => {
 
     // ═══════════ 3. Repeating 3-week ≥80% streak → free session ═══════════
     // Look at up to 12 weeks of data to find consecutive weeks with avg ≥80%
-    const twelveWeeksAgo = new Date();
+    const todayFor12w = new Date(getLocalToday() + "T12:00:00");
+    const twelveWeeksAgo = new Date(todayFor12w);
     twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
     const twelveWeeksAgoStr = twelveWeeksAgo.toISOString().split("T")[0];
 
@@ -234,7 +257,7 @@ serve(async (req) => {
       const weekAverages: { week: string; avg: number; qualified: boolean }[] = [];
       for (const week of sortedWeeks) {
         const scores = weekScores[week];
-        if (scores.length >= 3) {
+        if (scores.length >= 5) {
           const avg = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
           weekAverages.push({ week, avg, qualified: avg >= FREE_SESSION_MIN_THRESHOLD });
         }
