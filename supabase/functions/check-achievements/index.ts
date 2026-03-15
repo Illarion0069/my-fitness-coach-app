@@ -227,7 +227,8 @@ serve(async (req) => {
 
     // ═══════════ 3. Repeating 3-week ≥80% streak → free session ═══════════
     // Look at up to 12 weeks of data to find consecutive weeks with avg ≥80%
-    const twelveWeeksAgo = new Date();
+    const todayFor12w = new Date(getLocalToday() + "T12:00:00");
+    const twelveWeeksAgo = new Date(todayFor12w);
     twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
     const twelveWeeksAgoStr = twelveWeeksAgo.toISOString().split("T")[0];
 
