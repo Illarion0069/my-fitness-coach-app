@@ -164,6 +164,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
       if (res.data) {
         setAchievements(res.data.achievements || []);
+        setQualityStreak(res.data.quality_streak || null);
         
         if (res.data.free_session_granted) {
           setShowGoldReward(true);
