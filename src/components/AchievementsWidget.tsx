@@ -306,7 +306,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               </p>
 
               {/* Show free session indicator for Silver, Gold, Gold Streak */}
-              {(selectedLocked.icon === '🥈' || selectedLocked.icon === '🥇' || selectedLocked.icon === '🎁') && (
+              {(selectedLocked.icon === '🥈' || selectedLocked.icon === '🥇') && (
                 <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2 mb-4">
                   <Gift className="w-4 h-4 text-yellow-500" />
                   <span className="text-xs font-bold text-yellow-500">
