@@ -111,16 +111,10 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
   if (loading) return null;
 
-  // Locked milestone previews for empty state
-  const LOCKED_PREVIEWS = [
-    { icon: '🎯', title_en: '1 Session', title_ru: '1 тренировка' },
-    { icon: '📸', title_en: '3-Day Streak', title_ru: '3 дня подряд' },
-    { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания' },
-    { icon: '💪', title_en: '5 Sessions', title_ru: '5 тренировок' },
-    { icon: '📷', title_en: '7-Day Streak', title_ru: '7 дней подряд' },
-  ];
-
-  const hasAchievements = achievements.length > 0;
+  // Filter out already earned milestones for locked display
+  const earnedKeys = new Set(achievements.map(a => a.icon));
+  const lockedMilestones = ALL_MILESTONES.filter(m => !earnedKeys.has(m.icon));
+  const displayLocked = lockedMilestones.length > 0 ? lockedMilestones : ALL_MILESTONES;
 
   return (
     <>
