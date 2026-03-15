@@ -25,7 +25,6 @@ interface AchievementsWidgetProps {
 const TYPE_COLORS: Record<string, string> = {
   nutrition_streak: 'from-orange-500/20 to-orange-500/5 border-orange-500/30',
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
-  gold_streak_reward: 'from-yellow-500/20 to-yellow-500/5 border-yellow-500/30',
 };
 
 const ALL_MILESTONES = [
