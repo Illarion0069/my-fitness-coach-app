@@ -36,6 +36,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
   const [celebratingAchievement, setCelebratingAchievement] = useState<Achievement | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGoldReward, setShowGoldReward] = useState(false);
+  const [selectedLocked, setSelectedLocked] = useState<typeof ALL_MILESTONES[0] | null>(null);
 
   useEffect(() => {
     checkAchievements();
