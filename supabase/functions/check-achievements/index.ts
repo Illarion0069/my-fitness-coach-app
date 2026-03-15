@@ -37,8 +37,6 @@ const NUTRITION_QUALITY_LEVELS: { threshold: number; icon: string; label_en: str
 // Free session rewards for Silver and Gold quality
 const FREE_SESSION_QUALITY_THRESHOLDS = [80, 95]; // Silver and Gold
 
-const GOLD_STREAK_WEEKS_FOR_REWARD = 3;
-const GOLD_THRESHOLD = 95;
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
