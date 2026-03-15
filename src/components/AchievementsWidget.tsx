@@ -28,6 +28,20 @@ const TYPE_COLORS: Record<string, string> = {
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
 };
 
+const ALL_MILESTONES = [
+  { icon: '🎯', title_en: '1 Session', title_ru: '1 тренировка', desc_en: 'Complete your first training session with the coach.', desc_ru: 'Завершите первую тренировку с тренером.' },
+  { icon: '💪', title_en: '5 Sessions', title_ru: '5 тренировок', desc_en: 'Complete 5 training sessions. Keep showing up!', desc_ru: 'Завершите 5 тренировок. Продолжайте приходить!' },
+  { icon: '🔥', title_en: '10 Sessions', title_ru: '10 тренировок', desc_en: 'Complete 10 sessions. You\'re building a habit!', desc_ru: 'Завершите 10 тренировок. Привычка формируется!' },
+  { icon: '⭐', title_en: '25 Sessions', title_ru: '25 тренировок', desc_en: 'Complete 25 sessions. Consistency is key!', desc_ru: 'Завершите 25 тренировок. Постоянство — залог успеха!' },
+  { icon: '📸', title_en: '3-Day Streak', title_ru: '3 дня подряд', desc_en: 'Log food photos for 3 consecutive days.', desc_ru: 'Фотографируйте еду 3 дня подряд.' },
+  { icon: '📷', title_en: '7-Day Streak', title_ru: '7 дней подряд', desc_en: 'Log food photos for 7 consecutive days. A full week!', desc_ru: 'Фотографируйте еду 7 дней подряд. Целая неделя!' },
+  { icon: '🎞️', title_en: '14-Day Streak', title_ru: '14 дней подряд', desc_en: 'Log food photos for 14 days straight!', desc_ru: 'Фотографируйте еду 14 дней подряд!' },
+  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 60%.' },
+  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 80%.' },
+  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve a weekly average nutrition score ≥ 95%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 95%.' },
+  { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks to earn a FREE session!', desc_ru: 'Получите Gold рейтинг питания 3 недели подряд и получите БЕСПЛАТНУЮ тренировку!' },
+];
+
 const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetProps) => {
   const { lang } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
