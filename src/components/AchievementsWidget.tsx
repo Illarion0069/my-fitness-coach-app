@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Sparkles, X } from 'lucide-react';
+import { Trophy, Sparkles, X, Gift } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import GoldRewardCelebration from './GoldRewardCelebration';
 
 interface Achievement {
   id: string;
