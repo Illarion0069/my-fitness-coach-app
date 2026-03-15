@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Gift, Sparkles, X, Star } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,51 +10,140 @@ interface GoldRewardCelebrationProps {
   weeksCount?: number;
 }
 
-// Confetti particle component
-const ConfettiParticle = ({ delay, x, color }: { delay: number; x: number; color: string }) => (
-  <motion.div
-    initial={{ opacity: 1, y: -20, x, rotate: 0, scale: 1 }}
-    animate={{
-      opacity: [1, 1, 0],
-      y: [0, 400, 600],
-      x: [x, x + (Math.random() - 0.5) * 120],
-      rotate: [0, Math.random() * 720 - 360],
-      scale: [1, 0.8, 0.3],
-    }}
-    transition={{ duration: 2.5 + Math.random(), delay, ease: 'easeOut' }}
-    className="absolute top-0 pointer-events-none"
-    style={{
-      width: 8 + Math.random() * 6,
-      height: 8 + Math.random() * 6,
-      borderRadius: Math.random() > 0.5 ? '50%' : '2px',
-      backgroundColor: color,
-    }}
-  />
+/* ═══════════ Firework burst ═══════════ */
+const FireworkBurst = ({ x, y, delay, size = 1 }: { x: number; y: number; delay: number; size?: number }) => {
+  const colors = [
+    'hsl(48, 96%, 53%)', 'hsl(36, 100%, 50%)', 'hsl(0, 84%, 60%)',
+    'hsl(280, 87%, 65%)', 'hsl(142, 71%, 45%)', 'hsl(217, 91%, 60%)',
+  ];
+  const rays = 12;
+  return (
+    <>
+      {Array.from({ length: rays }).map((_, i) => {
+        const angle = (i / rays) * Math.PI * 2;
+        const dist = (40 + Math.random() * 60) * size;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x, y, scale: 0 }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              x: x + Math.cos(angle) * dist,
+              y: y + Math.sin(angle) * dist,
+              scale: [0, 1.2, 0.8, 0],
+            }}
+            transition={{ duration: 1.2 + Math.random() * 0.5, delay: delay + Math.random() * 0.15, ease: 'easeOut' }}
+            className="absolute pointer-events-none rounded-full"
+            style={{
+              width: 4 + Math.random() * 4,
+              height: 4 + Math.random() * 4,
+              backgroundColor: color,
+              boxShadow: `0 0 6px ${color}, 0 0 12px ${color}`,
+            }}
+          />
+        );
+      })}
+      {/* Center flash */}
+      <motion.div
+        initial={{ opacity: 0, x: x - 15, y: y - 15, scale: 0 }}
+        animate={{ opacity: [0, 0.8, 0], scale: [0, 1.5, 0] }}
+        transition={{ duration: 0.6, delay }}
+        className="absolute pointer-events-none rounded-full"
+        style={{
+          width: 30 * size, height: 30 * size,
+          background: `radial-gradient(circle, hsla(48,96%,70%,0.8) 0%, transparent 70%)`,
+        }}
+      />
+    </>
+  );
+};
+
+/* ═══════════ Sparkle trail particles ═══════════ */
+const SparkleRain = () => (
+  <>
+    {Array.from({ length: 40 }).map((_, i) => {
+      const x = Math.random() * 100;
+      const delay = Math.random() * 2;
+      const duration = 2 + Math.random() * 2;
+      const size = 2 + Math.random() * 3;
+      const color = Math.random() > 0.5 ? 'hsl(48, 96%, 53%)' : 'hsl(36, 100%, 60%)';
+      return (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: -10, x: `${x}vw` }}
+          animate={{
+            opacity: [0, 1, 1, 0],
+            y: ['0vh', '100vh'],
+          }}
+          transition={{ duration, delay, repeat: 1, ease: 'linear' }}
+          className="fixed pointer-events-none z-[201]"
+          style={{
+            width: size, height: size,
+            borderRadius: '50%',
+            backgroundColor: color,
+            boxShadow: `0 0 4px ${color}`,
+            left: 0, top: 0,
+          }}
+        />
+      );
+    })}
+  </>
 );
 
+/* ═══════════ Confetti pieces ═══════════ */
 const CONFETTI_COLORS = [
-  'hsl(48, 96%, 53%)',   // gold
-  'hsl(36, 100%, 50%)',  // orange-gold
-  'hsl(142, 71%, 45%)',  // green
-  'hsl(217, 91%, 60%)',  // blue
-  'hsl(280, 87%, 65%)',  // purple
-  'hsl(0, 84%, 60%)',    // red
-  'hsl(48, 100%, 67%)',  // light gold
+  'hsl(48, 96%, 53%)', 'hsl(36, 100%, 50%)', 'hsl(142, 71%, 45%)',
+  'hsl(217, 91%, 60%)', 'hsl(280, 87%, 65%)', 'hsl(0, 84%, 60%)',
+  'hsl(48, 100%, 67%)', 'hsl(330, 80%, 60%)',
 ];
+
+const ConfettiPiece = ({ delay, startX }: { delay: number; startX: number }) => {
+  const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
+  const w = 6 + Math.random() * 8;
+  const h = 4 + Math.random() * 6;
+  const isCircle = Math.random() > 0.6;
+  return (
+    <motion.div
+      initial={{ opacity: 1, y: -20, x: startX, rotate: 0, scale: 1 }}
+      animate={{
+        opacity: [1, 1, 1, 0],
+        y: [0, 200, 500, 700],
+        x: [startX, startX + (Math.random() - 0.5) * 200],
+        rotate: [0, Math.random() * 1080 - 540],
+        scale: [1, 1, 0.8, 0.3],
+      }}
+      transition={{ duration: 3 + Math.random() * 1.5, delay, ease: 'easeOut' }}
+      className="absolute top-0 pointer-events-none"
+      style={{
+        width: w, height: isCircle ? w : h,
+        borderRadius: isCircle ? '50%' : '2px',
+        backgroundColor: color,
+      }}
+    />
+  );
+};
 
 const GoldRewardCelebration = ({ show, onDismiss, weeksCount = 3 }: GoldRewardCelebrationProps) => {
   const { lang } = useLanguage();
-  const [confettiParticles, setConfettiParticles] = useState<{ id: number; delay: number; x: number; color: string }[]>([]);
+  const [confetti, setConfetti] = useState<{ id: number; delay: number; x: number }[]>([]);
+  const [fireworks, setFireworks] = useState<{ id: number; x: number; y: number; delay: number; size: number }[]>([]);
 
   useEffect(() => {
     if (show) {
-      const particles = Array.from({ length: 60 }, (_, i) => ({
+      setConfetti(Array.from({ length: 80 }, (_, i) => ({
         id: i,
-        delay: Math.random() * 0.8,
-        x: Math.random() * 320 - 160,
-        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      }));
-      setConfettiParticles(particles);
+        delay: Math.random() * 1.2,
+        x: Math.random() * 340 - 170,
+      })));
+      setFireworks([
+        { id: 0, x: -80, y: -120, delay: 0.2, size: 1 },
+        { id: 1, x: 90, y: -80, delay: 0.5, size: 0.8 },
+        { id: 2, x: -30, y: -160, delay: 0.8, size: 1.2 },
+        { id: 3, x: 60, y: -140, delay: 1.1, size: 0.7 },
+        { id: 4, x: -100, y: -60, delay: 1.4, size: 0.9 },
+        { id: 5, x: 110, y: -150, delay: 1.7, size: 1.1 },
+      ]);
     }
   }, [show]);
 
@@ -69,50 +158,66 @@ const GoldRewardCelebration = ({ show, onDismiss, weeksCount = 3 }: GoldRewardCe
           className="fixed inset-0 z-[200] flex items-center justify-center"
           onClick={onDismiss}
         >
-          {/* Dark overlay with golden glow */}
+          {/* Overlay */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="absolute inset-0 bg-background/90 backdrop-blur-md"
+            className="absolute inset-0 bg-background/90 backdrop-blur-lg"
           />
 
-          {/* Radial golden glow */}
+          {/* Pulsing golden aura */}
           <motion.div
             initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1.5, opacity: 0.3 }}
-            transition={{ duration: 1, ease: 'easeOut' }}
-            className="absolute w-80 h-80 rounded-full"
-            style={{
-              background: 'radial-gradient(circle, hsla(48, 96%, 53%, 0.4) 0%, transparent 70%)',
-            }}
+            animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute w-96 h-96 rounded-full"
+            style={{ background: 'radial-gradient(circle, hsla(48,96%,53%,0.3) 0%, transparent 70%)' }}
           />
+
+          {/* Sparkle rain */}
+          <SparkleRain />
+
+          {/* Fireworks */}
+          <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
+            {fireworks.map(fw => (
+              <FireworkBurst key={fw.id} x={fw.x} y={fw.y} delay={fw.delay} size={fw.size} />
+            ))}
+          </div>
 
           {/* Confetti */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center">
-            {confettiParticles.map((p) => (
-              <ConfettiParticle key={p.id} delay={p.delay} x={p.x} color={p.color} />
+            {confetti.map(p => (
+              <ConfettiPiece key={p.id} delay={p.delay} startX={p.x} />
             ))}
           </div>
 
           {/* Main card */}
           <motion.div
-            initial={{ scale: 0.3, opacity: 0, y: 50 }}
+            initial={{ scale: 0.2, opacity: 0, y: 60 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.3, opacity: 0, y: 50 }}
-            transition={{ type: 'spring', damping: 12, stiffness: 200, delay: 0.1 }}
-            className="relative bg-card border border-yellow-500/30 rounded-3xl p-8 mx-6 max-w-sm w-full text-center shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            exit={{ scale: 0.2, opacity: 0, y: 60 }}
+            transition={{ type: 'spring', damping: 14, stiffness: 200, delay: 0.15 }}
+            className="relative bg-card border border-yellow-500/40 rounded-3xl p-8 mx-6 max-w-sm w-full text-center overflow-hidden"
+            onClick={e => e.stopPropagation()}
             style={{
-              boxShadow: '0 0 60px hsla(48, 96%, 53%, 0.15), 0 20px 60px hsla(0, 0%, 0%, 0.3)',
+              boxShadow: '0 0 80px hsla(48,96%,53%,0.2), 0 0 40px hsla(48,96%,53%,0.1), 0 25px 60px hsla(0,0%,0%,0.4)',
             }}
           >
-            {/* Subtle golden shimmer background */}
+            {/* Rotating shimmer */}
             <motion.div
               animate={{ rotate: [0, 360] }}
-              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-              className="absolute -top-20 -right-20 w-40 h-40 opacity-10"
+              transition={{ duration: 15, repeat: Infinity, ease: 'linear' }}
+              className="absolute -top-32 -right-32 w-64 h-64 opacity-[0.07]"
               style={{
-                background: 'conic-gradient(from 0deg, transparent, hsla(48, 96%, 53%, 0.5), transparent, hsla(48, 96%, 53%, 0.5), transparent)',
+                background: 'conic-gradient(from 0deg, transparent, hsla(48,96%,53%,0.8), transparent, hsla(48,96%,53%,0.8), transparent)',
+              }}
+            />
+            <motion.div
+              animate={{ rotate: [360, 0] }}
+              transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+              className="absolute -bottom-32 -left-32 w-64 h-64 opacity-[0.05]"
+              style={{
+                background: 'conic-gradient(from 0deg, transparent, hsla(280,87%,65%,0.6), transparent, hsla(217,91%,60%,0.6), transparent)',
               }}
             />
 
@@ -123,41 +228,49 @@ const GoldRewardCelebration = ({ show, onDismiss, weeksCount = 3 }: GoldRewardCe
               <X className="w-4 h-4" />
             </button>
 
-            {/* Logo + Trophy icon */}
-            <div className="relative inline-block mb-4">
+            {/* Logo with orbiting stars */}
+            <div className="relative inline-block mb-5">
               <motion.div
-                animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
+                animate={{ scale: [1, 1.08, 1], rotate: [0, 2, -2, 0] }}
                 transition={{ repeat: Infinity, duration: 3, ease: 'easeInOut' }}
               >
-                <div className="w-20 h-20 mx-auto rounded-2xl overflow-hidden border-2 border-yellow-500/40 shadow-lg">
+                <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden border-2 border-yellow-500/50 shadow-xl"
+                  style={{ boxShadow: '0 0 30px hsla(48,96%,53%,0.3)' }}
+                >
                   <img src={achievementLogo} alt="Achievement" className="w-full h-full object-cover" />
                 </div>
               </motion.div>
 
-              {/* Orbiting stars */}
-              {[0, 1, 2, 3].map((i) => (
+              {[0, 1, 2, 3, 4].map(i => (
                 <motion.div
                   key={i}
-                  animate={{ rotate: [i * 90, i * 90 + 360] }}
-                  transition={{ duration: 4, repeat: Infinity, ease: 'linear' }}
+                  animate={{ rotate: [i * 72, i * 72 + 360] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
                   className="absolute inset-0"
                   style={{ transformOrigin: 'center center' }}
                 >
-                  <Star
-                    className="absolute -top-3 left-1/2 -translate-x-1/2 text-yellow-400"
-                    style={{ width: 10 + i * 2, height: 10 + i * 2 }}
-                    fill="currentColor"
-                  />
+                  <Star className="absolute -top-4 left-1/2 -translate-x-1/2 text-yellow-400"
+                    style={{ width: 8 + i * 2, height: 8 + i * 2 }} fill="currentColor" />
                 </motion.div>
               ))}
 
-              <Sparkles className="absolute -top-2 -right-3 w-6 h-6 text-yellow-400 animate-pulse" />
-              <Gift className="absolute -bottom-2 -left-3 w-5 h-5 text-primary animate-pulse" style={{ animationDelay: '0.5s' }} />
+              <motion.div
+                animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                <Sparkles className="absolute -top-3 -right-4 w-7 h-7 text-yellow-400" />
+              </motion.div>
+              <motion.div
+                animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }}
+                transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}
+              >
+                <Gift className="absolute -bottom-3 -left-4 w-6 h-6 text-primary" />
+              </motion.div>
             </div>
 
             {/* Title */}
             <motion.h2
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
               className="text-xl font-extrabold font-heading text-foreground mb-2"
@@ -165,17 +278,16 @@ const GoldRewardCelebration = ({ show, onDismiss, weeksCount = 3 }: GoldRewardCe
               🎁 {lang === 'en' ? 'Free Session Earned!' : 'Бесплатная тренировка!'}
             </motion.h2>
 
-            {/* Description */}
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.55 }}
-              className="space-y-2 mb-6"
+              className="space-y-3 mb-6"
             >
               <div className="flex items-center justify-center gap-2">
-                <span className="text-3xl">🥇</span>
-                <span className="text-3xl">🥇</span>
-                <span className="text-3xl">🥇</span>
+                <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity, delay: 0 }} className="text-3xl">🥇</motion.span>
+                <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity, delay: 0.2 }} className="text-3xl">🥇</motion.span>
+                <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 1, repeat: Infinity, delay: 0.4 }} className="text-3xl">🥇</motion.span>
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed">
                 {lang === 'en'
@@ -184,30 +296,30 @@ const GoldRewardCelebration = ({ show, onDismiss, weeksCount = 3 }: GoldRewardCe
               </p>
             </motion.div>
 
-            {/* Stats badge */}
             <motion.div
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.7 }}
-              className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-4 py-2 mb-6"
+              className="inline-flex items-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-5 py-2.5 mb-6"
             >
-              <span className="text-xs font-bold text-yellow-500">+1</span>
-              <span className="text-xs text-muted-foreground">
-                {lang === 'en' ? 'session added' : 'тренировка добавлена'}
+              <motion.span
+                animate={{ scale: [1, 1.3, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+                className="text-sm font-extrabold text-yellow-500"
+              >+1</motion.span>
+              <span className="text-xs text-muted-foreground font-medium">
+                {lang === 'en' ? 'session added to your package' : 'тренировка добавлена в пакет'}
               </span>
             </motion.div>
 
-            {/* CTA button */}
             <motion.button
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.85 }}
               whileTap={{ scale: 0.95 }}
               onClick={onDismiss}
               className="w-full py-3.5 rounded-xl font-bold text-sm text-primary-foreground"
-              style={{
-                background: 'linear-gradient(135deg, hsl(48, 96%, 45%), hsl(36, 100%, 50%))',
-              }}
+              style={{ background: 'linear-gradient(135deg, hsl(48,96%,45%), hsl(36,100%,50%))' }}
             >
               {lang === 'en' ? '🎉 Amazing!' : '🎉 Потрясающе!'}
             </motion.button>
