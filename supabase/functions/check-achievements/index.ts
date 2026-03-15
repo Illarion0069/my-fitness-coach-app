@@ -276,7 +276,6 @@ serve(async (req) => {
       }
 
     }
-    }
 
     // ═══════════ Save new achievements ═══════════
     if (newAchievements.length > 0) {
