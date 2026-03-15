@@ -51,16 +51,20 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
 
       if (res.data) {
         setAchievements(res.data.achievements || []);
+        
+        // Check for gold streak reward
+        if (res.data.gold_reward_granted) {
+          setShowGoldReward(true);
+        }
+        
         const newOnes = res.data.new_achievements || [];
         if (newOnes.length > 0) {
-          // Find the full achievement data for the new ones
           const allAch = res.data.achievements || [];
           const newFull = allAch.filter((a: Achievement) =>
             newOnes.some((n: { achievement_key: string }) => n.achievement_key === a.achievement_key)
           );
           setNewAchievements(newFull);
-          // Show celebration for first new achievement
-          if (newFull.length > 0) {
+          if (newFull.length > 0 && !res.data.gold_reward_granted) {
             setCelebratingAchievement(newFull[0]);
             setShowCelebration(true);
           }
