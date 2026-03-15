@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX IF NOT EXISTS idx_unique_user_achievement_key ON public.client_achievements (user_id, achievement_key);

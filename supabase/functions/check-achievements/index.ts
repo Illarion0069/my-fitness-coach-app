@@ -116,14 +116,21 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Auth
-    const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await anonClient.auth.getUser();
-    if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+    let userId: string;
 
-    const userId = user.id;
+    // Support cron-based calls: service role + x-cron-user-id header
+    const cronUserId = req.headers.get("x-cron-user-id");
+    if (cronUserId && authHeader === `Bearer ${supabaseKey}`) {
+      userId = cronUserId;
+    } else {
+      // Normal user auth
+      const anonClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await anonClient.auth.getUser();
+      if (!user) return jsonResponse({ error: "Unauthorized" }, 401);
+      userId = user.id;
+    }
 
     // ═══════════ Rate limit: max 1 check per 30 seconds per user ═══════════
     const { data: lastAchievement } = await supabase
@@ -150,10 +157,16 @@ serve(async (req) => {
     let freeSessionGranted = false;
 
     // ═══════════ 1. Nutrition Logging Streak ═══════════
+    // Only fetch last 90 days instead of full history
+    const ninetyDaysAgo = new Date(getLocalToday() + "T12:00:00");
+    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+    const ninetyDaysAgoStr = ninetyDaysAgo.toISOString().split("T")[0];
+
     const { data: foodPhotoDates } = await supabase
       .from("food_photos")
       .select("log_date")
       .eq("user_id", userId)
+      .gte("log_date", ninetyDaysAgoStr)
       .order("log_date", { ascending: false });
 
     if (foodPhotoDates && foodPhotoDates.length > 0) {
@@ -162,16 +175,39 @@ serve(async (req) => {
       let streak = 0;
       const todayStr = getLocalToday();
       
-      for (let i = 0; i < uniqueDates.length; i++) {
-        // Calculate expected date by subtracting i days from today (in local timezone)
-        const expectedDate = new Date(todayStr + "T12:00:00");
-        expectedDate.setDate(expectedDate.getDate() - i);
-        const expectedStr = expectedDate.toISOString().split("T")[0];
-        
-        if (uniqueDates.includes(expectedStr)) {
-          streak++;
+      // Determine start date: if today has a photo → start from today, else start from yesterday
+      const hasToday = uniqueDates.includes(todayStr);
+      const startDate = new Date(todayStr + "T12:00:00");
+      if (!hasToday) {
+        startDate.setDate(startDate.getDate() - 1);
+        // If yesterday also has no photo, streak is 0
+        const yesterdayStr = startDate.toISOString().split("T")[0];
+        if (!uniqueDates.includes(yesterdayStr)) {
+          // streak stays 0, skip loop
         } else {
-          break;
+          // Count from yesterday
+          for (let i = 0; i < uniqueDates.length; i++) {
+            const expectedDate = new Date(startDate);
+            expectedDate.setDate(expectedDate.getDate() - i);
+            const expectedStr = expectedDate.toISOString().split("T")[0];
+            if (uniqueDates.includes(expectedStr)) {
+              streak++;
+            } else {
+              break;
+            }
+          }
+        }
+      } else {
+        // Count from today
+        for (let i = 0; i < uniqueDates.length; i++) {
+          const expectedDate = new Date(startDate);
+          expectedDate.setDate(expectedDate.getDate() - i);
+          const expectedStr = expectedDate.toISOString().split("T")[0];
+          if (uniqueDates.includes(expectedStr)) {
+            streak++;
+          } else {
+            break;
+          }
         }
       }
 
@@ -191,17 +227,22 @@ serve(async (req) => {
       }
     }
 
-    // ═══════════ 2. Weekly Nutrition Quality (one-time badges) ═══════════
+    // ═══════════ 2. Weekly Nutrition Quality (calendar week, Mon-Sun) ═══════════
     const todayForWeek = new Date(getLocalToday() + "T12:00:00");
-    const weekAgo = new Date(todayForWeek);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekAgoStr = weekAgo.toISOString().split("T")[0];
+    // Use LAST completed calendar week (Mon-Sun) for consistency with 3-week rewards
+    const currentWeekStart = getWeekStart(todayForWeek);
+    const lastWeekEnd = new Date(currentWeekStart + "T12:00:00");
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1); // Sunday
+    const lastWeekStart = getWeekStart(lastWeekEnd);
+    const lastWeekStartStr = lastWeekStart;
+    const lastWeekEndStr = lastWeekEnd.toISOString().split("T")[0];
 
     const { data: nutritionLogs } = await supabase
       .from("nutrition_logs")
       .select("ai_score, log_date")
       .eq("user_id", userId)
-      .gte("log_date", weekAgoStr)
+      .gte("log_date", lastWeekStartStr)
+      .lte("log_date", lastWeekEndStr)
       .not("ai_score", "is", null);
 
     if (nutritionLogs && nutritionLogs.length >= 5) {
