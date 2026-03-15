@@ -431,27 +431,19 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
           </motion.div>
         )}
 
-        {/* ═══════════ Schedule Button ═══════════ */}
+        {/* ═══════════ Book Session Button ═══════════ */}
         <motion.button
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           whileTap={{ scale: 0.98 }}
-          onClick={() => { setBookingStep('my-sessions'); setBookingOpen(true); }}
-          className="w-full bg-card border border-border/40 rounded-2xl p-4 flex items-center gap-3 hover:border-primary/30 transition-all"
+          onClick={() => { setBookingStep('date'); setBookingOpen(true); }}
+          className="w-full gradient-primary rounded-2xl p-4 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
         >
-          <div className="w-11 h-11 rounded-xl gradient-primary flex items-center justify-center shrink-0 glow-primary">
-            <CalendarDays className="w-5 h-5 text-primary-foreground" />
-          </div>
-          <div className="flex-1 text-left">
-            <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'My Schedule' : 'Моё расписание'}</p>
-            <p className="text-[11px] text-muted-foreground">
-              {sessions.length > 0
-                ? (lang === 'en' ? `${sessions.length} upcoming` : `${sessions.length} запланировано`)
-                : (lang === 'en' ? 'No sessions yet' : 'Нет записей')}
-            </p>
-          </div>
-          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          <CalendarDays className="w-5 h-5 text-primary-foreground" />
+          <span className="text-base font-bold text-primary-foreground">
+            {lang === 'en' ? 'Book a Session' : 'Забронировать занятие'}
+          </span>
         </motion.button>
 
 
