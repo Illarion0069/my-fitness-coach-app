@@ -87,7 +87,18 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
     }
   };
 
-  if (loading || achievements.length === 0) return null;
+  if (loading) return null;
+
+  // Locked milestone previews for empty state
+  const LOCKED_PREVIEWS = [
+    { icon: '🎯', title_en: '1 Session', title_ru: '1 тренировка' },
+    { icon: '📸', title_en: '3-Day Streak', title_ru: '3 дня подряд' },
+    { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания' },
+    { icon: '💪', title_en: '5 Sessions', title_ru: '5 тренировок' },
+    { icon: '📷', title_en: '7-Day Streak', title_ru: '7 дней подряд' },
+  ];
+
+  const hasAchievements = achievements.length > 0;
 
   return (
     <>
@@ -102,27 +113,58 @@ const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
             {achievements.length}
           </span>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-          {achievements.map((a, i) => (
-            <motion.div
-              key={a.id}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: i * 0.05 }}
-              className={`shrink-0 bg-gradient-to-b ${TYPE_COLORS[a.achievement_type] || 'from-primary/20 to-primary/5 border-primary/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center`}
-            >
-              <span className="text-2xl block mb-1">{a.icon}</span>
-              <p className="text-[10px] font-bold text-foreground leading-tight">
-                {lang === 'en' ? a.title_en : a.title_ru}
-              </p>
-              <p className="text-[8px] text-muted-foreground mt-0.5">
-                {new Date(a.earned_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
-                  day: 'numeric', month: 'short'
-                })}
-              </p>
-            </motion.div>
-          ))}
-        </div>
+
+        {hasAchievements ? (
+          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+            {achievements.map((a, i) => (
+              <motion.div
+                key={a.id}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: i * 0.05 }}
+                className={`shrink-0 bg-gradient-to-b ${TYPE_COLORS[a.achievement_type] || 'from-primary/20 to-primary/5 border-primary/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center`}
+              >
+                <span className="text-2xl block mb-1">{a.icon}</span>
+                <p className="text-[10px] font-bold text-foreground leading-tight">
+                  {lang === 'en' ? a.title_en : a.title_ru}
+                </p>
+                <p className="text-[8px] text-muted-foreground mt-0.5">
+                  {new Date(a.earned_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
+                    day: 'numeric', month: 'short'
+                  })}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          /* ═══════════ Empty state with locked previews ═══════════ */
+          <div className="space-y-2">
+            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
+              {LOCKED_PREVIEWS.map((item, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 0.5, scale: 1 }}
+                  transition={{ delay: i * 0.05 }}
+                  className="shrink-0 bg-gradient-to-b from-muted/40 to-muted/10 border border-border/30 rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden"
+                >
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <span className="text-lg opacity-60">🔒</span>
+                  </div>
+                  <span className="text-2xl block mb-1 blur-[2px]">{item.icon}</span>
+                  <p className="text-[10px] font-bold text-muted-foreground leading-tight blur-[1px]">
+                    {lang === 'en' ? item.title_en : item.title_ru}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+            <p className="text-[10px] text-muted-foreground text-center italic">
+              {lang === 'en'
+                ? 'Complete sessions & log food to unlock achievements!'
+                : 'Тренируйся и логируй питание, чтобы открыть награды!'}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* ═══════════ Celebration Modal ═══════════ */}
