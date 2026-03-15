@@ -390,49 +390,6 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
         )}
       </AnimatePresence>
 
-      {/* ═══════════ Test Celebration Buttons (trainer only) ═══════════ */}
-      {isTrainer && (
-        <div className="space-y-2">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider text-center">
-            {lang === 'en' ? '🧪 Preview Celebrations' : '🧪 Превью анимаций'}
-          </p>
-          <div className="flex flex-wrap gap-2 justify-center">
-            {ALL_MILESTONES.map((m, i) => (
-              <motion.button
-                key={i}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  const fakeAchievement: Achievement = {
-                    id: `preview-${i}`,
-                    achievement_key: `preview_${m.icon}`,
-                    achievement_type: i < 6 ? 'nutrition_streak' : 'nutrition_quality',
-                    title_en: m.title_en,
-                    title_ru: m.title_ru,
-                    description_en: m.desc_en,
-                    description_ru: m.desc_ru,
-                    icon: m.icon,
-                    earned_at: new Date().toISOString(),
-                  };
-                  setCelebratingAchievement(fakeAchievement);
-                  setShowCelebration(true);
-                }}
-                className="w-10 h-10 rounded-xl bg-card border border-border/50 flex items-center justify-center hover:border-primary/40 transition-colors"
-                title={lang === 'en' ? m.title_en : m.title_ru}
-              >
-                <BadgeIcon icon={m.icon} size="sm" />
-              </motion.button>
-            ))}
-          </div>
-          <motion.button
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowGoldReward(true)}
-            className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10 border border-yellow-500/20 rounded-2xl py-2.5 px-4 text-xs font-bold text-yellow-500 hover:from-yellow-500/20 hover:to-yellow-600/20 transition-all"
-          >
-            <Gift className="w-3.5 h-3.5" />
-            {lang === 'en' ? '🎁 Preview Gold Reward' : '🎁 Превью Gold награды'}
-          </motion.button>
-        </div>
-      )}
 
       {/* ═══════════ Achievement Celebration — Full-screen badge animation ═══════════ */}
       <AnimatePresence>

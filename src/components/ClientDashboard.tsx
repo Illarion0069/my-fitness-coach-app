@@ -365,10 +365,6 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
         </div>
       </div>
 
-      {/* ═══════════ Achievements (right under avatar) ═══════════ */}
-      <div className="px-5 mt-3">
-        <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
-      </div>
 
       <div className="px-5 space-y-4 mt-3">
         {/* ═══════════ Session Balance Card ═══════════ */}
@@ -511,6 +507,8 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
           </motion.div>
         )}
 
+        {/* ═══════════ Achievements ═══════════ */}
+        <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
 
         {/* ═══════════ Modules Grid ═══════════ */}
         <motion.div
