@@ -507,7 +507,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
         )}
 
         {/* ═══════════ Achievements ═══════════ */}
-        <AchievementsWidget userId={user.id} />
+        <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
 
         {/* ═══════════ Modules Grid ═══════════ */}
         <motion.div
