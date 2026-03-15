@@ -321,7 +321,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               </button>
 
               <div className="relative inline-block mb-3">
-                <span className="text-5xl block opacity-40">{selectedLocked.icon}</span>
+                <BadgeIcon icon={selectedLocked.icon} size="xl" className="mx-auto opacity-40" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="text-2xl">🔒</span>
                 </div>
