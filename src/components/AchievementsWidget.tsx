@@ -19,6 +19,7 @@ interface Achievement {
 
 interface AchievementsWidgetProps {
   userId: string;
+  isTrainer?: boolean;
 }
 
 const TYPE_COLORS: Record<string, string> = {
