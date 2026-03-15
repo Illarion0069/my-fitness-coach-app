@@ -28,7 +28,7 @@ const TYPE_COLORS: Record<string, string> = {
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
 };
 
-const AchievementsWidget = ({ userId }: AchievementsWidgetProps) => {
+const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetProps) => {
   const { lang } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [newAchievements, setNewAchievements] = useState<Achievement[]>([]);
