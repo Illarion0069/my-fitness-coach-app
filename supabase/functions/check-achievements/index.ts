@@ -192,7 +192,8 @@ serve(async (req) => {
     }
 
     // ═══════════ 2. Weekly Nutrition Quality (one-time badges) ═══════════
-    const weekAgo = new Date();
+    const todayForWeek = new Date(getLocalToday() + "T12:00:00");
+    const weekAgo = new Date(todayForWeek);
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekAgoStr = weekAgo.toISOString().split("T")[0];
 
