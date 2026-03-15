@@ -41,7 +41,7 @@ const ALL_MILESTONES = [
   { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve ≥ 80% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 80% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 95% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   // ═══ Gold серия → бесплатная тренировка ═══
-  { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks → another FREE session!', desc_ru: 'Gold рейтинг 3 недели подряд → ещё одна БЕСПЛАТНАЯ тренировка!' },
+  
 ];
 
 /* ═══════════ Firework burst for celebration ═══════════ */
