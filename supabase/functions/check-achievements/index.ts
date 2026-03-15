@@ -19,7 +19,6 @@ interface Achievement {
 
 // ═══════════ Achievement definitions ═══════════
 
-
 const NUTRITION_STREAK_MILESTONES: { days: number; icon: string }[] = [
   { days: 3, icon: "📸" },
   { days: 7, icon: "📷" },
@@ -34,6 +33,9 @@ const NUTRITION_QUALITY_LEVELS: { threshold: number; icon: string; label_en: str
   { threshold: 80, icon: "🥈", label_en: "Silver", label_ru: "Серебро" },
   { threshold: 95, icon: "🥇", label_en: "Gold", label_ru: "Золото" },
 ];
+
+// Free session rewards for Silver and Gold quality
+const FREE_SESSION_QUALITY_THRESHOLDS = [80, 95]; // Silver and Gold
 
 const GOLD_STREAK_WEEKS_FOR_REWARD = 3;
 const GOLD_THRESHOLD = 95;
@@ -52,6 +54,47 @@ function getWeekStart(date: Date): string {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   d.setDate(diff);
   return d.toISOString().split("T")[0];
+}
+
+async function grantFreeSession(supabase: any, userId: string, reason: string): Promise<boolean> {
+  const { data: activePkg } = await supabase
+    .from("client_packages")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("is_active", true)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (!activePkg) return false;
+
+  await supabase
+    .from("client_packages")
+    .update({ total_sessions: activePkg.total_sessions + 1 })
+    .eq("id", activePkg.id);
+
+  await supabase.from("session_ledger").insert({
+    user_id: userId,
+    package_id: activePkg.id,
+    delta: -1,
+    reason,
+    used_before: activePkg.used_sessions,
+    used_after: activePkg.used_sessions,
+  });
+
+  return true;
+}
+
+async function sendTelegram(token: string, chatId: string, text: string) {
+  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
+  });
+  if (!res.ok) {
+    const data = await res.json();
+    console.error("Telegram send failed:", data);
+  }
 }
 
 serve(async (req) => {
@@ -84,9 +127,9 @@ serve(async (req) => {
     const existingKeys = new Set((existingAchievements || []).map((a: { achievement_key: string }) => a.achievement_key));
 
     const newAchievements: Achievement[] = [];
+    let freeSessionGranted = false;
 
-
-    // ═══════════ 2. Nutrition Logging Streak ═══════════
+    // ═══════════ 1. Nutrition Logging Streak ═══════════
     const { data: foodPhotoDates } = await supabase
       .from("food_photos")
       .select("log_date")
@@ -128,7 +171,7 @@ serve(async (req) => {
       }
     }
 
-    // ═══════════ 3. Weekly Nutrition Quality ═══════════
+    // ═══════════ 2. Weekly Nutrition Quality ═══════════
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekAgoStr = weekAgo.toISOString().split("T")[0];
@@ -148,22 +191,61 @@ serve(async (req) => {
       for (const level of NUTRITION_QUALITY_LEVELS) {
         const key = `nutrition_quality_week_${level.threshold}`;
         if (!existingKeys.has(key) && avgScore >= level.threshold) {
+          // Check if this quality level grants a free session
+          const grantsFreeSession = FREE_SESSION_QUALITY_THRESHOLDS.includes(level.threshold);
+          
           newAchievements.push({
             achievement_key: key,
             achievement_type: "nutrition_quality",
             title_en: `${level.label_en} Nutrition`,
             title_ru: `${level.label_ru} питания`,
-            description_en: `Weekly average nutrition score ≥ ${level.threshold}%!`,
-            description_ru: `Средний балл питания за неделю ≥ ${level.threshold}%!`,
+            description_en: grantsFreeSession
+              ? `Weekly average nutrition score ≥ ${level.threshold}%! Free session earned!`
+              : `Weekly average nutrition score ≥ ${level.threshold}%!`,
+            description_ru: grantsFreeSession
+              ? `Средний балл питания за неделю ≥ ${level.threshold}%! Бесплатная тренировка!`
+              : `Средний балл питания за неделю ≥ ${level.threshold}%!`,
             icon: level.icon,
           });
+
+          // Grant free session for Silver and Gold
+          if (grantsFreeSession) {
+            const granted = await grantFreeSession(
+              supabase, userId,
+              `${level.label_en} nutrition quality reward (avg ${avgScore}%)`
+            );
+            if (granted) freeSessionGranted = true;
+
+            // Telegram notifications
+            try {
+              const { data: clientProfile } = await supabase
+                .from("profiles")
+                .select("full_name, telegram_chat_id")
+                .eq("user_id", userId)
+                .single();
+
+              const clientName = clientProfile?.full_name || "Unknown";
+              const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+              const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
+
+              if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+                const trainerMsg = `🎁 <b>${level.label_en} Nutrition Reward!</b>\n\n👤 <b>${clientName}</b> получил ${level.label_ru} рейтинг питания (${avgScore}%)!\n\n🏋️ +1 бесплатная тренировка автоматически добавлена в пакет.\n\n${level.icon}${level.icon}${level.icon}`;
+                await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
+
+                if (clientProfile?.telegram_chat_id) {
+                  const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы получили ${level.label_ru} рейтинг питания (${avgScore}%)!\n\n🏋️ +1 бесплатная тренировка добавлена в ваш пакет!\n\nПродолжайте в том же духе! 💪${level.icon}`;
+                  await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
+                }
+              }
+            } catch (tgErr) {
+              console.error("Failed to send nutrition reward Telegram notification:", tgErr);
+            }
+          }
         }
       }
     }
 
-    // ═══════════ 4. Gold Streak Reward (3 consecutive weeks → free session) ═══════════
-    let goldRewardGranted = false;
-
+    // ═══════════ 3. Gold Streak Reward (3 consecutive weeks → free session) ═══════════
     // Get last 4 weeks of nutrition logs to check for 3 consecutive gold weeks
     const fourWeeksAgo = new Date();
     fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
@@ -178,7 +260,6 @@ serve(async (req) => {
       .order("log_date", { ascending: true });
 
     if (recentNutritionLogs && recentNutritionLogs.length > 0) {
-      // Group scores by week (Mon-Sun)
       const weekScores: Record<string, number[]> = {};
       for (const log of recentNutritionLogs) {
         const weekStart = getWeekStart(new Date(log.log_date + "T00:00:00"));
@@ -186,20 +267,16 @@ serve(async (req) => {
         weekScores[weekStart].push(log.ai_score);
       }
 
-      // Get sorted week keys (most recent last)
       const sortedWeeks = Object.keys(weekScores).sort();
-
-      // Calculate average per week and check for consecutive gold
       const weekAverages: { week: string; avg: number }[] = [];
       for (const week of sortedWeeks) {
         const scores = weekScores[week];
-        if (scores.length >= 3) { // Need at least 3 days of data
+        if (scores.length >= 3) {
           const avg = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
           weekAverages.push({ week, avg });
         }
       }
 
-      // Find consecutive gold weeks
       let consecutiveGold = 0;
       for (let i = weekAverages.length - 1; i >= 0; i--) {
         if (weekAverages[i].avg >= GOLD_THRESHOLD) {
@@ -210,12 +287,10 @@ serve(async (req) => {
       }
 
       if (consecutiveGold >= GOLD_STREAK_WEEKS_FOR_REWARD) {
-        // Calculate which reward cycle we're on (every 3 weeks)
         const rewardCycle = Math.floor(consecutiveGold / GOLD_STREAK_WEEKS_FOR_REWARD);
         const rewardKey = `gold_streak_reward_${rewardCycle}`;
 
         if (!existingKeys.has(rewardKey)) {
-          // Grant the achievement
           newAchievements.push({
             achievement_key: rewardKey,
             achievement_type: "gold_streak_reward",
@@ -226,36 +301,12 @@ serve(async (req) => {
             icon: "🎁",
           });
 
-          // Add free session to active package
-          const { data: activePkg } = await supabase
-            .from("client_packages")
-            .select("*")
-            .eq("user_id", userId)
-            .eq("is_active", true)
-            .order("created_at", { ascending: true })
-            .limit(1)
-            .maybeSingle();
+          const granted = await grantFreeSession(
+            supabase, userId,
+            `Gold nutrition streak reward (${consecutiveGold} weeks)`
+          );
+          if (granted) freeSessionGranted = true;
 
-          if (activePkg) {
-            await supabase
-              .from("client_packages")
-              .update({ total_sessions: activePkg.total_sessions + 1 })
-              .eq("id", activePkg.id);
-
-            // Record in session ledger
-            await supabase.from("session_ledger").insert({
-              user_id: userId,
-              package_id: activePkg.id,
-              delta: -1, // negative delta = adding a session (reducing used)
-              reason: `Gold nutrition streak reward (${consecutiveGold} weeks)`,
-              used_before: activePkg.used_sessions,
-              used_after: activePkg.used_sessions, // total increased, used stays same
-            });
-
-            goldRewardGranted = true;
-          }
-
-          // Send Telegram notification to trainer
           try {
             const { data: clientProfile } = await supabase
               .from("profiles")
@@ -264,16 +315,13 @@ serve(async (req) => {
               .single();
 
             const clientName = clientProfile?.full_name || "Unknown";
-
             const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
             const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
             if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-              // Notify trainer
               const trainerMsg = `🎁 <b>Gold Streak Reward!</b>\n\n👤 <b>${clientName}</b> получил Gold рейтинг питания <b>${consecutiveGold} недель подряд!</b>\n\n🏋️ +1 бесплатная тренировка автоматически добавлена в пакет.\n\n🥇🥇🥇`;
               await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
 
-              // Notify client if they have telegram
               if (clientProfile?.telegram_chat_id) {
                 const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы получили Gold рейтинг питания <b>${consecutiveGold} недель подряд!</b>\n\n🏋️ В награду +1 бесплатная тренировка добавлена в ваш пакет!\n\nПродолжайте в том же духе! 💪🥇`;
                 await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
@@ -313,22 +361,10 @@ serve(async (req) => {
     return jsonResponse({
       achievements: allAchievements || [],
       new_achievements: newAchievements,
-      gold_reward_granted: goldRewardGranted,
+      free_session_granted: freeSessionGranted,
     });
   } catch (e) {
     console.error("check-achievements error:", e);
     return jsonResponse({ error: e instanceof Error ? e.message : "Unknown error" }, 500);
   }
 });
-
-async function sendTelegram(token: string, chatId: string, text: string) {
-  const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML" }),
-  });
-  if (!res.ok) {
-    const data = await res.json();
-    console.error("Telegram send failed:", data);
-  }
-}

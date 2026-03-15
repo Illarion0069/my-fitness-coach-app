@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Sparkles, X, Gift } from 'lucide-react';
+import { Trophy, Sparkles, X, Gift, Star } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import GoldRewardCelebration from './GoldRewardCelebration';
@@ -36,13 +36,78 @@ const ALL_MILESTONES = [
   { icon: '🌟', title_en: '30-Day Streak', title_ru: '30 дней подряд', desc_en: 'Log food photos for 30 consecutive days. A full month!', desc_ru: 'Фотографируйте еду 30 дней подряд. Целый месяц!' },
   { icon: '💎', title_en: '60-Day Streak', title_ru: '60 дней подряд', desc_en: 'Log food photos for 60 consecutive days!', desc_ru: 'Фотографируйте еду 60 дней подряд!' },
   { icon: '🔱', title_en: '90-Day Streak', title_ru: '90 дней подряд', desc_en: 'Log food photos for 90 consecutive days. Legendary!', desc_ru: 'Фотографируйте еду 90 дней подряд. Легенда!' },
-  // ═══ Качество питания (недельный средний балл) ═══
-  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
-  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%.', desc_ru: 'Средний балл питания за неделю ≥ 80%. Минимум 3 дня с оценками.' },
-  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve a weekly average nutrition score ≥ 95%.', desc_ru: 'Средний балл питания за неделю ≥ 95%. Минимум 3 дня с оценками.' },
+  // ═══ Качество питания ═══
+  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
+  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve ≥ 80% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 80% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
+  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 95% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
   // ═══ Gold серия → бесплатная тренировка ═══
-  { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks to earn a FREE session!', desc_ru: 'Получите Gold рейтинг питания 3 недели подряд и получите БЕСПЛАТНУЮ тренировку!' },
+  { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks → another FREE session!', desc_ru: 'Gold рейтинг 3 недели подряд → ещё одна БЕСПЛАТНАЯ тренировка!' },
 ];
+
+/* ═══════════ Firework burst for celebration ═══════════ */
+const CelebrationFirework = ({ x, y, delay }: { x: number; y: number; delay: number }) => {
+  const colors = ['hsl(48,96%,53%)', 'hsl(0,84%,60%)', 'hsl(280,87%,65%)', 'hsl(142,71%,45%)', 'hsl(217,91%,60%)'];
+  return (
+    <>
+      {Array.from({ length: 10 }).map((_, i) => {
+        const angle = (i / 10) * Math.PI * 2;
+        const dist = 30 + Math.random() * 50;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, x, y, scale: 0 }}
+            animate={{
+              opacity: [0, 1, 1, 0],
+              x: x + Math.cos(angle) * dist,
+              y: y + Math.sin(angle) * dist,
+              scale: [0, 1, 0.6, 0],
+            }}
+            transition={{ duration: 1 + Math.random() * 0.4, delay: delay + Math.random() * 0.1, ease: 'easeOut' }}
+            className="absolute pointer-events-none rounded-full"
+            style={{
+              width: 3 + Math.random() * 4, height: 3 + Math.random() * 4,
+              backgroundColor: color,
+              boxShadow: `0 0 4px ${color}`,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
+
+/* ═══════════ Confetti for celebration ═══════════ */
+const CelebrationConfetti = ({ count = 60 }: { count?: number }) => {
+  const colors = ['hsl(48,96%,53%)', 'hsl(36,100%,50%)', 'hsl(142,71%,45%)', 'hsl(217,91%,60%)', 'hsl(280,87%,65%)', 'hsl(0,84%,60%)', 'hsl(330,80%,60%)'];
+  return (
+    <>
+      {Array.from({ length: count }).map((_, i) => {
+        const startX = Math.random() * 320 - 160;
+        const color = colors[Math.floor(Math.random() * colors.length)];
+        return (
+          <motion.div
+            key={i}
+            initial={{ opacity: 1, y: -10, x: startX, rotate: 0 }}
+            animate={{
+              opacity: [1, 1, 1, 0],
+              y: [0, 200, 450, 650],
+              x: [startX, startX + (Math.random() - 0.5) * 180],
+              rotate: [0, Math.random() * 1080 - 540],
+            }}
+            transition={{ duration: 2.5 + Math.random() * 1.5, delay: Math.random() * 1, ease: 'easeOut' }}
+            className="absolute top-0 pointer-events-none"
+            style={{
+              width: 5 + Math.random() * 7, height: 4 + Math.random() * 5,
+              borderRadius: Math.random() > 0.5 ? '50%' : '2px',
+              backgroundColor: color,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+};
 
 const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetProps) => {
   const { lang } = useLanguage();
@@ -70,8 +135,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
       if (res.data) {
         setAchievements(res.data.achievements || []);
         
-        // Check for gold streak reward
-        if (res.data.gold_reward_granted) {
+        if (res.data.free_session_granted) {
           setShowGoldReward(true);
         }
         
@@ -82,7 +146,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
             newOnes.some((n: { achievement_key: string }) => n.achievement_key === a.achievement_key)
           );
           setNewAchievements(newFull);
-          if (newFull.length > 0 && !res.data.gold_reward_granted) {
+          if (newFull.length > 0 && !res.data.free_session_granted) {
             setCelebratingAchievement(newFull[0]);
             setShowCelebration(true);
           }
@@ -98,7 +162,6 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
   const dismissCelebration = () => {
     setShowCelebration(false);
     setCelebratingAchievement(null);
-    // Show next achievement if any
     const remaining = newAchievements.filter(
       a => a.achievement_key !== celebratingAchievement?.achievement_key
     );
@@ -113,7 +176,6 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
   if (loading) return null;
 
-  // Filter out already earned milestones for locked display
   const earnedKeys = new Set(achievements.map(a => a.icon));
   const lockedMilestones = ALL_MILESTONES.filter(m => !earnedKeys.has(m.icon));
   const displayLocked = lockedMilestones.length > 0 ? lockedMilestones : ALL_MILESTONES;
@@ -157,7 +219,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
           </div>
         )}
 
-        {/* Locked milestones (always shown — tappable) */}
+        {/* Locked milestones */}
         {displayLocked.length > 0 && (
           <div className="space-y-1.5">
             {achievements.length > 0 && (
@@ -232,9 +294,19 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               <h3 className="text-base font-extrabold font-heading text-foreground mb-1">
                 {lang === 'en' ? selectedLocked.title_en : selectedLocked.title_ru}
               </h3>
-              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+              <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
                 {lang === 'en' ? selectedLocked.desc_en : selectedLocked.desc_ru}
               </p>
+
+              {/* Show free session indicator for Silver, Gold, Gold Streak */}
+              {(selectedLocked.icon === '🥈' || selectedLocked.icon === '🥇' || selectedLocked.icon === '🎁') && (
+                <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2 mb-4">
+                  <Gift className="w-4 h-4 text-yellow-500" />
+                  <span className="text-xs font-bold text-yellow-500">
+                    {lang === 'en' ? '+1 FREE session' : '+1 БЕСПЛАТНАЯ тренировка'}
+                  </span>
+                </div>
+              )}
 
               <motion.button
                 whileTap={{ scale: 0.95 }}
@@ -260,58 +332,157 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
         </motion.button>
       )}
 
-      {/* ═══════════ Celebration Modal ═══════════ */}
+      {/* ═══════════ Achievement Celebration Modal (premium fireworks) ═══════════ */}
       <AnimatePresence>
         {showCelebration && celebratingAchievement && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            className="fixed inset-0 z-[150] flex items-center justify-center"
             onClick={dismissCelebration}
           >
+            {/* Overlay */}
             <motion.div
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.5, opacity: 0 }}
-              transition={{ type: 'spring', damping: 15, stiffness: 300 }}
-              className="relative bg-card border border-border/50 rounded-3xl p-8 mx-6 max-w-xs w-full text-center shadow-2xl"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="absolute inset-0 bg-background/90 backdrop-blur-lg"
+            />
+
+            {/* Pulsing aura */}
+            <motion.div
+              initial={{ scale: 0, opacity: 0 }}
+              animate={{ scale: [1, 1.4, 1], opacity: [0.15, 0.3, 0.15] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute w-80 h-80 rounded-full"
+              style={{ background: 'radial-gradient(circle, hsla(var(--primary)/0.4) 0%, transparent 70%)' }}
+            />
+
+            {/* Fireworks */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none flex items-center justify-center">
+              <CelebrationFirework x={-70} y={-100} delay={0.2} />
+              <CelebrationFirework x={80} y={-70} delay={0.5} />
+              <CelebrationFirework x={-20} y={-140} delay={0.8} />
+              <CelebrationFirework x={60} y={-120} delay={1.1} />
+              <CelebrationFirework x={-90} y={-50} delay={1.4} />
+            </div>
+
+            {/* Confetti */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center">
+              <CelebrationConfetti count={70} />
+            </div>
+
+            {/* Sparkle rain */}
+            {Array.from({ length: 20 }).map((_, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: [0, 1, 0], y: ['0vh', '100vh'] }}
+                transition={{ duration: 2 + Math.random() * 2, delay: Math.random() * 2, repeat: 1 }}
+                className="fixed pointer-events-none z-[151]"
+                style={{
+                  left: `${Math.random() * 100}vw`,
+                  width: 2 + Math.random() * 3, height: 2 + Math.random() * 3,
+                  borderRadius: '50%',
+                  backgroundColor: 'hsl(48, 96%, 53%)',
+                  boxShadow: '0 0 4px hsl(48, 96%, 53%)',
+                }}
+              />
+            ))}
+
+            {/* Main card */}
+            <motion.div
+              initial={{ scale: 0.3, opacity: 0, y: 50 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.3, opacity: 0, y: 50 }}
+              transition={{ type: 'spring', damping: 14, stiffness: 200, delay: 0.1 }}
+              className="relative bg-card border border-primary/30 rounded-3xl p-8 mx-6 max-w-xs w-full text-center overflow-hidden"
               onClick={(e) => e.stopPropagation()}
+              style={{
+                boxShadow: '0 0 60px hsla(var(--primary)/0.15), 0 20px 60px hsla(0,0%,0%,0.3)',
+              }}
             >
+              {/* Rotating shimmer */}
+              <motion.div
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 18, repeat: Infinity, ease: 'linear' }}
+                className="absolute -top-24 -right-24 w-48 h-48 opacity-[0.06]"
+                style={{
+                  background: 'conic-gradient(from 0deg, transparent, hsla(var(--primary)/0.8), transparent, hsla(var(--primary)/0.8), transparent)',
+                }}
+              />
+
               <button
                 onClick={dismissCelebration}
-                className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+                className="absolute top-3 right-3 text-muted-foreground hover:text-foreground z-10"
               >
                 <X className="w-4 h-4" />
               </button>
 
+              {/* Icon with effects */}
               <div className="relative inline-block mb-4">
                 <motion.div
-                  animate={{ rotate: [0, 5, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
+                  animate={{ scale: [1, 1.1, 1], rotate: [0, 3, -3, 0] }}
+                  transition={{ repeat: Infinity, duration: 2.5 }}
                 >
-                  <span className="text-6xl">{celebratingAchievement.icon}</span>
+                  <span className="text-7xl block">{celebratingAchievement.icon}</span>
                 </motion.div>
-                <Sparkles className="absolute -top-2 -right-2 w-6 h-6 text-yellow-400 animate-pulse" />
-                <Sparkles className="absolute -bottom-1 -left-2 w-4 h-4 text-primary animate-pulse" style={{ animationDelay: '0.5s' }} />
+
+                {[0, 1, 2, 3].map(i => (
+                  <motion.div
+                    key={i}
+                    animate={{ rotate: [i * 90, i * 90 + 360] }}
+                    transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
+                    className="absolute inset-0"
+                    style={{ transformOrigin: 'center center' }}
+                  >
+                    <Star className="absolute -top-3 left-1/2 -translate-x-1/2 text-yellow-400"
+                      style={{ width: 8 + i * 2, height: 8 + i * 2 }} fill="currentColor" />
+                  </motion.div>
+                ))}
+
+                <motion.div animate={{ scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }}>
+                  <Sparkles className="absolute -top-2 -right-3 w-6 h-6 text-yellow-400" />
+                </motion.div>
+                <motion.div animate={{ scale: [1, 1.4, 1], opacity: [0.4, 1, 0.4] }} transition={{ duration: 2.5, repeat: Infinity, delay: 0.5 }}>
+                  <Sparkles className="absolute -bottom-1 -left-3 w-5 h-5 text-primary" />
+                </motion.div>
               </div>
 
-              <h3 className="text-lg font-extrabold font-heading text-foreground mb-1">
+              <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-lg font-extrabold font-heading text-foreground mb-1"
+              >
                 {lang === 'en' ? '🎉 New Achievement!' : '🎉 Новое достижение!'}
-              </h3>
-              <p className="text-base font-bold text-primary mb-2">
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+                className="text-base font-bold text-primary mb-2"
+              >
                 {lang === 'en' ? celebratingAchievement.title_en : celebratingAchievement.title_ru}
-              </p>
-              <p className="text-sm text-muted-foreground">
+              </motion.p>
+              <motion.p
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+                className="text-sm text-muted-foreground leading-relaxed mb-6"
+              >
                 {lang === 'en' ? celebratingAchievement.description_en : celebratingAchievement.description_ru}
-              </p>
+              </motion.p>
 
               <motion.button
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={dismissCelebration}
-                className="mt-6 w-full gradient-primary text-primary-foreground font-bold py-3 rounded-xl text-sm"
+                className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl text-sm"
               >
-                {lang === 'en' ? 'Awesome!' : 'Круто!'}
+                {lang === 'en' ? '🎉 Awesome!' : '🎉 Круто!'}
               </motion.button>
             </motion.div>
           </motion.div>
