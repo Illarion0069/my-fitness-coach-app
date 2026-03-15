@@ -10,6 +10,7 @@ import BodyMeasurementsInput from './BodyMeasurementsInput';
 import BodyMeasurementsView from './BodyMeasurementsView';
 import ClientProgressPhotos from './ClientProgressPhotos';
 import NutritionDiary from './NutritionDiary';
+import TrainerClientAchievements from './TrainerClientAchievements';
 
 interface ClientPackage {
   id: string;
@@ -421,6 +422,7 @@ const ClientDetailAccordion = ({
               </p>
             )}
           </div>
+          <TrainerClientAchievements userId={client.user_id} lang={lang} />
           <NutritionDiary userId={client.user_id} lang={lang} isTrainer={true} calorieGoal={calorieGoal} />
         </div>
       </AccordionSection>
