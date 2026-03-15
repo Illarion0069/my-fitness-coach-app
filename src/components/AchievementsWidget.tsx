@@ -232,19 +232,26 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                 <motion.button
                   key={i}
                   initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 0.6, scale: 1 }}
+                  animate={{ opacity: isTrainer ? 1 : 0.6, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
                   whileTap={{ scale: 0.93 }}
                   onClick={() => setSelectedLocked(item)}
-                  className="shrink-0 bg-gradient-to-b from-muted/40 to-muted/10 border border-border/30 rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden hover:border-primary/30 transition-colors"
+                  className={`shrink-0 bg-gradient-to-b ${isTrainer ? 'from-muted/60 to-muted/20 border-border/50' : 'from-muted/40 to-muted/10 border-border/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden hover:border-primary/30 transition-colors`}
                 >
-                  <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <span className="text-lg opacity-50">🔒</span>
-                  </div>
-                  <span className="text-2xl block mb-1 blur-[2px]">{item.icon}</span>
-                  <p className="text-[10px] font-bold text-muted-foreground leading-tight blur-[1px]">
+                  {!isTrainer && (
+                    <div className="absolute inset-0 flex items-center justify-center z-10">
+                      <span className="text-lg opacity-50">🔒</span>
+                    </div>
+                  )}
+                  <span className={`text-2xl block mb-1 ${isTrainer ? '' : 'blur-[2px]'}`}>{item.icon}</span>
+                  <p className={`text-[10px] font-bold leading-tight ${isTrainer ? 'text-foreground/70' : 'text-muted-foreground blur-[1px]'}`}>
                     {lang === 'en' ? item.title_en : item.title_ru}
                   </p>
+                  {isTrainer && (
+                    <p className="text-[8px] text-muted-foreground mt-0.5 italic">
+                      {lang === 'en' ? 'not earned' : 'не получен'}
+                    </p>
+                  )}
                 </motion.button>
               ))}
             </div>
