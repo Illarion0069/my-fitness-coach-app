@@ -234,7 +234,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                 transition={{ delay: i * 0.05 }}
                 className={`shrink-0 bg-gradient-to-b ${TYPE_COLORS[a.achievement_type] || 'from-primary/20 to-primary/5 border-primary/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center`}
               >
-                <span className="text-2xl block mb-1">{a.icon}</span>
+                <BadgeIcon icon={a.icon} size="md" className="mx-auto mb-1" />
                 <p className="text-[10px] font-bold text-foreground leading-tight">
                   {lang === 'en' ? a.title_en : a.title_ru}
                 </p>
