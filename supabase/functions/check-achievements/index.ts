@@ -333,6 +333,12 @@ serve(async (req) => {
       achievements: allAchievements || [],
       new_achievements: newAchievements,
       free_session_granted: freeSessionGranted,
+      quality_streak: {
+        consecutive_weeks: consecutiveWeeks,
+        weeks_required: FREE_SESSION_WEEKS_REQUIRED,
+        cycles_completed: totalCyclesCompleted,
+        weeks_in_current_cycle: consecutiveWeeks % FREE_SESSION_WEEKS_REQUIRED,
+      },
     });
   } catch (e) {
     console.error("check-achievements error:", e);
