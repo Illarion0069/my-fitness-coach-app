@@ -1,4 +1,4 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -322,16 +322,20 @@ serve(async (req) => {
       }
     }
 
-    // Return all achievements
+    // Return all achievements + uncelebrated ones
     const { data: allAchievements } = await supabase
       .from("client_achievements")
       .select("*")
       .eq("user_id", userId)
       .order("earned_at", { ascending: false });
 
+    // Find uncelebrated achievements (includes both brand new and previously unseen)
+    const uncelebrated = (allAchievements || []).filter((a: { celebrated: boolean }) => !a.celebrated);
+
     return jsonResponse({
       achievements: allAchievements || [],
       new_achievements: newAchievements,
+      uncelebrated,
       free_session_granted: freeSessionGranted,
       quality_streak: {
         consecutive_weeks: consecutiveWeeks,
