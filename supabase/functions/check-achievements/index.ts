@@ -220,17 +220,22 @@ serve(async (req) => {
       }
     }
 
-    // ═══════════ 2. Weekly Nutrition Quality (one-time badges) ═══════════
+    // ═══════════ 2. Weekly Nutrition Quality (calendar week, Mon-Sun) ═══════════
     const todayForWeek = new Date(getLocalToday() + "T12:00:00");
-    const weekAgo = new Date(todayForWeek);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    const weekAgoStr = weekAgo.toISOString().split("T")[0];
+    // Use LAST completed calendar week (Mon-Sun) for consistency with 3-week rewards
+    const currentWeekStart = getWeekStart(todayForWeek);
+    const lastWeekEnd = new Date(currentWeekStart + "T12:00:00");
+    lastWeekEnd.setDate(lastWeekEnd.getDate() - 1); // Sunday
+    const lastWeekStart = getWeekStart(lastWeekEnd);
+    const lastWeekStartStr = lastWeekStart;
+    const lastWeekEndStr = lastWeekEnd.toISOString().split("T")[0];
 
     const { data: nutritionLogs } = await supabase
       .from("nutrition_logs")
       .select("ai_score, log_date")
       .eq("user_id", userId)
-      .gte("log_date", weekAgoStr)
+      .gte("log_date", lastWeekStartStr)
+      .lte("log_date", lastWeekEndStr)
       .not("ai_score", "is", null);
 
     if (nutritionLogs && nutritionLogs.length >= 5) {
