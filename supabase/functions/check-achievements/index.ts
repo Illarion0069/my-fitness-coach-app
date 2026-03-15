@@ -34,8 +34,9 @@ const NUTRITION_QUALITY_LEVELS: { threshold: number; icon: string; label_en: str
   { threshold: 95, icon: "🥇", label_en: "Gold", label_ru: "Золото" },
 ];
 
-// Free session rewards for Silver and Gold quality
-const FREE_SESSION_QUALITY_THRESHOLDS = [80, 95]; // Silver and Gold
+// Free session: every 3 consecutive weeks with avg ≥80% → +1 free session
+const FREE_SESSION_MIN_THRESHOLD = 80;
+const FREE_SESSION_WEEKS_REQUIRED = 3;
 
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
@@ -169,7 +170,7 @@ serve(async (req) => {
       }
     }
 
-    // ═══════════ 2. Weekly Nutrition Quality ═══════════
+    // ═══════════ 2. Weekly Nutrition Quality (one-time badges) ═══════════
     const weekAgo = new Date();
     weekAgo.setDate(weekAgo.getDate() - 7);
     const weekAgoStr = weekAgo.toISOString().split("T")[0];
@@ -189,75 +190,38 @@ serve(async (req) => {
       for (const level of NUTRITION_QUALITY_LEVELS) {
         const key = `nutrition_quality_week_${level.threshold}`;
         if (!existingKeys.has(key) && avgScore >= level.threshold) {
-          // Check if this quality level grants a free session
-          const grantsFreeSession = FREE_SESSION_QUALITY_THRESHOLDS.includes(level.threshold);
-          
           newAchievements.push({
             achievement_key: key,
             achievement_type: "nutrition_quality",
             title_en: `${level.label_en} Nutrition`,
             title_ru: `${level.label_ru} питания`,
-            description_en: grantsFreeSession
-              ? `Weekly average nutrition score ≥ ${level.threshold}%! Free session earned!`
-              : `Weekly average nutrition score ≥ ${level.threshold}%!`,
-            description_ru: grantsFreeSession
-              ? `Средний балл питания за неделю ≥ ${level.threshold}%! Бесплатная тренировка!`
-              : `Средний балл питания за неделю ≥ ${level.threshold}%!`,
+            description_en: `Weekly average nutrition score ≥ ${level.threshold}%!`,
+            description_ru: `Средний балл питания за неделю ≥ ${level.threshold}%!`,
             icon: level.icon,
           });
-
-          // Grant free session for Silver and Gold
-          if (grantsFreeSession) {
-            const granted = await grantFreeSession(
-              supabase, userId,
-              `${level.label_en} nutrition quality reward (avg ${avgScore}%)`
-            );
-            if (granted) freeSessionGranted = true;
-
-            // Telegram notifications
-            try {
-              const { data: clientProfile } = await supabase
-                .from("profiles")
-                .select("full_name, telegram_chat_id")
-                .eq("user_id", userId)
-                .single();
-
-              const clientName = clientProfile?.full_name || "Unknown";
-              const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-              const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
-
-              if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-                const trainerMsg = `🎁 <b>${level.label_en} Nutrition Reward!</b>\n\n👤 <b>${clientName}</b> получил ${level.label_ru} рейтинг питания (${avgScore}%)!\n\n🏋️ +1 бесплатная тренировка автоматически добавлена в пакет.\n\n${level.icon}${level.icon}${level.icon}`;
-                await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
-
-                if (clientProfile?.telegram_chat_id) {
-                  const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы получили ${level.label_ru} рейтинг питания (${avgScore}%)!\n\n🏋️ +1 бесплатная тренировка добавлена в ваш пакет!\n\nПродолжайте в том же духе! 💪${level.icon}`;
-                  await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
-                }
-              }
-            } catch (tgErr) {
-              console.error("Failed to send nutrition reward Telegram notification:", tgErr);
-            }
-          }
         }
       }
     }
 
-    // ═══════════ 3. Gold Streak Reward (3 consecutive weeks → free session) ═══════════
-    // Get last 4 weeks of nutrition logs to check for 3 consecutive gold weeks
-    const fourWeeksAgo = new Date();
-    fourWeeksAgo.setDate(fourWeeksAgo.getDate() - 28);
-    const fourWeeksAgoStr = fourWeeksAgo.toISOString().split("T")[0];
+    // ═══════════ 3. Repeating 3-week ≥80% streak → free session ═══════════
+    // Look at up to 12 weeks of data to find consecutive weeks with avg ≥80%
+    const twelveWeeksAgo = new Date();
+    twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
+    const twelveWeeksAgoStr = twelveWeeksAgo.toISOString().split("T")[0];
 
     const { data: recentNutritionLogs } = await supabase
       .from("nutrition_logs")
       .select("ai_score, log_date")
       .eq("user_id", userId)
-      .gte("log_date", fourWeeksAgoStr)
+      .gte("log_date", twelveWeeksAgoStr)
       .not("ai_score", "is", null)
       .order("log_date", { ascending: true });
 
+    let consecutiveWeeks = 0;
+    let totalCyclesCompleted = 0;
+
     if (recentNutritionLogs && recentNutritionLogs.length > 0) {
+      // Group scores by week (Monday-based)
       const weekScores: Record<string, number[]> = {};
       for (const log of recentNutritionLogs) {
         const weekStart = getWeekStart(new Date(log.log_date + "T00:00:00"));
@@ -265,16 +229,80 @@ serve(async (req) => {
         weekScores[weekStart].push(log.ai_score);
       }
 
+      // Calculate averages for weeks with ≥3 entries, sorted chronologically
       const sortedWeeks = Object.keys(weekScores).sort();
-      const weekAverages: { week: string; avg: number }[] = [];
+      const weekAverages: { week: string; avg: number; qualified: boolean }[] = [];
       for (const week of sortedWeeks) {
         const scores = weekScores[week];
         if (scores.length >= 3) {
           const avg = Math.round(scores.reduce((s, v) => s + v, 0) / scores.length);
-          weekAverages.push({ week, avg });
+          weekAverages.push({ week, avg, qualified: avg >= FREE_SESSION_MIN_THRESHOLD });
         }
       }
 
+      // Count consecutive qualifying weeks from the most recent going backwards
+      for (let i = weekAverages.length - 1; i >= 0; i--) {
+        if (weekAverages[i].qualified) {
+          consecutiveWeeks++;
+        } else {
+          break;
+        }
+      }
+
+      totalCyclesCompleted = Math.floor(consecutiveWeeks / FREE_SESSION_WEEKS_REQUIRED);
+
+      // Check how many cycle rewards already granted
+      const existingCycleKeys = (existingAchievements || [])
+        .filter((a: { achievement_key: string }) => a.achievement_key.startsWith("nutrition_3week_reward_"))
+        .length;
+
+      // Grant new cycle rewards
+      if (totalCyclesCompleted > existingCycleKeys) {
+        for (let cycle = existingCycleKeys + 1; cycle <= totalCyclesCompleted; cycle++) {
+          const cycleKey = `nutrition_3week_reward_${cycle}`;
+          
+          newAchievements.push({
+            achievement_key: cycleKey,
+            achievement_type: "nutrition_quality",
+            title_en: `3-Week Quality #${cycle}`,
+            title_ru: `3 недели качества #${cycle}`,
+            description_en: `Maintained ≥80% nutrition score for 3 consecutive weeks! Free session earned!`,
+            description_ru: `≥80% балл питания 3 недели подряд! Бесплатная тренировка!`,
+            icon: "🥈", // Silver badge for the reward
+          });
+
+          const granted = await grantFreeSession(
+            supabase, userId,
+            `3-week nutrition streak reward #${cycle} (consecutive weeks ≥80%)`
+          );
+          if (granted) freeSessionGranted = true;
+
+          // Telegram notifications
+          try {
+            const { data: clientProfile } = await supabase
+              .from("profiles")
+              .select("full_name, telegram_chat_id")
+              .eq("user_id", userId)
+              .single();
+
+            const clientName = clientProfile?.full_name || "Unknown";
+            const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+            const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
+
+            if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
+              const trainerMsg = `🎁 <b>3-Week Nutrition Reward #${cycle}!</b>\n\n👤 <b>${clientName}</b> держит ≥80% балл питания уже ${consecutiveWeeks} недель подряд!\n\n🏋️ +1 бесплатная тренировка автоматически добавлена.\n\n🥈🥈🥈`;
+              await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
+
+              if (clientProfile?.telegram_chat_id) {
+                const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы держите балл питания ≥80% уже ${consecutiveWeeks} недель подряд!\n\n🏋️ +1 бесплатная тренировка добавлена!\n\nПродолжайте! 💪🥈`;
+                await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
+              }
+            }
+          } catch (tgErr) {
+            console.error("Failed to send 3-week reward Telegram notification:", tgErr);
+          }
+        }
+      }
     }
 
     // ═══════════ Save new achievements ═══════════
@@ -305,6 +333,12 @@ serve(async (req) => {
       achievements: allAchievements || [],
       new_achievements: newAchievements,
       free_session_granted: freeSessionGranted,
+      quality_streak: {
+        consecutive_weeks: consecutiveWeeks,
+        weeks_required: FREE_SESSION_WEEKS_REQUIRED,
+        cycles_completed: totalCyclesCompleted,
+        weeks_in_current_cycle: consecutiveWeeks % FREE_SESSION_WEEKS_REQUIRED,
+      },
     });
   } catch (e) {
     console.error("check-achievements error:", e);

@@ -69,8 +69,8 @@ const ALL_MILESTONES = [
   { icon: '🔱', title_en: '90-Day Streak', title_ru: '90 дней подряд', desc_en: 'Log food photos for 90 consecutive days. Legendary!', desc_ru: 'Фотографируйте еду 90 дней подряд. Легенда!' },
   // ═══ Качество питания ═══
   { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 60%. Минимум 3 дня с оценками.' },
-  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve ≥ 80% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 80% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
-  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score → FREE training session! Min 3 days.', desc_ru: 'Средний балл ≥ 95% за неделю → БЕСПЛАТНАЯ тренировка! Мин. 3 дня.' },
+  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%. Min 3 days with scores.', desc_ru: 'Средний балл питания за неделю ≥ 80%. Минимум 3 дня с оценками.' },
+  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve ≥ 95% weekly score. Min 3 days with scores.', desc_ru: 'Средний балл ≥ 95% за неделю. Мин. 3 дня с оценками.' },
 ];
 
 /* ═══════════ Firework burst for celebration ═══════════ */
@@ -147,6 +147,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
   const [loading, setLoading] = useState(true);
   const [showGoldReward, setShowGoldReward] = useState(false);
   const [selectedLocked, setSelectedLocked] = useState<typeof ALL_MILESTONES[0] | null>(null);
+  const [qualityStreak, setQualityStreak] = useState<{ consecutive_weeks: number; weeks_required: number; weeks_in_current_cycle: number; cycles_completed: number } | null>(null);
 
   useEffect(() => {
     checkAchievements();
@@ -163,6 +164,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
       if (res.data) {
         setAchievements(res.data.achievements || []);
+        setQualityStreak(res.data.quality_streak || null);
         
         if (res.data.free_session_granted) {
           setShowGoldReward(true);
@@ -295,6 +297,47 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
         )}
       </div>
 
+      {/* ═══════════ 3-Week Quality Streak Progress ═══════════ */}
+      {qualityStreak && (
+        <div className="bg-gradient-to-r from-primary/10 to-primary/5 border border-primary/20 rounded-2xl p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <Gift className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[11px] font-bold text-foreground">
+                {lang === 'en' ? 'Free Session Streak' : 'Стрик бесплатной тренировки'}
+              </span>
+            </div>
+            {qualityStreak.cycles_completed > 0 && (
+              <span className="text-[9px] bg-primary/20 text-primary px-1.5 py-0.5 rounded-full font-bold">
+                🎁 ×{qualityStreak.cycles_completed}
+              </span>
+            )}
+          </div>
+          <div className="flex gap-1.5 mb-1.5">
+            {[0, 1, 2].map(i => (
+              <div
+                key={i}
+                className={`flex-1 h-2 rounded-full transition-all ${
+                  i < qualityStreak.weeks_in_current_cycle
+                    ? 'bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.5)]'
+                    : 'bg-muted'
+                }`}
+              />
+            ))}
+          </div>
+          <p className="text-[9px] text-muted-foreground">
+            {qualityStreak.weeks_in_current_cycle === 0
+              ? (lang === 'en'
+                ? 'Keep avg nutrition ≥80% for 3 weeks → free session!'
+                : 'Держите балл питания ≥80% 3 недели → бесплатная тренировка!')
+              : (lang === 'en'
+                ? `${qualityStreak.weeks_in_current_cycle}/3 weeks at ≥80% — ${3 - qualityStreak.weeks_in_current_cycle} more to go!`
+                : `${qualityStreak.weeks_in_current_cycle}/3 недели ≥80% — ещё ${3 - qualityStreak.weeks_in_current_cycle}!`)
+            }
+          </p>
+        </div>
+      )}
+
       {/* ═══════════ Locked Achievement Detail Modal ═══════════ */}
       <AnimatePresence>
         {selectedLocked && (
@@ -334,15 +377,6 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                 {lang === 'en' ? selectedLocked.desc_en : selectedLocked.desc_ru}
               </p>
 
-              {/* Show free session indicator for Silver, Gold, Gold Streak */}
-              {(selectedLocked.icon === '🥈' || selectedLocked.icon === '🥇') && (
-                <div className="flex items-center justify-center gap-2 bg-yellow-500/10 border border-yellow-500/20 rounded-xl px-3 py-2 mb-4">
-                  <Gift className="w-4 h-4 text-yellow-500" />
-                  <span className="text-xs font-bold text-yellow-500">
-                    {lang === 'en' ? '+1 FREE session' : '+1 БЕСПЛАТНАЯ тренировка'}
-                  </span>
-                </div>
-              )}
 
               <motion.button
                 whileTap={{ scale: 0.95 }}
