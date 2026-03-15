@@ -28,6 +28,20 @@ const TYPE_COLORS: Record<string, string> = {
   nutrition_quality: 'from-green-500/20 to-green-500/5 border-green-500/30',
 };
 
+const ALL_MILESTONES = [
+  { icon: '🎯', title_en: '1 Session', title_ru: '1 тренировка', desc_en: 'Complete your first training session with the coach.', desc_ru: 'Завершите первую тренировку с тренером.' },
+  { icon: '💪', title_en: '5 Sessions', title_ru: '5 тренировок', desc_en: 'Complete 5 training sessions. Keep showing up!', desc_ru: 'Завершите 5 тренировок. Продолжайте приходить!' },
+  { icon: '🔥', title_en: '10 Sessions', title_ru: '10 тренировок', desc_en: 'Complete 10 sessions. You\'re building a habit!', desc_ru: 'Завершите 10 тренировок. Привычка формируется!' },
+  { icon: '⭐', title_en: '25 Sessions', title_ru: '25 тренировок', desc_en: 'Complete 25 sessions. Consistency is key!', desc_ru: 'Завершите 25 тренировок. Постоянство — залог успеха!' },
+  { icon: '📸', title_en: '3-Day Streak', title_ru: '3 дня подряд', desc_en: 'Log food photos for 3 consecutive days.', desc_ru: 'Фотографируйте еду 3 дня подряд.' },
+  { icon: '📷', title_en: '7-Day Streak', title_ru: '7 дней подряд', desc_en: 'Log food photos for 7 consecutive days. A full week!', desc_ru: 'Фотографируйте еду 7 дней подряд. Целая неделя!' },
+  { icon: '🎞️', title_en: '14-Day Streak', title_ru: '14 дней подряд', desc_en: 'Log food photos for 14 days straight!', desc_ru: 'Фотографируйте еду 14 дней подряд!' },
+  { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания', desc_en: 'Achieve a weekly average nutrition score ≥ 60%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 60%.' },
+  { icon: '🥈', title_en: 'Silver Nutrition', title_ru: 'Серебро питания', desc_en: 'Achieve a weekly average nutrition score ≥ 80%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 80%.' },
+  { icon: '🥇', title_en: 'Gold Nutrition', title_ru: 'Золото питания', desc_en: 'Achieve a weekly average nutrition score ≥ 95%.', desc_ru: 'Достигните среднего балла питания за неделю ≥ 95%.' },
+  { icon: '🎁', title_en: 'Gold Streak Reward', title_ru: 'Gold серия', desc_en: 'Get Gold nutrition for 3 consecutive weeks to earn a FREE session!', desc_ru: 'Получите Gold рейтинг питания 3 недели подряд и получите БЕСПЛАТНУЮ тренировку!' },
+];
+
 const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetProps) => {
   const { lang } = useLanguage();
   const [achievements, setAchievements] = useState<Achievement[]>([]);
@@ -36,6 +50,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
   const [celebratingAchievement, setCelebratingAchievement] = useState<Achievement | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGoldReward, setShowGoldReward] = useState(false);
+  const [selectedLocked, setSelectedLocked] = useState<typeof ALL_MILESTONES[0] | null>(null);
 
   useEffect(() => {
     checkAchievements();
@@ -96,16 +111,10 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
   if (loading) return null;
 
-  // Locked milestone previews for empty state
-  const LOCKED_PREVIEWS = [
-    { icon: '🎯', title_en: '1 Session', title_ru: '1 тренировка' },
-    { icon: '📸', title_en: '3-Day Streak', title_ru: '3 дня подряд' },
-    { icon: '🥉', title_en: 'Bronze Nutrition', title_ru: 'Бронза питания' },
-    { icon: '💪', title_en: '5 Sessions', title_ru: '5 тренировок' },
-    { icon: '📷', title_en: '7-Day Streak', title_ru: '7 дней подряд' },
-  ];
-
-  const hasAchievements = achievements.length > 0;
+  // Filter out already earned milestones for locked display
+  const earnedKeys = new Set(achievements.map(a => a.icon));
+  const lockedMilestones = ALL_MILESTONES.filter(m => !earnedKeys.has(m.icon));
+  const displayLocked = lockedMilestones.length > 0 ? lockedMilestones : ALL_MILESTONES;
 
   return (
     <>
@@ -121,7 +130,8 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
           </span>
         </div>
 
-        {hasAchievements ? (
+        {/* Earned achievements */}
+        {achievements.length > 0 && (
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
             {achievements.map((a, i) => (
               <motion.div
@@ -143,36 +153,98 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
               </motion.div>
             ))}
           </div>
-        ) : (
-          /* ═══════════ Empty state with locked previews ═══════════ */
-          <div className="space-y-2">
+        )}
+
+        {/* Locked milestones (always shown — tappable) */}
+        {displayLocked.length > 0 && (
+          <div className="space-y-1.5">
+            {achievements.length > 0 && (
+              <p className="text-[10px] text-muted-foreground px-1 font-semibold">
+                {lang === 'en' ? 'Next goals:' : 'Следующие цели:'}
+              </p>
+            )}
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-              {LOCKED_PREVIEWS.map((item, i) => (
-                <motion.div
+              {displayLocked.map((item, i) => (
+                <motion.button
                   key={i}
                   initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 0.5, scale: 1 }}
+                  animate={{ opacity: 0.6, scale: 1 }}
                   transition={{ delay: i * 0.05 }}
-                  className="shrink-0 bg-gradient-to-b from-muted/40 to-muted/10 border border-border/30 rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden"
+                  whileTap={{ scale: 0.93 }}
+                  onClick={() => setSelectedLocked(item)}
+                  className="shrink-0 bg-gradient-to-b from-muted/40 to-muted/10 border border-border/30 rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden hover:border-primary/30 transition-colors"
                 >
                   <div className="absolute inset-0 flex items-center justify-center z-10">
-                    <span className="text-lg opacity-60">🔒</span>
+                    <span className="text-lg opacity-50">🔒</span>
                   </div>
                   <span className="text-2xl block mb-1 blur-[2px]">{item.icon}</span>
                   <p className="text-[10px] font-bold text-muted-foreground leading-tight blur-[1px]">
                     {lang === 'en' ? item.title_en : item.title_ru}
                   </p>
-                </motion.div>
+                </motion.button>
               ))}
             </div>
-            <p className="text-[10px] text-muted-foreground text-center italic">
-              {lang === 'en'
-                ? 'Complete sessions & log food to unlock achievements!'
-                : 'Тренируйся и логируй питание, чтобы открыть награды!'}
-            </p>
+            {achievements.length === 0 && (
+              <p className="text-[10px] text-muted-foreground text-center italic">
+                {lang === 'en'
+                  ? 'Tap any badge to learn how to unlock it!'
+                  : 'Нажми на бейдж, чтобы узнать, как его получить!'}
+              </p>
+            )}
           </div>
         )}
       </div>
+
+      {/* ═══════════ Locked Achievement Detail Modal ═══════════ */}
+      <AnimatePresence>
+        {selectedLocked && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/80 backdrop-blur-sm"
+            onClick={() => setSelectedLocked(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.5, opacity: 0 }}
+              transition={{ type: 'spring', damping: 18, stiffness: 300 }}
+              className="relative bg-card border border-border/50 rounded-3xl p-7 mx-6 max-w-xs w-full text-center shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedLocked(null)}
+                className="absolute top-3 right-3 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-4 h-4" />
+              </button>
+
+              <div className="relative inline-block mb-3">
+                <span className="text-5xl block opacity-40">{selectedLocked.icon}</span>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl">🔒</span>
+                </div>
+              </div>
+
+              <h3 className="text-base font-extrabold font-heading text-foreground mb-1">
+                {lang === 'en' ? selectedLocked.title_en : selectedLocked.title_ru}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-5 leading-relaxed">
+                {lang === 'en' ? selectedLocked.desc_en : selectedLocked.desc_ru}
+              </p>
+
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setSelectedLocked(null)}
+                className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-xl text-sm"
+              >
+                {lang === 'en' ? 'Got it!' : 'Понятно!'}
+              </motion.button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══════════ Test Gold Reward Button (trainer only) ═══════════ */}
       {isTrainer && (
