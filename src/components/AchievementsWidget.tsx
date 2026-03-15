@@ -272,7 +272,7 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
                       <span className="text-lg opacity-50">🔒</span>
                     </div>
                   )}
-                  <span className={`text-2xl block mb-1 ${isTrainer ? '' : 'blur-[2px]'}`}>{item.icon}</span>
+                  <BadgeIcon icon={item.icon} size="md" className={`mx-auto mb-1 ${isTrainer ? '' : 'blur-[2px]'}`} />
                   <p className={`text-[10px] font-bold leading-tight ${isTrainer ? 'text-foreground/70' : 'text-muted-foreground blur-[1px]'}`}>
                     {lang === 'en' ? item.title_en : item.title_ru}
                   </p>
