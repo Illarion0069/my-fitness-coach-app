@@ -19,15 +19,6 @@ interface Achievement {
 
 // ═══════════ Achievement definitions ═══════════
 
-const SESSION_MILESTONES: { count: number; icon: string }[] = [
-  { count: 1, icon: "🎯" },
-  { count: 5, icon: "💪" },
-  { count: 10, icon: "🔥" },
-  { count: 25, icon: "⭐" },
-  { count: 50, icon: "🏅" },
-  { count: 100, icon: "🏆" },
-  { count: 200, icon: "👑" },
-];
 
 const NUTRITION_STREAK_MILESTONES: { days: number; icon: string }[] = [
   { days: 3, icon: "📸" },
