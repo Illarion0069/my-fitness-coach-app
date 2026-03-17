@@ -350,6 +350,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
     setShowQuickAdd(false);
     setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
+    setFoodSuggestions([]);
     fetchData();
     toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
   };
