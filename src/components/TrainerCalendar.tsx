@@ -72,6 +72,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   // Long-press context menu state
   const [contextMenuSessionId, setContextMenuSessionId] = useState<string | null>(null);
+  const [contextMenuBlockId, setContextMenuBlockId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Delete recurring choice dialog
