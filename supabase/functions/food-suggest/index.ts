@@ -1,0 +1,102 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const { query, lang } = await req.json();
+    if (!query || typeof query !== "string" || query.trim().length < 2) {
+      return new Response(JSON.stringify({ suggestions: [] }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
+
+    const systemPrompt = `You are a nutrition database. Given a food search query, return 5-8 specific food variations with accurate nutritional data per 100g serving.
+
+Response format (JSON only, no markdown):
+{
+  "suggestions": [
+    {
+      "name_ru": "Кальмары варёные",
+      "name_en": "Boiled squid",
+      "portion_g": 100,
+      "calories": 110,
+      "protein_g": 18,
+      "carbs_g": 2,
+      "fat_g": 4
+    }
+  ]
+}
+
+Rules:
+- Include different cooking methods (grilled, fried, boiled, baked, raw, etc.) when applicable
+- Use accurate USDA/standard nutritional values
+- All values per 100g
+- Sort by most common/popular first
+- Names should be concise (2-4 words)
+- If query is in Russian, prioritize Russian food names; if in English, use English names. Always provide both.`;
+
+    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "google/gemini-2.5-flash-lite",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: `Search: "${query.trim()}" (user language: ${lang || "ru"})` },
+        ],
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      if (aiResponse.status === 429) {
+        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), {
+          status: 429,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      if (aiResponse.status === 402) {
+        return new Response(JSON.stringify({ error: "AI credits exhausted" }), {
+          status: 402,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      throw new Error(`AI error: ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const rawContent = aiData.choices?.[0]?.message?.content || "";
+
+    let result;
+    try {
+      const jsonStr = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      result = JSON.parse(jsonStr);
+    } catch {
+      result = { suggestions: [] };
+    }
+
+    return new Response(JSON.stringify(result), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (e) {
+    console.error("food-suggest error:", e);
+    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error", suggestions: [] }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});

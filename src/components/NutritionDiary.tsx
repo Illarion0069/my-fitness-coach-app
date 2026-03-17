@@ -116,6 +116,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddCarbs, setQuickAddCarbs] = useState('');
   const [quickAddFat, setQuickAddFat] = useState('');
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [foodSuggestions, setFoodSuggestions] = useState<any[]>([]);
+  const [suggestLoading, setSuggestLoading] = useState(false);
+  const suggestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showLiquids, setShowLiquids] = useState(false);
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
   const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
@@ -347,6 +350,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
     setShowQuickAdd(false);
     setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
+    setFoodSuggestions([]);
     fetchData();
     toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
   };
@@ -1015,10 +1019,64 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 ))}
               </div>
 
-              <input value={quickAddName} onChange={e => setQuickAddName(e.target.value)}
-                placeholder={lang === 'en' ? 'Food name (optional)' : 'Название (необязательно)'}
-                className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
-              />
+              <div className="relative">
+                <input value={quickAddName} onChange={e => {
+                  const val = e.target.value;
+                  setQuickAddName(val);
+                  setFoodSuggestions([]);
+                  if (suggestTimeoutRef.current) clearTimeout(suggestTimeoutRef.current);
+                  if (val.trim().length >= 2) {
+                    setSuggestLoading(true);
+                    suggestTimeoutRef.current = setTimeout(async () => {
+                      try {
+                        const { data, error } = await supabase.functions.invoke('food-suggest', {
+                          body: { query: val.trim(), lang },
+                        });
+                        if (!error && data?.suggestions) {
+                          setFoodSuggestions(data.suggestions);
+                        }
+                      } catch {} finally {
+                        setSuggestLoading(false);
+                      }
+                    }, 500);
+                  } else {
+                    setSuggestLoading(false);
+                  }
+                }}
+                  placeholder={lang === 'en' ? 'Food name (e.g. chicken)' : 'Название (напр. кальмары)'}
+                  className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                {suggestLoading && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  </div>
+                )}
+                {foodSuggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto bg-card border border-border/60 rounded-xl shadow-lg">
+                    {foodSuggestions.map((s: any, i: number) => (
+                      <button key={i} onClick={() => {
+                        setQuickAddName(lang === 'en' ? s.name_en : s.name_ru);
+                        setQuickAddCal(String(s.calories || 0));
+                        setQuickAddProtein(String(s.protein_g || 0));
+                        setQuickAddCarbs(String(s.carbs_g || 0));
+                        setQuickAddFat(String(s.fat_g || 0));
+                        setFoodSuggestions([]);
+                      }}
+                        className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary/50 active:bg-secondary/70 transition-colors border-b border-border/20 last:border-0">
+                        <div className="text-left">
+                          <p className="text-sm font-medium text-foreground">{lang === 'en' ? s.name_en : s.name_ru}</p>
+                          <p className="text-[10px] text-muted-foreground">{s.portion_g}g • {s.calories}kcal</p>
+                        </div>
+                        <div className="text-[9px] text-muted-foreground text-right">
+                          <span className="text-blue-400">P{s.protein_g}</span>{' '}
+                          <span className="text-amber-400">C{s.carbs_g}</span>{' '}
+                          <span className="text-orange-400">F{s.fat_g}</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
               <div className="grid grid-cols-2 gap-2">
                 <div>
