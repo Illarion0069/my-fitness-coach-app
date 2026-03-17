@@ -801,6 +801,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       setContextMenuSessionId(prev => prev === s.id ? null : s.id);
+      setContextMenuBlockId(null);
     };
 
     return (
