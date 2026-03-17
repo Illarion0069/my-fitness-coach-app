@@ -1133,6 +1133,39 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           </div>
         </div>
       )}
+      {deleteChoiceBlock && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteChoiceBlock(null)}>
+          <div className="bg-card border border-border rounded-2xl p-5 mx-4 max-w-sm w-full space-y-3 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-bold text-center">
+              {lang === 'en' ? 'Delete recurring block' : 'Удалить повторяющийся блок'}
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              {deleteChoiceBlock.title || deleteChoiceBlock.block_type} · {format(selectedDate, 'EEEE', { locale })}
+              {` ${deleteChoiceBlock.block_time.slice(0, 5)}`}
+            </p>
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleDeleteBlockThis(deleteChoiceBlock)}
+                className="w-full bg-destructive/10 text-destructive text-xs font-semibold py-2.5 rounded-xl hover:bg-destructive/20 transition-colors"
+              >
+                {lang === 'en' ? 'Remove only this day' : 'Убрать только на этот день'}
+              </button>
+              <button
+                onClick={() => handleDeleteBlockAll(deleteChoiceBlock)}
+                className="w-full bg-destructive text-destructive-foreground text-xs font-semibold py-2.5 rounded-xl hover:bg-destructive/90 transition-colors"
+              >
+                {lang === 'en' ? 'Delete entire series' : 'Удалить весь ряд навсегда'}
+              </button>
+              <button
+                onClick={() => setDeleteChoiceBlock(null)}
+                className="w-full text-muted-foreground text-xs font-medium py-2 rounded-xl hover:bg-secondary transition-colors"
+              >
+                {lang === 'en' ? 'Cancel' : 'Отмена'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showBlockModal !== null && (
         <TrainerBlockModal
           lang={lang}
