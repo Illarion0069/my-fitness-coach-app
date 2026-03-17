@@ -544,9 +544,32 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const deleteBlock = async (blockId: string) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (block?.is_recurring) {
+      setDeleteChoiceBlock(block);
+      return;
+    }
     await supabase.from('trainer_blocks').delete().eq('id', blockId);
     fetchBlocks();
     toast({ title: lang === 'en' ? 'Block removed' : 'Блок удалён' });
+  };
+
+  const handleDeleteBlockThis = async (block: TrainerBlock) => {
+    const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];
+    await supabase
+      .from('trainer_blocks')
+      .update({ recurring_exceptions: exceptions })
+      .eq('id', block.id);
+    setDeleteChoiceBlock(null);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'This occurrence removed' : 'Удалено на этот день' });
+  };
+
+  const handleDeleteBlockAll = async (block: TrainerBlock) => {
+    await supabase.from('trainer_blocks').delete().eq('id', block.id);
+    setDeleteChoiceBlock(null);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'Recurring block deleted' : 'Повторяющийся блок удалён' });
   };
 
   const renderBlockCard = (b: TrainerBlock) => {
