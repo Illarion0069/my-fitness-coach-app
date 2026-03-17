@@ -1,0 +1,1 @@
+ALTER TABLE public.trainer_blocks ADD COLUMN recurring_exceptions date[] NOT NULL DEFAULT '{}'::date[];
