@@ -241,7 +241,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   // Filter blocks for the selected date
   const dayBlocks = useMemo(() => {
     return blocks.filter(b => {
-      if (b.is_recurring && b.recurrence_day === dayOfWeek) return true;
+      if (b.is_recurring && b.recurrence_day === dayOfWeek) {
+        if (b.recurring_exceptions?.includes(selectedDateStr)) return false;
+        return true;
+      }
       if (!b.is_recurring && b.block_date === selectedDateStr) return true;
       return false;
     });
