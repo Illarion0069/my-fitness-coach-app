@@ -79,10 +79,15 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [deleteChoiceSession, setDeleteChoiceSession] = useState<(ScheduledSession & { clientName: string }) | null>(null);
   const [deleteChoiceBlock, setDeleteChoiceBlock] = useState<TrainerBlock | null>(null);
 
-  // Edit state
+  // Edit state (sessions)
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editTime, setEditTime] = useState('');
   const [editDuration, setEditDuration] = useState(60);
+
+  // Edit state (blocks)
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editBlockTime, setEditBlockTime] = useState('');
+  const [editBlockDuration, setEditBlockDuration] = useState(60);
 
   // Drag state
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
