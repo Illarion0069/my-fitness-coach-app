@@ -1058,10 +1058,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                     {foodSuggestions.map((s: any, i: number) => (
                       <button key={i} onClick={() => {
                         setQuickAddName(lang === 'en' ? s.name_en : s.name_ru);
-                        setQuickAddCal(String(s.calories || 0));
-                        setQuickAddProtein(String(s.protein_g || 0));
-                        setQuickAddCarbs(String(s.carbs_g || 0));
-                        setQuickAddFat(String(s.fat_g || 0));
+                        const base = { cal: s.calories || 0, protein: s.protein_g || 0, carbs: s.carbs_g || 0, fat: s.fat_g || 0 };
+                        setQuickAddBase(base);
+                        setQuickAddPortion('100');
+                        setQuickAddCal(String(base.cal));
+                        setQuickAddProtein(String(base.protein));
+                        setQuickAddCarbs(String(base.carbs));
+                        setQuickAddFat(String(base.fat));
                         setFoodSuggestions([]);
                       }}
                         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary/50 active:bg-secondary/70 transition-colors border-b border-border/20 last:border-0">
