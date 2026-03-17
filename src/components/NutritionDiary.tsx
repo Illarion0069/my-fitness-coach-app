@@ -119,6 +119,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [foodSuggestions, setFoodSuggestions] = useState<any[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const suggestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [quickAddPortion, setQuickAddPortion] = useState('100');
+  const [quickAddBase, setQuickAddBase] = useState<{ cal: number; protein: number; carbs: number; fat: number } | null>(null);
   const [showLiquids, setShowLiquids] = useState(false);
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
   const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
@@ -350,6 +352,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
     setShowQuickAdd(false);
     setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
+    setQuickAddPortion('100'); setQuickAddBase(null);
     setFoodSuggestions([]);
     fetchData();
     toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
@@ -1056,10 +1059,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                     {foodSuggestions.map((s: any, i: number) => (
                       <button key={i} onClick={() => {
                         setQuickAddName(lang === 'en' ? s.name_en : s.name_ru);
-                        setQuickAddCal(String(s.calories || 0));
-                        setQuickAddProtein(String(s.protein_g || 0));
-                        setQuickAddCarbs(String(s.carbs_g || 0));
-                        setQuickAddFat(String(s.fat_g || 0));
+                        const base = { cal: s.calories || 0, protein: s.protein_g || 0, carbs: s.carbs_g || 0, fat: s.fat_g || 0 };
+                        setQuickAddBase(base);
+                        setQuickAddPortion('100');
+                        setQuickAddCal(String(base.cal));
+                        setQuickAddProtein(String(base.protein));
+                        setQuickAddCarbs(String(base.carbs));
+                        setQuickAddFat(String(base.fat));
                         setFoodSuggestions([]);
                       }}
                         className="w-full flex items-center justify-between px-3 py-2.5 hover:bg-secondary/50 active:bg-secondary/70 transition-colors border-b border-border/20 last:border-0">
@@ -1078,25 +1084,86 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 )}
               </div>
 
+              {/* Portion size with +/- */}
+              {quickAddBase && (
+                <div>
+                  <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">{lang === 'en' ? 'Portion' : 'Порция'} (g)</label>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => {
+                      const cur = Math.max(25, (parseInt(quickAddPortion) || 100) - 25);
+                      setQuickAddPortion(String(cur));
+                      const m = cur / 100;
+                      setQuickAddCal(String(Math.round(quickAddBase.cal * m)));
+                      setQuickAddProtein(String(Math.round(quickAddBase.protein * m)));
+                      setQuickAddCarbs(String(Math.round(quickAddBase.carbs * m)));
+                      setQuickAddFat(String(Math.round(quickAddBase.fat * m)));
+                    }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95">
+                      <Minus className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                    <input type="number" value={quickAddPortion} onChange={e => {
+                      const val = e.target.value;
+                      setQuickAddPortion(val);
+                      const g = parseInt(val) || 0;
+                      if (g > 0) {
+                        const m = g / 100;
+                        setQuickAddCal(String(Math.round(quickAddBase.cal * m)));
+                        setQuickAddProtein(String(Math.round(quickAddBase.protein * m)));
+                        setQuickAddCarbs(String(Math.round(quickAddBase.carbs * m)));
+                        setQuickAddFat(String(Math.round(quickAddBase.fat * m)));
+                      }
+                    }}
+                      className="flex-1 h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground text-center font-bold focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                    <button onClick={() => {
+                      const cur = (parseInt(quickAddPortion) || 100) + 25;
+                      setQuickAddPortion(String(cur));
+                      const m = cur / 100;
+                      setQuickAddCal(String(Math.round(quickAddBase.cal * m)));
+                      setQuickAddProtein(String(Math.round(quickAddBase.protein * m)));
+                      setQuickAddCarbs(String(Math.round(quickAddBase.carbs * m)));
+                      setQuickAddFat(String(Math.round(quickAddBase.fat * m)));
+                    }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95">
+                      <Plus className="w-4 h-4 text-muted-foreground" />
+                    </button>
+                  </div>
+                  <div className="flex gap-1 mt-1.5">
+                    {[50, 100, 150, 200, 250, 300].map(g => (
+                      <button key={g} onClick={() => {
+                        setQuickAddPortion(String(g));
+                        const m = g / 100;
+                        setQuickAddCal(String(Math.round(quickAddBase.cal * m)));
+                        setQuickAddProtein(String(Math.round(quickAddBase.protein * m)));
+                        setQuickAddCarbs(String(Math.round(quickAddBase.carbs * m)));
+                        setQuickAddFat(String(Math.round(quickAddBase.fat * m)));
+                      }}
+                        className={`flex-1 py-1.5 rounded-lg text-[10px] font-bold transition-colors ${
+                          quickAddPortion === String(g) ? 'bg-primary text-primary-foreground' : 'bg-secondary/40 text-muted-foreground'
+                        }`}>
+                        {g}g
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-2">
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">{lang === 'en' ? 'Calories' : 'Калории'}</label>
-                  <input type="number" value={quickAddCal} onChange={e => setQuickAddCal(e.target.value)}
+                  <input type="number" value={quickAddCal} onChange={e => { setQuickAddCal(e.target.value); setQuickAddBase(null); }}
                     placeholder="0" className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
                 </div>
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">{lang === 'en' ? 'Protein' : 'Белки'} (g)</label>
-                  <input type="number" value={quickAddProtein} onChange={e => setQuickAddProtein(e.target.value)}
+                  <input type="number" value={quickAddProtein} onChange={e => { setQuickAddProtein(e.target.value); setQuickAddBase(null); }}
                     placeholder="0" className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
                 </div>
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">{lang === 'en' ? 'Carbs' : 'Углеводы'} (g)</label>
-                  <input type="number" value={quickAddCarbs} onChange={e => setQuickAddCarbs(e.target.value)}
+                  <input type="number" value={quickAddCarbs} onChange={e => { setQuickAddCarbs(e.target.value); setQuickAddBase(null); }}
                     placeholder="0" className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
                 </div>
                 <div>
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">{lang === 'en' ? 'Fat' : 'Жиры'} (g)</label>
-                  <input type="number" value={quickAddFat} onChange={e => setQuickAddFat(e.target.value)}
+                  <input type="number" value={quickAddFat} onChange={e => { setQuickAddFat(e.target.value); setQuickAddBase(null); }}
                     placeholder="0" className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
                 </div>
               </div>
