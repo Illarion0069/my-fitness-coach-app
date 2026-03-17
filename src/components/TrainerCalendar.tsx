@@ -76,6 +76,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   // Delete recurring choice dialog
   const [deleteChoiceSession, setDeleteChoiceSession] = useState<(ScheduledSession & { clientName: string }) | null>(null);
+  const [deleteChoiceBlock, setDeleteChoiceBlock] = useState<TrainerBlock | null>(null);
 
   // Edit state
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
