@@ -789,6 +789,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       if (!didActivateDrag) {
         e.preventDefault();
         setContextMenuSessionId(s.id);
+        setContextMenuBlockId(null);
       }
     };
 
