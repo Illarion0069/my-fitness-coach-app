@@ -38,6 +38,7 @@ interface TrainerBlock {
   is_recurring: boolean;
   recurrence_day: number | null;
   linked_session_id: string | null;
+  recurring_exceptions: string[];
 }
 
 interface Props {
