@@ -520,6 +520,7 @@ export type Database = {
           is_recurring: boolean
           linked_session_id: string | null
           recurrence_day: number | null
+          recurring_exceptions: string[]
           title: string | null
           trainer_user_id: string
           updated_at: string
@@ -534,6 +535,7 @@ export type Database = {
           is_recurring?: boolean
           linked_session_id?: string | null
           recurrence_day?: number | null
+          recurring_exceptions?: string[]
           title?: string | null
           trainer_user_id: string
           updated_at?: string
@@ -548,6 +550,7 @@ export type Database = {
           is_recurring?: boolean
           linked_session_id?: string | null
           recurrence_day?: number | null
+          recurring_exceptions?: string[]
           title?: string | null
           trainer_user_id?: string
           updated_at?: string

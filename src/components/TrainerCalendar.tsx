@@ -38,6 +38,7 @@ interface TrainerBlock {
   is_recurring: boolean;
   recurrence_day: number | null;
   linked_session_id: string | null;
+  recurring_exceptions: string[];
 }
 
 interface Props {
@@ -75,6 +76,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   // Delete recurring choice dialog
   const [deleteChoiceSession, setDeleteChoiceSession] = useState<(ScheduledSession & { clientName: string }) | null>(null);
+  const [deleteChoiceBlock, setDeleteChoiceBlock] = useState<TrainerBlock | null>(null);
 
   // Edit state
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
@@ -239,7 +241,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   // Filter blocks for the selected date
   const dayBlocks = useMemo(() => {
     return blocks.filter(b => {
-      if (b.is_recurring && b.recurrence_day === dayOfWeek) return true;
+      if (b.is_recurring && b.recurrence_day === dayOfWeek) {
+        if (b.recurring_exceptions?.includes(selectedDateStr)) return false;
+        return true;
+      }
       if (!b.is_recurring && b.block_date === selectedDateStr) return true;
       return false;
     });
@@ -539,9 +544,32 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const deleteBlock = async (blockId: string) => {
+    const block = blocks.find(b => b.id === blockId);
+    if (block?.is_recurring) {
+      setDeleteChoiceBlock(block);
+      return;
+    }
     await supabase.from('trainer_blocks').delete().eq('id', blockId);
     fetchBlocks();
     toast({ title: lang === 'en' ? 'Block removed' : 'Блок удалён' });
+  };
+
+  const handleDeleteBlockThis = async (block: TrainerBlock) => {
+    const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];
+    await supabase
+      .from('trainer_blocks')
+      .update({ recurring_exceptions: exceptions })
+      .eq('id', block.id);
+    setDeleteChoiceBlock(null);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'This occurrence removed' : 'Удалено на этот день' });
+  };
+
+  const handleDeleteBlockAll = async (block: TrainerBlock) => {
+    await supabase.from('trainer_blocks').delete().eq('id', block.id);
+    setDeleteChoiceBlock(null);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'Recurring block deleted' : 'Повторяющийся блок удалён' });
   };
 
   const renderBlockCard = (b: TrainerBlock) => {
@@ -1097,6 +1125,39 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
               </button>
               <button
                 onClick={() => setDeleteChoiceSession(null)}
+                className="w-full text-muted-foreground text-xs font-medium py-2 rounded-xl hover:bg-secondary transition-colors"
+              >
+                {lang === 'en' ? 'Cancel' : 'Отмена'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleteChoiceBlock && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDeleteChoiceBlock(null)}>
+          <div className="bg-card border border-border rounded-2xl p-5 mx-4 max-w-sm w-full space-y-3 shadow-xl animate-scale-in" onClick={e => e.stopPropagation()}>
+            <p className="text-sm font-bold text-center">
+              {lang === 'en' ? 'Delete recurring block' : 'Удалить повторяющийся блок'}
+            </p>
+            <p className="text-xs text-muted-foreground text-center">
+              {deleteChoiceBlock.title || deleteChoiceBlock.block_type} · {format(selectedDate, 'EEEE', { locale })}
+              {` ${deleteChoiceBlock.block_time.slice(0, 5)}`}
+            </p>
+            <div className="space-y-2 pt-1">
+              <button
+                onClick={() => handleDeleteBlockThis(deleteChoiceBlock)}
+                className="w-full bg-destructive/10 text-destructive text-xs font-semibold py-2.5 rounded-xl hover:bg-destructive/20 transition-colors"
+              >
+                {lang === 'en' ? 'Remove only this day' : 'Убрать только на этот день'}
+              </button>
+              <button
+                onClick={() => handleDeleteBlockAll(deleteChoiceBlock)}
+                className="w-full bg-destructive text-destructive-foreground text-xs font-semibold py-2.5 rounded-xl hover:bg-destructive/90 transition-colors"
+              >
+                {lang === 'en' ? 'Delete entire series' : 'Удалить весь ряд навсегда'}
+              </button>
+              <button
+                onClick={() => setDeleteChoiceBlock(null)}
                 className="w-full text-muted-foreground text-xs font-medium py-2 rounded-xl hover:bg-secondary transition-colors"
               >
                 {lang === 'en' ? 'Cancel' : 'Отмена'}
