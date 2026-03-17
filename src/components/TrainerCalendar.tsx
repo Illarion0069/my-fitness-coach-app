@@ -72,16 +72,22 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   // Long-press context menu state
   const [contextMenuSessionId, setContextMenuSessionId] = useState<string | null>(null);
+  const [contextMenuBlockId, setContextMenuBlockId] = useState<string | null>(null);
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Delete recurring choice dialog
   const [deleteChoiceSession, setDeleteChoiceSession] = useState<(ScheduledSession & { clientName: string }) | null>(null);
   const [deleteChoiceBlock, setDeleteChoiceBlock] = useState<TrainerBlock | null>(null);
 
-  // Edit state
+  // Edit state (sessions)
   const [editingSessionId, setEditingSessionId] = useState<string | null>(null);
   const [editTime, setEditTime] = useState('');
   const [editDuration, setEditDuration] = useState(60);
+
+  // Edit state (blocks)
+  const [editingBlockId, setEditingBlockId] = useState<string | null>(null);
+  const [editBlockTime, setEditBlockTime] = useState('');
+  const [editBlockDuration, setEditBlockDuration] = useState(60);
 
   // Drag state
   const [draggingSessionId, setDraggingSessionId] = useState<string | null>(null);
@@ -572,6 +578,23 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     toast({ title: lang === 'en' ? 'Recurring block deleted' : 'Повторяющийся блок удалён' });
   };
 
+  const startEditingBlock = (block: TrainerBlock) => {
+    setEditingBlockId(block.id);
+    setEditBlockTime(block.block_time.slice(0, 5));
+    setEditBlockDuration(block.duration_minutes);
+  };
+
+  const saveEditBlock = async () => {
+    if (!editingBlockId || !editBlockTime) return;
+    await supabase.from('trainer_blocks').update({
+      block_time: editBlockTime,
+      duration_minutes: editBlockDuration,
+    }).eq('id', editingBlockId);
+    setEditingBlockId(null);
+    fetchBlocks();
+    toast({ title: lang === 'en' ? 'Block updated' : 'Блок обновлён' });
+  };
+
   const renderBlockCard = (b: TrainerBlock) => {
     const blockColors: Record<string, string> = {
       block: 'bg-destructive/10 border-destructive/30 text-destructive',
@@ -587,10 +610,50 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     };
     const Icon = blockIcons[b.block_type] || Ban;
     const colorClass = blockColors[b.block_type] || blockColors.block;
-    const label = b.title || (b.block_type === 'block' ? (lang === 'en' ? 'Blocked' : 'Закрыто') : b.block_type === 'travel' ? (lang === 'en' ? 'Travel' : 'В пути') : '');
+    const label = b.title || (b.block_type === 'block' ? (lang === 'en' ? 'Blocked' : 'Закрыто') : b.block_type === 'travel' ? (lang === 'en' ? 'Travel' : 'В пути') : b.block_type);
+
+    const isEditing = editingBlockId === b.id;
+
+    if (isEditing) {
+      return (
+        <div key={b.id} className={`flex items-center gap-2 ${colorClass} border-2 rounded-lg px-3 py-2 h-full`}>
+          <Icon className="w-3.5 h-3.5 shrink-0" />
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <p className="text-xs font-semibold truncate">{label}</p>
+            <div className="flex gap-1.5">
+              <input
+                type="time"
+                value={editBlockTime}
+                onChange={e => setEditBlockTime(e.target.value)}
+                autoFocus
+                className="flex-1 bg-background border border-border rounded-md px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary"
+              />
+              <select
+                value={editBlockDuration}
+                onChange={e => setEditBlockDuration(Number(e.target.value))}
+                className="bg-background border border-border rounded-md px-1.5 py-1 text-xs text-foreground focus:outline-none focus:border-primary"
+              >
+                <option value={30}>30m</option>
+                <option value={60}>1h</option>
+                <option value={90}>1.5h</option>
+                <option value={120}>2h</option>
+                <option value={150}>2.5h</option>
+                <option value={180}>3h</option>
+              </select>
+            </div>
+          </div>
+          <button onClick={saveEditBlock} className="bg-primary text-primary-foreground text-[10px] font-bold px-2 py-1 rounded-lg">✓</button>
+          <button onClick={() => setEditingBlockId(null)} className="text-muted-foreground"><X className="w-3.5 h-3.5" /></button>
+        </div>
+      );
+    }
 
     return (
-      <div key={b.id} className={`flex items-center gap-2 ${colorClass} border rounded-lg px-3 py-1.5 h-full`}>
+      <div
+        key={b.id}
+        className={`relative flex items-center gap-2 ${colorClass} border rounded-lg px-3 py-1.5 h-full select-none cursor-pointer ${contextMenuBlockId === b.id ? 'ring-2 ring-primary/60' : ''}`}
+        onClick={(e) => { e.stopPropagation(); setContextMenuBlockId(prev => prev === b.id ? null : b.id); setContextMenuSessionId(null); }}
+      >
         <Icon className="w-3.5 h-3.5 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold truncate">{label}</p>
@@ -599,9 +662,31 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             {b.is_recurring && ` · ${lang === 'en' ? 'weekly' : 'еженед.'}`}
           </p>
         </div>
-        <button onClick={() => deleteBlock(b.id)} className="opacity-50 hover:opacity-100 transition-opacity">
-          <X className="w-3.5 h-3.5" />
-        </button>
+
+        {/* Context menu overlay */}
+        {contextMenuBlockId === b.id && (
+          <div className="absolute inset-0 z-20 flex items-center justify-end gap-1.5 bg-card/95 backdrop-blur-sm rounded-lg px-2 animate-scale-in">
+            <p className="flex-1 text-xs font-semibold truncate">{label}</p>
+            <button
+              onClick={(e) => { e.stopPropagation(); setContextMenuBlockId(null); startEditingBlock(b); }}
+              className="flex items-center gap-1 bg-primary/15 text-primary text-[11px] font-semibold px-2.5 py-1.5 rounded-lg"
+            >
+              <Pencil className="w-3 h-3" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setContextMenuBlockId(null); deleteBlock(b.id); }}
+              className="flex items-center gap-1 bg-destructive/15 text-destructive text-[11px] font-semibold px-2.5 py-1.5 rounded-lg"
+            >
+              <Trash2 className="w-3 h-3" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setContextMenuBlockId(null); }}
+              className="text-muted-foreground"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     );
   };
@@ -704,6 +789,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       if (!didActivateDrag) {
         e.preventDefault();
         setContextMenuSessionId(s.id);
+        setContextMenuBlockId(null);
       }
     };
 
@@ -716,6 +802,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const handleClick = (e: React.MouseEvent) => {
       e.stopPropagation();
       setContextMenuSessionId(prev => prev === s.id ? null : s.id);
+      setContextMenuBlockId(null);
     };
 
     return (
