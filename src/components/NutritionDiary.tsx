@@ -48,6 +48,7 @@ interface ManualEntry {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  meal_time?: string;
   created_at: string;
 }
 
@@ -120,6 +121,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddCarbs, setQuickAddCarbs] = useState('');
   const [quickAddFat, setQuickAddFat] = useState('');
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [quickAddTime, setQuickAddTime] = useState<string>('');
   const [foodSuggestions, setFoodSuggestions] = useState<any[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const suggestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -359,6 +361,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       protein_g: pro,
       carbs_g: carb,
       fat_g: fat,
+      meal_time: quickAddTime || undefined,
       created_at: new Date().toISOString(),
     };
     const currentEntries = (log?.manual_entries || []) as ManualEntry[];
@@ -372,7 +375,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
     setShowQuickAdd(false);
     setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
-    setQuickAddPortion('100'); setQuickAddBase(null);
+    setQuickAddPortion('100'); setQuickAddBase(null); setQuickAddTime('');
     setFoodSuggestions([]);
     fetchData();
     toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
@@ -945,7 +948,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </div>
               </button>
 
-              <button onClick={() => { setShowAddMenu(false); setShowQuickAdd(true); }}
+              <button onClick={() => { setShowAddMenu(false); const now = new Date(); setQuickAddTime(`${String(now.getHours()).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
                 <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
                   <PencilLine className="w-5 h-5 text-primary" />
@@ -1035,13 +1038,21 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
                   className="bg-secondary/50 border border-border/50 rounded-2xl px-6 py-3 text-2xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`).map(t => (
-                  <button key={t} onClick={() => setPendingMealTime(t)}
-                    className={`text-xs font-medium rounded-xl py-2 transition-colors ${pendingMealTime === t ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary/70'}`}>
-                    {t}
-                  </button>
-                ))}
+              <div className="flex gap-3 justify-center">
+                <button onClick={() => {
+                  const [h] = pendingMealTime.split(':').map(Number);
+                  const newH = (h - 1 + 24) % 24;
+                  setPendingMealTime(`${String(newH).padStart(2, '0')}:00`);
+                }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button onClick={() => {
+                  const [h] = pendingMealTime.split(':').map(Number);
+                  const newH = (h + 1) % 24;
+                  setPendingMealTime(`${String(newH).padStart(2, '0')}:00`);
+                }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setShowTimePicker(false); setShowMealPicker(true); }}
@@ -1224,6 +1235,29 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   <label className="text-[9px] font-bold text-muted-foreground uppercase mb-1 block">{lang === 'en' ? 'Fat' : 'Жиры'} (g)</label>
                   <input type="number" value={quickAddFat} onChange={e => { setQuickAddFat(e.target.value); setQuickAddBase(null); }}
                     placeholder="0" className="w-full h-10 bg-secondary/50 border border-border/40 rounded-xl px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50" />
+                </div>
+              </div>
+
+              {/* Time picker */}
+              <div className="flex items-center justify-between">
+                <label className="text-[9px] font-bold text-muted-foreground uppercase">{lang === 'en' ? 'Time' : 'Время'}</label>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => {
+                    const [h] = (quickAddTime || '12:00').split(':').map(Number);
+                    const newH = (h - 1 + 24) % 24;
+                    setQuickAddTime(`${String(newH).padStart(2, '0')}:00`);
+                  }} className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <input type="time" value={quickAddTime} onChange={e => setQuickAddTime(e.target.value)}
+                    className="bg-secondary/50 border border-border/40 rounded-xl px-3 py-1.5 text-sm font-bold text-foreground text-center focus:outline-none focus:ring-2 focus:ring-primary/50 w-24" />
+                  <button onClick={() => {
+                    const [h] = (quickAddTime || '12:00').split(':').map(Number);
+                    const newH = (h + 1) % 24;
+                    setQuickAddTime(`${String(newH).padStart(2, '0')}:00`);
+                  }} className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
                 </div>
               </div>
 
