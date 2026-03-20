@@ -142,9 +142,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchWorkingHours()]);
   }, []);
 
-  useEffect(() => {
-    setSelectedEntryId(null);
-  }, [selectedDateStr]);
 
   const daySessions = useMemo(() => {
     const items = sessions.filter((session) => {
