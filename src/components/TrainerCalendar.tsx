@@ -234,7 +234,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const deleteRecurringSeries = async (session: ScheduledSession) => {
     await supabase.from('scheduled_sessions').delete().eq('id', session.id);
-    setSelectedEntryId(null);
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
