@@ -1284,7 +1284,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <p className="text-center text-xs text-white/60 mt-2">
                 {MEAL_TYPES.find(m => m.key === selectedPhoto.meal_type)?.emoji}{' '}
                 {lang === 'en' ? MEAL_TYPES.find(m => m.key === selectedPhoto.meal_type)?.labelEn : MEAL_TYPES.find(m => m.key === selectedPhoto.meal_type)?.labelRu}
-                {' · '}{new Date(selectedPhoto.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {' · '}{selectedPhoto.meal_time ? selectedPhoto.meal_time.slice(0, 5) : new Date(selectedPhoto.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </motion.div>
           </motion.div>
