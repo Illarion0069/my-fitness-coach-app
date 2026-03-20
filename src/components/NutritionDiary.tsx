@@ -1238,7 +1238,29 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </div>
               </div>
 
-              <div className="flex gap-2">
+              {/* Time picker */}
+              <div className="flex items-center justify-between">
+                <label className="text-[9px] font-bold text-muted-foreground uppercase">{lang === 'en' ? 'Time' : 'Время'}</label>
+                <div className="flex items-center gap-2">
+                  <button onClick={() => {
+                    const [h] = (quickAddTime || '12:00').split(':').map(Number);
+                    const newH = (h - 1 + 24) % 24;
+                    setQuickAddTime(`${String(newH).padStart(2, '0')}:00`);
+                  }} className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                    <Minus className="w-3.5 h-3.5" />
+                  </button>
+                  <input type="time" value={quickAddTime} onChange={e => setQuickAddTime(e.target.value)}
+                    className="bg-secondary/50 border border-border/40 rounded-xl px-3 py-1.5 text-sm font-bold text-foreground text-center focus:outline-none focus:ring-2 focus:ring-primary/50 w-24" />
+                  <button onClick={() => {
+                    const [h] = (quickAddTime || '12:00').split(':').map(Number);
+                    const newH = (h + 1) % 24;
+                    setQuickAddTime(`${String(newH).padStart(2, '0')}:00`);
+                  }} className="w-8 h-8 rounded-lg bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
                 <button onClick={() => setShowQuickAdd(false)} className="flex-1 h-11 rounded-xl bg-secondary/50 text-sm font-bold text-muted-foreground active:scale-95">
                   {lang === 'en' ? 'Cancel' : 'Отмена'}
                 </button>
