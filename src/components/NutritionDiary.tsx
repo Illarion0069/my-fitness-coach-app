@@ -947,7 +947,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </div>
               </button>
 
-              <button onClick={() => { setShowAddMenu(false); setShowQuickAdd(true); }}
+              <button onClick={() => { setShowAddMenu(false); const now = new Date(); setQuickAddTime(`${String(now.getHours()).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
                 <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
                   <PencilLine className="w-5 h-5 text-primary" />
