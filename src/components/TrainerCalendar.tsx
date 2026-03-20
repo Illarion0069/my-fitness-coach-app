@@ -243,7 +243,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];
     await supabase.from('trainer_blocks').update({ recurring_exceptions: exceptions }).eq('id', block.id);
 
-    setSelectedEntryId(null);
     await fetchBlocks();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Блок на этот день удалён' });
   };
