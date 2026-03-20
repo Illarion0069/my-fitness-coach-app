@@ -66,8 +66,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
-  const [selectedClientId, setSelectedClientId] = useState('');
-  const [addTime, setAddTime] = useState('09:00');
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
   
   const [workingHours, setWorkingHours] = useState<TrainerWorkingHours>({
