@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
-import { CalendarDays, ChevronLeft, ChevronRight, Clock3, Plus, RotateCw, Trash2 } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import TrainerBlockModal from './TrainerBlockModal';
@@ -66,8 +66,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
-  const [selectedClientId, setSelectedClientId] = useState('');
-  const [addTime, setAddTime] = useState('09:00');
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
   
   const [workingHours, setWorkingHours] = useState<TrainerWorkingHours>({
@@ -175,32 +173,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return clients.find((client) => client.user_id === session.user_id)?.full_name || '—';
   };
 
-  const addSession = async () => {
-    if (!selectedClientId || !addTime) return;
-
-    const res = await supabase.functions.invoke('book-session', {
-      body: {
-        action: 'trainerBook',
-        client_user_id: selectedClientId,
-        date: selectedDateStr,
-        time: addTime,
-      },
-    });
-
-    if (res.error || !res.data?.success) {
-      toast({
-        title: res.data?.error || res.error?.message || (lang === 'en' ? 'Failed to add session' : 'Не удалось добавить тренировку'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSelectedClientId('');
-    setAddTime('09:00');
-    await Promise.all([fetchSessions(), fetchClientPackages()]);
-    onSessionChange?.();
-    toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
-  };
 
   const deleteOneOffSession = async (session: ScheduledSession) => {
     const {
@@ -465,48 +437,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           })}
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
-          <select
-            value={selectedClientId}
-            onChange={(e) => setSelectedClientId(e.target.value)}
-            className="h-11 rounded-xl border border-border bg-secondary/40 px-3 text-sm"
-          >
-            <option value="">{lang === 'en' ? 'Choose client' : 'Выберите клиента'}</option>
-            {clients.map((client) => {
-              const remaining = clientRemaining[client.user_id];
-              const suffix = remaining ? ` · ${remaining.remaining}/${remaining.total}` : '';
-              return (
-                <option key={client.user_id} value={client.user_id}>
-                  {client.full_name}{suffix}
-                </option>
-              );
-            })}
-          </select>
-
-          <input
-            type="time"
-            step={1800}
-            value={addTime}
-            onChange={(e) => setAddTime(e.target.value)}
-            className="h-11 rounded-xl border border-border bg-secondary/40 px-3 text-sm"
-          />
-
-          <div className="flex gap-2">
-            <button
-              onClick={addSession}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-            >
-              <Plus className="h-4 w-4" />
-              {lang === 'en' ? 'Add' : 'Добавить'}
-            </button>
-            <button
-              onClick={() => setShowBlockModal(addTime)}
-              className="h-11 rounded-xl border border-border bg-secondary/50 px-4 text-sm font-semibold"
-            >
-              {lang === 'en' ? 'Block' : 'Блок'}
-            </button>
-          </div>
-        </div>
       </div>
 
       {isDayOff && (
@@ -545,7 +475,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             if (block) deleteBlockSeries(block);
           }}
           onSelectTime={(time) => {
-            setAddTime(time);
             setShowBlockModal(time);
           }}
         />
