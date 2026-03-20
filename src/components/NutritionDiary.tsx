@@ -27,6 +27,7 @@ interface FoodPhoto {
   photo_url: string;
   meal_note: string | null;
   meal_type: string;
+  meal_time: string | null;
   created_at: string;
 }
 
