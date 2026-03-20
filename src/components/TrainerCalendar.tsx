@@ -475,7 +475,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             if (block) deleteBlockSeries(block);
           }}
           onSelectTime={(time) => {
-            setAddTime(time);
             setShowBlockModal(time);
           }}
         />
