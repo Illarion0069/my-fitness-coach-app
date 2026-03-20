@@ -227,7 +227,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const exceptions = [...(session.recurring_exceptions || []), selectedDateStr];
     await supabase.from('scheduled_sessions').update({ recurring_exceptions: exceptions }).eq('id', session.id);
 
-    setSelectedEntryId(null);
     await fetchSessions();
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Тренировка на этот день удалена' });
