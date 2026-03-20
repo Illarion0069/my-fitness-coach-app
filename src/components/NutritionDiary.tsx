@@ -121,6 +121,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddCarbs, setQuickAddCarbs] = useState('');
   const [quickAddFat, setQuickAddFat] = useState('');
   const [showAddMenu, setShowAddMenu] = useState(false);
+  const [quickAddTime, setQuickAddTime] = useState<string>('');
   const [foodSuggestions, setFoodSuggestions] = useState<any[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
   const suggestTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
