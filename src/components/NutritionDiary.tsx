@@ -1003,7 +1003,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'What meal?' : 'Какой приём пищи?'}</p>
               <div className="grid grid-cols-2 gap-2">
                 {MEAL_TYPES.map(mt => (
-                  <button key={mt.key} onClick={() => handleUploadWithMealType(mt.key)}
+                  <button key={mt.key} onClick={() => handleSelectMealType(mt.key)}
                     className="flex items-center gap-2.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-3.5 transition-colors active:scale-95">
                     <span className="text-xl">{mt.emoji}</span>
                     <span className="text-sm font-bold text-foreground">{lang === 'en' ? mt.labelEn : mt.labelRu}</span>
@@ -1014,6 +1014,45 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 className="w-full text-xs text-muted-foreground py-2 text-center">
                 {lang === 'en' ? 'Cancel' : 'Отмена'}
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Time Picker Modal */}
+      <AnimatePresence>
+        {showTimePicker && pendingMealType && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowTimePicker(false); setPendingFile(null); setPendingMealType(null); }}
+            className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-4 border border-border/40">
+              <p className="text-sm font-bold text-foreground text-center">
+                {MEAL_TYPES.find(m => m.key === pendingMealType)?.emoji}{' '}
+                {lang === 'en' ? 'When did you eat?' : 'Во сколько вы ели?'}
+              </p>
+              <div className="flex justify-center">
+                <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
+                  className="bg-secondary/50 border border-border/50 rounded-2xl px-6 py-3 text-2xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['07:00', '08:00', '09:00', '10:00', '12:00', '13:00', '14:00', '15:00', '17:00', '18:00', '19:00', '20:00'] as const).map(t => (
+                  <button key={t} onClick={() => setPendingMealTime(t)}
+                    className={`text-xs font-medium rounded-xl py-2 transition-colors ${pendingMealTime === t ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary/70'}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setShowTimePicker(false); setShowMealPicker(true); }}
+                  className="flex-1 py-3 rounded-2xl bg-secondary/50 text-sm font-bold text-muted-foreground active:scale-95">
+                  {lang === 'en' ? 'Back' : 'Назад'}
+                </button>
+                <button onClick={handleUploadWithTime}
+                  className="flex-1 py-3 rounded-2xl bg-primary text-sm font-bold text-primary-foreground active:scale-95">
+                  {lang === 'en' ? 'Upload' : 'Загрузить'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
