@@ -91,7 +91,7 @@ const DayTimeline = ({ lang, slots, entries, selectedEntryId, isToday, onSelectE
   const showNowLine = isToday && nowMinutes >= startMinutes && nowMinutes <= startMinutes + slots.length * 30;
 
   return (
-    <div className="rounded-2xl border border-border bg-card overflow-hidden">
+    <div className="rounded-2xl border border-border bg-card" style={{ maxHeight: 'min(60vh, 500px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
       <div className="grid grid-cols-[58px_minmax(0,1fr)]">
         <div className="border-r border-border/60 bg-secondary/20">
           {slots.map((slot) => (
