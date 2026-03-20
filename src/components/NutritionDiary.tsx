@@ -1261,6 +1261,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </div>
               </div>
 
+              <div className="flex gap-2">
                 <button onClick={() => setShowQuickAdd(false)} className="flex-1 h-11 rounded-xl bg-secondary/50 text-sm font-bold text-muted-foreground active:scale-95">
                   {lang === 'en' ? 'Cancel' : 'Отмена'}
                 </button>
