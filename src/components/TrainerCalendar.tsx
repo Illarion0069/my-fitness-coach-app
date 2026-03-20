@@ -173,32 +173,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return clients.find((client) => client.user_id === session.user_id)?.full_name || '—';
   };
 
-  const addSession = async () => {
-    if (!selectedClientId || !addTime) return;
-
-    const res = await supabase.functions.invoke('book-session', {
-      body: {
-        action: 'trainerBook',
-        client_user_id: selectedClientId,
-        date: selectedDateStr,
-        time: addTime,
-      },
-    });
-
-    if (res.error || !res.data?.success) {
-      toast({
-        title: res.data?.error || res.error?.message || (lang === 'en' ? 'Failed to add session' : 'Не удалось добавить тренировку'),
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setSelectedClientId('');
-    setAddTime('09:00');
-    await Promise.all([fetchSessions(), fetchClientPackages()]);
-    onSessionChange?.();
-    toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
-  };
 
   const deleteOneOffSession = async (session: ScheduledSession) => {
     const {
