@@ -1036,13 +1036,21 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
                   className="bg-secondary/50 border border-border/50 rounded-2xl px-6 py-3 text-2xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
               </div>
-              <div className="grid grid-cols-4 gap-1.5">
-                {Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`).map(t => (
-                  <button key={t} onClick={() => setPendingMealTime(t)}
-                    className={`text-xs font-medium rounded-xl py-2 transition-colors ${pendingMealTime === t ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary/70'}`}>
-                    {t}
-                  </button>
-                ))}
+              <div className="flex gap-3 justify-center">
+                <button onClick={() => {
+                  const [h] = pendingMealTime.split(':').map(Number);
+                  const newH = (h - 1 + 24) % 24;
+                  setPendingMealTime(`${String(newH).padStart(2, '0')}:00`);
+                }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                  <Minus className="w-4 h-4" />
+                </button>
+                <button onClick={() => {
+                  const [h] = pendingMealTime.split(':').map(Number);
+                  const newH = (h + 1) % 24;
+                  setPendingMealTime(`${String(newH).padStart(2, '0')}:00`);
+                }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
+                  <Plus className="w-4 h-4" />
+                </button>
               </div>
               <div className="flex gap-2">
                 <button onClick={() => { setShowTimePicker(false); setShowMealPicker(true); }}
