@@ -218,7 +218,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       return;
     }
 
-    setSelectedEntryId(null);
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
