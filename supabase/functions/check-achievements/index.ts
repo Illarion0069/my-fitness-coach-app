@@ -68,7 +68,7 @@ async function grantFreeSession(supabase: any, userId: string, reason: string): 
     .select("*")
     .eq("user_id", userId)
     .eq("is_active", true)
-    .order("created_at", { ascending: true })
+    .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
 

@@ -21,13 +21,13 @@ const SessionWidget = () => {
   useEffect(() => {
     if (!user) return;
     const fetch = async () => {
-      // First try active packages
+      // First try the newest active package
       const { data: active } = await supabase
         .from('client_packages')
         .select('*')
         .eq('user_id', user.id)
         .eq('is_active', true)
-        .order('created_at', { ascending: true })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
