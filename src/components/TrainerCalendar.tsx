@@ -365,7 +365,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const slots = useMemo(() => {
     const endHour = Math.max(workingHours.work_end_hour, workingHours.work_start_hour + 1);
-    const count = (endHour - workingHours.work_start_hour) * 2;
+    // +1 hour so the end hour itself is visible (e.g. 19:00 slot when end=19)
+    const count = (endHour - workingHours.work_start_hour + 1) * 2;
 
     return Array.from({ length: count }, (_, index) => {
       const totalMinutes = workingHours.work_start_hour * 60 + index * 30;
