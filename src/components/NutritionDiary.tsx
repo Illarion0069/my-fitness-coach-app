@@ -27,6 +27,7 @@ interface FoodPhoto {
   photo_url: string;
   meal_note: string | null;
   meal_type: string;
+  meal_time: string | null;
   created_at: string;
 }
 
@@ -104,6 +105,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
+  const [pendingMealType, setPendingMealType] = useState<MealType | null>(null);
+  const [pendingMealTime, setPendingMealTime] = useState<string>('');
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideScore, setOverrideScore] = useState('');
   const [overrideNote, setOverrideNote] = useState('');
@@ -209,11 +213,25 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const handleUploadWithMealType = async (mealType: MealType) => {
-    if (!pendingFile || !user) return;
-    if (!VALID_MEAL_TYPES.includes(mealType)) return;
+  const handleSelectMealType = (mealType: MealType) => {
+    setPendingMealType(mealType);
+    // Default time based on meal type
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+    const defaultTimes: Record<MealType, string> = { breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: `${hh}:${mm}` };
+    setPendingMealTime(defaultTimes[mealType]);
     setShowMealPicker(false);
+    setShowTimePicker(true);
+  };
+
+  const handleUploadWithTime = async () => {
+    if (!pendingFile || !user || !pendingMealType) return;
+    if (!VALID_MEAL_TYPES.includes(pendingMealType)) return;
+    setShowTimePicker(false);
     setUploading(true);
+    const mealType = pendingMealType;
+    const mealTime = pendingMealTime || null;
     const ext = pendingFile.name.split('.').pop();
     const path = `${user.id}/${date}_${Date.now()}.${ext}`;
     try {
@@ -227,12 +245,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         await supabase.storage.from('food-photos').remove([path]);
         toast({ title: lang === 'en' ? 'Not a food photo' : 'Это не фото еды', variant: 'destructive' });
         setPendingFile(null);
+        setPendingMealType(null);
         setUploading(false);
         return;
       }
       const { error: insertError } = await supabase.from('food_photos').insert({
-        user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType,
-      });
+        user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType, meal_time: mealTime,
+      } as any);
       if (insertError) {
         await supabase.storage.from('food-photos').remove([path]);
         throw insertError;
@@ -245,6 +264,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
     }
     setPendingFile(null);
+    setPendingMealType(null);
     setUploading(false);
   };
 
@@ -687,7 +707,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               className="relative rounded-xl overflow-hidden aspect-square">
                               <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
                               <span className="absolute bottom-0.5 left-0.5 text-[7px] bg-black/50 text-white/80 px-1 py-0.5 rounded">
-                                {new Date(photo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {photo.meal_time ? photo.meal_time.slice(0, 5) : new Date(photo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                               </span>
                             </motion.button>
                           ))}
@@ -983,7 +1003,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'What meal?' : 'Какой приём пищи?'}</p>
               <div className="grid grid-cols-2 gap-2">
                 {MEAL_TYPES.map(mt => (
-                  <button key={mt.key} onClick={() => handleUploadWithMealType(mt.key)}
+                  <button key={mt.key} onClick={() => handleSelectMealType(mt.key)}
                     className="flex items-center gap-2.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-3.5 transition-colors active:scale-95">
                     <span className="text-xl">{mt.emoji}</span>
                     <span className="text-sm font-bold text-foreground">{lang === 'en' ? mt.labelEn : mt.labelRu}</span>
@@ -994,6 +1014,45 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 className="w-full text-xs text-muted-foreground py-2 text-center">
                 {lang === 'en' ? 'Cancel' : 'Отмена'}
               </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Time Picker Modal */}
+      <AnimatePresence>
+        {showTimePicker && pendingMealType && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowTimePicker(false); setPendingFile(null); setPendingMealType(null); }}
+            className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-4 border border-border/40">
+              <p className="text-sm font-bold text-foreground text-center">
+                {MEAL_TYPES.find(m => m.key === pendingMealType)?.emoji}{' '}
+                {lang === 'en' ? 'When did you eat?' : 'Во сколько вы ели?'}
+              </p>
+              <div className="flex justify-center">
+                <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
+                  className="bg-secondary/50 border border-border/50 rounded-2xl px-6 py-3 text-2xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
+              </div>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['07:00', '08:00', '09:00', '10:00', '12:00', '13:00', '14:00', '15:00', '17:00', '18:00', '19:00', '20:00'] as const).map(t => (
+                  <button key={t} onClick={() => setPendingMealTime(t)}
+                    className={`text-xs font-medium rounded-xl py-2 transition-colors ${pendingMealTime === t ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary/70'}`}>
+                    {t}
+                  </button>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => { setShowTimePicker(false); setShowMealPicker(true); }}
+                  className="flex-1 py-3 rounded-2xl bg-secondary/50 text-sm font-bold text-muted-foreground active:scale-95">
+                  {lang === 'en' ? 'Back' : 'Назад'}
+                </button>
+                <button onClick={handleUploadWithTime}
+                  className="flex-1 py-3 rounded-2xl bg-primary text-sm font-bold text-primary-foreground active:scale-95">
+                  {lang === 'en' ? 'Upload' : 'Загрузить'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
@@ -1225,7 +1284,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <p className="text-center text-xs text-white/60 mt-2">
                 {MEAL_TYPES.find(m => m.key === selectedPhoto.meal_type)?.emoji}{' '}
                 {lang === 'en' ? MEAL_TYPES.find(m => m.key === selectedPhoto.meal_type)?.labelEn : MEAL_TYPES.find(m => m.key === selectedPhoto.meal_type)?.labelRu}
-                {' · '}{new Date(selectedPhoto.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                {' · '}{selectedPhoto.meal_time ? selectedPhoto.meal_time.slice(0, 5) : new Date(selectedPhoto.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </p>
             </motion.div>
           </motion.div>

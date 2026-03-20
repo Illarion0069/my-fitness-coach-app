@@ -34,8 +34,9 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
 - Be strict but fair. A healthy meal that doesn't exactly match the template but follows good nutrition principles should still score well.
 
 ## CRITICAL — Late-night eating penalty:
-- Pay close attention to the upload timestamp (created_at) of each photo.
-- ANY meal (including snacks) uploaded/eaten after 21:00 should receive a SIGNIFICANT score penalty (-10 to -25 points depending on what was eaten).
+- Pay close attention to the meal_time field of each photo (this is the actual time the client ate, NOT the upload time).
+- If meal_time is provided, use it. If meal_time is "unknown", fall back to created_at as approximate eating time.
+- ANY meal (including snacks) eaten after 21:00 should receive a SIGNIFICANT score penalty (-10 to -25 points depending on what was eaten).
 - Heavy meals (high carb, high calorie) after 21:00 are especially bad — penalize harshly.
 - A light protein snack (e.g. cottage cheese, protein shake) after 21:00 is less bad but still not ideal (-5 to -10).
 - In the "issues" array, explicitly flag late-night eating with the approximate time.
@@ -186,7 +187,7 @@ serve(async (req) => {
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}" (uploaded at ${(p as any).created_at})`).join('\n')}`,
+        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}`,
       },
     ];
 

@@ -1,0 +1,1 @@
+ALTER TABLE public.food_photos ADD COLUMN meal_time time without time zone;

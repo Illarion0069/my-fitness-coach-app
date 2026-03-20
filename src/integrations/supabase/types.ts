@@ -197,6 +197,7 @@ export type Database = {
           id: string
           log_date: string
           meal_note: string | null
+          meal_time: string | null
           meal_type: string
           photo_url: string
           user_id: string
@@ -206,6 +207,7 @@ export type Database = {
           id?: string
           log_date?: string
           meal_note?: string | null
+          meal_time?: string | null
           meal_type?: string
           photo_url: string
           user_id: string
@@ -215,6 +217,7 @@ export type Database = {
           id?: string
           log_date?: string
           meal_note?: string | null
+          meal_time?: string | null
           meal_type?: string
           photo_url?: string
           user_id?: string
