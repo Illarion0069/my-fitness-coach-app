@@ -416,8 +416,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return [...sessionEntries, ...blockEntries].sort((a, b) => a.time.localeCompare(b.time));
   }, [clientRemaining, dayBlocks, daySessions, lang]);
 
-  const selectedSession = selectedEntryId ? daySessions.find((session) => session.id === selectedEntryId) || null : null;
-  const selectedBlock = selectedEntryId ? dayBlocks.find((block) => block.id === selectedEntryId) || null : null;
 
   return (
     <div className="space-y-4">
