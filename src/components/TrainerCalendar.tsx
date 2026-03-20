@@ -465,48 +465,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           })}
         </div>
 
-        <div className="grid gap-2 sm:grid-cols-[1fr_120px_auto]">
-          <select
-            value={selectedClientId}
-            onChange={(e) => setSelectedClientId(e.target.value)}
-            className="h-11 rounded-xl border border-border bg-secondary/40 px-3 text-sm"
-          >
-            <option value="">{lang === 'en' ? 'Choose client' : 'Выберите клиента'}</option>
-            {clients.map((client) => {
-              const remaining = clientRemaining[client.user_id];
-              const suffix = remaining ? ` · ${remaining.remaining}/${remaining.total}` : '';
-              return (
-                <option key={client.user_id} value={client.user_id}>
-                  {client.full_name}{suffix}
-                </option>
-              );
-            })}
-          </select>
-
-          <input
-            type="time"
-            step={1800}
-            value={addTime}
-            onChange={(e) => setAddTime(e.target.value)}
-            className="h-11 rounded-xl border border-border bg-secondary/40 px-3 text-sm"
-          />
-
-          <div className="flex gap-2">
-            <button
-              onClick={addSession}
-              className="inline-flex h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground"
-            >
-              <Plus className="h-4 w-4" />
-              {lang === 'en' ? 'Add' : 'Добавить'}
-            </button>
-            <button
-              onClick={() => setShowBlockModal(addTime)}
-              className="h-11 rounded-xl border border-border bg-secondary/50 px-4 text-sm font-semibold"
-            >
-              {lang === 'en' ? 'Block' : 'Блок'}
-            </button>
-          </div>
-        </div>
       </div>
 
       {isDayOff && (
