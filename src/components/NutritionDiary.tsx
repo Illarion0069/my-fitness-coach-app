@@ -1036,7 +1036,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   className="bg-secondary/50 border border-border/50 rounded-2xl px-6 py-3 text-2xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
               </div>
               <div className="grid grid-cols-4 gap-1.5">
-                {(['07:00', '08:00', '09:00', '10:00', '12:00', '13:00', '14:00', '15:00', '17:00', '18:00', '19:00', '20:00'] as const).map(t => (
+                {Array.from({ length: 24 }, (_, i) => `${String(i).padStart(2, '0')}:00`).map(t => (
                   <button key={t} onClick={() => setPendingMealTime(t)}
                     className={`text-xs font-medium rounded-xl py-2 transition-colors ${pendingMealTime === t ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground hover:bg-secondary/70'}`}>
                     {t}
