@@ -249,7 +249,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const deleteBlockSeries = async (block: TrainerBlock) => {
     await supabase.from('trainer_blocks').delete().eq('id', block.id);
-    setSelectedEntryId(null);
+    
     await fetchBlocks();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
   };
