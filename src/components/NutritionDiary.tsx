@@ -213,11 +213,25 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     if (fileRef.current) fileRef.current.value = '';
   };
 
-  const handleUploadWithMealType = async (mealType: MealType) => {
-    if (!pendingFile || !user) return;
-    if (!VALID_MEAL_TYPES.includes(mealType)) return;
+  const handleSelectMealType = (mealType: MealType) => {
+    setPendingMealType(mealType);
+    // Default time based on meal type
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2, '0');
+    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+    const defaultTimes: Record<MealType, string> = { breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: `${hh}:${mm}` };
+    setPendingMealTime(defaultTimes[mealType]);
     setShowMealPicker(false);
+    setShowTimePicker(true);
+  };
+
+  const handleUploadWithTime = async () => {
+    if (!pendingFile || !user || !pendingMealType) return;
+    if (!VALID_MEAL_TYPES.includes(pendingMealType)) return;
+    setShowTimePicker(false);
     setUploading(true);
+    const mealType = pendingMealType;
+    const mealTime = pendingMealTime || null;
     const ext = pendingFile.name.split('.').pop();
     const path = `${user.id}/${date}_${Date.now()}.${ext}`;
     try {
@@ -231,12 +245,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         await supabase.storage.from('food-photos').remove([path]);
         toast({ title: lang === 'en' ? 'Not a food photo' : 'Это не фото еды', variant: 'destructive' });
         setPendingFile(null);
+        setPendingMealType(null);
         setUploading(false);
         return;
       }
       const { error: insertError } = await supabase.from('food_photos').insert({
-        user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType,
-      });
+        user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType, meal_time: mealTime,
+      } as any);
       if (insertError) {
         await supabase.storage.from('food-photos').remove([path]);
         throw insertError;
@@ -249,6 +264,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
     }
     setPendingFile(null);
+    setPendingMealType(null);
     setUploading(false);
   };
 
