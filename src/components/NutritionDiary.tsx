@@ -361,6 +361,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       protein_g: pro,
       carbs_g: carb,
       fat_g: fat,
+      meal_time: quickAddTime || undefined,
       created_at: new Date().toISOString(),
     };
     const currentEntries = (log?.manual_entries || []) as ManualEntry[];
