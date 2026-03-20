@@ -48,6 +48,7 @@ interface ManualEntry {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  meal_time?: string;
   created_at: string;
 }
 
