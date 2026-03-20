@@ -82,6 +82,32 @@ function buildRecurringDueDates(session: ScheduledSession, todayStr: string): st
   return dueDates;
 }
 
+async function getLatestValidPackage(supabase: any, userId: string): Promise<ClientPackage | null> {
+  const { data: packages, error } = await supabase
+    .from('client_packages')
+    .select('id,user_id,is_active,used_sessions,total_sessions,expires_at')
+    .eq('user_id', userId)
+    .eq('is_active', true)
+    .order('created_at', { ascending: false });
+
+  if (error) throw error;
+
+  for (const pkg of (packages || []) as ClientPackage[]) {
+    if (pkg.expires_at && new Date(pkg.expires_at) < new Date()) {
+      await supabase.from('client_packages').update({ is_active: false }).eq('id', pkg.id);
+      continue;
+    }
+
+    if (pkg.used_sessions < pkg.total_sessions) {
+      return pkg;
+    }
+
+    await supabase.from('client_packages').update({ is_active: false }).eq('id', pkg.id);
+  }
+
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -150,28 +176,9 @@ Deno.serve(async (req) => {
       const { session, dueCount, dueDates } = candidate;
 
       try {
-        const { data: packages, error: packageError } = await supabase
-          .from('client_packages')
-          .select('id,user_id,is_active,used_sessions,total_sessions,expires_at')
-          .eq('user_id', session.user_id)
-          .eq('is_active', true)
-          .order('created_at', { ascending: true })
-          .limit(1);
-
-        if (packageError) {
-          errors.push(`session ${session.id}: package fetch failed (${packageError.message})`);
-          continue;
-        }
-
-        const pkg = (packages?.[0] as ClientPackage | undefined);
+        const pkg = await getLatestValidPackage(supabase, session.user_id);
         if (!pkg) {
-          console.log(`  User ${session.user_id} — no active package, skip (${dueCount} due)`);
-          skipped += dueCount;
-          continue;
-        }
-
-        if (pkg.expires_at && new Date(pkg.expires_at) < new Date()) {
-          console.log(`  User ${session.user_id} — package ${pkg.id} expired (${pkg.expires_at}), skip`);
+          console.log(`  User ${session.user_id} — no valid active package, skip (${dueCount} due)`);
           skipped += dueCount;
           continue;
         }
@@ -210,10 +217,14 @@ Deno.serve(async (req) => {
 
         const actualDeduct = newEntries.length;
         const actualNewUsed = pkg.used_sessions + actualDeduct;
+        const packageUpdates: Record<string, unknown> = { used_sessions: actualNewUsed };
+        if (actualNewUsed >= pkg.total_sessions) {
+          packageUpdates.is_active = false;
+        }
 
         const { error: updatePackageError } = await supabase
           .from('client_packages')
-          .update({ used_sessions: actualNewUsed })
+          .update(packageUpdates)
           .eq('id', pkg.id)
           .eq('used_sessions', pkg.used_sessions); // optimistic lock
 
@@ -245,7 +256,7 @@ Deno.serve(async (req) => {
           // Rollback package update on any ledger write failure
           await supabase
             .from('client_packages')
-            .update({ used_sessions: pkg.used_sessions })
+            .update({ used_sessions: pkg.used_sessions, is_active: pkg.is_active })
             .eq('id', pkg.id)
             .eq('used_sessions', actualNewUsed);
 
