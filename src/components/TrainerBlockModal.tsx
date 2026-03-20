@@ -10,6 +10,7 @@ interface ClientProfile {
 interface Props {
   lang: string;
   hour: number;
+  initialTime?: string;
   date: string;
   dayOfWeek: number;
   clients: ClientProfile[];
@@ -40,21 +41,20 @@ const BLOCK_TYPES = [
   { type: 'personal', icon: CalIcon, labelRu: 'Личное событие', labelEn: 'Personal event', color: 'bg-blue-500/15 text-blue-600' },
 ];
 
-const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSaveBlock, onAddSession }: Props) => {
+const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, onClose, onSaveBlock, onAddSession }: Props) => {
   const [step, setStep] = useState<'choose' | 'session' | 'block'>('choose');
   const [blockType, setBlockType] = useState('block');
+  const defaultTime = initialTime || `${String(hour).padStart(2, '0')}:00`;
 
-  // Session fields
   const [selectedClientId, setSelectedClientId] = useState('');
   const [manualName, setManualName] = useState('');
   const [useManualName, setUseManualName] = useState(false);
-  const [sessionTime, setSessionTime] = useState(`${String(hour).padStart(2, '0')}:00`);
+  const [sessionTime, setSessionTime] = useState(defaultTime);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [sessionRecurring, setSessionRecurring] = useState(false);
 
-  // Block fields
   const [title, setTitle] = useState('');
-  const [startTime, setStartTime] = useState(`${String(hour).padStart(2, '0')}:00`);
+  const [startTime, setStartTime] = useState(defaultTime);
   const [duration, setDuration] = useState(60);
   const [isRecurring, setIsRecurring] = useState(false);
 
@@ -110,16 +110,14 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
         onClick={e => e.stopPropagation()}
         style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
       >
-        {/* Handle bar */}
         <div className="flex justify-center pt-2 pb-3">
           <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
         </div>
 
-        {/* Step 1: Choose type */}
         {step === 'choose' && (
           <div className="px-5 space-y-3">
             <p className="text-sm font-bold text-center">
-              {`${String(hour).padStart(2, '0')}:00`}
+              {defaultTime}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {BLOCK_TYPES.map(bt => {
@@ -139,7 +137,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
           </div>
         )}
 
-        {/* Step 2a: Session form */}
         {step === 'session' && (
           <div className="px-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -150,7 +147,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
               <button onClick={onClose} className="text-muted-foreground"><X className="w-4 h-4" /></button>
             </div>
 
-            {/* Client selection */}
             {!useManualName ? (
               <div className="space-y-1.5">
                 <select
@@ -190,7 +186,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
               </div>
             )}
 
-            {/* Time */}
             <div className="space-y-1">
               <label className="text-[10px] text-muted-foreground font-medium">
                 {lang === 'en' ? 'Time' : 'Время'}
@@ -203,7 +198,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
               />
             </div>
 
-            {/* Travel time option */}
             <div className="space-y-1.5">
               <label className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
                 <Car className="w-3 h-3" />
@@ -238,7 +232,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
               )}
             </div>
 
-            {/* Recurring toggle */}
             <button
               onClick={() => setSessionRecurring(!sessionRecurring)}
               className={`flex items-center gap-2 w-full rounded-lg px-3 py-2.5 text-sm transition-colors ${
@@ -253,7 +246,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
               </span>
             </button>
 
-            {/* Save */}
             <button
               onClick={handleSaveSession}
               disabled={!canSaveSession}
@@ -264,7 +256,6 @@ const TrainerBlockModal = ({ lang, hour, date, dayOfWeek, clients, onClose, onSa
           </div>
         )}
 
-        {/* Step 2b: Block/Personal event form */}
         {step === 'block' && (
           <div className="px-5 space-y-3">
             <div className="flex items-center justify-between">
