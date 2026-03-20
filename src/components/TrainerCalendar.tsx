@@ -69,7 +69,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [selectedClientId, setSelectedClientId] = useState('');
   const [addTime, setAddTime] = useState('09:00');
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  
   const [workingHours, setWorkingHours] = useState<TrainerWorkingHours>({
     work_start_hour: 7,
     work_end_hour: 19,
@@ -142,9 +142,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchWorkingHours()]);
   }, []);
 
-  useEffect(() => {
-    setSelectedEntryId(null);
-  }, [selectedDateStr]);
 
   const daySessions = useMemo(() => {
     const items = sessions.filter((session) => {
@@ -221,7 +218,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       return;
     }
 
-    setSelectedEntryId(null);
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
@@ -231,7 +227,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const exceptions = [...(session.recurring_exceptions || []), selectedDateStr];
     await supabase.from('scheduled_sessions').update({ recurring_exceptions: exceptions }).eq('id', session.id);
 
-    setSelectedEntryId(null);
     await fetchSessions();
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Тренировка на этот день удалена' });
@@ -239,7 +234,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   const deleteRecurringSeries = async (session: ScheduledSession) => {
     await supabase.from('scheduled_sessions').delete().eq('id', session.id);
-    setSelectedEntryId(null);
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
@@ -249,14 +243,13 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];
     await supabase.from('trainer_blocks').update({ recurring_exceptions: exceptions }).eq('id', block.id);
 
-    setSelectedEntryId(null);
     await fetchBlocks();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Блок на этот день удалён' });
   };
 
   const deleteBlockSeries = async (block: TrainerBlock) => {
     await supabase.from('trainer_blocks').delete().eq('id', block.id);
-    setSelectedEntryId(null);
+    
     await fetchBlocks();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
   };
@@ -423,8 +416,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return [...sessionEntries, ...blockEntries].sort((a, b) => a.time.localeCompare(b.time));
   }, [clientRemaining, dayBlocks, daySessions, lang]);
 
-  const selectedSession = selectedEntryId ? daySessions.find((session) => session.id === selectedEntryId) || null : null;
-  const selectedBlock = selectedEntryId ? dayBlocks.find((block) => block.id === selectedEntryId) || null : null;
 
   return (
     <div className="space-y-4">
@@ -533,124 +524,31 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           lang={lang}
           slots={slots}
           entries={timelineEntries}
-          selectedEntryId={selectedEntryId}
           isToday={selectedDateStr === format(new Date(), 'yyyy-MM-dd')}
-          onSelectEntry={(entry) => setSelectedEntryId(entry.id)}
+          onDeleteEntry={(entry) => {
+            const session = daySessions.find((s) => s.id === entry.id);
+            const block = dayBlocks.find((b) => b.id === entry.id);
+            if (session) deleteOneOffSession(session);
+            if (block) deleteBlockSeries(block);
+          }}
+          onDeleteEntryDay={(entry) => {
+            const session = daySessions.find((s) => s.id === entry.id);
+            const block = dayBlocks.find((b) => b.id === entry.id);
+            if (session) deleteRecurringForDay(session);
+            if (block) deleteBlockForDay(block);
+          }}
+          onDeleteEntrySeries={(entry) => {
+            const session = daySessions.find((s) => s.id === entry.id);
+            const block = dayBlocks.find((b) => b.id === entry.id);
+            if (session) deleteRecurringSeries(session);
+            if (block) deleteBlockSeries(block);
+          }}
           onSelectTime={(time) => {
             setAddTime(time);
             setShowBlockModal(time);
           }}
         />
       </section>
-
-      {(selectedSession || selectedBlock) && (
-        <section className="rounded-2xl border border-border bg-card p-4 space-y-3">
-          {selectedSession && (() => {
-            const time = selectedSession.is_recurring ? selectedSession.recurrence_time : selectedSession.session_time;
-            const remaining = clientRemaining[selectedSession.user_id];
-            return (
-              <>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate font-semibold">{getClientName(selectedSession)}</p>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                      <span className="inline-flex items-center gap-1">
-                        <Clock3 className="h-3 w-3" />
-                        {time ? time.slice(0, 5) : '—'}
-                      </span>
-                      {selectedSession.is_recurring && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                          <RotateCw className="h-3 w-3" />
-                          {lang === 'en' ? `Every ${dayNames[selectedSession.recurrence_day || 0]}` : `Каждый ${dayNames[selectedSession.recurrence_day || 0]}`}
-                        </span>
-                      )}
-                      {remaining && (
-                        <span>
-                          {lang === 'en' ? 'Left' : 'Осталось'}: {remaining.remaining}/{remaining.total}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  {!selectedSession.is_recurring ? (
-                    <button
-                      onClick={() => deleteOneOffSession(selectedSession)}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      {lang === 'en' ? 'Delete' : 'Удалить'}
-                    </button>
-                  ) : (
-                    <>
-                      <button
-                        onClick={() => deleteRecurringForDay(selectedSession)}
-                        className="rounded-xl border border-border px-3 py-2 text-xs font-medium"
-                      >
-                        {lang === 'en' ? 'Delete this day' : 'Удалить этот день'}
-                      </button>
-                      <button
-                        onClick={() => deleteRecurringSeries(selectedSession)}
-                        className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
-                      >
-                        {lang === 'en' ? 'Delete series' : 'Удалить серию'}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </>
-            );
-          })()}
-
-          {selectedBlock && (() => (
-            <>
-              <div>
-                <p className="font-semibold">{blockTypeLabel(selectedBlock)}</p>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock3 className="h-3 w-3" />
-                    {selectedBlock.block_time.slice(0, 5)} · {selectedBlock.duration_minutes} {lang === 'en' ? 'min' : 'мин'}
-                  </span>
-                  {selectedBlock.is_recurring && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary">
-                      <RotateCw className="h-3 w-3" />
-                      {lang === 'en' ? `Every ${dayNames[selectedBlock.recurrence_day || 0]}` : `Каждый ${dayNames[selectedBlock.recurrence_day || 0]}`}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                {!selectedBlock.is_recurring ? (
-                  <button
-                    onClick={() => deleteBlockSeries(selectedBlock)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-border px-3 py-2 text-xs font-medium"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                    {lang === 'en' ? 'Delete' : 'Удалить'}
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => deleteBlockForDay(selectedBlock)}
-                      className="rounded-xl border border-border px-3 py-2 text-xs font-medium"
-                    >
-                      {lang === 'en' ? 'Delete this day' : 'Удалить этот день'}
-                    </button>
-                    <button
-                      onClick={() => deleteBlockSeries(selectedBlock)}
-                      className="rounded-xl border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs font-medium text-destructive"
-                    >
-                      {lang === 'en' ? 'Delete series' : 'Удалить серию'}
-                    </button>
-                  </>
-                )}
-              </div>
-            </>
-          ))()}
-        </section>
-      )}
 
       {showBlockModal !== null && (
         <TrainerBlockModal

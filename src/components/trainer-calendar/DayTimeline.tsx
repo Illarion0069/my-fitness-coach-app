@@ -1,4 +1,5 @@
-import { Clock3, RotateCw } from 'lucide-react';
+import { useState } from 'react';
+import { Clock3, RotateCw, Trash2, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface TimelineEntry {
@@ -23,9 +24,10 @@ interface Props {
   lang: string;
   slots: string[];
   entries: TimelineEntry[];
-  selectedEntryId: string | null;
   isToday: boolean;
-  onSelectEntry: (entry: TimelineEntry) => void;
+  onDeleteEntry: (entry: TimelineEntry) => void;
+  onDeleteEntryDay: (entry: TimelineEntry) => void;
+  onDeleteEntrySeries: (entry: TimelineEntry) => void;
   onSelectTime: (time: string) => void;
 }
 
@@ -82,7 +84,8 @@ const toneClasses: Record<TimelineEntry['tone'], string> = {
   neutral: 'border-border bg-secondary text-foreground',
 };
 
-const DayTimeline = ({ lang, slots, entries, selectedEntryId, isToday, onSelectEntry, onSelectTime }: Props) => {
+const DayTimeline = ({ lang, slots, entries, isToday, onDeleteEntry, onDeleteEntryDay, onDeleteEntrySeries, onSelectTime }: Props) => {
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const positionedEntries = positionEntries(entries);
   const startMinutes = slots.length > 0 ? getMinutes(slots[0]) : 0;
   const totalHeight = Math.max(slots.length * SLOT_HEIGHT, SLOT_HEIGHT * 8);
@@ -122,36 +125,81 @@ const DayTimeline = ({ lang, slots, entries, selectedEntryId, isToday, onSelectE
 
           {positionedEntries.map((entry) => {
             const top = ((entry.startMinutes - startMinutes) / 30) * SLOT_HEIGHT + 2;
-            const height = Math.max((Math.max(entry.durationMinutes, 30) / 30) * SLOT_HEIGHT - 4, 36);
+            const baseHeight = Math.max((Math.max(entry.durationMinutes, 30) / 30) * SLOT_HEIGHT - 4, 36);
+            const isExpanded = expandedId === entry.id;
+            const expandedHeight = entry.isRecurring ? baseHeight + 72 : baseHeight + 40;
+            const height = isExpanded ? Math.max(expandedHeight, baseHeight) : baseHeight;
             const width = `calc(${100 / entry.laneCount}% - 8px)`;
             const left = `calc(${(100 / entry.laneCount) * entry.lane}% + 4px)`;
-            const compact = height < 70;
+            const compact = baseHeight < 70;
 
             return (
-              <button
+              <div
                 key={entry.id}
-                type="button"
-                onClick={() => onSelectEntry(entry)}
                 className={cn(
-                  'absolute z-20 overflow-hidden rounded-xl border px-2 py-2 text-left shadow-sm transition-all',
+                  'absolute z-20 rounded-xl border shadow-sm transition-all',
                   toneClasses[entry.tone],
-                  selectedEntryId === entry.id && 'ring-2 ring-primary/30',
+                  isExpanded && 'z-30 ring-2 ring-primary/30 shadow-lg',
                 )}
-                style={{ top, left, width, height }}
+                style={{ top, left, width, height: isExpanded ? 'auto' : height, minHeight: height }}
               >
-                <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 truncate text-[11px] font-semibold leading-tight">{entry.title}</p>
-                  {entry.isRecurring && <RotateCw className="h-3 w-3 shrink-0 opacity-70" />}
-                </div>
-                <div className="mt-1 flex items-center gap-1 text-[10px] opacity-75">
-                  <Clock3 className="h-3 w-3 shrink-0" />
-                  <span>{entry.time.slice(0, 5)}</span>
-                  {!compact && <span>· {entry.durationMinutes} {lang === 'en' ? 'min' : 'мин'}</span>}
-                </div>
-                {!compact && entry.subtitle && (
-                  <p className="mt-1 overflow-hidden text-[10px] leading-tight opacity-70">{entry.subtitle}</p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setExpandedId(isExpanded ? null : entry.id);
+                  }}
+                  className="w-full px-2 py-2 text-left"
+                >
+                  <div className="flex items-start justify-between gap-1">
+                    <p className="min-w-0 truncate text-[11px] font-semibold leading-tight">{entry.title}</p>
+                    <div className="flex items-center gap-0.5 shrink-0">
+                      {entry.isRecurring && <RotateCw className="h-3 w-3 opacity-70" />}
+                      {isExpanded && (
+                        <X className="h-3 w-3 opacity-50" />
+                      )}
+                    </div>
+                  </div>
+                  <div className="mt-0.5 flex items-center gap-1 text-[10px] opacity-75">
+                    <Clock3 className="h-3 w-3 shrink-0" />
+                    <span>{entry.time.slice(0, 5)}</span>
+                    {!compact && <span>· {entry.durationMinutes} {lang === 'en' ? 'min' : 'мин'}</span>}
+                  </div>
+                  {!compact && !isExpanded && entry.subtitle && (
+                    <p className="mt-0.5 overflow-hidden text-[10px] leading-tight opacity-70">{entry.subtitle}</p>
+                  )}
+                </button>
+
+                {isExpanded && (
+                  <div className="px-2 pb-2 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
+                    {!entry.isRecurring ? (
+                      <button
+                        onClick={() => { onDeleteEntry(entry); setExpandedId(null); }}
+                        className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        {lang === 'en' ? 'Delete' : 'Удалить'}
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => { onDeleteEntryDay(entry); setExpandedId(null); }}
+                          className="rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-medium"
+                        >
+                          {lang === 'en' ? 'This day' : 'Этот день'}
+                        </button>
+                        <button
+                          onClick={() => { onDeleteEntrySeries(entry); setExpandedId(null); }}
+                          className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          {lang === 'en' ? 'Series' : 'Серию'}
+                        </button>
+                      </>
+                    )}
+                  </div>
                 )}
-              </button>
+              </div>
             );
           })}
 
