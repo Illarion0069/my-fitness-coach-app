@@ -556,6 +556,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             setAddTime(time);
             setShowBlockModal(time);
           }}
+        />
       </section>
 
       {showBlockModal !== null && (
