@@ -69,7 +69,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [selectedClientId, setSelectedClientId] = useState('');
   const [addTime, setAddTime] = useState('09:00');
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
-  const [selectedEntryId, setSelectedEntryId] = useState<string | null>(null);
+  
   const [workingHours, setWorkingHours] = useState<TrainerWorkingHours>({
     work_start_hour: 7,
     work_end_hour: 19,
