@@ -375,7 +375,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
     setShowQuickAdd(false);
     setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
-    setQuickAddPortion('100'); setQuickAddBase(null);
+    setQuickAddPortion('100'); setQuickAddBase(null); setQuickAddTime('');
     setFoodSuggestions([]);
     fetchData();
     toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
