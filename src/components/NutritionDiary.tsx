@@ -458,8 +458,23 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditFoodFat(String(food.fat_g || ''));
   };
 
-  // Computed totals
-  const analysis = log?.ai_analysis;
+  // Computed totals — recover analysis from ai_feedback if ai_analysis is broken
+  const analysis = useMemo(() => {
+    const raw = log?.ai_analysis;
+    // If analysis has valid meals, use it
+    if (raw && Array.isArray(raw.meals) && raw.meals.length > 0) return raw;
+    // Try to recover from ai_feedback if it contains JSON
+    const feedback = log?.ai_feedback;
+    if (feedback && typeof feedback === 'string' && (feedback.startsWith('{') || feedback.startsWith('```'))) {
+      try {
+        const jsonStr = feedback.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+        const parsed = JSON.parse(jsonStr);
+        if (parsed && Array.isArray(parsed.meals)) return parsed;
+      } catch { /* ignore parse errors */ }
+    }
+    return raw;
+  }, [log?.ai_analysis, log?.ai_feedback]);
+
   const aiMeals = (analysis?.meals || []) as any[];
   const manualEntries = ((log?.manual_entries || []) as ManualEntry[]);
   const displayScore = log?.trainer_override_score ?? log?.ai_score;
