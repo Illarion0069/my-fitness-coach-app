@@ -641,7 +641,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           {isOverridden && log?.trainer_override_note && (
             <p className="text-[11px] text-foreground/80 leading-relaxed mb-1.5 italic">✏️ {log.trainer_override_note}</p>
           )}
-          <p className="text-[11px] text-muted-foreground leading-relaxed">{log.ai_feedback}</p>
+          <p className="text-[11px] text-muted-foreground leading-relaxed">
+            {log.ai_feedback && (log.ai_feedback.startsWith('{') || log.ai_feedback.startsWith('```'))
+              ? (analysis?.summary_ru || analysis?.summary_en || (lang === 'en' ? 'Analysis complete' : 'Анализ завершён'))
+              : log.ai_feedback}
+          </p>
           {isOverridden && log?.ai_score != null && (
             <p className="text-[10px] text-muted-foreground/60 mt-1">AI: {log.ai_score}%</p>
           )}
