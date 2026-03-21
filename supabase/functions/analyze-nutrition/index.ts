@@ -237,7 +237,7 @@ serve(async (req) => {
       analysis = JSON.parse(jsonStr);
     } catch {
       console.error("Failed to parse AI response:", rawContent);
-      analysis = { overall_score: 50, meals: [], summary_ru: rawContent, summary_en: rawContent };
+      analysis = { overall_score: 50, meals: [], summary_ru: "Не удалось обработать ответ AI. Попробуйте ещё раз.", summary_en: "Failed to process AI response. Please try again." };
     }
 
     const score = Math.min(100, Math.max(0, Math.round((analysis.overall_score as number) || 0)));
