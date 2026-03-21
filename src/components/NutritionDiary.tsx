@@ -634,18 +634,53 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       </motion.div>
 
       {/* AI Feedback */}
-      {displayScore != null && log?.ai_feedback && (
+      {displayScore != null && (
         <div className={`rounded-2xl p-3.5 border border-border/30 ${
           displayScore >= 80 ? 'bg-green-500/5' : displayScore >= 50 ? 'bg-yellow-500/5' : 'bg-red-500/5'
         }`}>
           {isOverridden && log?.trainer_override_note && (
             <p className="text-[11px] text-foreground/80 leading-relaxed mb-1.5 italic">✏️ {log.trainer_override_note}</p>
           )}
-          <p className="text-[11px] text-muted-foreground leading-relaxed">
-            {log.ai_feedback && (log.ai_feedback.startsWith('{') || log.ai_feedback.startsWith('```'))
-              ? (analysis?.summary_ru || analysis?.summary_en || (lang === 'en' ? 'Analysis complete' : 'Анализ завершён'))
-              : log.ai_feedback}
-          </p>
+          {/* Summary text */}
+          {(() => {
+            const summaryText = (lang === 'en' ? analysis?.summary_en : analysis?.summary_ru) 
+              || analysis?.summary_ru || analysis?.summary_en || '';
+            const cleanSummary = typeof summaryText === 'string' && !summaryText.startsWith('{') && !summaryText.startsWith('```')
+              ? summaryText : '';
+            return cleanSummary ? (
+              <p className="text-[11px] text-muted-foreground leading-relaxed">{cleanSummary}</p>
+            ) : null;
+          })()}
+          {/* Per-meal breakdown */}
+          {analysis?.meals && (analysis.meals as any[]).length > 0 && (
+            <div className="mt-2 space-y-1.5">
+              {(analysis.meals as any[]).map((m: any, i: number) => {
+                const mealScore = m.score as number;
+                const scoreColor = mealScore >= 80 ? 'text-green-400' : mealScore >= 50 ? 'text-yellow-400' : 'text-red-400';
+                const mealLabel = m.meal_type === 'breakfast' ? (lang === 'en' ? 'Breakfast' : 'Завтрак')
+                  : m.meal_type === 'lunch' ? (lang === 'en' ? 'Lunch' : 'Обед')
+                  : m.meal_type === 'dinner' ? (lang === 'en' ? 'Dinner' : 'Ужин')
+                  : (lang === 'en' ? 'Snack' : 'Перекус');
+                return (
+                  <div key={i} className="text-[10px]">
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-semibold text-foreground/80">{mealLabel}</span>
+                      <span className={`font-bold ${scoreColor}`}>{mealScore}/100</span>
+                      {m.estimated_calories > 0 && (
+                        <span className="text-muted-foreground/60">· {Math.round(m.estimated_calories)} kcal</span>
+                      )}
+                    </div>
+                    {m.positives?.length > 0 && (
+                      <p className="text-green-400/80 ml-2">✓ {(m.positives as string[]).join(', ')}</p>
+                    )}
+                    {m.issues?.length > 0 && (
+                      <p className="text-red-400/80 ml-2">✗ {(m.issues as string[]).join(', ')}</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           {isOverridden && log?.ai_score != null && (
             <p className="text-[10px] text-muted-foreground/60 mt-1">AI: {log.ai_score}%</p>
           )}
