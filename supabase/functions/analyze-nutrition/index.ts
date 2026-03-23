@@ -52,9 +52,11 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
 ## Scoring (0-100):
 - Evaluate ALL meals (both from photos AND manual entries)
 - For each meal, assess: protein adequacy, vegetable/fiber content, carb appropriateness for time of day, food quality, portion size
-- Calculate overall daily score as weighted average
-- Breakfast: 30%, Lunch: 35%, Dinner: 25%, Snacks/drinks: 10%
-- If a meal category has no photo, score it 0 for that category
+- The overall daily score MUST account for ALL meal categories using these weights:
+  Breakfast: 30%, Lunch: 35%, Dinner: 25%, Snacks/drinks: 10%
+- CRITICAL: If a meal category (breakfast, lunch, or dinner) has NO data at all (no photo AND no manual entry), you MUST score that category as 0 and STILL include it in the weighted average. A client who only ate breakfast and skipped lunch and dinner should score around 25-30, NOT 85+.
+- Missing meals are a MAJOR nutritional failure — a full day with only one meal is unhealthy and must be reflected in a LOW overall score.
+- Do NOT ignore missing meal categories. Do NOT calculate the average only from meals that exist.
 
 ## Response format (JSON only, no markdown):
 {
