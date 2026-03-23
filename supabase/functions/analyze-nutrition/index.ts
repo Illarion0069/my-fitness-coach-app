@@ -160,42 +160,66 @@ serve(async (req) => {
       return jsonResponse({ error: "Analysis limit reached (max 3 per day)" }, 429);
     }
 
-    // --- Fetch food photos ---
-    const { data: photos, error: photosError } = await supabase
-      .from("food_photos")
-      .select("*")
-      .eq("user_id", user_id)
-      .eq("log_date", log_date)
-      .order("created_at", { ascending: true });
+    // --- Fetch food photos and manual entries ---
+    const [{ data: photos, error: photosError }, { data: logData }] = await Promise.all([
+      supabase
+        .from("food_photos")
+        .select("*")
+        .eq("user_id", user_id)
+        .eq("log_date", log_date)
+        .order("created_at", { ascending: true }),
+      supabase
+        .from("nutrition_logs")
+        .select("manual_entries")
+        .eq("user_id", user_id)
+        .eq("log_date", log_date)
+        .maybeSingle(),
+    ]);
 
     if (photosError) throw photosError;
 
-    if (!photos || photos.length === 0) {
+    const manualEntries = ((logData?.manual_entries || []) as Array<Record<string, unknown>>);
+    const hasPhotos = photos && photos.length > 0;
+    const hasManual = manualEntries.length > 0;
+
+    if (!hasPhotos && !hasManual) {
       const emptyAnalysis = { overall_score: 0, meals: [], analysis_count: currentCount + 1 };
       const { error: upsertError } = await supabase
         .from("nutrition_logs")
         .upsert(
-          { user_id, log_date, ai_score: 0, ai_feedback: "Нет фото еды за этот день / No food photos for this day", ai_analysis: emptyAnalysis },
+          { user_id, log_date, ai_score: 0, ai_feedback: "Нет данных о питании за этот день / No food data for this day", ai_analysis: emptyAnalysis },
           { onConflict: "user_id,log_date" }
         );
       if (upsertError) throw upsertError;
 
-      return jsonResponse({ score: 0, feedback: "No food photos for this day", analysis: emptyAnalysis });
+      return jsonResponse({ score: 0, feedback: "No food data for this day", analysis: emptyAnalysis });
     }
 
     // --- Build AI request ---
+    let manualEntriesText = "";
+    if (hasManual) {
+      manualEntriesText = `\n\nMANUAL ENTRIES (typed by the client, no photos — you MUST include these in your analysis and overall scoring):\n${manualEntries.map((e, i) => {
+        const mealType = (e.meal_type as string) || "unknown";
+        const mealTime = (e.meal_time as string) || "unknown";
+        return `Entry ${i + 1}: "${e.name}" — meal_type="${mealType}", meal_time="${mealTime}", calories=${e.calories || 0}, protein=${e.protein_g || 0}g, carbs=${e.carbs_g || 0}g, fat=${e.fat_g || 0}g`;
+      }).join('\n')}\n\nCRITICAL: Manual entries are REAL meals the client ate. They MUST affect the overall score. Junk food (pizza, burgers, ice cream, fries, etc.) in manual entries should be penalized just as harshly as if you saw it in a photo. Include each manual entry as a separate meal item in your response.`;
+    }
+
+    const photoCount = photos?.length || 0;
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze these ${photos.length} food photos from ${log_date}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\nPhotos:\n${photos.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}`,
+        text: `Analyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
-    for (const photo of photos) {
-      userContent.push({
-        type: "image_url",
-        image_url: { url: (photo as Record<string, unknown>).photo_url },
-      });
+    if (photos) {
+      for (const photo of photos) {
+        userContent.push({
+          type: "image_url",
+          image_url: { url: (photo as Record<string, unknown>).photo_url },
+        });
+      }
     }
 
     // --- Call AI ---
