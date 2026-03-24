@@ -140,7 +140,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       if (b.is_recurring && b.recurrence_day != null) {
         const exceptions = new Set((b.recurring_exceptions || []).map(d => String(d)));
         const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day && !exceptions.has(format(d, 'yyyy-MM-dd')));
-        const doneOccurrences = occurrences.filter(d => d <= today);
+        const doneOccurrences = occurrences.filter(d => d < today);
         const total = classesPerBlock * occurrences.length;
         const done = classesPerBlock * doneOccurrences.length;
         totalClasses += total;
