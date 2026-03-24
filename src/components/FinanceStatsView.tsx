@@ -155,7 +155,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       } else if (b.block_date) {
         const d = new Date(b.block_date + 'T00:00:00');
         if (d >= monthStart && d <= monthEnd) {
-          const isDone = d <= today;
+          const isDone = d < today;
           totalClasses += classesPerBlock;
           if (isDone) doneClasses += classesPerBlock;
           items.push({
