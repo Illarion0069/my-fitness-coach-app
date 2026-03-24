@@ -51,6 +51,7 @@ interface BlockRecord {
   is_recurring: boolean;
   recurrence_day: number | null;
   title: string | null;
+  recurring_exceptions: string[];
 }
 
 const PRICE_MAP: Record<number, number> = {
