@@ -127,7 +127,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       b.block_type === 'reload' || (b.title && b.title.toLowerCase().includes('reload'))
     );
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0); // start of today — today's classes are NOT yet "done"
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
     const items: { title: string; hours: number; revenue: number; doneCount: number; totalCount: number }[] = [];
