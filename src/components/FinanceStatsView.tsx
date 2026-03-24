@@ -138,7 +138,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       const label = b.title || 'Reload';
       const classesPerBlock = Math.round(b.duration_minutes / 60);
       if (b.is_recurring && b.recurrence_day != null) {
-        const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day);
+        const exceptions = new Set((b.recurring_exceptions || []).map(d => String(d)));
+        const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day && !exceptions.has(format(d, 'yyyy-MM-dd')));
         const doneOccurrences = occurrences.filter(d => d <= today);
         const total = classesPerBlock * occurrences.length;
         const done = classesPerBlock * doneOccurrences.length;
