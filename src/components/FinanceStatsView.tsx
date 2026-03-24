@@ -127,7 +127,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       b.block_type === 'reload' || (b.title && b.title.toLowerCase().includes('reload'))
     );
     const today = new Date();
-    today.setHours(23, 59, 59, 999);
+    today.setHours(0, 0, 0, 0); // start of today — today's classes are NOT yet "done"
     const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
 
     const items: { title: string; hours: number; revenue: number; doneCount: number; totalCount: number }[] = [];
@@ -140,7 +140,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       if (b.is_recurring && b.recurrence_day != null) {
         const exceptions = new Set((b.recurring_exceptions || []).map(d => String(d)));
         const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day && !exceptions.has(format(d, 'yyyy-MM-dd')));
-        const doneOccurrences = occurrences.filter(d => d <= today);
+        const doneOccurrences = occurrences.filter(d => d < today);
         const total = classesPerBlock * occurrences.length;
         const done = classesPerBlock * doneOccurrences.length;
         totalClasses += total;
@@ -155,7 +155,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       } else if (b.block_date) {
         const d = new Date(b.block_date + 'T00:00:00');
         if (d >= monthStart && d <= monthEnd) {
-          const isDone = d <= today;
+          const isDone = d < today;
           totalClasses += classesPerBlock;
           if (isDone) doneClasses += classesPerBlock;
           items.push({
