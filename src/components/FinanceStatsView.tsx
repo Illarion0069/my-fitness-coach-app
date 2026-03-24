@@ -51,6 +51,7 @@ interface BlockRecord {
   is_recurring: boolean;
   recurrence_day: number | null;
   title: string | null;
+  recurring_exceptions: string[];
 }
 
 const PRICE_MAP: Record<number, number> = {
@@ -104,7 +105,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         supabase.from('session_ledger').select('*').order('created_at', { ascending: false }),
         supabase.from('scheduled_sessions').select('id, user_id, session_date, is_recurring, is_deducted, notes'),
         supabase.from('profiles').select('user_id, full_name'),
-        supabase.from('trainer_blocks').select('id, block_type, block_date, block_time, duration_minutes, is_recurring, recurrence_day, title'),
+        supabase.from('trainer_blocks').select('id, block_type, block_date, block_time, duration_minutes, is_recurring, recurrence_day, title, recurring_exceptions'),
       ]);
       setPackages((pkgs || []) as PackageRecord[]);
       setLedger((ldg || []) as LedgerEntry[]);
@@ -137,7 +138,8 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       const label = b.title || 'Reload';
       const classesPerBlock = Math.round(b.duration_minutes / 60);
       if (b.is_recurring && b.recurrence_day != null) {
-        const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day);
+        const exceptions = new Set((b.recurring_exceptions || []).map(d => String(d)));
+        const occurrences = daysInMonth.filter(d => getDay(d) === b.recurrence_day && !exceptions.has(format(d, 'yyyy-MM-dd')));
         const doneOccurrences = occurrences.filter(d => d <= today);
         const total = classesPerBlock * occurrences.length;
         const done = classesPerBlock * doneOccurrences.length;
