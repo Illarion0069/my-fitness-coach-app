@@ -331,13 +331,7 @@ Deno.serve(async (req) => {
       }
 
       const pkg = await getLatestValidPackage(client_user_id);
-      console.log('[trainerBook] package for', client_user_id, pkg ? `id=${pkg.id} used=${pkg.used_sessions}/${pkg.total_sessions}` : 'NONE');
-      if (!pkg) {
-        return new Response(JSON.stringify({ error: 'No active package with remaining sessions' }), {
-          status: 402,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
+      console.log('[trainerBook] package for', client_user_id, pkg ? `id=${pkg.id} used=${pkg.used_sessions}/${pkg.total_sessions}` : 'NONE (no-package session)');
 
       const { data: createdSession, error: insertError } = await supabase
         .from('scheduled_sessions')
@@ -347,7 +341,7 @@ Deno.serve(async (req) => {
           session_date: date,
           session_time: time,
           is_recurring: false,
-          package_id: pkg.id,
+          package_id: pkg?.id || null,
         })
         .select('id')
         .single();
@@ -359,38 +353,40 @@ Deno.serve(async (req) => {
         });
       }
 
-      const newUsed = pkg.used_sessions + 1;
-      const packageUpdates: Record<string, unknown> = { used_sessions: newUsed };
-      if (newUsed >= pkg.total_sessions) {
-        packageUpdates.is_active = false;
-      }
+      if (pkg) {
+        const newUsed = pkg.used_sessions + 1;
+        const packageUpdates: Record<string, unknown> = { used_sessions: newUsed };
+        if (newUsed >= pkg.total_sessions) {
+          packageUpdates.is_active = false;
+        }
 
-      const { error: updateError } = await supabase
-        .from('client_packages')
-        .update(packageUpdates)
-        .eq('id', pkg.id)
-        .eq('used_sessions', pkg.used_sessions);
+        const { error: updateError } = await supabase
+          .from('client_packages')
+          .update(packageUpdates)
+          .eq('id', pkg.id)
+          .eq('used_sessions', pkg.used_sessions);
 
-      if (updateError) {
-        await supabase.from('scheduled_sessions').delete().eq('id', createdSession.id);
-        return new Response(JSON.stringify({ error: 'Package update conflict, retry please' }), {
-          status: 409,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        if (updateError) {
+          await supabase.from('scheduled_sessions').delete().eq('id', createdSession.id);
+          return new Response(JSON.stringify({ error: 'Package update conflict, retry please' }), {
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+
+        await supabase.from('session_ledger').insert({
+          user_id: client_user_id,
+          package_id: pkg.id,
+          delta: 1,
+          reason: 'trainer_book',
+          session_id: createdSession.id,
+          used_before: pkg.used_sessions,
+          used_after: newUsed,
+          idempotency_key: `trainer_book_${createdSession.id}`,
         });
       }
 
-      await supabase.from('session_ledger').insert({
-        user_id: client_user_id,
-        package_id: pkg.id,
-        delta: 1,
-        reason: 'trainer_book',
-        session_id: createdSession.id,
-        used_before: pkg.used_sessions,
-        used_after: newUsed,
-        idempotency_key: `trainer_book_${createdSession.id}`,
-      });
-
-      return new Response(JSON.stringify({ success: true, session_id: createdSession.id }), {
+      return new Response(JSON.stringify({ success: true, session_id: createdSession.id, hasPackage: !!pkg }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
