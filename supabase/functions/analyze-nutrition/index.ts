@@ -310,16 +310,17 @@ serve(async (req) => {
 
         const scoreEmoji = score >= 80 ? "🟢" : score >= 50 ? "🟡" : "🔴";
 
-        // Build meals detail
+        // Build meals detail — now one entry per meal_type
         const meals = (analysis.meals as Array<Record<string, unknown>>) || [];
         const mealsDetail = meals.map((m) => {
-          const mealEmoji = (m.score as number) >= 80 ? "✅" : (m.score as number) >= 50 ? "⚠️" : "❌";
+          const mealScore = (m.score as number) || 0;
+          const mealEmoji = mealScore >= 80 ? "✅" : mealScore >= 50 ? "⚠️" : "❌";
           const detectedFoods = (m.detected_foods as Array<Record<string, unknown>>) || [];
           const foods = detectedFoods.map((f) => {
             if (typeof f === "string") return f;
             return `${f.name}${f.portion_g ? ` (${f.portion_g}g)` : ""} — ${f.calories || 0}kcal`;
           }).join(", ");
-          return `${mealEmoji} <b>${m.meal_type}</b> — ${m.score}/100\n   ${foods}`;
+          return `${mealEmoji} <b>${m.meal_type}</b> — ${mealScore}/100${foods ? `\n   ${foods}` : ""}`;
         }).join("\n");
 
         // Include manual entries
