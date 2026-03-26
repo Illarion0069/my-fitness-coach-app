@@ -283,8 +283,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       });
 
       if (res.error || !res.data?.success) {
+        let errorMsg = res.data?.error || '';
+        if (!errorMsg && res.error) {
+          try {
+            const ctx = (res.error as any).context;
+            if (ctx && typeof ctx.json === 'function') {
+              const body = await ctx.json();
+              errorMsg = body?.error || '';
+            }
+          } catch {}
+          if (!errorMsg) errorMsg = res.error.message;
+        }
         toast({
-          title: res.data?.error || res.error?.message || (lang === 'en' ? 'Failed to add session' : 'Не удалось добавить тренировку'),
+          title: errorMsg || (lang === 'en' ? 'Failed to add session' : 'Не удалось добавить тренировку'),
           variant: 'destructive',
         });
         return;

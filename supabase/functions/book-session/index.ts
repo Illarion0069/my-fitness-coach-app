@@ -283,8 +283,10 @@ Deno.serve(async (req) => {
     }
 
     if (action === 'trainerBook') {
+      console.log('[trainerBook] start', JSON.stringify(body));
       const user = await getAuthUser();
       if (!user || !(await isTrainer(user.id))) {
+        console.log('[trainerBook] forbidden, user:', user?.id);
         return new Response(JSON.stringify({ error: 'Forbidden: trainer only' }), {
           status: 403,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -329,6 +331,7 @@ Deno.serve(async (req) => {
       }
 
       const pkg = await getLatestValidPackage(client_user_id);
+      console.log('[trainerBook] package for', client_user_id, pkg ? `id=${pkg.id} used=${pkg.used_sessions}/${pkg.total_sessions}` : 'NONE');
       if (!pkg) {
         return new Response(JSON.stringify({ error: 'No active package with remaining sessions' }), {
           status: 402,
