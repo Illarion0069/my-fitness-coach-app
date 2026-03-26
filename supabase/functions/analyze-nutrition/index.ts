@@ -58,6 +58,11 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
 - Missing meals are a MAJOR nutritional failure — a full day with only one meal is unhealthy and must be reflected in a LOW overall score.
 - Do NOT ignore missing meal categories. Do NOT calculate the average only from meals that exist.
 
+## CRITICAL — Meal grouping:
+- You MUST return EXACTLY ONE entry per meal_type in the "meals" array: at most one "breakfast", one "lunch", one "dinner", one "snack".
+- If there are multiple photos AND/OR manual entries for the same meal_type (e.g. two dinner photos + two manual dinner entries), MERGE them into a SINGLE meal object. Combine all detected_foods into one array, sum up calories/macros, and give ONE combined score.
+- NEVER return multiple objects with the same meal_type. This is the most important formatting rule.
+
 ## Response format (JSON only, no markdown):
 {
   "overall_score": 0-100,
@@ -67,7 +72,6 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
   "total_fat_g": 0,
   "meals": [
     {
-      "photo_index": 0,
       "meal_type": "breakfast|lunch|dinner|snack",
       "detected_foods": [
         {"name": "food1", "portion_g": 150, "calories": 200, "protein_g": 15, "carbs_g": 20, "fat_g": 8}
