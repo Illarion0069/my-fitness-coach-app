@@ -350,7 +350,34 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return lang === 'en' ? 'Blocked' : 'Закрыто';
   };
 
-  const slots = useMemo(() => {
+  const toggleBlockedDate = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const newBlocked = isBlockedDate
+      ? workingHours.blocked_dates.filter(d => d !== selectedDateStr)
+      : [...workingHours.blocked_dates, selectedDateStr].sort();
+
+    const { error } = await supabase
+      .from('trainer_working_hours')
+      .upsert({
+        trainer_user_id: user.id,
+        work_start_hour: workingHours.work_start_hour,
+        work_end_hour: workingHours.work_end_hour,
+        days_off: workingHours.days_off,
+        blocked_dates: newBlocked,
+      }, { onConflict: 'trainer_user_id' });
+
+    if (!error) {
+      setWorkingHours(prev => ({ ...prev, blocked_dates: newBlocked }));
+      toast({
+        title: isBlockedDate
+          ? (lang === 'en' ? 'Day opened' : 'День открыт')
+          : (lang === 'en' ? 'Day closed' : 'День закрыт'),
+      });
+    }
+  };
+
     const endHour = Math.max(workingHours.work_end_hour, workingHours.work_start_hour + 1);
     // +1 hour so the end hour itself is visible (e.g. 19:00 slot when end=19)
     const count = (endHour - workingHours.work_start_hour + 1) * 2;
