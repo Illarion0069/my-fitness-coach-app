@@ -366,6 +366,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     };
     const currentEntries = (log?.manual_entries || []) as ManualEntry[];
     const newEntries = [...currentEntries, entry];
+    // Optimistic update — update local state immediately so totals refresh instantly
+    setLog(prev => prev ? { ...prev, manual_entries: newEntries } as any : { id: '', log_date: date, water_ml: 0, coffee_cups: 0, tea_cups: 0, alcohol_ml: 0, notes: null, ai_score: null, ai_feedback: null, ai_analysis: null, trainer_override_score: null, trainer_override_note: null, manual_entries: newEntries } as any);
+    setShowQuickAdd(false);
+    setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
+    setQuickAddPortion('100'); setQuickAddBase(null); setQuickAddTime('');
+    setFoodSuggestions([]);
+    toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
     if (log?.id) {
       await supabase.from('nutrition_logs').update({ manual_entries: newEntries as any }).eq('id', log.id);
     } else {
@@ -373,19 +380,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         user_id: user.id, log_date: date, manual_entries: newEntries as any,
       } as any);
     }
-    setShowQuickAdd(false);
-    setQuickAddName(''); setQuickAddCal(''); setQuickAddProtein(''); setQuickAddCarbs(''); setQuickAddFat('');
-    setQuickAddPortion('100'); setQuickAddBase(null); setQuickAddTime('');
-    setFoodSuggestions([]);
-    fetchData();
-    toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
+    await fetchData();
   };
 
   const handleDeleteManualEntry = async (entryId: string) => {
     if (!log?.id) return;
     const entries = ((log.manual_entries || []) as ManualEntry[]).filter(e => e.id !== entryId);
+    // Optimistic update
+    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
     await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
-    fetchData();
+    await fetchData();
   };
 
   const handleDeleteAiFood = async (mealType: MealType, foodIndex: number) => {
