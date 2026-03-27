@@ -1,9 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Clock, Save, ChevronDown } from 'lucide-react';
+import { Clock, Save, ChevronDown, X, CalendarOff } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
+import { ru, enUS } from 'date-fns/locale';
 
 interface Props {
   lang: string;
@@ -22,9 +26,11 @@ const TrainerWorkingHours = ({ lang }: Props) => {
   const [workStart, setWorkStart] = useState(7);
   const [workEnd, setWorkEnd] = useState(19);
   const [daysOff, setDaysOff] = useState<number[]>([0]);
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [open, setOpen] = useState(false);
+  const [calOpen, setCalOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -38,6 +44,7 @@ const TrainerWorkingHours = ({ lang }: Props) => {
         setWorkStart(data.work_start_hour);
         setWorkEnd(data.work_end_hour);
         setDaysOff(data.days_off || [0]);
+        setBlockedDates(data.blocked_dates || []);
       }
       setLoaded(true);
     })();
@@ -49,9 +56,26 @@ const TrainerWorkingHours = ({ lang }: Props) => {
     );
   };
 
+  const addBlockedDate = (date: Date | undefined) => {
+    if (!date) return;
+    const dateStr = format(date, 'yyyy-MM-dd');
+    if (!blockedDates.includes(dateStr)) {
+      setBlockedDates(prev => [...prev, dateStr].sort());
+    }
+    setCalOpen(false);
+  };
+
+  const removeBlockedDate = (dateStr: string) => {
+    setBlockedDates(prev => prev.filter(d => d !== dateStr));
+  };
+
   const handleSave = async () => {
     if (!user) return;
     setSaving(true);
+    // Filter out past blocked dates
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const filteredDates = blockedDates.filter(d => d >= today);
+
     const { error } = await supabase
       .from('trainer_working_hours')
       .upsert({
@@ -59,17 +83,21 @@ const TrainerWorkingHours = ({ lang }: Props) => {
         work_start_hour: workStart,
         work_end_hour: workEnd,
         days_off: daysOff,
+        blocked_dates: filteredDates,
       }, { onConflict: 'trainer_user_id' });
 
     if (error) {
       toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
     } else {
+      setBlockedDates(filteredDates);
       toast({ title: lang === 'en' ? 'Settings saved' : 'Настройки сохранены' });
     }
     setSaving(false);
   };
 
   if (!loaded) return null;
+
+  const dateLocale = lang === 'en' ? enUS : ru;
 
   return (
     <Collapsible open={open} onOpenChange={setOpen}>
@@ -139,6 +167,59 @@ const TrainerWorkingHours = ({ lang }: Props) => {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Blocked specific dates */}
+            <div>
+              <label className="text-[11px] text-muted-foreground mb-2 block">
+                {lang === 'en' ? 'Closed Dates (specific days off)' : 'Закрытые даты (конкретные выходные)'}
+              </label>
+
+              {blockedDates.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {blockedDates.map(dateStr => {
+                    const d = new Date(dateStr + 'T00:00:00');
+                    return (
+                      <span
+                        key={dateStr}
+                        className="inline-flex items-center gap-1 bg-destructive/15 text-destructive text-[11px] font-semibold px-2.5 py-1.5 rounded-lg border border-destructive/20"
+                      >
+                        <CalendarOff className="w-3 h-3" />
+                        {format(d, 'd MMM', { locale: dateLocale })}
+                        <button
+                          onClick={() => removeBlockedDate(dateStr)}
+                          className="ml-0.5 hover:bg-destructive/20 rounded-full p-0.5 transition-colors"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    );
+                  })}
+                </div>
+              )}
+
+              <Popover open={calOpen} onOpenChange={setCalOpen}>
+                <PopoverTrigger asChild>
+                  <button className="w-full bg-secondary text-foreground border border-border/50 rounded-xl px-3 py-2 text-sm font-semibold hover:border-primary/30 transition-colors flex items-center justify-center gap-2">
+                    <CalendarOff className="w-4 h-4 text-muted-foreground" />
+                    {lang === 'en' ? 'Add closed date' : 'Добавить закрытую дату'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar
+                    mode="single"
+                    onSelect={addBlockedDate}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      if (date < today) return true;
+                      const dateStr = format(date, 'yyyy-MM-dd');
+                      return blockedDates.includes(dateStr);
+                    }}
+                    locale={dateLocale}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
 
             <button

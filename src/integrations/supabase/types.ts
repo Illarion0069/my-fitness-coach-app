@@ -591,6 +591,7 @@ export type Database = {
       }
       trainer_working_hours: {
         Row: {
+          blocked_dates: string[] | null
           created_at: string
           days_off: number[]
           id: string
@@ -600,6 +601,7 @@ export type Database = {
           work_start_hour: number
         }
         Insert: {
+          blocked_dates?: string[] | null
           created_at?: string
           days_off?: number[]
           id?: string
@@ -609,6 +611,7 @@ export type Database = {
           work_start_hour?: number
         }
         Update: {
+          blocked_dates?: string[] | null
           created_at?: string
           days_off?: number[]
           id?: string

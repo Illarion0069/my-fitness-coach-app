@@ -47,6 +47,7 @@ interface TrainerWorkingHours {
   work_start_hour: number;
   work_end_hour: number;
   days_off: number[];
+  blocked_dates: string[];
 }
 
 interface Props {
@@ -72,6 +73,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     work_start_hour: 7,
     work_end_hour: 19,
     days_off: [0],
+    blocked_dates: [],
   });
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
@@ -123,7 +125,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
     const { data } = await supabase
       .from('trainer_working_hours')
-      .select('work_start_hour, work_end_hour, days_off')
+      .select('work_start_hour, work_end_hour, days_off, blocked_dates')
       .eq('trainer_user_id', user.id)
       .maybeSingle();
 
@@ -132,6 +134,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         work_start_hour: data.work_start_hour,
         work_end_hour: data.work_end_hour,
         days_off: data.days_off || [0],
+        blocked_dates: data.blocked_dates || [],
       });
     }
   };
