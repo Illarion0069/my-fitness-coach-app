@@ -281,13 +281,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         return;
       }
       const detectedItems = Array.isArray(validation?.items) ? validation.items : [];
-      const { error: insertError } = await supabase.from('food_photos').insert({
+      const { data: insertedPhoto, error: insertError } = await supabase.from('food_photos').insert({
         user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType, meal_time: mealTime,
-      } as any);
+      } as any).select('id').single();
       if (insertError) {
         await supabase.storage.from('food-photos').remove([path]);
         throw insertError;
       }
+      const photoId = (insertedPhoto as any)?.id || crypto.randomUUID();
 
       if (detectedItems.length > 0) {
         const currentEntries = (log?.manual_entries || []) as ManualEntry[];
@@ -301,6 +302,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           fat_g: Math.max(0, Math.round(Number(item.fat_g) || 0)),
           meal_time: mealTime || undefined,
           created_at: new Date().toISOString(),
+          photo_id: photoId,
         }));
         const allEntries = [...currentEntries, ...newEntries];
 
