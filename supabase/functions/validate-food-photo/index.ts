@@ -6,7 +6,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-// Only allow URLs from our own Supabase storage
 const ALLOWED_URL_PREFIX = Deno.env.get("SUPABASE_URL")
   ? `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/food-photos/`
   : null;
@@ -17,7 +16,6 @@ serve(async (req) => {
   }
 
   try {
-    // Require auth header to prevent unauthenticated abuse
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -37,7 +35,6 @@ serve(async (req) => {
       });
     }
 
-    // Validate URL: must be from our storage bucket (prevent SSRF)
     if (ALLOWED_URL_PREFIX && !photo_url.startsWith(ALLOWED_URL_PREFIX)) {
       return new Response(JSON.stringify({ error: "Invalid photo URL" }), {
         status: 400,
@@ -45,7 +42,6 @@ serve(async (req) => {
       });
     }
 
-    // URL length sanity check
     if (photo_url.length > 500) {
       return new Response(JSON.stringify({ error: "URL too long" }), {
         status: 400,
@@ -60,14 +56,22 @@ serve(async (req) => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-lite",
+        model: "google/gemini-2.5-flash",
         messages: [
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: 'Is this a photo of food, a meal, a drink, or something food-related? Answer ONLY with JSON: {"is_food": true} or {"is_food": false}. No other text.',
+                text: `Analyze this image. If it's NOT food/meal/drink, respond: {"is_food": false}
+If it IS food, identify all items and estimate nutrition. Respond ONLY with JSON:
+{
+  "is_food": true,
+  "items": [
+    {"name": "item name", "portion_g": 150, "calories": 250, "protein_g": 10, "carbs_g": 30, "fat_g": 8}
+  ]
+}
+Be concise with names. Estimate realistic portions from the photo. No other text.`,
               },
               {
                 type: "image_url",
@@ -82,8 +86,7 @@ serve(async (req) => {
     if (!response.ok) {
       const errText = await response.text();
       console.error("AI Gateway error:", response.status, errText);
-      // On AI error, allow the photo (fail open)
-      return new Response(JSON.stringify({ is_food: true }), {
+      return new Response(JSON.stringify({ is_food: true, items: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -94,19 +97,20 @@ serve(async (req) => {
     try {
       const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       const result = JSON.parse(jsonStr);
-      return new Response(JSON.stringify({ is_food: !!result.is_food }), {
+      return new Response(JSON.stringify({
+        is_food: !!result.is_food,
+        items: result.items || [],
+      }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     } catch {
-      // If can't parse, allow the photo
-      return new Response(JSON.stringify({ is_food: true }), {
+      return new Response(JSON.stringify({ is_food: true, items: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
   } catch (e) {
     console.error("validate-food-photo error:", e);
-    // Fail open - allow photo
-    return new Response(JSON.stringify({ is_food: true }), {
+    return new Response(JSON.stringify({ is_food: true, items: [] }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
