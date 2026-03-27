@@ -43,18 +43,15 @@ interface TrainerBlock {
   recurring_exceptions: string[];
 }
 
-interface TrainerWorkingHours {
-  work_start_hour: number;
-  work_end_hour: number;
-  days_off: number[];
-  blocked_dates: string[];
-}
-
 interface Props {
   lang: string;
   clients: Profile[];
   onSessionChange?: () => void;
 }
+
+const WORK_START = 7;
+const WORK_END = 19;
+const WEEKEND_DAYS = [0, 6]; // Sun, Sat — always off
 
 const dayNamesRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -68,13 +65,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
-  
-  const [workingHours, setWorkingHours] = useState<TrainerWorkingHours>({
-    work_start_hour: 7,
-    work_end_hour: 19,
-    days_off: [0],
-    blocked_dates: [],
-  });
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
   const dayOfWeek = selectedDate.getDay();
