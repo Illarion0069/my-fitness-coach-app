@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
-import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import TrainerBlockModal from './TrainerBlockModal';
@@ -80,6 +80,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const dayOfWeek = selectedDate.getDay();
   const dayNames = lang === 'en' ? dayNamesEn : dayNamesRu;
   const isDayOff = workingHours.days_off.includes(dayOfWeek);
+  const isBlockedDate = workingHours.blocked_dates.includes(selectedDateStr);
 
   const fetchSessions = async () => {
     const { data } = await supabase
@@ -349,6 +350,34 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return lang === 'en' ? 'Blocked' : 'Закрыто';
   };
 
+  const toggleBlockedDate = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const newBlocked = isBlockedDate
+      ? workingHours.blocked_dates.filter(d => d !== selectedDateStr)
+      : [...workingHours.blocked_dates, selectedDateStr].sort();
+
+    const { error } = await supabase
+      .from('trainer_working_hours')
+      .upsert({
+        trainer_user_id: user.id,
+        work_start_hour: workingHours.work_start_hour,
+        work_end_hour: workingHours.work_end_hour,
+        days_off: workingHours.days_off,
+        blocked_dates: newBlocked,
+      }, { onConflict: 'trainer_user_id' });
+
+    if (!error) {
+      setWorkingHours(prev => ({ ...prev, blocked_dates: newBlocked }));
+      toast({
+        title: isBlockedDate
+          ? (lang === 'en' ? 'Day opened' : 'День открыт')
+          : (lang === 'en' ? 'Day closed' : 'День закрыт'),
+      });
+    }
+  };
+
   const slots = useMemo(() => {
     const endHour = Math.max(workingHours.work_end_hour, workingHours.work_start_hour + 1);
     // +1 hour so the end hour itself is visible (e.g. 19:00 slot when end=19)
@@ -431,21 +460,26 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         <div className="grid grid-cols-7 gap-2">
           {weekDays.map((date) => {
             const active = isSameDay(date, selectedDate);
+            const dateStr = format(date, 'yyyy-MM-dd');
+            const isBlocked = workingHours.blocked_dates.includes(dateStr);
+            const isWeeklyOff = workingHours.days_off.includes(date.getDay());
             return (
               <button
                 key={date.toISOString()}
                 type="button"
                 onClick={() => setSelectedDate(date)}
-                className={`rounded-2xl border px-2 py-2 text-center transition-colors ${
+                className={`rounded-2xl border px-2 py-2 text-center transition-colors relative ${
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
-                    : 'border-border bg-secondary/30 text-foreground hover:bg-secondary/50'
+                    : isBlocked
+                      ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                      : 'border-border bg-secondary/30 text-foreground hover:bg-secondary/50'
                 }`}
               >
-                <p className={`text-[10px] font-medium ${active ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                <p className={`text-[10px] font-medium ${active ? 'text-primary-foreground/80' : isBlocked ? 'text-destructive/70' : 'text-muted-foreground'}`}>
                   {dayNames[date.getDay()]}
                 </p>
-                <p className="text-sm font-semibold">{format(date, 'd')}</p>
+                <p className={`text-sm font-semibold ${isBlocked && !active ? 'line-through' : ''}`}>{format(date, 'd')}</p>
               </button>
             );
           })}
@@ -453,16 +487,40 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
       </div>
 
-      {isDayOff && (
-        <div className="rounded-2xl border border-border bg-secondary/30 px-4 py-3 text-sm text-muted-foreground">
-          {lang === 'en' ? 'This day is marked as a day off, but you can still schedule manually.' : 'Этот день отмечен как выходной, но ты всё равно можешь добавить событие вручную.'}
+      {(isDayOff || isBlockedDate) && (
+        <div className="rounded-2xl border border-border bg-secondary/30 px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            {isBlockedDate
+              ? (lang === 'en' ? 'This day is closed' : 'Этот день закрыт')
+              : (lang === 'en' ? 'Day off — you can still schedule' : 'Выходной — можно добавить вручную')
+            }
+          </span>
+          {isBlockedDate && (
+            <button
+              onClick={toggleBlockedDate}
+              className="text-xs font-semibold text-primary bg-primary/10 px-3 py-1.5 rounded-lg hover:bg-primary/20 transition-colors"
+            >
+              {lang === 'en' ? 'Open' : 'Открыть'}
+            </button>
+          )}
         </div>
       )}
 
       <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <h3 className="font-semibold">{lang === 'en' ? 'Day calendar' : 'Календарь дня'}</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-semibold">{lang === 'en' ? 'Day calendar' : 'Календарь дня'}</h3>
+          </div>
+          {!isBlockedDate && (
+            <button
+              onClick={toggleBlockedDate}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-destructive bg-secondary/50 hover:bg-destructive/10 px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              <Ban className="w-3 h-3" />
+              {lang === 'en' ? 'Close day' : 'Закрыть день'}
+            </button>
+          )}
         </div>
 
         <DayTimeline
