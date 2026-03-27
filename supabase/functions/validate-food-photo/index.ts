@@ -57,21 +57,26 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        response_format: { type: "json_object" },
         messages: [
           {
             role: "user",
             content: [
               {
                 type: "text",
-                text: `Analyze this image. If it's NOT food/meal/drink, respond: {"is_food": false}
-If it IS food, identify all items and estimate nutrition. Respond ONLY with JSON:
+                text: `Analyze this image. If it's NOT food/meal/drink, respond with JSON {"is_food": false, "items": []}.
+If it IS food, identify visible items and estimate realistic nutrition. Respond ONLY with valid JSON:
 {
   "is_food": true,
   "items": [
     {"name": "item name", "portion_g": 150, "calories": 250, "protein_g": 10, "carbs_g": 30, "fat_g": 8}
   ]
 }
-Be concise with names. Estimate realistic portions from the photo. No other text.`,
+Rules:
+- items must always be an array
+- use integers for all numeric fields
+- if one mixed dish is visible, return at least one item for the dish
+- no markdown, no explanation, no extra keys`,
               },
               {
                 type: "image_url",
@@ -95,15 +100,32 @@ Be concise with names. Estimate realistic portions from the photo. No other text
     const raw = data.choices?.[0]?.message?.content || "";
 
     try {
-      const jsonStr = raw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      const result = JSON.parse(jsonStr);
+      const normalizedRaw = typeof raw === "string" ? raw : JSON.stringify(raw);
+      const stripped = normalizedRaw.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      const match = stripped.match(/\{[\s\S]*\}/);
+      const jsonStr = match ? match[0] : stripped;
+      const parsed = JSON.parse(jsonStr);
+      const items = Array.isArray(parsed.items)
+        ? parsed.items
+            .filter((item: Record<string, unknown>) => item && typeof item === "object")
+            .map((item: Record<string, unknown>) => ({
+              name: String(item.name || "Food"),
+              portion_g: Math.max(0, Math.round(Number(item.portion_g) || 0)),
+              calories: Math.max(0, Math.round(Number(item.calories) || 0)),
+              protein_g: Math.max(0, Math.round(Number(item.protein_g) || 0)),
+              carbs_g: Math.max(0, Math.round(Number(item.carbs_g) || 0)),
+              fat_g: Math.max(0, Math.round(Number(item.fat_g) || 0)),
+            }))
+        : [];
+
       return new Response(JSON.stringify({
-        is_food: !!result.is_food,
-        items: result.items || [],
+        is_food: !!parsed.is_food,
+        items,
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    } catch {
+    } catch (error) {
+      console.error("Failed to parse validate-food-photo response:", raw, error);
       return new Response(JSON.stringify({ is_food: true, items: [] }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

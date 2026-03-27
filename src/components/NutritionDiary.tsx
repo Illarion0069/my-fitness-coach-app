@@ -251,8 +251,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         setUploading(false);
         return;
       }
-      // Store detected food items as manual entries for instant calorie display
-      const detectedItems = (!valError && validation?.items?.length) ? validation.items : [];
+      const detectedItems = Array.isArray(validation?.items) ? validation.items : [];
       const { error: insertError } = await supabase.from('food_photos').insert({
         user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType, meal_time: mealTime,
       } as any);
@@ -260,32 +259,35 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         await supabase.storage.from('food-photos').remove([path]);
         throw insertError;
       }
-      // Auto-add detected foods as manual entries so calories show immediately
+
       if (detectedItems.length > 0) {
         const currentEntries = (log?.manual_entries || []) as ManualEntry[];
         const newEntries = detectedItems.map((item: any) => ({
           id: crypto.randomUUID(),
           meal_type: mealType,
-          name: item.name || 'Unknown',
-          calories: item.calories || 0,
-          protein_g: item.protein_g || 0,
-          carbs_g: item.carbs_g || 0,
-          fat_g: item.fat_g || 0,
+          name: item.name || 'Food',
+          calories: Math.max(0, Math.round(Number(item.calories) || 0)),
+          protein_g: Math.max(0, Math.round(Number(item.protein_g) || 0)),
+          carbs_g: Math.max(0, Math.round(Number(item.carbs_g) || 0)),
+          fat_g: Math.max(0, Math.round(Number(item.fat_g) || 0)),
           meal_time: mealTime || undefined,
           created_at: new Date().toISOString(),
         }));
         const allEntries = [...currentEntries, ...newEntries];
-        // Optimistic update
-        setLog(prev => prev 
-          ? { ...prev, manual_entries: allEntries } as any 
+
+        setLog(prev => prev
+          ? { ...prev, manual_entries: allEntries } as any
           : { id: '', log_date: date, water_ml: 0, coffee_cups: 0, tea_cups: 0, alcohol_ml: 0, notes: null, ai_score: null, ai_feedback: null, ai_analysis: null, trainer_override_score: null, trainer_override_note: null, manual_entries: allEntries } as any
         );
-        if (log?.id) {
-          await supabase.from('nutrition_logs').update({ manual_entries: allEntries as any }).eq('id', log.id);
-        } else {
-          await supabase.from('nutrition_logs').insert({
-            user_id: user.id, log_date: date, manual_entries: allEntries as any,
-          } as any);
+
+        const { error: logUpsertError } = await supabase.from('nutrition_logs').upsert({
+          user_id: user.id,
+          log_date: date,
+          manual_entries: allEntries as any,
+        } as any, { onConflict: 'user_id,log_date' });
+
+        if (logUpsertError) {
+          console.error('Failed to upsert instant nutrition entries', logUpsertError);
         }
       }
       const mealLabel = MEAL_TYPES.find(m => m.key === mealType);
