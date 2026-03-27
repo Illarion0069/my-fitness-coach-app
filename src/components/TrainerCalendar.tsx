@@ -73,6 +73,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     work_start_hour: 7,
     work_end_hour: 19,
     days_off: [0],
+    blocked_dates: [],
   });
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
