@@ -1,0 +1,1 @@
+ALTER TABLE public.trainer_working_hours ADD COLUMN IF NOT EXISTS blocked_dates text[] DEFAULT '{}'::text[];
