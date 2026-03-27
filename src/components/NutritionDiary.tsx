@@ -74,6 +74,34 @@ const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: stri
 
 const scoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400';
 
+// Animated number component with smooth rolling effect
+const AnimatedNumber = ({ value, className, duration = 0.6 }: { value: number; className?: string; duration?: number }) => {
+  const [displayed, setDisplayed] = useState(value);
+  const prevRef = useRef(value);
+
+  useEffect(() => {
+    const from = prevRef.current;
+    const to = value;
+    if (from === to) return;
+    prevRef.current = to;
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const elapsed = (now - startTime) / (duration * 1000);
+      if (elapsed >= 1) {
+        setDisplayed(to);
+        return;
+      }
+      // ease-out cubic
+      const t = 1 - Math.pow(1 - elapsed, 3);
+      setDisplayed(Math.round(from + (to - from) * t));
+      requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [value, duration]);
+
+  return <span className={className}>{displayed}</span>;
+};
+
 // Macro ring component
 const MacroRing = ({ value, max, color, size = 40, strokeWidth = 3.5 }: { value: number; max?: number; color: string; size?: number; strokeWidth?: number }) => {
   const radius = (size - strokeWidth) / 2;
@@ -634,22 +662,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <Flame className="w-6 h-6 text-primary flex-shrink-0" />
             )}
             <div>
-              {calorieGoal && calorieGoal > 0 ? (
+               {calorieGoal && calorieGoal > 0 ? (
                 <>
                   <div className="flex items-baseline gap-1.5">
-                    <span className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
-                      {Math.max(0, calorieGoal - totals.calories)}
-                    </span>
+                    <AnimatedNumber value={Math.max(0, calorieGoal - totals.calories)} className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`} />
                     <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'left' : 'осталось'}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {totals.calories} / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
+                    <AnimatedNumber value={totals.calories} className="text-[11px] text-muted-foreground" /> / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
                   </p>
                 </>
               ) : (
                 <>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-black text-foreground tracking-tight">{totals.calories}</span>
+                    <AnimatedNumber value={totals.calories} className="text-3xl font-black text-foreground tracking-tight" />
                     <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'kcal' : 'ккал'}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{lang === 'en' ? 'consumed today' : 'потреблено за день'}</p>
@@ -677,7 +703,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         <div className="grid grid-cols-3 gap-3">
           {macros.map(m => (
             <div key={m.label} className="text-center">
-              <p className="text-lg font-black text-foreground" style={{ color: m.color }}>{m.value}<span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span></p>
+              <p className="text-lg font-black" style={{ color: m.color }}>
+                <AnimatedNumber value={m.value} className="text-lg font-black" /><span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span>
+              </p>
               <p className="text-[10px] text-muted-foreground font-medium">{m.label}</p>
             </div>
           ))}
