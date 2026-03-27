@@ -50,6 +50,7 @@ interface ManualEntry {
   fat_g: number;
   meal_time?: string;
   created_at: string;
+  photo_id?: string; // links auto-detected entries to their source photo
 }
 
 interface Props {
@@ -73,6 +74,34 @@ const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: stri
 ];
 
 const scoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400';
+
+// Animated number component with smooth rolling effect
+const AnimatedNumber = ({ value, className, duration = 0.6 }: { value: number; className?: string; duration?: number }) => {
+  const [displayed, setDisplayed] = useState(value);
+  const prevRef = useRef(value);
+
+  useEffect(() => {
+    const from = prevRef.current;
+    const to = value;
+    if (from === to) return;
+    prevRef.current = to;
+    const startTime = performance.now();
+    const animate = (now: number) => {
+      const elapsed = (now - startTime) / (duration * 1000);
+      if (elapsed >= 1) {
+        setDisplayed(to);
+        return;
+      }
+      // ease-out cubic
+      const t = 1 - Math.pow(1 - elapsed, 3);
+      setDisplayed(Math.round(from + (to - from) * t));
+      requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [value, duration]);
+
+  return <span className={className}>{displayed}</span>;
+};
 
 // Macro ring component
 const MacroRing = ({ value, max, color, size = 40, strokeWidth = 3.5 }: { value: number; max?: number; color: string; size?: number; strokeWidth?: number }) => {
@@ -252,13 +281,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         return;
       }
       const detectedItems = Array.isArray(validation?.items) ? validation.items : [];
-      const { error: insertError } = await supabase.from('food_photos').insert({
+      const { data: insertedPhoto, error: insertError } = await supabase.from('food_photos').insert({
         user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType, meal_time: mealTime,
-      } as any);
+      } as any).select('id').single();
       if (insertError) {
         await supabase.storage.from('food-photos').remove([path]);
         throw insertError;
       }
+      const photoId = (insertedPhoto as any)?.id || crypto.randomUUID();
 
       if (detectedItems.length > 0) {
         const currentEntries = (log?.manual_entries || []) as ManualEntry[];
@@ -272,6 +302,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           fat_g: Math.max(0, Math.round(Number(item.fat_g) || 0)),
           meal_time: mealTime || undefined,
           created_at: new Date().toISOString(),
+          photo_id: photoId,
         }));
         const allEntries = [...currentEntries, ...newEntries];
 
@@ -313,17 +344,35 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
-      // Mark analysis as stale but keep data visible; don't reset analysis_count
-      if (log?.id && hasAnalysis) {
-        const prevAnalysis = log.ai_analysis as Record<string, any> | null;
-        const preservedCount = Math.max(0, (prevAnalysis?.analysis_count || analysisCount) - 1);
-        await supabase.from('nutrition_logs').update({
-          ai_score: null, ai_feedback: null,
-          ai_analysis: { ...prevAnalysis, invalidated: true, analysis_count: preservedCount },
-          trainer_override_score: null, trainer_override_note: null,
-        }).eq('id', log.id);
-        setAnalysisCount(preservedCount);
+
+      // Remove auto-detected manual entries linked to this photo
+      const currentEntries = ((log?.manual_entries || []) as ManualEntry[]);
+      const filteredEntries = currentEntries.filter(e => e.photo_id !== photo.id);
+      const entriesChanged = filteredEntries.length !== currentEntries.length;
+
+      // Optimistic update for instant counter animation
+      if (entriesChanged) {
+        setLog(prev => prev ? { ...prev, manual_entries: filteredEntries } as any : prev);
       }
+
+      if (log?.id) {
+        const updatePayload: Record<string, any> = {};
+        if (entriesChanged) updatePayload.manual_entries = filteredEntries;
+        if (hasAnalysis) {
+          const prevAnalysis = log.ai_analysis as Record<string, any> | null;
+          const preservedCount = Math.max(0, (prevAnalysis?.analysis_count || analysisCount) - 1);
+          updatePayload.ai_score = null;
+          updatePayload.ai_feedback = null;
+          updatePayload.ai_analysis = { ...prevAnalysis, invalidated: true, analysis_count: preservedCount };
+          updatePayload.trainer_override_score = null;
+          updatePayload.trainer_override_note = null;
+          setAnalysisCount(preservedCount);
+        }
+        if (Object.keys(updatePayload).length > 0) {
+          await supabase.from('nutrition_logs').update(updatePayload).eq('id', log.id);
+        }
+      }
+
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
       setSelectedPhoto(null);
       fetchData();
@@ -634,22 +683,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <Flame className="w-6 h-6 text-primary flex-shrink-0" />
             )}
             <div>
-              {calorieGoal && calorieGoal > 0 ? (
+               {calorieGoal && calorieGoal > 0 ? (
                 <>
                   <div className="flex items-baseline gap-1.5">
-                    <span className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
-                      {Math.max(0, calorieGoal - totals.calories)}
-                    </span>
+                    <AnimatedNumber value={Math.max(0, calorieGoal - totals.calories)} className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`} />
                     <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'left' : 'осталось'}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">
-                    {totals.calories} / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
+                    <AnimatedNumber value={totals.calories} className="text-[11px] text-muted-foreground" /> / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
                   </p>
                 </>
               ) : (
                 <>
                   <div className="flex items-baseline gap-1.5">
-                    <span className="text-3xl font-black text-foreground tracking-tight">{totals.calories}</span>
+                    <AnimatedNumber value={totals.calories} className="text-3xl font-black text-foreground tracking-tight" />
                     <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'kcal' : 'ккал'}</span>
                   </div>
                   <p className="text-[11px] text-muted-foreground mt-0.5">{lang === 'en' ? 'consumed today' : 'потреблено за день'}</p>
@@ -677,7 +724,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         <div className="grid grid-cols-3 gap-3">
           {macros.map(m => (
             <div key={m.label} className="text-center">
-              <p className="text-lg font-black text-foreground" style={{ color: m.color }}>{m.value}<span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span></p>
+              <p className="text-lg font-black" style={{ color: m.color }}>
+                <AnimatedNumber value={m.value} className="text-lg font-black" /><span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span>
+              </p>
               <p className="text-[10px] text-muted-foreground font-medium">{m.label}</p>
             </div>
           ))}
