@@ -57,6 +57,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [mySessions, setMySessions] = useState<MySession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [trainerDaysOff, setTrainerDaysOff] = useState<number[]>([0, 6]);
+  const [trainerBlockedDates, setTrainerBlockedDates] = useState<string[]>([]);
   const [hasActivePackage, setHasActivePackage] = useState<boolean | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
@@ -67,8 +68,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       const { data: trainers } = await supabase.from('user_roles').select('user_id').eq('role', 'trainer').limit(1);
       const trainerId = trainers?.[0]?.user_id;
       if (trainerId) {
-        const { data: wh } = await supabase.from('trainer_working_hours').select('days_off').eq('trainer_user_id', trainerId).maybeSingle();
+        const { data: wh } = await supabase.from('trainer_working_hours').select('days_off, blocked_dates').eq('trainer_user_id', trainerId).maybeSingle();
         if (wh?.days_off) setTrainerDaysOff(wh.days_off);
+        if (wh?.blocked_dates) setTrainerBlockedDates(wh.blocked_dates);
       }
     })();
   }, []);
