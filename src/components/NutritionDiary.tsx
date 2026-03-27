@@ -344,17 +344,35 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
-      // Mark analysis as stale but keep data visible; don't reset analysis_count
-      if (log?.id && hasAnalysis) {
-        const prevAnalysis = log.ai_analysis as Record<string, any> | null;
-        const preservedCount = Math.max(0, (prevAnalysis?.analysis_count || analysisCount) - 1);
-        await supabase.from('nutrition_logs').update({
-          ai_score: null, ai_feedback: null,
-          ai_analysis: { ...prevAnalysis, invalidated: true, analysis_count: preservedCount },
-          trainer_override_score: null, trainer_override_note: null,
-        }).eq('id', log.id);
-        setAnalysisCount(preservedCount);
+
+      // Remove auto-detected manual entries linked to this photo
+      const currentEntries = ((log?.manual_entries || []) as ManualEntry[]);
+      const filteredEntries = currentEntries.filter(e => e.photo_id !== photo.id);
+      const entriesChanged = filteredEntries.length !== currentEntries.length;
+
+      // Optimistic update for instant counter animation
+      if (entriesChanged) {
+        setLog(prev => prev ? { ...prev, manual_entries: filteredEntries } as any : prev);
       }
+
+      if (log?.id) {
+        const updatePayload: Record<string, any> = {};
+        if (entriesChanged) updatePayload.manual_entries = filteredEntries;
+        if (hasAnalysis) {
+          const prevAnalysis = log.ai_analysis as Record<string, any> | null;
+          const preservedCount = Math.max(0, (prevAnalysis?.analysis_count || analysisCount) - 1);
+          updatePayload.ai_score = null;
+          updatePayload.ai_feedback = null;
+          updatePayload.ai_analysis = { ...prevAnalysis, invalidated: true, analysis_count: preservedCount };
+          updatePayload.trainer_override_score = null;
+          updatePayload.trainer_override_note = null;
+          setAnalysisCount(preservedCount);
+        }
+        if (Object.keys(updatePayload).length > 0) {
+          await supabase.from('nutrition_logs').update(updatePayload).eq('id', log.id);
+        }
+      }
+
       toast({ title: lang === 'en' ? 'Photo deleted' : 'Фото удалено' });
       setSelectedPhoto(null);
       fetchData();
