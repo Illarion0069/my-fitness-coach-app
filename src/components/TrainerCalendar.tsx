@@ -507,9 +507,20 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       )}
 
       <section className="space-y-4">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <h3 className="font-semibold">{lang === 'en' ? 'Day calendar' : 'Календарь дня'}</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <CalendarDays className="h-4 w-4 text-muted-foreground" />
+            <h3 className="font-semibold">{lang === 'en' ? 'Day calendar' : 'Календарь дня'}</h3>
+          </div>
+          {!isBlockedDate && (
+            <button
+              onClick={toggleBlockedDate}
+              className="flex items-center gap-1.5 text-[11px] font-semibold text-muted-foreground hover:text-destructive bg-secondary/50 hover:bg-destructive/10 px-2.5 py-1.5 rounded-lg transition-colors"
+            >
+              <Ban className="w-3 h-3" />
+              {lang === 'en' ? 'Close day' : 'Закрыть день'}
+            </button>
+          )}
         </div>
 
         <DayTimeline
