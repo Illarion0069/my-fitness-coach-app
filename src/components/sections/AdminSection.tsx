@@ -8,7 +8,6 @@ import { useToast } from '@/hooks/use-toast';
 
 import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
-import TrainerWorkingHours from '@/components/TrainerWorkingHours';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 import FinanceStatsView from '@/components/FinanceStatsView';
 
@@ -305,7 +304,6 @@ const AdminSection = () => {
           <FinanceStatsView lang={lang} />
         ) : viewMode === 'calendar' ? (
           <div className="space-y-4">
-            <TrainerWorkingHours lang={lang} />
             <TrainerCalendar lang={lang} clients={clients} onSessionChange={fetchData} />
           </div>
         ) : (
