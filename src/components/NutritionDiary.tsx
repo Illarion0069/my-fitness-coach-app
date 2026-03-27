@@ -50,6 +50,7 @@ interface ManualEntry {
   fat_g: number;
   meal_time?: string;
   created_at: string;
+  photo_id?: string; // links auto-detected entries to their source photo
 }
 
 interface Props {
