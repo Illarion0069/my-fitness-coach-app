@@ -43,18 +43,15 @@ interface TrainerBlock {
   recurring_exceptions: string[];
 }
 
-interface TrainerWorkingHours {
-  work_start_hour: number;
-  work_end_hour: number;
-  days_off: number[];
-  blocked_dates: string[];
-}
-
 interface Props {
   lang: string;
   clients: Profile[];
   onSessionChange?: () => void;
 }
+
+const WORK_START = 7;
+const WORK_END = 19;
+const WEEKEND_DAYS = [0, 6]; // Sun, Sat — always off
 
 const dayNamesRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -68,19 +65,13 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
-  
-  const [workingHours, setWorkingHours] = useState<TrainerWorkingHours>({
-    work_start_hour: 7,
-    work_end_hour: 19,
-    days_off: [0],
-    blocked_dates: [],
-  });
+  const [blockedDates, setBlockedDates] = useState<string[]>([]);
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
   const dayOfWeek = selectedDate.getDay();
   const dayNames = lang === 'en' ? dayNamesEn : dayNamesRu;
-  const isDayOff = workingHours.days_off.includes(dayOfWeek);
-  const isBlockedDate = workingHours.blocked_dates.includes(selectedDateStr);
+  const isDayOff = WEEKEND_DAYS.includes(dayOfWeek);
+  const isBlockedDate = blockedDates.includes(selectedDateStr);
 
   const fetchSessions = async () => {
     const { data } = await supabase
@@ -117,31 +108,23 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     setClientRemaining(nextMap);
   };
 
-  const fetchWorkingHours = async () => {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
+  const fetchBlockedDates = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
     const { data } = await supabase
       .from('trainer_working_hours')
-      .select('work_start_hour, work_end_hour, days_off, blocked_dates')
+      .select('blocked_dates')
       .eq('trainer_user_id', user.id)
       .maybeSingle();
 
     if (data) {
-      setWorkingHours({
-        work_start_hour: data.work_start_hour,
-        work_end_hour: data.work_end_hour,
-        days_off: data.days_off || [0],
-        blocked_dates: data.blocked_dates || [],
-      });
+      setBlockedDates(data.blocked_dates || []);
     }
   };
 
   useEffect(() => {
-    Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchWorkingHours()]);
+    Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchBlockedDates()]);
   }, []);
 
 
@@ -355,21 +338,21 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     if (!user) return;
 
     const newBlocked = isBlockedDate
-      ? workingHours.blocked_dates.filter(d => d !== selectedDateStr)
-      : [...workingHours.blocked_dates, selectedDateStr].sort();
+      ? blockedDates.filter(d => d !== selectedDateStr)
+      : [...blockedDates, selectedDateStr].sort();
 
     const { error } = await supabase
       .from('trainer_working_hours')
       .upsert({
         trainer_user_id: user.id,
-        work_start_hour: workingHours.work_start_hour,
-        work_end_hour: workingHours.work_end_hour,
-        days_off: workingHours.days_off,
+        work_start_hour: WORK_START,
+        work_end_hour: WORK_END,
+        days_off: WEEKEND_DAYS,
         blocked_dates: newBlocked,
       }, { onConflict: 'trainer_user_id' });
 
     if (!error) {
-      setWorkingHours(prev => ({ ...prev, blocked_dates: newBlocked }));
+      setBlockedDates(newBlocked);
       toast({
         title: isBlockedDate
           ? (lang === 'en' ? 'Day opened' : 'День открыт')
@@ -379,17 +362,16 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const slots = useMemo(() => {
-    const endHour = Math.max(workingHours.work_end_hour, workingHours.work_start_hour + 1);
-    // +1 hour so the end hour itself is visible (e.g. 19:00 slot when end=19)
-    const count = (endHour - workingHours.work_start_hour + 1) * 2;
+    const endHour = Math.max(WORK_END, WORK_START + 1);
+    const count = (endHour - WORK_START + 1) * 2;
 
     return Array.from({ length: count }, (_, index) => {
-      const totalMinutes = workingHours.work_start_hour * 60 + index * 30;
+      const totalMinutes = WORK_START * 60 + index * 30;
       const hours = Math.floor(totalMinutes / 60);
       const minutes = totalMinutes % 60;
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
     });
-  }, [workingHours.work_end_hour, workingHours.work_start_hour]);
+  }, []);
 
   const weekDays = useMemo(() => {
     const weekStart = startOfWeek(selectedDate, { weekStartsOn: 1, locale });
@@ -461,8 +443,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           {weekDays.map((date) => {
             const active = isSameDay(date, selectedDate);
             const dateStr = format(date, 'yyyy-MM-dd');
-            const isBlocked = workingHours.blocked_dates.includes(dateStr);
-            const isWeeklyOff = workingHours.days_off.includes(date.getDay());
+            const isBlocked = blockedDates.includes(dateStr);
+            const isWeeklyOff = WEEKEND_DAYS.includes(date.getDay());
             return (
               <button
                 key={date.toISOString()}
@@ -471,15 +453,15 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                 className={`rounded-2xl border px-2 py-2 text-center transition-colors relative ${
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
-                    : isBlocked
+                    : isBlocked || isWeeklyOff
                       ? 'border-destructive/30 bg-destructive/10 text-destructive'
                       : 'border-border bg-secondary/30 text-foreground hover:bg-secondary/50'
                 }`}
               >
-                <p className={`text-[10px] font-medium ${active ? 'text-primary-foreground/80' : isBlocked ? 'text-destructive/70' : 'text-muted-foreground'}`}>
+                <p className={`text-[10px] font-medium ${active ? 'text-primary-foreground/80' : (isBlocked || isWeeklyOff) ? 'text-destructive/70' : 'text-muted-foreground'}`}>
                   {dayNames[date.getDay()]}
                 </p>
-                <p className={`text-sm font-semibold ${isBlocked && !active ? 'line-through' : ''}`}>{format(date, 'd')}</p>
+                <p className={`text-sm font-semibold ${(isBlocked || isWeeklyOff) && !active ? 'line-through' : ''}`}>{format(date, 'd')}</p>
               </button>
             );
           })}
