@@ -395,11 +395,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     const selected = selectedDate && isSameDay(day, selectedDate);
                     const dayOfWeek = getDay(day);
                     const isDayOff = trainerDaysOff.includes(dayOfWeek);
+                    const isBlocked = trainerBlockedDates.includes(format(day, 'yyyy-MM-dd'));
 
                     return (
                       <button
                         key={day.toISOString()}
-                        disabled={past || !inMonth || isDayOff}
+                        disabled={past || !inMonth || isDayOff || isBlocked}
                         onClick={() => handleDateSelect(day)}
                         className={`aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                           selected
