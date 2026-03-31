@@ -39,10 +39,13 @@ Response format (JSON only, no markdown):
   ]
 }
 
-Rules:
-- Include different cooking methods (grilled, fried, boiled, baked, raw, etc.) when applicable
-- Use accurate USDA/standard nutritional values
-- All values per 100g
+CRITICAL accuracy rules:
+- Use USDA/standard nutritional database values ONLY. Do NOT guess or inflate.
+- All values MUST be per 100g
+- Cross-check: calories ≈ (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Fix if mismatch.
+- Reference values per 100g: chicken breast ~165kcal, rice ~130kcal, bread ~265kcal, banana ~89kcal, protein powder ~370kcal, milk ~42kcal, egg ~155kcal, butter ~717kcal, olive oil ~884kcal
+- A protein shake (powder+water) is ~80-120 kcal per 100g (not 300+!)
+- Include different cooking methods when applicable
 - Sort by most common/popular first
 - Names should be concise (2-4 words)
 - If query is in Russian, prioritize Russian food names; if in English, use English names. Always provide both.`;

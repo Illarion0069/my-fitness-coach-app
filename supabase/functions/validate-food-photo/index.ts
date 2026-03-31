@@ -65,14 +65,20 @@ serve(async (req) => {
               {
                 type: "text",
                 text: `Analyze this image. If it's NOT food/meal/drink, respond with JSON {"is_food": false, "items": []}.
-If it IS food, identify visible items and estimate realistic nutrition. Respond ONLY with valid JSON:
+If it IS food, identify visible items and estimate REALISTIC nutrition based on VISIBLE portion size. Respond ONLY with valid JSON:
 {
   "is_food": true,
   "items": [
     {"name": "item name", "portion_g": 150, "calories": 250, "protein_g": 10, "carbs_g": 30, "fat_g": 8}
   ]
 }
-Rules:
+CRITICAL rules for accurate estimation:
+- Estimate the ACTUAL visible portion size in grams carefully. A typical plate has 200-400g of food total.
+- Use standard USDA/nutritional database values per 100g, then multiply by actual portion.
+- Cross-check: calories must approximately equal (protein_g * 4) + (carbs_g * 4) + (fat_g * 9). If not, fix the values.
+- A typical meal is 300-700 kcal. Only exceed 800 kcal if the portion is clearly very large or calorie-dense (fried food, large pasta, etc.)
+- A protein shake/smoothie is typically 150-350 kcal per serving (300-500ml)
+- A salad is typically 150-400 kcal
 - items must always be an array
 - use integers for all numeric fields
 - if one mixed dish is visible, return at least one item for the dish
