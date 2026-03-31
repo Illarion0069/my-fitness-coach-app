@@ -114,14 +114,21 @@ CRITICAL rules for accurate estimation:
       const items = Array.isArray(parsed.items)
         ? parsed.items
             .filter((item: Record<string, unknown>) => item && typeof item === "object")
-            .map((item: Record<string, unknown>) => ({
-              name: String(item.name || "Food"),
-              portion_g: Math.max(0, Math.round(Number(item.portion_g) || 0)),
-              calories: Math.max(0, Math.round(Number(item.calories) || 0)),
-              protein_g: Math.max(0, Math.round(Number(item.protein_g) || 0)),
-              carbs_g: Math.max(0, Math.round(Number(item.carbs_g) || 0)),
-              fat_g: Math.max(0, Math.round(Number(item.fat_g) || 0)),
-            }))
+            .map((item: Record<string, unknown>) => {
+              const portion_g = Math.max(0, Math.min(2000, Math.round(Number(item.portion_g) || 0)));
+              let calories = Math.max(0, Math.round(Number(item.calories) || 0));
+              const protein_g = Math.max(0, Math.min(200, Math.round(Number(item.protein_g) || 0)));
+              const carbs_g = Math.max(0, Math.min(500, Math.round(Number(item.carbs_g) || 0)));
+              const fat_g = Math.max(0, Math.min(200, Math.round(Number(item.fat_g) || 0)));
+              // Sanity: recalculate calories from macros if AI value is wildly off
+              const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
+              if (macroCalc > 0 && (calories > macroCalc * 1.5 || calories < macroCalc * 0.5)) {
+                calories = macroCalc;
+              }
+              // Cap single item at 1500 kcal
+              calories = Math.min(1500, calories);
+              return { name: String(item.name || "Food"), portion_g, calories, protein_g, carbs_g, fat_g };
+            })
         : [];
 
       return new Response(JSON.stringify({
