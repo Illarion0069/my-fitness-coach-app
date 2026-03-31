@@ -39,10 +39,13 @@ Response format (JSON only, no markdown):
   ]
 }
 
-Rules:
-- Include different cooking methods (grilled, fried, boiled, baked, raw, etc.) when applicable
-- Use accurate USDA/standard nutritional values
-- All values per 100g
+CRITICAL accuracy rules:
+- Use USDA/standard nutritional database values ONLY. Do NOT guess or inflate.
+- All values MUST be per 100g
+- Cross-check: calories ≈ (protein_g × 4) + (carbs_g × 4) + (fat_g × 9). Fix if mismatch.
+- Reference values per 100g: chicken breast ~165kcal, rice ~130kcal, bread ~265kcal, banana ~89kcal, protein powder ~370kcal, milk ~42kcal, egg ~155kcal, butter ~717kcal, olive oil ~884kcal
+- A protein shake (powder+water) is ~80-120 kcal per 100g (not 300+!)
+- Include different cooking methods when applicable
 - Sort by most common/popular first
 - Names should be concise (2-4 words)
 - If query is in Russian, prioritize Russian food names; if in English, use English names. Always provide both.`;
@@ -85,6 +88,23 @@ Rules:
     try {
       const jsonStr = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       result = JSON.parse(jsonStr);
+      // Sanity-check each suggestion
+      if (Array.isArray(result.suggestions)) {
+        result.suggestions = result.suggestions.map((s: any) => {
+          const protein_g = Math.max(0, Math.min(100, Math.round(Number(s.protein_g) || 0)));
+          const carbs_g = Math.max(0, Math.min(100, Math.round(Number(s.carbs_g) || 0)));
+          const fat_g = Math.max(0, Math.min(100, Math.round(Number(s.fat_g) || 0)));
+          let calories = Math.max(0, Math.round(Number(s.calories) || 0));
+          // Recalculate from macros if off by >50%
+          const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
+          if (macroCalc > 0 && (calories > macroCalc * 1.5 || calories < macroCalc * 0.5)) {
+            calories = macroCalc;
+          }
+          // Per-100g cap at 900 (pure fat is ~884)
+          calories = Math.min(900, calories);
+          return { ...s, calories, protein_g, carbs_g, fat_g, portion_g: 100 };
+        });
+      }
     } catch {
       result = { suggestions: [] };
     }
