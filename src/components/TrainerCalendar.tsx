@@ -186,7 +186,18 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     const exceptions = [...(session.recurring_exceptions || []), selectedDateStr];
     await supabase.from('scheduled_sessions').update({ recurring_exceptions: exceptions }).eq('id', session.id);
 
-    await fetchSessions();
+    // Auto-refund if this date was already deducted
+    if (session.package_id) {
+      try {
+        await supabase.functions.invoke('refund-cancelled-session', {
+          body: { session_id: session.id, cancelled_date: selectedDateStr },
+        });
+      } catch (e) {
+        console.error('Refund check failed:', e);
+      }
+    }
+
+    await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Тренировка на этот день удалена' });
   };

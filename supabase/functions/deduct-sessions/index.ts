@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
 
         const dueEntries = dueDates.slice(0, toDeductNow).map((date) => ({
           date,
-          key: `cron_user_${session.user_id}_${date}`,
+          key: `cron_session_${session.id}_${date}`,
         }));
 
         const idempotencyKeys = dueEntries.map((entry) => entry.key);
