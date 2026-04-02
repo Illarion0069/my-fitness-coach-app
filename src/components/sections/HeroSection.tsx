@@ -122,7 +122,6 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           className="mt-6 mb-2 flex flex-col items-center"
         >
           <div className="relative">
-        >
           {/* Contact options — expand from photo on tap */}
           <AnimatePresence>
             {showContactOptions && (
