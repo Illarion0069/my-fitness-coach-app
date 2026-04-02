@@ -123,7 +123,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
         >
           <div className="relative">
           {/* Messenger bubbles + chat badge: swap with mode="wait" */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {showContactOptions ? (
               <motion.div
                 key="messengers"
@@ -168,8 +168,8 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 className="absolute inset-0 pointer-events-none"
                 initial={{ opacity: 0, scale: 0.3 }}
                 animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.3 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 22 }}
+                exit={{ opacity: 0, scale: 0.92 }}
+                transition={{ duration: 0.08, ease: 'easeOut' }}
               >
                 {/* Chat badge */}
                 <div className="absolute -bottom-1 -right-1 z-10 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-lg pointer-events-none">
