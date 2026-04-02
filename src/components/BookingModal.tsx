@@ -341,8 +341,13 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                 )}
+                {step === 'guest-info' && (
+                  <button onClick={() => setStep('time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
                 {step === 'confirm' && (
-                  <button onClick={() => setStep(hasActivePackage === false ? 'payment' : 'time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+                  <button onClick={() => setStep(!user ? 'guest-info' : hasActivePackage === false ? 'payment' : 'time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                 )}
