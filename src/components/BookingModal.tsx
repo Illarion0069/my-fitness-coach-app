@@ -363,7 +363,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       ? (lang === 'en' ? 'My Sessions' : 'Мои записи')
                       : step === 'payment'
                         ? (lang === 'en' ? 'Payment' : 'Оплата')
-                        : (lang === 'en' ? 'Book Session' : 'Запись на тренировку')
+                        : step === 'guest-info'
+                          ? (lang === 'en' ? 'Your Info' : 'Ваши данные')
+                          : (lang === 'en' ? 'Book Session' : 'Запись на тренировку')
                   }
                 </h2>
               </div>
