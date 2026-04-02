@@ -185,15 +185,35 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               />
             </div>
           </button>
-          {/* Subtle text hint */}
-          <motion.p
+          {/* Animated hand-drawn style arrow + hint */}
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.4 }}
-            className="text-[10px] text-muted-foreground/60 text-center mt-2 font-medium"
+            transition={{ delay: 1.5, duration: 0.5 }}
+            className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1 whitespace-nowrap"
           >
-            {lang === 'en' ? 'Tap to message me' : 'Нажми, чтобы написать'}
-          </motion.p>
+            {/* Curved arrow pointing up at photo */}
+            <motion.svg
+              width="28" height="28" viewBox="0 0 28 28" fill="none"
+              className="text-primary -mr-0.5"
+              animate={{ y: [0, -3, 0] }}
+              transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
+            >
+              <path
+                d="M14 24C14 24 6 18 6 12C6 8 9 5 14 4"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                fill="none"
+              />
+              <path
+                d="M10 4L14 2L15 6"
+                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+                fill="none"
+              />
+            </motion.svg>
+            <span className="text-[10px] font-semibold text-primary/70 italic">
+              {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
+            </span>
+          </motion.div>
         </motion.div>
 
         {/* Title */}
