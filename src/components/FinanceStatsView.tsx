@@ -87,7 +87,7 @@ function getPerSessionPrice(pkg: PackageRecord): number {
   return Math.round(price / pkg.total_sessions);
 }
 
-const RELOAD_RATE_PER_HOUR = 30;
+const RELOAD_RATE_PER_CLASS = 25;
 
 const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const [packages, setPackages] = useState<PackageRecord[]>([]);
