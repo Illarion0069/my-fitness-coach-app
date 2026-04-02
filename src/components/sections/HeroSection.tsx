@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, UserRound } from 'lucide-react';
+import { ChevronDown, UserRound, MessageCircle } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -157,8 +157,20 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             )}
           </AnimatePresence>
 
-          {/* Subtle pulsing ring */}
-          <div className="absolute -inset-1 rounded-full animate-pulse bg-primary/8" style={{ animationDuration: '3s' }} />
+          {/* Pulsing ring */}
+          <div className="absolute inset-0 rounded-full animate-ping bg-primary/10" style={{ animationDuration: '3s' }} />
+          <div className="absolute -inset-1 rounded-full animate-pulse bg-primary/5" style={{ animationDuration: '2s' }} />
+
+          {/* Pulsing chat badge on bottom-right edge */}
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 1, type: 'spring', stiffness: 300, damping: 15 }}
+            className="absolute -bottom-1 -right-1 z-10 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-lg pointer-events-none"
+          >
+            <div className="absolute inset-0 rounded-full animate-ping bg-primary/40" style={{ animationDuration: '2s' }} />
+            <MessageCircle className="w-4 h-4 text-primary-foreground relative z-10" />
+          </motion.div>
 
           <button
             onClick={() => setShowContactOptions(!showContactOptions)}
@@ -173,6 +185,15 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               />
             </div>
           </button>
+          {/* Subtle text hint */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.4 }}
+            className="text-[10px] text-muted-foreground/60 text-center mt-2 font-medium"
+          >
+            {lang === 'en' ? 'Tap to message me' : 'Нажми, чтобы написать'}
+          </motion.p>
         </motion.div>
 
         {/* Title */}
