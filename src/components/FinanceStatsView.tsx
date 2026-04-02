@@ -87,7 +87,7 @@ function getPerSessionPrice(pkg: PackageRecord): number {
   return Math.round(price / pkg.total_sessions);
 }
 
-const RELOAD_RATE_PER_HOUR = 30;
+const RELOAD_RATE_PER_CLASS = 25;
 
 const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const [packages, setPackages] = useState<PackageRecord[]>([]);
@@ -120,7 +120,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Reload (group classes) details for this month — €30/hour
+  // Reload (group classes) details for this month — €25/class
   // Match block_type='reload' OR title containing 'reload' (legacy blocks)
   const reloadDetails = useMemo(() => {
     const reloadBlocks = blocks.filter(b =>
@@ -148,7 +148,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         items.push({
           title: label,
           hours: total,
-          revenue: total * RELOAD_RATE_PER_HOUR,
+          revenue: total * RELOAD_RATE_PER_CLASS,
           doneCount: done,
           totalCount: total,
         });
@@ -161,7 +161,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
           items.push({
             title: label,
             hours: classesPerBlock,
-            revenue: classesPerBlock * RELOAD_RATE_PER_HOUR,
+            revenue: classesPerBlock * RELOAD_RATE_PER_CLASS,
             doneCount: isDone ? classesPerBlock : 0,
             totalCount: classesPerBlock,
           });
@@ -172,9 +172,9 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
     return {
       items,
       totalHours: totalClasses,
-      totalRevenue: totalClasses * RELOAD_RATE_PER_HOUR,
+      totalRevenue: totalClasses * RELOAD_RATE_PER_CLASS,
       doneHours: doneClasses,
-      doneRevenue: doneClasses * RELOAD_RATE_PER_HOUR,
+      doneRevenue: doneClasses * RELOAD_RATE_PER_CLASS,
     };
   }, [blocks, monthStart, monthEnd, lang]);
 
@@ -442,7 +442,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
               <div className="bg-teal-500/5 rounded-xl p-3">
                 <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Earned' : 'Заработано'}</p>
                 <p className="text-lg font-extrabold text-teal-500">€{reloadDetails.doneRevenue}<span className="text-muted-foreground font-normal text-xs"> / €{reloadRevenue}</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">€{RELOAD_RATE_PER_HOUR}/{lang === 'en' ? 'hr' : 'ч'}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">€{RELOAD_RATE_PER_CLASS}/{lang === 'en' ? 'class' : 'занятие'}</p>
               </div>
             </div>
           </div>
