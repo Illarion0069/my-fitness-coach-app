@@ -119,7 +119,9 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
-          className="mt-6 mb-6 relative"
+          className="mt-6 mb-2 flex flex-col items-center"
+        >
+          <div className="relative">
         >
           {/* Contact options — expand from photo on tap */}
           <AnimatePresence>
