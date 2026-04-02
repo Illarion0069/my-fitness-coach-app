@@ -106,7 +106,6 @@ const AppContent = () => {
             else setShowWelcome(true);
           }} clientPreview={clientPreview} />
         );
-      case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
