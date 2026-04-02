@@ -10,7 +10,7 @@ export interface TimelineEntry {
   time: string;
   durationMinutes: number;
   isRecurring: boolean;
-  tone: 'session' | 'travel' | 'blocked' | 'neutral';
+  tone: 'session' | 'travel' | 'blocked' | 'neutral' | 'reload' | 'personal';
 }
 
 interface PositionedEntry extends TimelineEntry {
