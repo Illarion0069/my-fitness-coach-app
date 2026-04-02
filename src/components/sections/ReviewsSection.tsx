@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Star, ExternalLink, Quote } from 'lucide-react';
+import { Star, ExternalLink } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -22,7 +22,7 @@ const ReviewsSection = () => {
           <p className="text-sm text-muted-foreground">{t(reviews.subtitle)}</p>
         </div>
         <a
-          href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+          href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0"
@@ -42,17 +42,19 @@ const ReviewsSection = () => {
             transition={{ delay: i * 0.1 }}
             className="bg-card rounded-2xl p-5 border border-border/50 relative"
           >
-            <Quote className="absolute top-4 right-4 w-5 h-5 text-primary/15" />
-            <div className="flex items-center gap-3 mb-3.5">
-              <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
                 {t(review.name).charAt(0)}
               </div>
               <div>
                 <h4 className="text-sm font-bold">{t(review.name)}</h4>
-                <div className="flex items-center gap-1 mt-0.5">
-                  {Array.from({ length: review.rating }).map((_, j) => (
-                    <Star key={j} className="w-3 h-3 fill-primary text-primary" />
-                  ))}
+                <div className="flex items-center gap-2 mt-0.5">
+                  <div className="flex gap-0.5">
+                    {Array.from({ length: review.rating }).map((_, j) => (
+                      <Star key={j} className="w-3 h-3 fill-primary text-primary" />
+                    ))}
+                  </div>
+                  <span className="text-[10px] text-muted-foreground/60">{t(review.timeAgo)}</span>
                 </div>
               </div>
             </div>
@@ -62,7 +64,7 @@ const ReviewsSection = () => {
       </div>
 
       <motion.a
-        href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+        href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
         target="_blank"
         rel="noopener noreferrer"
         initial={{ opacity: 0 }}
