@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2, CreditCard, Package } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2, CreditCard, Package, User, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, startOfDay, isSameMonth, getDay } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
+import PhoneInput from '@/components/PhoneInput';
 
 interface BookingModalProps {
   open: boolean;
@@ -29,7 +30,7 @@ interface MySession {
   session_time: string | null;
 }
 
-type Step = 'date' | 'time' | 'payment' | 'confirm' | 'done' | 'my-sessions';
+type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'my-sessions';
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 
@@ -61,6 +62,18 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [hasActivePackage, setHasActivePackage] = useState<boolean | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestCountryCode, setGuestCountryCode] = useState('+357');
+
+  const COUNTRY_CODES = [
+    { code: '+357', country: '🇨🇾', label: 'Cyprus' },
+    { code: '+7', country: '🇷🇺', label: 'Russia' },
+    { code: '+375', country: '🇧🇾', label: 'Belarus' },
+    { code: '+380', country: '🇺🇦', label: 'Ukraine' },
+    { code: '+44', country: '🇬🇧', label: 'UK' },
+    { code: '+1', country: '🇺🇸', label: 'US' },
+  ];
 
   // Fetch trainer blocked dates on mount
   useEffect(() => {
@@ -86,6 +99,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       setHasActivePackage(null);
       setSelectedPackage(null);
       setPaymentOpened(false);
+      setGuestName('');
+      setGuestPhone('');
       if (startStep === 'my-sessions') {
         fetchMySessions();
       }
@@ -169,7 +184,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const handleTimeSelect = async (time: string) => {
     setSelectedTime(time);
     if (!user) {
-      setStep('confirm');
+      // Guest flow: collect name + phone
+      setStep('guest-info');
       return;
     }
     setLoading(true);
@@ -194,19 +210,43 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
   const handleBook = async () => {
     if (!selectedDate || !selectedTime) return;
+    
+    // Guest booking (no auth)
     if (!user) {
-      onClose();
-      if (onLoginRequest) {
-        onLoginRequest();
-      } else {
+      if (!guestName.trim() || !guestPhone.trim()) {
         toast({
-          title: lang === 'en' ? 'Please log in' : 'Войдите в аккаунт',
-          description: lang === 'en' ? 'You need to be logged in to book a session' : 'Для записи необходимо авторизоваться',
+          title: lang === 'en' ? 'Fill in all fields' : 'Заполните все поля',
           variant: 'destructive',
         });
+        return;
       }
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('book-session', {
+          body: {
+            action: 'guestBook',
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: selectedTime,
+            guest_name: guestName.trim(),
+            guest_phone: `${guestCountryCode}${guestPhone.trim()}`,
+          },
+        });
+        if (error || data?.error) {
+          toast({
+            title: lang === 'en' ? 'Error' : 'Ошибка',
+            description: data?.error || error?.message || 'Unknown error',
+            variant: 'destructive',
+          });
+        } else {
+          setStep('done');
+        }
+      } catch (e: any) {
+        toast({ title: 'Error', description: e.message, variant: 'destructive' });
+      }
+      setLoading(false);
       return;
     }
+
     setLoading(true);
     try {
       const bookBody: any = {
@@ -303,8 +343,13 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                 )}
+                {step === 'guest-info' && (
+                  <button onClick={() => setStep('time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+                    <ChevronLeft className="w-5 h-5" />
+                  </button>
+                )}
                 {step === 'confirm' && (
-                  <button onClick={() => setStep(hasActivePackage === false ? 'payment' : 'time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+                  <button onClick={() => setStep(!user ? 'guest-info' : hasActivePackage === false ? 'payment' : 'time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                 )}
@@ -320,7 +365,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       ? (lang === 'en' ? 'My Sessions' : 'Мои записи')
                       : step === 'payment'
                         ? (lang === 'en' ? 'Payment' : 'Оплата')
-                        : (lang === 'en' ? 'Book Session' : 'Запись на тренировку')
+                        : step === 'guest-info'
+                          ? (lang === 'en' ? 'Your Info' : 'Ваши данные')
+                          : (lang === 'en' ? 'Book Session' : 'Запись на тренировку')
                   }
                 </h2>
               </div>
@@ -332,7 +379,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             {/* Step indicators */}
             {step !== 'done' && step !== 'my-sessions' && (
               <div className="flex gap-1 mt-3">
-                {(hasActivePackage === false ? ['date', 'time', 'payment', 'confirm'] : ['date', 'time', 'confirm']).map((s, i, arr) => (
+                {(!user ? ['date', 'time', 'guest-info', 'confirm'] : hasActivePackage === false ? ['date', 'time', 'payment', 'confirm'] : ['date', 'time', 'confirm']).map((s, i, arr) => (
                   <div
                     key={s}
                     className={`h-1 flex-1 rounded-full transition-colors ${
@@ -418,8 +465,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 </div>
 
                 {!user && (
-                  <p className="text-xs text-muted-foreground text-center mt-4">
-                    {lang === 'en' ? 'Please log in to book a session' : 'Войдите, чтобы записаться'}
+                  <p className="text-xs text-primary/70 text-center mt-4 font-medium">
+                    {lang === 'en' ? '✨ No account needed — just pick a date!' : '✨ Аккаунт не нужен — просто выберите дату!'}
                   </p>
                 )}
               </div>
@@ -494,7 +541,78 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
               </div>
             )}
 
-            {/* === PAYMENT STEP === */}
+            {/* === GUEST INFO STEP === */}
+            {step === 'guest-info' && selectedDate && selectedTime && (
+              <div className="space-y-5">
+                <div className="bg-secondary/50 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{format(selectedDate, 'EEEE, d MMMM', { locale })}</p>
+                    <p className="text-xs text-muted-foreground">{selectedTime}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold mb-1">
+                    {lang === 'en' ? 'Your contact info' : 'Ваши контактные данные'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {lang === 'en' ? 'We\'ll contact you to confirm the session' : 'Мы свяжемся с вами для подтверждения'}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      {lang === 'en' ? 'Your name' : 'Ваше имя'}
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder={lang === 'en' ? 'John' : 'Иван'}
+                        className="w-full h-11 rounded-xl border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      {lang === 'en' ? 'Phone number' : 'Номер телефона'}
+                    </label>
+                    <PhoneInput
+                      countryCode={guestCountryCode}
+                      onCountryCodeChange={setGuestCountryCode}
+                      phone={guestPhone}
+                      onPhoneChange={setGuestPhone}
+                      countryCodes={COUNTRY_CODES}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!guestName.trim() || !guestPhone.trim()) {
+                      toast({
+                        title: lang === 'en' ? 'Fill in all fields' : 'Заполните все поля',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+                    setStep('confirm');
+                  }}
+                  disabled={!guestName.trim() || !guestPhone.trim()}
+                  className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {lang === 'en' ? 'Continue' : 'Продолжить'}
+                </button>
+              </div>
+            )}
+
             {step === 'payment' && selectedDate && selectedTime && (
               <div className="space-y-5">
                 {/* Selected slot summary */}
@@ -620,13 +738,39 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   </div>
                 </div>
 
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-                  <p className="text-xs text-destructive font-medium">
-                    ⚠️ {lang === 'en'
-                      ? 'Free cancellation up to 24 hours before the session. After that, the session will be deducted from your package.'
-                      : 'Бесплатная отмена за 24 часа до тренировки. После этого занятие будет списано из пакета.'}
-                  </p>
-                </div>
+                {/* Guest info summary */}
+                {!user && guestName && (
+                  <div className="bg-secondary/50 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{lang === 'en' ? 'Name' : 'Имя'}</p>
+                        <p className="text-sm font-bold">{guestName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{lang === 'en' ? 'Phone' : 'Телефон'}</p>
+                        <p className="text-sm font-bold">{guestCountryCode}{guestPhone}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {user && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
+                    <p className="text-xs text-destructive font-medium">
+                      ⚠️ {lang === 'en'
+                        ? 'Free cancellation up to 24 hours before the session. After that, the session will be deducted from your package.'
+                        : 'Бесплатная отмена за 24 часа до тренировки. После этого занятие будет списано из пакета.'}
+                    </p>
+                  </div>
+                )}
 
                 <button
                   onClick={(e) => { e.stopPropagation(); handleBook(); }}
@@ -655,9 +799,13 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {lang === 'en'
-                    ? 'You will receive a confirmation in Telegram'
-                    : 'Вы получите подтверждение в Telegram'
+                  {!user
+                    ? (lang === 'en'
+                      ? 'The trainer will contact you to confirm the session'
+                      : 'Тренер свяжется с вами для подтверждения')
+                    : (lang === 'en'
+                      ? 'You will receive a confirmation in Telegram'
+                      : 'Вы получите подтверждение в Telegram')
                   }
                 </p>
                 <button

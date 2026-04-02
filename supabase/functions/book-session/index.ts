@@ -506,6 +506,26 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Send Telegram notification to trainer about client booking
+      try {
+        const telegramToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+        const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
+        if (telegramToken && chatId) {
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', user.id).maybeSingle();
+          const clientName = profile?.full_name || 'Unknown';
+          const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+          const paymentNote = pendingPayment ? `\n💳 Ожидает оплату: ${selectedPackageSessions || '?'} сессий (${selectedPackagePrice || '?'}€)` : '';
+          const msg = `📋 *Новая запись от клиента*\n\n👤 ${clientName}\n📅 ${dateFormatted}\n🕐 ${time}${paymentNote}`;
+          await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }),
+          });
+        }
+      } catch (e) {
+        console.error('Telegram notification failed:', e);
+      }
+
       return new Response(JSON.stringify({ success: true, session_id: session.id, pendingPayment: !!pendingPayment }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -596,6 +616,88 @@ Deno.serve(async (req) => {
             idempotency_key: `client_cancel_${session_id}`,
           });
         }
+      }
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    if (action === 'guestBook') {
+      const { date, time, guest_name, guest_phone } = body;
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !time || !/^\d{2}:\d{2}$/.test(time)) {
+        return new Response(JSON.stringify({ error: 'Invalid booking payload' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (!guest_name?.trim() || !guest_phone?.trim()) {
+        return new Response(JSON.stringify({ error: 'Name and phone required' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const trainer = await getTrainerInfo();
+      if (!trainer) {
+        return new Response(JSON.stringify({ error: 'No trainer found' }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
+      if (trainer.daysOff.includes(dayOfWeek)) {
+        return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const bookedSessions = await getBookedSessions(date, dayOfWeek);
+      const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
+      const requestedMinutes = timeToMinutes(time);
+
+      if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, trainerBlocks)) {
+        return new Response(JSON.stringify({ error: 'Slot is blocked' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions) >= 1) {
+        return new Response(JSON.stringify({ error: 'Slot is not available' }), {
+          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const { error: insertError } = await supabase
+        .from('guest_bookings')
+        .insert({
+          guest_name: guest_name.trim(),
+          guest_phone: guest_phone.trim(),
+          session_date: date,
+          session_time: time,
+          trainer_user_id: trainer.trainerId,
+          status: 'pending',
+        });
+
+      if (insertError) {
+        return new Response(JSON.stringify({ error: insertError.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Send Telegram notification to trainer
+      try {
+        const telegramToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+        const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
+        if (telegramToken && chatId) {
+          const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+          const msg = `🆕 *Новая гостевая запись!*\n\n👤 ${guest_name.trim()}\n📞 ${guest_phone.trim()}\n📅 ${dateFormatted}\n🕐 ${time}\n\n⚠️ Клиент не зарегистрирован`;
+          await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }),
+          });
+        }
+      } catch (e) {
+        console.error('Telegram notification failed:', e);
       }
 
       return new Response(JSON.stringify({ success: true }), {
