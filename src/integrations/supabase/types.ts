@@ -224,6 +224,45 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_bookings: {
+        Row: {
+          created_at: string
+          guest_name: string
+          guest_phone: string
+          id: string
+          notes: string | null
+          session_date: string
+          session_time: string | null
+          status: string
+          trainer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          guest_name: string
+          guest_phone: string
+          id?: string
+          notes?: string | null
+          session_date: string
+          session_time?: string | null
+          status?: string
+          trainer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          guest_name?: string
+          guest_phone?: string
+          id?: string
+          notes?: string | null
+          session_date?: string
+          session_time?: string | null
+          status?: string
+          trainer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       nutrition_logs: {
         Row: {
           ai_analysis: Json | null
