@@ -442,7 +442,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
               <div className="bg-teal-500/5 rounded-xl p-3">
                 <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Earned' : 'Заработано'}</p>
                 <p className="text-lg font-extrabold text-teal-500">€{reloadDetails.doneRevenue}<span className="text-muted-foreground font-normal text-xs"> / €{reloadRevenue}</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">€{RELOAD_RATE_PER_CLASS}/{lang === 'en' ? 'hr' : 'ч'}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">€{RELOAD_RATE_PER_CLASS}/{lang === 'en' ? 'class' : 'занятие'}</p>
               </div>
             </div>
           </div>
