@@ -1,4 +1,4 @@
-import { Home, ClipboardCheck, CreditCard, User, Shield } from 'lucide-react';
+import { Home, CreditCard, User, Shield } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -14,7 +14,6 @@ const BottomNav = ({ active, onNavigate, showAdmin = false }: BottomNavProps) =>
 
   const items = [
     { id: 'home', icon: Home, label: t(nav.home) },
-    { id: 'test', icon: ClipboardCheck, label: t(nav.test) },
     { id: 'pricing', icon: CreditCard, label: t(nav.pricing) },
     { id: 'about', icon: User, label: lang === 'en' ? 'About' : 'Обо мне' },
     ...(showAdmin ? [{ id: 'admin', icon: Shield, label: lang === 'en' ? 'Admin' : 'Админ' }] : []),

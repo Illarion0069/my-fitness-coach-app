@@ -7,10 +7,7 @@ import HeroSection from '@/components/sections/HeroSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { AnimatePresence, motion } from 'framer-motion';
-
-const TestSection = lazy(() => import('@/components/sections/TestSection'));
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
 const AdminSection = lazy(() => import('@/components/sections/AdminSection'));
@@ -32,7 +29,7 @@ const AppContent = () => {
   // In client preview mode, trainer sees the app as a client
   const effectiveIsTrainer = isTrainer && !clientPreview;
 
-  const sections = ['home', 'test', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
+  const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
 
   const handleNavigate = (section: string) => {
     const currentIdx = sections.indexOf(activeSection);
@@ -106,7 +103,6 @@ const AppContent = () => {
             else setShowWelcome(true);
           }} clientPreview={clientPreview} />
         );
-      case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
