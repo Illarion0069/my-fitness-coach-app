@@ -456,8 +456,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 </div>
 
                 {!user && (
-                  <p className="text-xs text-muted-foreground text-center mt-4">
-                    {lang === 'en' ? 'Please log in to book a session' : 'Войдите, чтобы записаться'}
+                  <p className="text-xs text-primary/70 text-center mt-4 font-medium">
+                    {lang === 'en' ? '✨ No account needed — just pick a date!' : '✨ Аккаунт не нужен — просто выберите дату!'}
                   </p>
                 )}
               </div>
