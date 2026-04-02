@@ -185,6 +185,15 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               />
             </div>
           </button>
+          {/* Subtle text hint */}
+          <motion.p
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.4 }}
+            className="text-[10px] text-muted-foreground/60 text-center mt-2 font-medium"
+          >
+            {lang === 'en' ? 'Tap to message me' : 'Нажми, чтобы написать'}
+          </motion.p>
         </motion.div>
 
         {/* Title */}
