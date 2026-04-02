@@ -137,10 +137,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         setIsDayOff(true);
         setSlots([]);
       } else {
+        // Clients should never see partially-booked slots — any occupied slot is unavailable
         const normalizedSlots = ((data?.slots || []) as TimeSlot[]).map((slot) =>
-          forceClientView
-            ? { ...slot, available: slot.available && (slot.booked ?? 0) === 0, booked: 0 }
-            : slot
+          ({ ...slot, available: slot.available && (slot.booked ?? 0) === 0, booked: 0 })
         );
         setSlots(normalizedSlots);
       }
@@ -507,15 +506,10 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                             ? 'bg-secondary/50 text-muted-foreground/40 cursor-not-allowed line-through'
                             : selectedTime === slot.time
                               ? 'bg-primary text-primary-foreground shadow-md'
-                              : slot.booked === 1
-                                ? 'bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30'
-                                : 'bg-secondary hover:bg-primary/10 hover:text-primary text-foreground'
+                              : 'bg-secondary hover:bg-primary/10 hover:text-primary text-foreground'
                         }`}
                       >
                         {slot.time}
-                        {!forceClientView && slot.booked === 1 && slot.available && (
-                          <span className="absolute top-0.5 right-1.5 text-[8px] font-bold text-primary/70">1/2</span>
-                        )}
                       </button>
                     ))}
                   </div>
