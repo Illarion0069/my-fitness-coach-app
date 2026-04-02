@@ -542,6 +542,25 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           onSelectTime={(time) => {
             setShowBlockModal(time);
           }}
+          onMoveEntry={async (entry, newTime) => {
+            const session = daySessions.find((s) => s.id === entry.id);
+            const block = dayBlocks.find((b) => b.id === entry.id);
+
+            if (session) {
+              if (session.is_recurring) {
+                await supabase.from('scheduled_sessions').update({ recurrence_time: newTime }).eq('id', session.id);
+              } else {
+                await supabase.from('scheduled_sessions').update({ session_time: newTime }).eq('id', session.id);
+              }
+              await fetchSessions();
+              onSessionChange?.();
+            } else if (block) {
+              await supabase.from('trainer_blocks').update({ block_time: newTime }).eq('id', block.id);
+              await fetchBlocks();
+            }
+
+            toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+          }}
         />
       </section>
 
