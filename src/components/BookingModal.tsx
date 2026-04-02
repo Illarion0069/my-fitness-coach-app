@@ -375,7 +375,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             {/* Step indicators */}
             {step !== 'done' && step !== 'my-sessions' && (
               <div className="flex gap-1 mt-3">
-                {(hasActivePackage === false ? ['date', 'time', 'payment', 'confirm'] : ['date', 'time', 'confirm']).map((s, i, arr) => (
+                {(!user ? ['date', 'time', 'guest-info', 'confirm'] : hasActivePackage === false ? ['date', 'time', 'payment', 'confirm'] : ['date', 'time', 'confirm']).map((s, i, arr) => (
                   <div
                     key={s}
                     className={`h-1 flex-1 rounded-full transition-colors ${
