@@ -506,6 +506,26 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Send Telegram notification to trainer about client booking
+      try {
+        const telegramToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+        const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
+        if (telegramToken && chatId) {
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', user.id).maybeSingle();
+          const clientName = profile?.full_name || 'Unknown';
+          const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+          const paymentNote = pendingPayment ? `\n💳 Ожидает оплату: ${selectedPackageSessions || '?'} сессий (${selectedPackagePrice || '?'}€)` : '';
+          const msg = `📋 *Новая запись от клиента*\n\n👤 ${clientName}\n📅 ${dateFormatted}\n🕐 ${time}${paymentNote}`;
+          await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }),
+          });
+        }
+      } catch (e) {
+        console.error('Telegram notification failed:', e);
+      }
+
       return new Response(JSON.stringify({ success: true, session_id: session.id, pendingPayment: !!pendingPayment }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
