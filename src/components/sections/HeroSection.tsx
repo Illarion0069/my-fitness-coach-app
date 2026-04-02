@@ -113,21 +113,48 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
       </div>
 
       <div className="flex-1 flex flex-col items-center px-5">
-        {/* Circular trainer photo with glow */}
+        {/* Circular trainer photo with glow — clickable to contact */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
           className="mt-6 mb-6 relative"
         >
-          <div className="w-40 h-40 rounded-full p-1 bg-gradient-to-b from-primary/60 via-primary/20 to-transparent shadow-[0_8px_40px_-8px_hsl(var(--primary)/0.4)]">
-            <img
-              src={trainerPhoto}
-              alt={t(hero.trainer)}
-              className="w-full h-full rounded-full object-cover bg-card border-4 border-card"
-              style={{ objectPosition: '60% center' }}
-            />
-          </div>
+          {/* Chat bubble tooltip */}
+          <motion.a
+            href="https://wa.me/35795144819"
+            target="_blank"
+            rel="noopener noreferrer"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 1.2, duration: 0.4 }}
+            className="absolute -top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 bg-card border border-border/60 px-3 py-1.5 rounded-xl shadow-lg whitespace-nowrap"
+          >
+            <MessageCircle className="w-3.5 h-3.5 text-primary" />
+            <span className="text-[11px] font-bold text-foreground">{lang === 'en' ? 'Message me' : 'Написать мне'}</span>
+            {/* Triangle pointer */}
+            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-card border-r border-b border-border/60 rotate-45" />
+          </motion.a>
+
+          {/* Pulsing ring */}
+          <div className="absolute inset-0 rounded-full animate-ping bg-primary/10" style={{ animationDuration: '3s' }} />
+          <div className="absolute -inset-1 rounded-full animate-pulse bg-primary/5" style={{ animationDuration: '2s' }} />
+
+          <a
+            href="https://wa.me/35795144819"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative block"
+          >
+            <div className="w-40 h-40 rounded-full p-1 bg-gradient-to-b from-primary/60 via-primary/20 to-transparent shadow-[0_8px_40px_-8px_hsl(var(--primary)/0.4)] transition-transform hover:scale-105 active:scale-95">
+              <img
+                src={trainerPhoto}
+                alt={t(hero.trainer)}
+                className="w-full h-full rounded-full object-cover bg-card border-4 border-card"
+                style={{ objectPosition: '60% center' }}
+              />
+            </div>
+          </a>
         </motion.div>
 
         {/* Title */}
@@ -157,36 +184,22 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           <p className="text-xs text-muted-foreground/70 mt-1">— {t(hero.trainer)}</p>
         </motion.div>
 
-        {/* CTA Buttons */}
+        {/* CTA Button — single, clean */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5, duration: 0.5 }}
-          className="mb-4 flex flex-col items-center gap-3 w-full max-w-xs"
+          className="mb-4 w-full max-w-xs"
         >
           <motion.button
-            key="book"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
             transition={{ duration: 0.2 }}
             onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
             className="w-full gradient-primary text-primary-foreground font-extrabold rounded-2xl glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] py-4 text-base tracking-wide"
           >
             {lang === 'en' ? '🔥 Book Your Session' : '🔥 Записаться на тренировку'}
           </motion.button>
-          <motion.a
-            href="https://wa.me/35795144819"
-            target="_blank"
-            rel="noopener noreferrer"
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.2, delay: 0.1 }}
-            className="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 rounded-2xl text-sm hover:scale-[1.02] transition-all active:scale-[0.98] shadow-[0_4px_20px_-4px_rgba(16,185,129,0.5)]"
-          >
-            <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-            {lang === 'en' ? 'Message Trainer' : 'Написать тренеру'}
-          </motion.a>
         </motion.div>
 
         {/* Workouts section */}
