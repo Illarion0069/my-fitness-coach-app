@@ -127,6 +127,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             {showContactOptions ? (
               <motion.div
                 key="messengers"
+                className="contents"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
@@ -164,6 +165,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             ) : (
               <motion.div
                 key="chat-hint"
+                className="absolute inset-0 pointer-events-none"
                 initial={{ opacity: 0, scale: 0.3 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.3 }}
