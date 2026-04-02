@@ -354,7 +354,7 @@ const AboutSection = () => {
             />
           </div>
           <a
-            href="https://maps.app.goo.gl/BfsgGGsJaB5QCvsD9"
+            href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1.5 text-xs text-primary font-semibold mt-2 hover:underline"
