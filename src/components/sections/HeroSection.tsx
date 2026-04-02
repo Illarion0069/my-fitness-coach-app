@@ -2,11 +2,6 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, UserRound } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
-import workoutWeightLoss from '@/assets/workout-weight-loss.jpg';
-import workoutMuscleGain from '@/assets/workout-muscle-gain.jpg';
-import workoutFlexibility from '@/assets/workout-flexibility.jpg';
-import workoutStayFit from '@/assets/workout-stay-fit.jpg';
-import workoutPainRelief from '@/assets/workout-pain-relief.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -204,121 +199,106 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3">
             {t(workouts.title)}
           </h2>
-          {(() => {
-            const workoutImages = [workoutWeightLoss, workoutMuscleGain, workoutFlexibility, workoutStayFit, workoutPainRelief];
-            return (
-              <>
-                <div className="grid grid-cols-2 gap-3">
-                  {workouts.items.slice(0, 4).map((item, i) => (
+          <div className="grid grid-cols-2 gap-3">
+            {workouts.items.slice(0, 4).map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.7 + i * 0.05 }}
+                onClick={() => setExpandedCard(expandedCard === i ? null : i)}
+                className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none"
+              >
+                <div className="text-2xl mb-2">{item.icon}</div>
+                <h3 className="text-[13px] font-bold text-foreground mb-1">{t(item.name)}</h3>
+                <AnimatePresence mode="wait">
+                  {expandedCard === i ? (
                     <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.7 + i * 0.05 }}
-                      onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-                      className="workout-card-expanded relative rounded-2xl overflow-hidden cursor-pointer select-none group"
+                      key="expanded"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="overflow-hidden"
                     >
-                      <img
-                        src={workoutImages[i]}
-                        alt={t(item.name)}
-                        className="w-full h-44 object-cover transition-transform duration-300 group-hover:scale-105"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-3.5">
-                        <span className="text-xl mb-1 block">{item.icon}</span>
-                        <h3 className="text-sm font-extrabold text-white tracking-tight leading-tight">{t(item.name)}</h3>
-                        <AnimatePresence mode="wait">
-                          {expandedCard === i ? (
-                            <motion.div
-                              key="expanded"
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="overflow-hidden"
-                            >
-                              <p className="text-[10px] text-white/70 leading-relaxed mt-1">{t(item.desc)}</p>
-                              <div className="flex gap-2 mt-2.5">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                                  className="gradient-primary text-primary-foreground font-bold py-1.5 px-3 rounded-xl text-[10px] glow-primary active:scale-[0.98]"
-                                >
-                                  {lang === 'en' ? 'Book' : 'Записаться'}
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onNavigate('pricing'); }}
-                                  className="bg-white/15 text-white font-bold py-1.5 px-3 rounded-xl text-[10px] backdrop-blur-sm active:scale-[0.98]"
-                                >
-                                  {lang === 'en' ? 'Pricing' : 'Цены'}
-                                </button>
-                              </div>
-                            </motion.div>
-                          ) : null}
-                        </AnimatePresence>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">{t(item.desc)}</p>
+                      <div className="flex gap-2 mt-3">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                          className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+                        >
+                          {lang === 'en' ? 'Book' : 'Записаться'}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onNavigate('pricing'); }}
+                          className="bg-secondary text-secondary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] hover:bg-secondary/80 transition-colors active:scale-[0.98]"
+                        >
+                          {lang === 'en' ? 'Pricing' : 'Цены'}
+                        </button>
                       </div>
                     </motion.div>
-                  ))}
+                  ) : (
+                    <motion.p
+                      key="collapsed"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2"
+                    >
+                      {t(item.desc)}
+                    </motion.p>
+                  )}
+                </AnimatePresence>
+              </motion.div>
+            ))}
+          </div>
+          {/* 5th workout card full-width */}
+          {workouts.items[4] && (
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9 }}
+              onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
+              className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
+            >
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">{workouts.items[4].icon}</span>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-[13px] font-bold text-foreground">{t(workouts.items[4].name)}</h3>
+                  <AnimatePresence mode="wait">
+                    {expandedCard === 4 ? (
+                      <motion.div
+                        key="exp"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
+                        <div className="flex gap-2 mt-3">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                            className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+                          >
+                            {lang === 'en' ? 'Book' : 'Записаться'}
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onNavigate('pricing'); }}
+                            className="bg-secondary text-secondary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] hover:bg-secondary/80 transition-colors active:scale-[0.98]"
+                          >
+                            {lang === 'en' ? 'Pricing' : 'Цены'}
+                          </button>
+                        </div>
+                      </motion.div>
+                    ) : (
+                      <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                        {t(workouts.items[4].desc)}
+                      </motion.p>
+                    )}
+                  </AnimatePresence>
                 </div>
-
-                {/* 5th workout card full-width */}
-                {workouts.items[4] && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.9 }}
-                    onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
-                    className="workout-card-expanded relative rounded-2xl overflow-hidden cursor-pointer select-none mt-3 group"
-                  >
-                    <img
-                      src={workoutImages[4]}
-                      alt={t(workouts.items[4].name)}
-                      className="w-full h-36 object-cover transition-transform duration-300 group-hover:scale-105"
-                      loading="lazy"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/50 to-transparent" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end gap-3">
-                      <span className="text-2xl">{workouts.items[4].icon}</span>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-extrabold text-white tracking-tight">{t(workouts.items[4].name)}</h3>
-                        <AnimatePresence mode="wait">
-                          {expandedCard === 4 ? (
-                            <motion.div
-                              key="exp"
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: 'auto', opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              className="overflow-hidden"
-                            >
-                              <p className="text-[10px] text-white/70 leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
-                              <div className="flex gap-2 mt-2.5">
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                                  className="gradient-primary text-primary-foreground font-bold py-1.5 px-3 rounded-xl text-[10px] glow-primary active:scale-[0.98]"
-                                >
-                                  {lang === 'en' ? 'Book' : 'Записаться'}
-                                </button>
-                                <button
-                                  onClick={(e) => { e.stopPropagation(); onNavigate('pricing'); }}
-                                  className="bg-white/15 text-white font-bold py-1.5 px-3 rounded-xl text-[10px] backdrop-blur-sm active:scale-[0.98]"
-                                >
-                                  {lang === 'en' ? 'Pricing' : 'Цены'}
-                                </button>
-                              </div>
-                            </motion.div>
-                          ) : (
-                            <motion.p key="col" className="text-[10px] text-white/60 line-clamp-1 mt-0.5">
-                              {t(workouts.items[4].desc)}
-                            </motion.p>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </>
-            );
-          })()}
+              </div>
+            </motion.div>
+          )}
 
           {/* Scroll hint */}
           <div className="flex justify-center mt-4">
