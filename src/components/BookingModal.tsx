@@ -208,19 +208,43 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
   const handleBook = async () => {
     if (!selectedDate || !selectedTime) return;
+    
+    // Guest booking (no auth)
     if (!user) {
-      onClose();
-      if (onLoginRequest) {
-        onLoginRequest();
-      } else {
+      if (!guestName.trim() || !guestPhone.trim()) {
         toast({
-          title: lang === 'en' ? 'Please log in' : 'Войдите в аккаунт',
-          description: lang === 'en' ? 'You need to be logged in to book a session' : 'Для записи необходимо авторизоваться',
+          title: lang === 'en' ? 'Fill in all fields' : 'Заполните все поля',
           variant: 'destructive',
         });
+        return;
       }
+      setLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('book-session', {
+          body: {
+            action: 'guestBook',
+            date: format(selectedDate, 'yyyy-MM-dd'),
+            time: selectedTime,
+            guest_name: guestName.trim(),
+            guest_phone: `${guestCountryCode}${guestPhone.trim()}`,
+          },
+        });
+        if (error || data?.error) {
+          toast({
+            title: lang === 'en' ? 'Error' : 'Ошибка',
+            description: data?.error || error?.message || 'Unknown error',
+            variant: 'destructive',
+          });
+        } else {
+          setStep('done');
+        }
+      } catch (e: any) {
+        toast({ title: 'Error', description: e.message, variant: 'destructive' });
+      }
+      setLoading(false);
       return;
     }
+
     setLoading(true);
     try {
       const bookBody: any = {
