@@ -30,7 +30,7 @@ interface MySession {
   session_time: string | null;
 }
 
-type Step = 'date' | 'time' | 'payment' | 'confirm' | 'done' | 'my-sessions';
+type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'my-sessions';
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 
