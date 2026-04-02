@@ -99,6 +99,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       setHasActivePackage(null);
       setSelectedPackage(null);
       setPaymentOpened(false);
+      setGuestName('');
+      setGuestPhone('');
       if (startStep === 'my-sessions') {
         fetchMySessions();
       }
