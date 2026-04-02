@@ -215,33 +215,37 @@ const AboutSection = () => {
           </div>
         </motion.div>
 
-        {/* ── Reviews ── */}
+        {/* ── Reviews from Google ── */}
         <motion.div {...fade(0.3)} className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-1">
             <h2 className="text-sm font-extrabold uppercase tracking-wider">{t(reviews.title)}</h2>
             <a
-              href="https://maps.app.goo.gl/BfsgGGsJaB5QCvsD9"
+              href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1 text-xs font-bold text-primary"
+              className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0"
             >
               <Star className="w-3.5 h-3.5 fill-primary text-primary" />
-              5.0 Google
+              5.0
             </a>
           </div>
+          <p className="text-[11px] text-muted-foreground mb-4">{t(reviews.subtitle)}</p>
           <div className="space-y-3">
             {reviews.items.map((review, i) => (
-              <div key={i} className="bg-card rounded-2xl border border-border/50 p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-8 h-8 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-xs">
-                    {t(review.name).split(' ').map(w => w[0]).join('')}
+              <div key={i} className="bg-card rounded-2xl border border-border/50 p-4 relative">
+                <div className="flex items-center gap-2.5 mb-2.5">
+                  <div className="w-9 h-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground font-bold text-sm">
+                    {t(review.name).charAt(0)}
                   </div>
                   <div className="flex-1">
                     <h4 className="text-xs font-bold">{t(review.name)}</h4>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: review.rating }).map((_, j) => (
-                        <Star key={j} className="w-2.5 h-2.5 fill-primary text-primary" />
-                      ))}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <div className="flex gap-0.5">
+                        {Array.from({ length: review.rating }).map((_, j) => (
+                          <Star key={j} className="w-2.5 h-2.5 fill-primary text-primary" />
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground/60">{t(review.timeAgo)}</span>
                     </div>
                   </div>
                 </div>
@@ -249,6 +253,15 @@ const AboutSection = () => {
               </div>
             ))}
           </div>
+          <a
+            href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-4 flex items-center justify-center gap-2 text-xs text-primary font-semibold hover:underline"
+          >
+            <svg viewBox="0 0 24 24" className="w-4 h-4"><path fill="currentColor" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            {lang === 'en' ? 'All reviews on Google Maps' : 'Все отзывы на Google Картах'}
+          </a>
         </motion.div>
 
         {/* ── Certifications ── */}

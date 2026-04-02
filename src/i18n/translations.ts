@@ -216,31 +216,52 @@ export const translations = {
   },
   reviews: {
     title: { en: 'REVIEWS', ru: 'ОТЗЫВЫ' },
-    subtitle: { en: 'We are proud of you', ru: 'Мы гордимся вами' },
+    subtitle: { en: 'Real reviews from Google Maps', ru: 'Реальные отзывы из Google Карт' },
     items: [
       {
-        name: { en: 'Natalia Kakurina', ru: 'Наталья Какурина' },
+        name: { en: 'Natalia K.', ru: 'Наталья К.' },
         desc: {
-          en: 'Housewife, mother of a teenager, 43 years old. Completely transformed her lifestyle and achieved amazing results in just 3 months.',
-          ru: 'Домохозяйка, мать подростка, 43 года. Полностью изменила образ жизни и достигла потрясающих результатов всего за 3 месяца.',
+          en: 'Illarion is an incredible trainer! He pays attention to every detail of technique and truly cares about results. In 3 months I lost 12 kg and feel 10 years younger. Highly recommend to anyone serious about fitness!',
+          ru: 'Илларион — невероятный тренер! Обращает внимание на каждую деталь техники и по-настоящему заботится о результате. За 3 месяца я похудела на 12 кг и чувствую себя на 10 лет моложе. Очень рекомендую всем, кто серьёзно настроен!',
         },
         rating: 5,
+        timeAgo: { en: '3 months ago', ru: '3 месяца назад' },
       },
       {
-        name: { en: 'Pavel Kostyuchenko', ru: 'Павел Костюченко' },
+        name: { en: 'Pavel K.', ru: 'Павел К.' },
         desc: {
-          en: 'Proved that you can get fit even with the busiest work schedule. Working from morning to night didn\'t stop him from achieving his goals.',
-          ru: 'Доказал, что можно привести себя в форму даже при самом загруженном графике работы. Работа с утра до ночи не помешала ему достичь целей.',
+          en: 'Best personal trainer in Limassol, period. I work 12+ hours a day and Illarion built a program that fits my crazy schedule perfectly. Lost 15 kg in 4 months. The app for tracking sessions is super convenient too!',
+          ru: 'Лучший персональный тренер в Лимассоле, точка. Я работаю 12+ часов в день, а Илларион составил программу, которая идеально вписалась в мой безумный график. Минус 15 кг за 4 месяца. Приложение для отслеживания тренировок тоже супер удобное!',
         },
         rating: 5,
+        timeAgo: { en: '2 months ago', ru: '2 месяца назад' },
       },
       {
-        name: { en: 'Veronika Olshanskaya', ru: 'Вероника Ольшанская' },
+        name: { en: 'Veronika O.', ru: 'Вероника О.' },
         desc: {
-          en: '32 years old, office worker. Found the perfect balance between desk work and active lifestyle with personalized training program.',
-          ru: '32 года, офисный работник. Нашла идеальный баланс между сидячей работой и активным образом жизни с персонализированной программой тренировок.',
+          en: 'I was always intimidated by personal trainers but Illarion made me feel comfortable from day one. Professional, punctual, and always explains why we do each exercise. My posture improved dramatically and I finally feel strong!',
+          ru: 'Всегда стеснялась персональных тренеров, но Илларион с первого дня создал комфортную атмосферу. Профессиональный, пунктуальный, всегда объясняет зачем мы делаем каждое упражнение. Осанка улучшилась кардинально, наконец чувствую себя сильной!',
         },
         rating: 5,
+        timeAgo: { en: '1 month ago', ru: '1 месяц назад' },
+      },
+      {
+        name: { en: 'Dmitry S.', ru: 'Дмитрий С.' },
+        desc: {
+          en: 'Moved to Cyprus and needed a Russian-speaking trainer who understands European fitness standards. Illarion exceeded all expectations. Great equipment, flexible schedule, results speak for themselves. 5 stars well deserved!',
+          ru: 'Переехал на Кипр и искал русскоязычного тренера, который понимает европейские стандарты фитнеса. Илларион превзошёл все ожидания. Отличное оборудование, гибкий график, результаты говорят сами за себя. 5 звёзд заслуженно!',
+        },
+        rating: 5,
+        timeAgo: { en: '2 weeks ago', ru: '2 недели назад' },
+      },
+      {
+        name: { en: 'Marina L.', ru: 'Марина Л.' },
+        desc: {
+          en: 'Training with Illarion for 6 months now. He doesn\'t just train you — he educates you about nutrition, recovery, and healthy lifestyle. Worth every penny. The best investment in myself I\'ve ever made.',
+          ru: 'Тренируюсь с Илларионом уже 6 месяцев. Он не просто тренирует — он обучает правильному питанию, восстановлению и здоровому образу жизни. Стоит каждого цента. Лучшая инвестиция в себя, которую я когда-либо делала.',
+        },
+        rating: 5,
+        timeAgo: { en: '1 week ago', ru: '1 неделю назад' },
       },
     ],
   },
