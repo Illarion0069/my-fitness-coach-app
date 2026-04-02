@@ -124,18 +124,21 @@ const AboutSection = () => {
           <h2 className="text-sm font-extrabold uppercase tracking-wider mb-4">
             {lang === 'en' ? 'Why Train With Me' : 'Почему я'}
           </h2>
-          <div className="space-y-3">
+          <div className="grid grid-cols-3 gap-3">
             {reasons.map((reason, i) => {
               const Icon = reason.icon;
+              const colors = [
+                'from-primary/20 to-primary/5 border-primary/20',
+                'from-blue-500/20 to-blue-500/5 border-blue-500/20',
+                'from-emerald-500/20 to-emerald-500/5 border-emerald-500/20',
+              ];
               return (
-                <div key={i} className="flex gap-3.5 items-start">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                <div key={i} className={`rounded-2xl border bg-gradient-to-br ${colors[i]} p-3.5 text-center`}>
+                  <div className="w-11 h-11 rounded-xl bg-background/50 flex items-center justify-center mx-auto mb-2.5">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
-                  <div>
-                    <h3 className="text-sm font-bold mb-0.5">{t(reason.title)}</h3>
-                    <p className="text-xs text-muted-foreground leading-relaxed">{t(reason.desc)}</p>
-                  </div>
+                  <h3 className="text-[11px] font-extrabold mb-1 leading-tight">{t(reason.title)}</h3>
+                  <p className="text-[9px] text-muted-foreground leading-relaxed">{t(reason.desc)}</p>
                 </div>
               );
             })}
