@@ -138,10 +138,10 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                   href="https://wa.me/35795144819"
                   target="_blank"
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0, x: 40 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0, x: 40 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 16, delay: 0.02 }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={{ type: 'spring', stiffness: 700, damping: 14 }}
                   className="absolute top-1/2 -translate-y-1/2 -left-16 z-10 w-12 h-12 rounded-full bg-[#25D366] flex items-center justify-center shadow-[0_4px_20px_rgba(37,211,102,0.4)] hover:scale-110 active:scale-95 transition-transform"
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -152,10 +152,10 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                   href="https://t.me/fitnesslimassol"
                   target="_blank"
                   rel="noopener noreferrer"
-                  initial={{ opacity: 0, scale: 0, x: -40 }}
-                  animate={{ opacity: 1, scale: 1, x: 0 }}
-                  exit={{ opacity: 0, scale: 0, x: -40 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 16, delay: 0.06 }}
+                  initial={{ opacity: 0, scale: 0 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0 }}
+                  transition={{ type: 'spring', stiffness: 700, damping: 14, delay: 0.03 }}
                   className="absolute top-1/2 -translate-y-1/2 -right-16 z-10 w-12 h-12 rounded-full bg-[#229ED9] flex items-center justify-center shadow-[0_4px_20px_rgba(34,158,217,0.4)] hover:scale-110 active:scale-95 transition-transform"
                   onClick={(e) => e.stopPropagation()}
                 >
