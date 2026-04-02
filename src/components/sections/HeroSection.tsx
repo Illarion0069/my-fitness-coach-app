@@ -32,6 +32,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
   };
   const workouts = translations.workouts;
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
+  const [showContactOptions, setShowContactOptions] = useState(false);
 
   useEffect(() => {
     if (expandedCard === null) return;
