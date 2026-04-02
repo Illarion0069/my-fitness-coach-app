@@ -738,13 +738,39 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   </div>
                 </div>
 
-                <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
-                  <p className="text-xs text-destructive font-medium">
-                    ⚠️ {lang === 'en'
-                      ? 'Free cancellation up to 24 hours before the session. After that, the session will be deducted from your package.'
-                      : 'Бесплатная отмена за 24 часа до тренировки. После этого занятие будет списано из пакета.'}
-                  </p>
-                </div>
+                {/* Guest info summary */}
+                {!user && guestName && (
+                  <div className="bg-secondary/50 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <User className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{lang === 'en' ? 'Name' : 'Имя'}</p>
+                        <p className="text-sm font-bold">{guestName}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                        <Phone className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">{lang === 'en' ? 'Phone' : 'Телефон'}</p>
+                        <p className="text-sm font-bold">{guestCountryCode}{guestPhone}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {user && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
+                    <p className="text-xs text-destructive font-medium">
+                      ⚠️ {lang === 'en'
+                        ? 'Free cancellation up to 24 hours before the session. After that, the session will be deducted from your package.'
+                        : 'Бесплатная отмена за 24 часа до тренировки. После этого занятие будет списано из пакета.'}
+                    </p>
+                  </div>
+                )}
 
                 <button
                   onClick={(e) => { e.stopPropagation(); handleBook(); }}
