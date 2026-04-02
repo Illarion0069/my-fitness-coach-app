@@ -417,9 +417,13 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       tone:
         block.block_type === 'travel'
           ? ('travel' as const)
-          : block.block_type === 'block'
-            ? ('blocked' as const)
-            : ('neutral' as const),
+          : block.block_type === 'reload'
+            ? ('reload' as const)
+            : block.block_type === 'personal'
+              ? ('personal' as const)
+              : block.block_type === 'block'
+                ? ('blocked' as const)
+                : ('neutral' as const),
     }));
 
     return [...sessionEntries, ...blockEntries].sort((a, b) => a.time.localeCompare(b.time));
