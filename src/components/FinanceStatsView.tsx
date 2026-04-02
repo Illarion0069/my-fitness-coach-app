@@ -120,7 +120,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   const monthStart = startOfMonth(currentMonth);
   const monthEnd = endOfMonth(currentMonth);
 
-  // Reload (group classes) details for this month — €30/hour
+  // Reload (group classes) details for this month — €25/class
   // Match block_type='reload' OR title containing 'reload' (legacy blocks)
   const reloadDetails = useMemo(() => {
     const reloadBlocks = blocks.filter(b =>
