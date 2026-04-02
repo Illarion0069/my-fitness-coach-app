@@ -162,38 +162,42 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           <div className="absolute inset-0 rounded-full animate-ping bg-primary/10" style={{ animationDuration: '3s' }} />
           <div className="absolute -inset-1 rounded-full animate-pulse bg-primary/5" style={{ animationDuration: '2s' }} />
 
-          {/* Pulsing chat badge on bottom-right edge */}
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 1, type: 'spring', stiffness: 300, damping: 15 }}
-            className="absolute -bottom-1 -right-1 z-10 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-lg pointer-events-none"
-          >
-            <div className="absolute inset-0 rounded-full animate-ping bg-primary/40" style={{ animationDuration: '2s' }} />
-            <MessageCircle className="w-4 h-4 text-primary-foreground relative z-10" />
-          </motion.div>
-
-          {/* "Tap to contact" hint — hide when contact options are shown */}
+          {/* Chat badge + "tap to contact" hint — hidden when contact options are shown */}
           <AnimatePresence>
             {!showContactOptions && (
-              <motion.div
-                initial={{ opacity: 0, x: -5 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -5 }}
-                transition={{ duration: 0.3 }}
-                className="absolute top-1/2 -translate-y-1/2 -right-[7.5rem] z-10 flex items-center gap-1.5"
-              >
-                <motion.span
-                  animate={{ x: [0, -3, 0] }}
-                  transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
-                  className="text-primary/50 text-sm"
+              <>
+                {/* Pulsing chat badge on bottom-right edge */}
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.5 }}
+                  transition={{ delay: 1, type: 'spring', stiffness: 300, damping: 15 }}
+                  className="absolute -bottom-1 -right-1 z-10 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-lg pointer-events-none"
                 >
-                  ←
-                </motion.span>
-                <span className="text-[10px] font-medium text-muted-foreground/70 italic leading-tight max-w-[5rem]">
-                  {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
-                </span>
-              </motion.div>
+                  <div className="absolute inset-0 rounded-full animate-ping bg-primary/40" style={{ animationDuration: '2s' }} />
+                  <MessageCircle className="w-4 h-4 text-primary-foreground relative z-10" />
+                </motion.div>
+
+                {/* "Tap to contact" hint */}
+                <motion.div
+                  initial={{ opacity: 0, x: -5 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -5 }}
+                  transition={{ duration: 0.3 }}
+                  className="absolute top-1/2 -translate-y-1/2 -right-[7.5rem] z-10 flex items-center gap-1.5"
+                >
+                  <motion.span
+                    animate={{ x: [0, -3, 0] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                    className="text-primary/50 text-sm"
+                  >
+                    ←
+                  </motion.span>
+                  <span className="text-[10px] font-medium text-muted-foreground/70 italic leading-tight max-w-[5rem]">
+                    {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
+                  </span>
+                </motion.div>
+              </>
             )}
           </AnimatePresence>
 
