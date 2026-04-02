@@ -176,7 +176,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             {t(hero.cta)}
           </motion.button>
           <motion.a
-            href="https://wa.me/35796740558"
+            href="https://wa.me/35795144819"
             target="_blank"
             rel="noopener noreferrer"
             initial={{ opacity: 0, scale: 0.95 }}
