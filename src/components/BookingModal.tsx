@@ -799,9 +799,13 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   </p>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {lang === 'en'
-                    ? 'You will receive a confirmation in Telegram'
-                    : 'Вы получите подтверждение в Telegram'
+                  {!user
+                    ? (lang === 'en'
+                      ? 'The trainer will contact you to confirm the session'
+                      : 'Тренер свяжется с вами для подтверждения')
+                    : (lang === 'en'
+                      ? 'You will receive a confirmation in Telegram'
+                      : 'Вы получите подтверждение в Telegram')
                   }
                 </p>
                 <button
