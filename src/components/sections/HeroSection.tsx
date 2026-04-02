@@ -123,7 +123,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
         >
           <div className="relative">
           {/* Messenger bubbles + chat badge: swap with mode="wait" */}
-          <AnimatePresence mode="wait">
+          <AnimatePresence>
             {showContactOptions ? (
               <motion.div
                 key="messengers"
