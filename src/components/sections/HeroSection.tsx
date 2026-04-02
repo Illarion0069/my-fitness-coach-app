@@ -172,7 +172,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 style={{ objectPosition: '60% center' }}
               />
             </div>
-          </a>
+          </button>
         </motion.div>
 
         {/* Title */}
