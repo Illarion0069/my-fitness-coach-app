@@ -62,6 +62,18 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [hasActivePackage, setHasActivePackage] = useState<boolean | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
+  const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
+  const [guestCountryCode, setGuestCountryCode] = useState('+357');
+
+  const COUNTRY_CODES = [
+    { code: '+357', country: '🇨🇾', label: 'Cyprus' },
+    { code: '+7', country: '🇷🇺', label: 'Russia' },
+    { code: '+375', country: '🇧🇾', label: 'Belarus' },
+    { code: '+380', country: '🇺🇦', label: 'Ukraine' },
+    { code: '+44', country: '🇬🇧', label: 'UK' },
+    { code: '+1', country: '🇺🇸', label: 'US' },
+  ];
 
   // Fetch trainer blocked dates on mount
   useEffect(() => {
