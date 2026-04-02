@@ -182,7 +182,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const handleTimeSelect = async (time: string) => {
     setSelectedTime(time);
     if (!user) {
-      setStep('confirm');
+      // Guest flow: collect name + phone
+      setStep('guest-info');
       return;
     }
     setLoading(true);
