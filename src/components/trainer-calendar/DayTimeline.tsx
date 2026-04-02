@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Clock3, RotateCw, Trash2, X } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Clock3, RotateCw, Trash2, X, GripVertical, Check, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface TimelineEntry {
@@ -29,14 +29,24 @@ interface Props {
   onDeleteEntryDay: (entry: TimelineEntry) => void;
   onDeleteEntrySeries: (entry: TimelineEntry) => void;
   onSelectTime: (time: string) => void;
+  onMoveEntry?: (entry: TimelineEntry, newTime: string) => void;
 }
 
 const SLOT_HEIGHT = 44;
+const SNAP_MINUTES = 30;
 
 const getMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
   return hours * 60 + (minutes || 0);
 };
+
+const minutesToTime = (m: number) => {
+  const h = Math.floor(m / 60);
+  const min = m % 60;
+  return `${String(h).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+};
+
+const snapToSlot = (minutes: number) => Math.round(minutes / SNAP_MINUTES) * SNAP_MINUTES;
 
 const overlap = (a: PositionedEntry, b: PositionedEntry) => a.startMinutes < b.endMinutes && a.endMinutes > b.startMinutes;
 
@@ -59,12 +69,8 @@ const positionEntries = (entries: TimelineEntry[]) => {
         active.splice(index, 1);
       }
     }
-
     let lane = 0;
-    while (active.some((item) => item.lane === lane)) {
-      lane += 1;
-    }
-
+    while (active.some((item) => item.lane === lane)) lane += 1;
     entry.lane = lane;
     active.push({ lane, endMinutes: entry.endMinutes });
   });
@@ -84,14 +90,84 @@ const toneClasses: Record<TimelineEntry['tone'], string> = {
   neutral: 'border-border bg-secondary text-foreground',
 };
 
-const DayTimeline = ({ lang, slots, entries, isToday, onDeleteEntry, onDeleteEntryDay, onDeleteEntrySeries, onSelectTime }: Props) => {
+const DayTimeline = ({
+  lang, slots, entries, isToday,
+  onDeleteEntry, onDeleteEntryDay, onDeleteEntrySeries, onSelectTime, onMoveEntry,
+}: Props) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [editingTime, setEditingTime] = useState<string | null>(null);
+
+  // Drag state
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const dragStartY = useRef(0);
+  const dragStartTop = useRef(0);
+  const dragEntryRef = useRef<TimelineEntry | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
   const positionedEntries = positionEntries(entries);
   const startMinutes = slots.length > 0 ? getMinutes(slots[0]) : 0;
   const totalHeight = Math.max(slots.length * SLOT_HEIGHT, SLOT_HEIGHT * 8);
   const now = new Date();
   const nowMinutes = now.getHours() * 60 + now.getMinutes();
   const showNowLine = isToday && nowMinutes >= startMinutes && nowMinutes <= startMinutes + slots.length * 30;
+
+  // Touch drag handlers
+  const handleTouchStart = useCallback((e: React.TouchEvent, entry: TimelineEntry, currentTop: number) => {
+    if (!onMoveEntry) return;
+    // Need a long press feel — we'll start immediately but require 8px movement to activate
+    dragStartY.current = e.touches[0].clientY;
+    dragStartTop.current = currentTop;
+    dragEntryRef.current = entry;
+    setDragId(entry.id);
+    setDragOffsetY(0);
+  }, [onMoveEntry]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!dragId) return;
+    e.preventDefault();
+    const deltaY = e.touches[0].clientY - dragStartY.current;
+    setDragOffsetY(deltaY);
+  }, [dragId]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!dragId || !dragEntryRef.current || !onMoveEntry) {
+      setDragId(null);
+      return;
+    }
+
+    const newTop = dragStartTop.current + dragOffsetY;
+    const newMinutes = snapToSlot(startMinutes + (newTop / SLOT_HEIGHT) * 30);
+    const newTime = minutesToTime(Math.max(newMinutes, startMinutes));
+    const oldTime = dragEntryRef.current.time.slice(0, 5);
+
+    if (newTime !== oldTime && Math.abs(dragOffsetY) > 8) {
+      onMoveEntry(dragEntryRef.current, newTime);
+    }
+
+    setDragId(null);
+    setDragOffsetY(0);
+    dragEntryRef.current = null;
+  }, [dragId, dragOffsetY, onMoveEntry, startMinutes]);
+
+  // Time editor helpers
+  const adjustTime = (currentTime: string, delta: number) => {
+    const mins = getMinutes(currentTime) + delta;
+    return minutesToTime(Math.max(0, Math.min(mins, 23 * 60 + 30)));
+  };
+
+  const startEditingTime = (entry: TimelineEntry) => {
+    setEditingTime(entry.time.slice(0, 5));
+    setExpandedId(entry.id);
+  };
+
+  const confirmTimeEdit = (entry: TimelineEntry) => {
+    if (editingTime && onMoveEntry && editingTime !== entry.time.slice(0, 5)) {
+      onMoveEntry(entry, editingTime);
+    }
+    setEditingTime(null);
+    setExpandedId(null);
+  };
 
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden pt-2 pb-20">
@@ -104,7 +180,13 @@ const DayTimeline = ({ lang, slots, entries, isToday, onDeleteEntry, onDeleteEnt
           ))}
         </div>
 
-        <div className="relative" style={{ height: totalHeight }}>
+        <div
+          ref={containerRef}
+          className="relative"
+          style={{ height: totalHeight }}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+        >
           {slots.map((slot, index) => (
             <button
               key={slot}
@@ -124,79 +206,146 @@ const DayTimeline = ({ lang, slots, entries, isToday, onDeleteEntry, onDeleteEnt
           )}
 
           {positionedEntries.map((entry) => {
-            const top = ((entry.startMinutes - startMinutes) / 30) * SLOT_HEIGHT + 2;
+            const baseTop = ((entry.startMinutes - startMinutes) / 30) * SLOT_HEIGHT + 2;
             const baseHeight = Math.max((Math.max(entry.durationMinutes, 30) / 30) * SLOT_HEIGHT - 4, 36);
             const isExpanded = expandedId === entry.id;
-            const expandedHeight = entry.isRecurring ? baseHeight + 72 : baseHeight + 40;
-            const height = isExpanded ? Math.max(expandedHeight, baseHeight) : baseHeight;
+            const isDragging = dragId === entry.id;
+            const top = isDragging ? baseTop + dragOffsetY : baseTop;
             const width = `calc(${100 / entry.laneCount}% - 8px)`;
             const left = `calc(${(100 / entry.laneCount) * entry.lane}% + 4px)`;
             const compact = baseHeight < 70;
+
+            // Preview snap position while dragging
+            const snapPreviewMinutes = isDragging
+              ? snapToSlot(startMinutes + (top / SLOT_HEIGHT) * 30)
+              : null;
+            const snapPreviewTime = snapPreviewMinutes !== null ? minutesToTime(Math.max(snapPreviewMinutes, startMinutes)) : null;
 
             return (
               <div
                 key={entry.id}
                 className={cn(
-                  'absolute z-20 rounded-xl border shadow-sm transition-all',
+                  'absolute rounded-xl border shadow-sm transition-[height,box-shadow]',
                   toneClasses[entry.tone],
                   isExpanded && 'z-30 ring-2 ring-primary/30 shadow-lg',
+                  isDragging && 'z-40 shadow-xl opacity-90 scale-[1.03]',
+                  !isDragging && 'z-20',
                 )}
-                style={{ top, left, width, height: isExpanded ? 'auto' : height, minHeight: height }}
+                style={{
+                  top,
+                  left,
+                  width,
+                  height: isExpanded ? 'auto' : baseHeight,
+                  minHeight: baseHeight,
+                  touchAction: 'none',
+                  transition: isDragging ? 'box-shadow 0.15s, transform 0.1s' : undefined,
+                }}
               >
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setExpandedId(isExpanded ? null : entry.id);
-                  }}
-                  className="w-full px-2 py-2 text-left"
-                >
-                  <div className="flex items-start justify-between gap-1">
-                    <p className="min-w-0 truncate text-[11px] font-semibold leading-tight">{entry.title}</p>
-                    <div className="flex items-center gap-0.5 shrink-0">
-                      {entry.isRecurring && <RotateCw className="h-3 w-3 opacity-70" />}
-                      {isExpanded && (
-                        <X className="h-3 w-3 opacity-50" />
-                      )}
+                {/* Drag handle + card content */}
+                <div className="flex items-start">
+                  {onMoveEntry && (
+                    <div
+                      className="flex items-center justify-center w-6 h-full min-h-[36px] shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/40"
+                      onTouchStart={(e) => handleTouchStart(e, entry, baseTop)}
+                    >
+                      <GripVertical className="w-3.5 h-3.5" />
                     </div>
-                  </div>
-                  <div className="mt-0.5 flex items-center gap-1 text-[10px] opacity-75">
-                    <Clock3 className="h-3 w-3 shrink-0" />
-                    <span>{entry.time.slice(0, 5)}</span>
-                    {!compact && <span>· {entry.durationMinutes} {lang === 'en' ? 'min' : 'мин'}</span>}
-                  </div>
-                  {!compact && !isExpanded && entry.subtitle && (
-                    <p className="mt-0.5 overflow-hidden text-[10px] leading-tight opacity-70">{entry.subtitle}</p>
                   )}
-                </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (isDragging) return;
+                      if (expandedId === entry.id) {
+                        setExpandedId(null);
+                        setEditingTime(null);
+                      } else {
+                        startEditingTime(entry);
+                      }
+                    }}
+                    className="flex-1 px-1.5 py-2 text-left min-w-0"
+                  >
+                    <div className="flex items-start justify-between gap-1">
+                      <p className="min-w-0 truncate text-[11px] font-semibold leading-tight">{entry.title}</p>
+                      <div className="flex items-center gap-0.5 shrink-0">
+                        {entry.isRecurring && <RotateCw className="h-3 w-3 opacity-70" />}
+                        {isExpanded && <X className="h-3 w-3 opacity-50" />}
+                      </div>
+                    </div>
+                    <div className="mt-0.5 flex items-center gap-1 text-[10px] opacity-75">
+                      <Clock3 className="h-3 w-3 shrink-0" />
+                      {isDragging && snapPreviewTime ? (
+                        <span className="font-bold text-primary">{snapPreviewTime}</span>
+                      ) : (
+                        <span>{entry.time.slice(0, 5)}</span>
+                      )}
+                      {!compact && <span>· {entry.durationMinutes} {lang === 'en' ? 'min' : 'мин'}</span>}
+                    </div>
+                    {!compact && !isExpanded && entry.subtitle && (
+                      <p className="mt-0.5 overflow-hidden text-[10px] leading-tight opacity-70">{entry.subtitle}</p>
+                    )}
+                  </button>
+                </div>
 
+                {/* Expanded: time editor + delete buttons */}
                 {isExpanded && (
-                  <div className="px-2 pb-2 flex flex-wrap gap-1.5" onClick={(e) => e.stopPropagation()}>
-                    {!entry.isRecurring ? (
-                      <button
-                        onClick={() => { onDeleteEntry(entry); setExpandedId(null); }}
-                        className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                        {lang === 'en' ? 'Delete' : 'Удалить'}
-                      </button>
-                    ) : (
-                      <>
+                  <div className="px-2 pb-2 space-y-2" onClick={(e) => e.stopPropagation()}>
+                    {/* Time editor */}
+                    {onMoveEntry && editingTime && (
+                      <div className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2 py-1.5">
+                        <Clock3 className="h-3 w-3 text-muted-foreground shrink-0" />
                         <button
-                          onClick={() => { onDeleteEntryDay(entry); setExpandedId(null); }}
-                          className="rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-medium"
+                          onClick={() => setEditingTime(adjustTime(editingTime, -30))}
+                          className="h-6 w-6 flex items-center justify-center rounded-md bg-card border border-border text-xs"
                         >
-                          {lang === 'en' ? 'This day' : 'Этот день'}
+                          <ChevronDown className="h-3 w-3" />
                         </button>
+                        <span className="text-sm font-bold tabular-nums min-w-[3rem] text-center">{editingTime}</span>
                         <button
-                          onClick={() => { onDeleteEntrySeries(entry); setExpandedId(null); }}
+                          onClick={() => setEditingTime(adjustTime(editingTime, 30))}
+                          className="h-6 w-6 flex items-center justify-center rounded-md bg-card border border-border text-xs"
+                        >
+                          <ChevronUp className="h-3 w-3" />
+                        </button>
+                        {editingTime !== entry.time.slice(0, 5) && (
+                          <button
+                            onClick={() => confirmTimeEdit(entry)}
+                            className="ml-auto h-6 w-6 flex items-center justify-center rounded-md bg-primary text-primary-foreground"
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Delete buttons */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {!entry.isRecurring ? (
+                        <button
+                          onClick={() => { onDeleteEntry(entry); setExpandedId(null); setEditingTime(null); }}
                           className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive"
                         >
                           <Trash2 className="h-3 w-3" />
-                          {lang === 'en' ? 'Series' : 'Серию'}
+                          {lang === 'en' ? 'Delete' : 'Удалить'}
                         </button>
-                      </>
-                    )}
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => { onDeleteEntryDay(entry); setExpandedId(null); setEditingTime(null); }}
+                            className="rounded-lg border border-border bg-card px-2 py-1 text-[10px] font-medium"
+                          >
+                            {lang === 'en' ? 'This day' : 'Этот день'}
+                          </button>
+                          <button
+                            onClick={() => { onDeleteEntrySeries(entry); setExpandedId(null); setEditingTime(null); }}
+                            className="inline-flex items-center gap-1 rounded-lg border border-destructive/30 bg-destructive/10 px-2 py-1 text-[10px] font-medium text-destructive"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            {lang === 'en' ? 'Series' : 'Серию'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
