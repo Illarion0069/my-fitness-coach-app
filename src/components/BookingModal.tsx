@@ -532,7 +532,78 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
               </div>
             )}
 
-            {/* === PAYMENT STEP === */}
+            {/* === GUEST INFO STEP === */}
+            {step === 'guest-info' && selectedDate && selectedTime && (
+              <div className="space-y-5">
+                <div className="bg-secondary/50 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold">{format(selectedDate, 'EEEE, d MMMM', { locale })}</p>
+                    <p className="text-xs text-muted-foreground">{selectedTime}</p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold mb-1">
+                    {lang === 'en' ? 'Your contact info' : 'Ваши контактные данные'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mb-4">
+                    {lang === 'en' ? 'We\'ll contact you to confirm the session' : 'Мы свяжемся с вами для подтверждения'}
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      {lang === 'en' ? 'Your name' : 'Ваше имя'}
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <input
+                        type="text"
+                        value={guestName}
+                        onChange={(e) => setGuestName(e.target.value)}
+                        placeholder={lang === 'en' ? 'John' : 'Иван'}
+                        className="w-full h-11 rounded-xl border border-input bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
+                      {lang === 'en' ? 'Phone number' : 'Номер телефона'}
+                    </label>
+                    <PhoneInput
+                      countryCode={guestCountryCode}
+                      onCountryCodeChange={setGuestCountryCode}
+                      phone={guestPhone}
+                      onPhoneChange={setGuestPhone}
+                      countryCodes={COUNTRY_CODES}
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    if (!guestName.trim() || !guestPhone.trim()) {
+                      toast({
+                        title: lang === 'en' ? 'Fill in all fields' : 'Заполните все поля',
+                        variant: 'destructive',
+                      });
+                      return;
+                    }
+                    setStep('confirm');
+                  }}
+                  disabled={!guestName.trim() || !guestPhone.trim()}
+                  className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {lang === 'en' ? 'Continue' : 'Продолжить'}
+                </button>
+              </div>
+            )}
+
             {step === 'payment' && selectedDate && selectedTime && (
               <div className="space-y-5">
                 {/* Selected slot summary */}
