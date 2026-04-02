@@ -32,7 +32,7 @@ const AppContent = () => {
   // In client preview mode, trainer sees the app as a client
   const effectiveIsTrainer = isTrainer && !clientPreview;
 
-  const sections = ['home', 'test', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
+  const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
 
   const handleNavigate = (section: string) => {
     const currentIdx = sections.indexOf(activeSection);
