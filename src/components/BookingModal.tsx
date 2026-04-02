@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2, CreditCard, Package } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2, CreditCard, Package, User, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, startOfDay, isSameMonth, getDay } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
+import PhoneInput from '@/components/PhoneInput';
 
 interface BookingModalProps {
   open: boolean;
