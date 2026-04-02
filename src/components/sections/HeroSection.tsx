@@ -262,12 +262,20 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                         className="overflow-hidden"
                       >
                         <p className="text-[11px] text-muted-foreground leading-relaxed mt-1">{t(workouts.items[4].desc)}</p>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
-                            className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-3 inline-block"
-                          >
-                            {lang === 'en' ? 'Book session' : 'Записаться'}
-                          </button>
+                          <div className="flex gap-2 mt-3">
+                            <button
+                              onClick={(e) => { e.stopPropagation(); setBookingOpen(true); }}
+                              className="gradient-primary text-primary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98]"
+                            >
+                              {lang === 'en' ? 'Book' : 'Записаться'}
+                            </button>
+                            <button
+                              onClick={(e) => { e.stopPropagation(); onNavigate('pricing'); }}
+                              className="bg-secondary text-secondary-foreground font-bold py-1.5 px-4 rounded-xl text-[10px] hover:bg-secondary/80 transition-colors active:scale-[0.98]"
+                            >
+                              {lang === 'en' ? 'Pricing' : 'Цены'}
+                            </button>
+                          </div>
                       </motion.div>
                     ) : (
                       <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
