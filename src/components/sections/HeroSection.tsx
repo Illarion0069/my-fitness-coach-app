@@ -173,25 +173,29 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             <MessageCircle className="w-4 h-4 text-primary-foreground relative z-10" />
           </motion.div>
 
-          {/* "Tap to contact" hint — positioned to the right of the photo */}
-          <motion.div
-            initial={{ opacity: 0, x: -5 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 1.5, duration: 0.4 }}
-            className="absolute top-1/2 -translate-y-1/2 -right-[7.5rem] z-10 flex items-center gap-1.5"
-          >
-            {/* Small arrow pointing left */}
-            <motion.span
-              animate={{ x: [0, -3, 0] }}
-              transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
-              className="text-primary/50 text-sm"
-            >
-              ←
-            </motion.span>
-            <span className="text-[10px] font-medium text-muted-foreground/70 italic leading-tight max-w-[5rem]">
-              {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
-            </span>
-          </motion.div>
+          {/* "Tap to contact" hint — hide when contact options are shown */}
+          <AnimatePresence>
+            {!showContactOptions && (
+              <motion.div
+                initial={{ opacity: 0, x: -5 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -5 }}
+                transition={{ duration: 0.3 }}
+                className="absolute top-1/2 -translate-y-1/2 -right-[7.5rem] z-10 flex items-center gap-1.5"
+              >
+                <motion.span
+                  animate={{ x: [0, -3, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
+                  className="text-primary/50 text-sm"
+                >
+                  ←
+                </motion.span>
+                <span className="text-[10px] font-medium text-muted-foreground/70 italic leading-tight max-w-[5rem]">
+                  {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
+                </span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <button
             onClick={() => setShowContactOptions(!showContactOptions)}
