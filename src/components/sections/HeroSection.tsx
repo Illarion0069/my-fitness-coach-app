@@ -119,8 +119,9 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
-          className="mt-6 mb-6 relative"
+          className="mt-6 mb-2 flex flex-col items-center"
         >
+          <div className="relative">
           {/* Contact options — expand from photo on tap */}
           <AnimatePresence>
             {showContactOptions && (
@@ -185,32 +186,24 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               />
             </div>
           </button>
-          {/* Animated hand-drawn style arrow + hint */}
+          </div>
+          {/* Arrow + hint below photo, in normal flow */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 1.5, duration: 0.5 }}
-            className="absolute -bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-1 whitespace-nowrap"
+            className="flex items-center gap-1 mt-2"
           >
-            {/* Curved arrow pointing up at photo */}
             <motion.svg
-              width="28" height="28" viewBox="0 0 28 28" fill="none"
-              className="text-primary -mr-0.5"
-              animate={{ y: [0, -3, 0] }}
+              width="20" height="20" viewBox="0 0 28 28" fill="none"
+              className="text-primary"
+              animate={{ y: [0, -2, 0] }}
               transition={{ repeat: Infinity, duration: 1.5, ease: 'easeInOut' }}
             >
-              <path
-                d="M14 24C14 24 6 18 6 12C6 8 9 5 14 4"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                fill="none"
-              />
-              <path
-                d="M10 4L14 2L15 6"
-                stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
-                fill="none"
-              />
+              <path d="M14 24C14 24 6 18 6 12C6 8 9 5 14 4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
+              <path d="M10 4L14 2L15 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" fill="none" />
             </motion.svg>
-            <span className="text-[10px] font-semibold text-primary/70 italic">
+            <span className="text-[10px] font-medium text-primary/60 italic">
               {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
             </span>
           </motion.div>
