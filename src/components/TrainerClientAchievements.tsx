@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Gift } from 'lucide-react';
+import { Trophy, Gift, TrendingUp, Target } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 
 import badgeStreak3 from '@/assets/badges/streak-3.png';
