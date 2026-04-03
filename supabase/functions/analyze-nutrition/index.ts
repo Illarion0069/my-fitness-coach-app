@@ -280,8 +280,9 @@ serve(async (req) => {
     const score = Math.min(100, Math.max(0, Math.round((analysis.overall_score as number) || 0)));
     const feedback = (analysis.summary_ru || analysis.summary_en || "") as string;
 
-    // Increment analysis count
+    // Increment analysis count and track which manual entries were included
     analysis.analysis_count = currentCount + 1;
+    analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
 
     // --- Save to DB ---
     const { error: upsertError } = await supabase

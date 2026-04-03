@@ -566,6 +566,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const isOverridden = log?.trainer_override_score != null;
   const analysisAtLimit = analysisCount >= MAX_ANALYSES_PER_DAY;
 
+  // IDs of manual entries the AI already analyzed — avoid double-counting
+  const includedManualIds = useMemo(() => {
+    if (!analysis || analysis.invalidated) return new Set<string>();
+    const ids = (analysis.included_manual_ids || []) as string[];
+    return new Set(ids);
+  }, [analysis]);
+
   const totals = useMemo(() => {
     let calories = 0, protein = 0, carbs = 0, fat = 0;
     // From AI analysis — use top-level totals, fallback to summing meals
@@ -577,7 +584,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         carbs += (analysis.total_carbs_g || 0);
         fat += (analysis.total_fat_g || 0);
       } else {
-        // Fallback: sum from individual meals
         for (const m of meals) {
           calories += m.estimated_calories || 0;
           protein += m.protein_g || 0;
@@ -586,15 +592,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         }
       }
     }
-    // From manual entries
+    // Only add manual entries NOT already included in the AI analysis
     for (const e of manualEntries) {
+      if (e.photo_id && analysis && !analysis.invalidated) continue; // photo-detected items already in AI totals
+      if (includedManualIds.has(e.id)) continue; // AI already counted this entry
       calories += e.calories || 0;
       protein += e.protein_g || 0;
       carbs += e.carbs_g || 0;
       fat += e.fat_g || 0;
     }
     return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) };
-  }, [analysis, manualEntries]);
+  }, [analysis, manualEntries, includedManualIds]);
 
   // Per-meal data
   const mealData = useMemo(() => {
@@ -618,17 +626,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       data[mt].carbs += m.carbs_g || 0;
       data[mt].fat += m.fat_g || 0;
     }
-    // Manual entries
+    // Manual entries — skip those already counted in AI analysis
     for (const e of manualEntries) {
       const mt = (VALID_MEAL_TYPES.includes(e.meal_type as MealType) ? e.meal_type : 'snack') as MealType;
       data[mt].manualItems.push(e);
+      // Don't add calories if already counted by AI
+      if (e.photo_id && analysis && !analysis.invalidated) continue;
+      if (includedManualIds.has(e.id)) continue;
       data[mt].calories += e.calories || 0;
       data[mt].protein += e.protein_g || 0;
       data[mt].carbs += e.carbs_g || 0;
       data[mt].fat += e.fat_g || 0;
     }
     return data;
-  }, [photos, aiMeals, manualEntries]);
+  }, [photos, aiMeals, manualEntries, analysis, includedManualIds]);
 
   const waterMl = log?.water_ml || 0;
   const coffeeCups = log?.coffee_cups || 0;
