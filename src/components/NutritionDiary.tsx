@@ -566,6 +566,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const isOverridden = log?.trainer_override_score != null;
   const analysisAtLimit = analysisCount >= MAX_ANALYSES_PER_DAY;
 
+  // IDs of manual entries the AI already analyzed — avoid double-counting
+  const includedManualIds = useMemo(() => {
+    if (!analysis || analysis.invalidated) return new Set<string>();
+    const ids = (analysis.included_manual_ids || []) as string[];
+    return new Set(ids);
+  }, [analysis]);
+
   const totals = useMemo(() => {
     let calories = 0, protein = 0, carbs = 0, fat = 0;
     // From AI analysis — use top-level totals, fallback to summing meals
@@ -577,7 +584,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         carbs += (analysis.total_carbs_g || 0);
         fat += (analysis.total_fat_g || 0);
       } else {
-        // Fallback: sum from individual meals
         for (const m of meals) {
           calories += m.estimated_calories || 0;
           protein += m.protein_g || 0;
@@ -586,15 +592,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         }
       }
     }
-    // From manual entries
+    // Only add manual entries NOT already included in the AI analysis
     for (const e of manualEntries) {
+      if (e.photo_id && analysis && !analysis.invalidated) continue; // photo-detected items already in AI totals
+      if (includedManualIds.has(e.id)) continue; // AI already counted this entry
       calories += e.calories || 0;
       protein += e.protein_g || 0;
       carbs += e.carbs_g || 0;
       fat += e.fat_g || 0;
     }
     return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) };
-  }, [analysis, manualEntries]);
+  }, [analysis, manualEntries, includedManualIds]);
 
   // Per-meal data
   const mealData = useMemo(() => {
