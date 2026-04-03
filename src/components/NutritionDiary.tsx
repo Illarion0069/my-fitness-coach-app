@@ -639,7 +639,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       data[mt].fat += e.fat_g || 0;
     }
     return data;
-  }, [photos, aiMeals, manualEntries]);
+  }, [photos, aiMeals, manualEntries, analysis, includedManualIds]);
 
   const waterMl = log?.water_ml || 0;
   const coffeeCups = log?.coffee_cups || 0;
