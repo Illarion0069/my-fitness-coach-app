@@ -136,12 +136,9 @@ const AppContent = () => {
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
 
-      {/* Trainer preview buttons — right side */}
+      {/* Trainer preview buttons — right edge, vertically centered */}
       {isTrainer && (
-        <div
-          className="fixed right-3 z-[100] flex flex-col gap-2"
-          style={{ top: 'max(env(safe-area-inset-top, 12px), 12px)' }}
-        >
+        <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1">
           <button
             onClick={() => {
               setClientPreview(prev => {
@@ -149,20 +146,22 @@ const AppContent = () => {
                 return !prev;
               });
             }}
-            className={`px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+            className={`px-2 py-3 rounded-l-xl text-[10px] font-bold shadow-lg transition-all active:scale-95 writing-vertical ${
               clientPreview
                 ? 'bg-destructive text-destructive-foreground animate-pulse'
-                : 'bg-muted text-muted-foreground border border-border/50'
+                : 'bg-muted/90 text-muted-foreground border border-r-0 border-border/50 backdrop-blur-sm'
             }`}
+            style={{ writingMode: 'vertical-lr' }}
           >
             {clientPreview ? '← Тренер' : '👁 Клиент'}
           </button>
           {!clientPreview && (
             <button
               onClick={() => setShowGuide(true)}
-              className="px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 bg-muted text-muted-foreground border border-border/50"
+              className="px-2 py-3 rounded-l-xl text-[10px] font-bold shadow-lg transition-all active:scale-95 bg-muted/90 text-muted-foreground border border-r-0 border-border/50 backdrop-blur-sm"
+              style={{ writingMode: 'vertical-lr' }}
             >
-              👋 Первый визит
+              👋 Визит
             </button>
           )}
         </div>
