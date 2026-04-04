@@ -136,24 +136,36 @@ const AppContent = () => {
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
 
-      {/* Client preview toggle for trainers */}
+      {/* Trainer preview buttons — right side */}
       {isTrainer && (
-        <button
-          onClick={() => {
-            setClientPreview(prev => {
-              if (!prev) setActiveSection('home');
-              return !prev;
-            });
-          }}
-          className={`fixed top-4 left-4 z-[100] px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
-            clientPreview
-              ? 'bg-destructive text-destructive-foreground animate-pulse'
-              : 'bg-muted text-muted-foreground border border-border/50'
-          }`}
+        <div
+          className="fixed right-3 z-[100] flex flex-col gap-2"
           style={{ top: 'max(env(safe-area-inset-top, 12px), 12px)' }}
         >
-          {clientPreview ? '← Назад к тренеру' : '👁 Вид клиента'}
-        </button>
+          <button
+            onClick={() => {
+              setClientPreview(prev => {
+                if (!prev) setActiveSection('home');
+                return !prev;
+              });
+            }}
+            className={`px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 ${
+              clientPreview
+                ? 'bg-destructive text-destructive-foreground animate-pulse'
+                : 'bg-muted text-muted-foreground border border-border/50'
+            }`}
+          >
+            {clientPreview ? '← Тренер' : '👁 Клиент'}
+          </button>
+          {!clientPreview && (
+            <button
+              onClick={() => setShowGuide(true)}
+              className="px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all active:scale-95 bg-muted text-muted-foreground border border-border/50"
+            >
+              👋 Первый визит
+            </button>
+          )}
+        </div>
       )}
       
       <WelcomeModal
