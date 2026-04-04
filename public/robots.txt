@@ -13,4 +13,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://my-fitness-coach-app.lovable.app/sitemap.xml
+Sitemap: https://limassol-fitness.com/sitemap.xml
