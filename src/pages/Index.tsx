@@ -69,11 +69,12 @@ const AppContent = () => {
     }
   };
 
-  // Reset state on logout
+  // Reset state on logout, navigate trainer to admin on login
   useEffect(() => {
     if (!user) { setActiveSection('home'); setClientPreview(false); }
     if (user) setShowGuide(false);
-  }, [user]);
+    if (user && isTrainer && !loading) setActiveSection('admin');
+  }, [user, isTrainer, loading]);
 
   // Handle cancel_session URL parameter (from Telegram cancel button)
   useEffect(() => {
