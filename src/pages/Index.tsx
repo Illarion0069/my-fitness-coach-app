@@ -14,7 +14,7 @@ const AdminSection = lazy(() => import('@/components/sections/AdminSection'));
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState(() => isTrainer ? 'admin' : 'home');
   const [showWelcome, setShowWelcome] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -69,11 +69,12 @@ const AppContent = () => {
     }
   };
 
-  // Reset state on logout
+  // Reset state on logout, navigate trainer to admin on login
   useEffect(() => {
     if (!user) { setActiveSection('home'); setClientPreview(false); }
     if (user) setShowGuide(false);
-  }, [user]);
+    if (user && isTrainer && !loading) setActiveSection('admin');
+  }, [user, isTrainer, loading]);
 
   // Handle cancel_session URL parameter (from Telegram cancel button)
   useEffect(() => {
