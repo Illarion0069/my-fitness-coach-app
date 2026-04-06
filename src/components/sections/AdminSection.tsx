@@ -49,12 +49,26 @@ const AdminSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
 
-  const fetchData = async () => {
-    const [{ data: profileData }, { data: pkgData }, { data: orderData }, { data: sessData }] = await Promise.all([
-      supabase.from('profiles').select('*'),
+  const fetchSupplementalData = useCallback(async () => {
+    const [{ data: pkgData }, { data: sessData }] = await Promise.all([
       supabase.from('client_packages').select('*').order('created_at', { ascending: false }),
-      supabase.from('trainer_client_order').select('*').limit(1).maybeSingle(),
       supabase.from('scheduled_sessions').select('user_id, session_date, is_recurring, recurrence_day'),
+    ]);
+
+    const grouped: Record<string, ClientPackage[]> = {};
+    ((pkgData || []) as ClientPackage[]).forEach((p) => {
+      if (!grouped[p.user_id]) grouped[p.user_id] = [];
+      grouped[p.user_id].push(p);
+    });
+
+    setPackages(grouped);
+    setAllSessions((sessData || []) as { user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]);
+  }, []);
+
+  const fetchBaseData = useCallback(async () => {
+    const [{ data: profileData }, { data: orderData }] = await Promise.all([
+      supabase.from('profiles').select('*'),
+      supabase.from('trainer_client_order').select('*').limit(1).maybeSingle(),
     ]);
 
     const fetched = (profileData || []) as Profile[];
@@ -65,16 +79,22 @@ const AdminSection = () => {
     const newIds = fetched.map(c => c.user_id).filter(id => !existingIds.has(id));
     const validIds = savedOrder.filter(id => fetched.some(c => c.user_id === id));
     setClientOrder([...validIds, ...newIds]);
+  }, []);
 
-    const grouped: Record<string, ClientPackage[]> = {};
-    ((pkgData || []) as ClientPackage[]).forEach((p) => {
-      if (!grouped[p.user_id]) grouped[p.user_id] = [];
-      grouped[p.user_id].push(p);
-    });
-    setPackages(grouped);
-    setAllSessions((sessData || []) as typeof allSessions);
-    setLoading(false);
-  };
+  const fetchData = useCallback(async (initial = false) => {
+    if (initial) {
+      setLoading(true);
+      try {
+        await fetchBaseData();
+      } finally {
+        setLoading(false);
+      }
+      void fetchSupplementalData();
+      return;
+    }
+
+    await Promise.all([fetchBaseData(), fetchSupplementalData()]);
+  }, [fetchBaseData, fetchSupplementalData]);
 
   const saveClientOrder = useCallback(async (order: string[]) => {
     const { data: existing } = await supabase
@@ -103,7 +123,7 @@ const AdminSection = () => {
     saveClientOrder(newOrder);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { void fetchData(true); }, [fetchData]);
 
   const addSession = async (pkgId: string, delta: number) => {
     const allPkgs = Object.values(packages).flat();
@@ -240,8 +260,6 @@ const AdminSection = () => {
     }
   };
 
-  if (loading) return <div className="p-6 text-center text-muted-foreground">Loading...</div>;
-
   return (
     <section className="min-h-screen bg-background px-5 pb-24" style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}>
       <div className="max-w-lg mx-auto">
@@ -352,7 +370,22 @@ const AdminSection = () => {
           </motion.div>
         )}
 
-        {clients.length === 0 ? (
+        {loading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, index) => (
+              <div key={index} className="bg-card border border-border/50 rounded-2xl p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-secondary/70 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 w-32 rounded-full bg-secondary/70" />
+                    <div className="h-2.5 w-48 rounded-full bg-secondary/50" />
+                  </div>
+                  <div className="h-5 w-12 rounded-lg bg-secondary/60 shrink-0" />
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : clients.length === 0 ? (
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
           <>

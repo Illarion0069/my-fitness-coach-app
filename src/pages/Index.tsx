@@ -12,7 +12,6 @@ import AdminSection from '@/components/sections/AdminSection';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
 
-// Use localStorage hint to show correct screen instantly
 const getInitialSection = () => {
   const hint = localStorage.getItem('user_role_hint');
   return hint === 'trainer' ? 'admin' : 'home';
@@ -20,6 +19,7 @@ const getInitialSection = () => {
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
+  const roleHint = localStorage.getItem('user_role_hint');
   const [activeSection, setActiveSection] = useState(getInitialSection);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
@@ -32,8 +32,8 @@ const AppContent = () => {
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // In client preview mode, trainer sees the app as a client
-  const effectiveIsTrainer = isTrainer && !clientPreview;
+  const optimisticIsTrainer = isTrainer || (loading && roleHint === 'trainer');
+  const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
   const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
 
@@ -72,7 +72,6 @@ const AppContent = () => {
     }
   };
 
-  // Persist role hint & correct section after auth resolves
   useEffect(() => {
     if (loading) return;
 
@@ -87,13 +86,11 @@ const AppContent = () => {
         setActiveSection('admin');
       } else {
         localStorage.setItem('user_role_hint', 'client');
-        // Only reset to home if currently on admin (shouldn't be accessible)
         if (activeSection === 'admin') setActiveSection('home');
       }
     }
   }, [user, isTrainer, loading]);
 
-  // Handle cancel_session URL parameter (from Telegram cancel button)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const cancelSessionId = params.get('cancel_session');
@@ -153,7 +150,7 @@ const AppContent = () => {
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
 
-      {isTrainer && (
+      {optimisticIsTrainer && (
         <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1">
           <button
             onClick={() => {

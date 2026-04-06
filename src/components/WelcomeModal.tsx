@@ -121,7 +121,7 @@ const phoneToEmail = (countryCode: string, phone: string) => {
 
 const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: WelcomeModalProps) => {
   const { lang } = useLanguage();
-  const { refreshProfile, profile } = useAuth();
+  const { refreshProfile, profile, user, loading } = useAuth();
   const { toast } = useToast();
   const [step, setStep] = useState<Step>('welcome');
 
@@ -135,6 +135,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   const [loginPhone, setLoginPhone] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
+  const [pendingAuthResolution, setPendingAuthResolution] = useState(false);
 
   // Forgot password state
   const [forgotCountryCode, setForgotCountryCode] = useState('+357');
@@ -148,10 +149,19 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       setStep(consultationFlow ? 'register' : 'welcome');
       setFormError(null);
       setConfirmPassword('');
+      setPendingAuthResolution(false);
     }
   }, [open, consultationFlow]);
 
   const t = (en: string, ru: string) => lang === 'en' ? en : ru;
+
+  useEffect(() => {
+    if (!pendingAuthResolution || loading || !user) return;
+    setPendingAuthResolution(false);
+    setSubmitting(false);
+    toast({ title: lang === 'en' ? 'Welcome back!' : 'С возвращением!' });
+    onClose();
+  }, [pendingAuthResolution, loading, user, lang, toast, onClose]);
 
   const getRegisterErrors = (): string | null => {
     if (!name.trim()) return t('Please enter your name', 'Введите ваше имя');
@@ -236,24 +246,35 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       return;
     }
     setSubmitting(true);
+    setPendingAuthResolution(false);
     try {
       const fakeEmail = phoneToEmail(loginCountryCode, loginPhone);
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: fakeEmail,
         password: loginPassword,
       });
       if (error) throw error;
-      await refreshProfile();
-      toast({ title: t('Welcome back!', 'С возвращением!') });
-      onClose();
+
+      const signedUserId = data.user?.id;
+      if (signedUserId) {
+        const { data: rolesData } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', signedUserId);
+        const trainer = rolesData?.some((role) => role.role === 'trainer') ?? false;
+        localStorage.setItem('user_role_hint', trainer ? 'trainer' : 'client');
+      }
+
+      setPendingAuthResolution(true);
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials')) {
         setFormError(t('Wrong phone number or password', 'Неверный номер или пароль'));
       } else {
         setFormError(err.message);
       }
+      setPendingAuthResolution(false);
+      setSubmitting(false);
     }
-    setSubmitting(false);
   };
 
   const handleForgotRequest = async () => {
