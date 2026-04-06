@@ -14,7 +14,7 @@ const AdminSection = lazy(() => import('@/components/sections/AdminSection'));
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
-  const [activeSection, setActiveSection] = useState(() => isTrainer ? 'admin' : 'home');
+  const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -110,6 +110,15 @@ const AppContent = () => {
       default: return null;
     }
   };
+
+  // Show loading screen until auth is fully resolved to prevent flash
+  if (loading) {
+    return (
+      <div className="dark h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="dark h-screen bg-background text-foreground flex flex-col">
