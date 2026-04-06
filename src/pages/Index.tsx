@@ -111,6 +111,15 @@ const AppContent = () => {
     }
   };
 
+  // Show loading screen until auth is fully resolved to prevent flash
+  if (loading) {
+    return (
+      <div className="dark h-screen bg-background text-foreground flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="dark h-screen bg-background text-foreground flex flex-col">
       <div
