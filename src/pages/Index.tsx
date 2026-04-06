@@ -14,7 +14,7 @@ const AdminSection = lazy(() => import('@/components/sections/AdminSection'));
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
-  const [activeSection, setActiveSection] = useState(() => isTrainer ? 'admin' : 'home');
+  const [activeSection, setActiveSection] = useState('home');
   const [showWelcome, setShowWelcome] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
