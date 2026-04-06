@@ -8,13 +8,19 @@ import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import { AnimatePresence, motion } from 'framer-motion';
+import AdminSection from '@/components/sections/AdminSection';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
-const AdminSection = lazy(() => import('@/components/sections/AdminSection'));
+
+// Use localStorage hint to show correct screen instantly
+const getInitialSection = () => {
+  const hint = localStorage.getItem('user_role_hint');
+  return hint === 'trainer' ? 'admin' : 'home';
+};
 
 const AppContent = () => {
   const { user, isTrainer, loading } = useAuth();
-  const [activeSection, setActiveSection] = useState('home');
+  const [activeSection, setActiveSection] = useState(getInitialSection);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -22,7 +28,7 @@ const AppContent = () => {
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
-    return !localStorage.getItem('app_guide_seen') && !user;
+    return !localStorage.getItem('app_guide_seen') && !localStorage.getItem('user_role_hint');
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -36,7 +42,6 @@ const AppContent = () => {
     const nextIdx = sections.indexOf(section);
     setSwipeDirection(nextIdx > currentIdx ? 1 : -1);
     setActiveSection(section);
-    // Scroll to top on navigate
     setTimeout(() => containerRef.current?.scrollTo({ top: 0 }), 0);
   };
 
@@ -51,7 +56,6 @@ const AppContent = () => {
     }
   }, [activeSection, sections]);
 
-  // Touch swipe detection
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
 
@@ -63,17 +67,30 @@ const AppContent = () => {
   const handleTouchEnd = (e: React.TouchEvent) => {
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
-    // Only swipe if horizontal movement is dominant and > 120px
     if (Math.abs(deltaX) > 120 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
       handleSwipe(deltaX < 0 ? 'left' : 'right');
     }
   };
 
-  // Reset state on logout, navigate trainer to admin on login
+  // Persist role hint & correct section after auth resolves
   useEffect(() => {
-    if (!user) { setActiveSection('home'); setClientPreview(false); }
-    if (user) setShowGuide(false);
-    if (user && isTrainer && !loading) setActiveSection('admin');
+    if (loading) return;
+
+    if (!user) {
+      localStorage.removeItem('user_role_hint');
+      setActiveSection('home');
+      setClientPreview(false);
+    } else {
+      setShowGuide(false);
+      if (isTrainer) {
+        localStorage.setItem('user_role_hint', 'trainer');
+        setActiveSection('admin');
+      } else {
+        localStorage.setItem('user_role_hint', 'client');
+        // Only reset to home if currently on admin (shouldn't be accessible)
+        if (activeSection === 'admin') setActiveSection('home');
+      }
+    }
   }, [user, isTrainer, loading]);
 
   // Handle cancel_session URL parameter (from Telegram cancel button)
@@ -82,7 +99,6 @@ const AppContent = () => {
     const cancelSessionId = params.get('cancel_session');
     if (cancelSessionId && user) {
       setShowBooking(true);
-      // Clean URL
       const url = new URL(window.location.href);
       url.searchParams.delete('cancel_session');
       window.history.replaceState(null, '', url.pathname + url.search);
@@ -111,15 +127,6 @@ const AppContent = () => {
     }
   };
 
-  // Show loading screen until auth is fully resolved to prevent flash
-  if (loading) {
-    return (
-      <div className="dark h-screen bg-background text-foreground flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
-
   return (
     <div className="dark h-screen bg-background text-foreground flex flex-col">
       <div
@@ -146,7 +153,6 @@ const AppContent = () => {
       </div>
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
 
-      {/* Trainer preview buttons — right edge, vertically centered */}
       {isTrainer && (
         <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1">
           <button
