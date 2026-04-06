@@ -207,6 +207,15 @@ const DayTimeline = ({
             </div>
           )}
 
+          {/* Backdrop to close expanded card */}
+          {expandedId && (
+            <div
+              className="absolute inset-0 z-25"
+              style={{ height: totalHeight }}
+              onClick={() => { setExpandedId(null); setEditingTime(null); }}
+            />
+          )}
+
           {positionedEntries.map((entry) => {
             const baseTop = ((entry.startMinutes - startMinutes) / 30) * SLOT_HEIGHT + 2;
             const baseHeight = Math.max((Math.max(entry.durationMinutes, 30) / 30) * SLOT_HEIGHT - 4, 36);
@@ -217,7 +226,6 @@ const DayTimeline = ({
             const left = `calc(${(100 / entry.laneCount) * entry.lane}% + 4px)`;
             const compact = baseHeight < 70;
 
-            // Preview snap position while dragging
             const snapPreviewMinutes = isDragging
               ? snapToSlot(startMinutes + (top / SLOT_HEIGHT) * 30)
               : null;
@@ -231,7 +239,7 @@ const DayTimeline = ({
                   toneClasses[entry.tone],
                   isExpanded && 'z-30 ring-2 ring-primary/30 shadow-lg',
                   isDragging && 'z-40 shadow-xl opacity-90 scale-[1.03]',
-                  !isDragging && 'z-20',
+                  !isDragging && !isExpanded && 'z-20',
                 )}
                 style={{
                   top,
@@ -243,7 +251,6 @@ const DayTimeline = ({
                   transition: isDragging ? 'box-shadow 0.15s, transform 0.1s' : undefined,
                 }}
               >
-                {/* Drag handle + card content */}
                 <div className="flex items-start">
                   {onMoveEntry && (
                     <div
@@ -289,10 +296,8 @@ const DayTimeline = ({
                   </button>
                 </div>
 
-                {/* Expanded: time editor + delete buttons */}
                 {isExpanded && (
                   <div className="px-2 pb-2 space-y-2" onClick={(e) => e.stopPropagation()}>
-                    {/* Time editor */}
                     {onMoveEntry && editingTime && (
                       <div className="flex items-center gap-1.5 bg-secondary/50 rounded-lg px-2 py-1.5">
                         <Clock3 className="h-3 w-3 text-muted-foreground shrink-0" />
@@ -320,7 +325,6 @@ const DayTimeline = ({
                       </div>
                     )}
 
-                    {/* Delete buttons */}
                     <div className="flex flex-wrap gap-1.5">
                       {!entry.isRecurring ? (
                         <button
@@ -353,7 +357,6 @@ const DayTimeline = ({
               </div>
             );
           })}
-
           {entries.length === 0 && (
             <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
               {lang === 'en' ? 'No events yet — tap any slot to add one.' : 'Событий пока нет — нажми на любой слот, чтобы добавить.'}
