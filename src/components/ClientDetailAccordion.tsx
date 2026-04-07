@@ -274,13 +274,13 @@ const ClientDetailAccordion = ({
                     onClick={() => onAddSession(pkg.id, 1)}
                     className="flex-1 bg-primary/20 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors"
                   >
-                    <Plus className="w-3 h-3" /> {lang === 'en' ? 'Used' : 'Израсходовано'}
+                    <Plus className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => onAddSession(pkg.id, -1)}
                     className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
                   >
-                    <Minus className="w-3 h-3" /> {lang === 'en' ? 'Undo' : 'Отмена'}
+                    <Minus className="w-4 h-4" />
                   </button>
                 </div>
               </div>
