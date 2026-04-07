@@ -222,15 +222,38 @@ Deno.serve(async (req) => {
           packageUpdates.is_active = false;
         }
 
-        const { error: updatePackageError } = await supabase
+        const { data: updatedRows, error: updatePackageError } = await supabase
           .from('client_packages')
           .update(packageUpdates)
           .eq('id', pkg.id)
-          .eq('used_sessions', pkg.used_sessions); // optimistic lock
+          .eq('used_sessions', pkg.used_sessions) // optimistic lock
+          .select('id');
 
         if (updatePackageError) {
           errors.push(`pkg ${pkg.id}: ${updatePackageError.message}`);
           continue;
+        }
+
+        if (!updatedRows || updatedRows.length === 0) {
+          console.log(`  Session ${session.id} — optimistic lock failed for pkg ${pkg.id} (stale used_sessions=${pkg.used_sessions}), retrying`);
+          // Re-fetch and retry once
+          const retryPkg = await getLatestValidPackage(supabase, session.user_id);
+          if (!retryPkg) { skipped += dueCount; continue; }
+          const retryNewUsed = retryPkg.used_sessions + actualDeduct;
+          const retryUpdates: Record<string, unknown> = { used_sessions: retryNewUsed };
+          if (retryNewUsed >= retryPkg.total_sessions) retryUpdates.is_active = false;
+          const { data: retryRows } = await supabase
+            .from('client_packages')
+            .update(retryUpdates)
+            .eq('id', retryPkg.id)
+            .eq('used_sessions', retryPkg.used_sessions)
+            .select('id');
+          if (!retryRows || retryRows.length === 0) {
+            errors.push(`session ${session.id}: optimistic lock failed twice for pkg ${retryPkg.id}`);
+            continue;
+          }
+          // Update pkg reference for ledger entries below
+          Object.assign(pkg, retryPkg);
         }
 
         // Reserve keys in this run right after successful package update
