@@ -353,38 +353,8 @@ Deno.serve(async (req) => {
         });
       }
 
-      if (pkg) {
-        const newUsed = pkg.used_sessions + 1;
-        const packageUpdates: Record<string, unknown> = { used_sessions: newUsed };
-        if (newUsed >= pkg.total_sessions) {
-          packageUpdates.is_active = false;
-        }
-
-        const { error: updateError } = await supabase
-          .from('client_packages')
-          .update(packageUpdates)
-          .eq('id', pkg.id)
-          .eq('used_sessions', pkg.used_sessions);
-
-        if (updateError) {
-          await supabase.from('scheduled_sessions').delete().eq('id', createdSession.id);
-          return new Response(JSON.stringify({ error: 'Package update conflict, retry please' }), {
-            status: 409,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-          });
-        }
-
-        await supabase.from('session_ledger').insert({
-          user_id: client_user_id,
-          package_id: pkg.id,
-          delta: 1,
-          reason: 'trainer_book',
-          session_id: createdSession.id,
-          used_before: pkg.used_sessions,
-          used_after: newUsed,
-          idempotency_key: `trainer_book_${createdSession.id}`,
-        });
-      }
+      // One-off sessions are NOT deducted at booking time.
+      // The cron job (deduct-sessions) will deduct on the session day.
 
       return new Response(JSON.stringify({ success: true, session_id: createdSession.id, hasPackage: !!pkg }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
