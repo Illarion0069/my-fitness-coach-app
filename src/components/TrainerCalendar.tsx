@@ -691,11 +691,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             className="bg-card border border-border/50 rounded-2xl w-full max-w-sm mx-4 shadow-xl animate-in zoom-in-95 duration-200"
             onClick={e => e.stopPropagation()}
           >
-            <div className="flex justify-center pt-2 pb-3">
-              <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
-            </div>
-            <div className="px-5 space-y-3 pb-2">
-              <p className="text-sm font-bold text-center">
+            <div className="px-5 pt-5 space-y-3 pb-5">
                 {lang === 'en' ? 'Send notification?' : 'Отправить уведомление?'}
               </p>
               <p className="text-xs text-muted-foreground text-center">
