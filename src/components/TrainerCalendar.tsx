@@ -692,6 +692,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             onClick={e => e.stopPropagation()}
           >
             <div className="px-5 pt-5 space-y-3 pb-5">
+              <p className="text-sm font-bold text-center">
                 {lang === 'en' ? 'Send notification?' : 'Отправить уведомление?'}
               </p>
               <p className="text-xs text-muted-foreground text-center">
