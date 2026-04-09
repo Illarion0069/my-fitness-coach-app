@@ -182,6 +182,7 @@ const DayTimeline = ({
   };
 
   return (
+    <>
     <div className="rounded-2xl border border-border bg-card overflow-hidden pt-2 pb-20">
       <div className="grid grid-cols-[58px_minmax(0,1fr)]">
         <div className="border-r border-border/60 bg-secondary/20">
