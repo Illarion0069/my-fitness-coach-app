@@ -214,6 +214,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
+
+    const dateDisplay = new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+    const timeDisplay = session.session_time ? ` в ${session.session_time}` : '';
+    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Тренировка отменена</b>\n📆 ${dateDisplay}${timeDisplay}`);
   };
 
   const deleteRecurringForDay = async (session: ScheduledSession) => {
@@ -234,6 +238,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Тренировка на этот день удалена' });
+
+    const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+    const timeDisplay = session.recurrence_time ? ` в ${session.recurrence_time}` : '';
+    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Тренировка отменена</b>\n📆 ${dateDisplay}${timeDisplay}`);
   };
 
   const deleteRecurringSeries = async (session: ScheduledSession) => {
@@ -241,6 +249,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
+    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Серия тренировок отменена</b>`);
   };
 
   const deleteBlockForDay = async (block: TrainerBlock) => {
