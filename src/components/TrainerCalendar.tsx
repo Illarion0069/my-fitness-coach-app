@@ -56,6 +56,13 @@ const WEEKEND_DAYS = [0, 6]; // Sun, Sat — always off
 const dayNamesRu = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const dayNamesEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
+interface NotifyPrompt {
+  clientUserId: string;
+  clientName: string;
+  actionType: string;
+  details: string;
+}
+
 const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const { toast } = useToast();
   const locale = lang === 'en' ? enUS : ru;
@@ -66,6 +73,33 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
+  const [notifyPrompt, setNotifyPrompt] = useState<NotifyPrompt | null>(null);
+
+  const showNotifyPrompt = (session: ScheduledSession, actionType: string, details: string) => {
+    const manualMatch = session.notes?.match(/^👤 (.+?) \(manual\)$/);
+    if (manualMatch) return; // manual entries have no real client
+    const client = clients.find(c => c.user_id === session.user_id);
+    if (!client) return;
+    setNotifyPrompt({ clientUserId: session.user_id, clientName: client.full_name, actionType, details });
+  };
+
+  const confirmNotify = async () => {
+    if (!notifyPrompt) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase.from('pending_notifications').insert({
+          client_user_id: notifyPrompt.clientUserId,
+          trainer_user_id: user.id,
+          action_type: notifyPrompt.actionType,
+          details: notifyPrompt.details,
+        });
+      }
+    } catch (e) {
+      console.error('Queue notification failed', e);
+    }
+    setNotifyPrompt(null);
+  };
 
   const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
   const dayOfWeek = selectedDate.getDay();
