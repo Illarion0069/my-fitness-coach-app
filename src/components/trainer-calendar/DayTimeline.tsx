@@ -146,7 +146,11 @@ const DayTimeline = ({
     const oldTime = dragEntryRef.current.time.slice(0, 5);
 
     if (newTime !== oldTime && Math.abs(dragOffsetY) > 8) {
-      onMoveEntry(dragEntryRef.current, newTime);
+      if (dragEntryRef.current.isRecurring && onMoveEntryDay) {
+        setPendingMove({ entry: dragEntryRef.current, newTime });
+      } else {
+        onMoveEntry(dragEntryRef.current, newTime);
+      }
     }
 
     setDragId(null);
