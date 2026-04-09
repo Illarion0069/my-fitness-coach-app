@@ -167,7 +167,11 @@ const DayTimeline = ({
 
   const confirmTimeEdit = (entry: TimelineEntry) => {
     if (editingTime && onMoveEntry && editingTime !== entry.time.slice(0, 5)) {
-      onMoveEntry(entry, editingTime);
+      if (entry.isRecurring && onMoveEntryDay) {
+        setPendingMove({ entry, newTime: editingTime });
+      } else {
+        onMoveEntry(entry, editingTime);
+      }
     }
     setEditingTime(null);
     setExpandedId(null);
