@@ -684,6 +684,42 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           onAddSession={onAddSessionFromModal}
         />
       )}
+
+      {notifyPrompt && (
+        <div className="fixed inset-0 z-[110] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setNotifyPrompt(null)}>
+          <div
+            className="bg-card border border-border/50 rounded-t-2xl w-full max-w-md shadow-xl animate-slide-up"
+            onClick={e => e.stopPropagation()}
+            style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 80px)' }}
+          >
+            <div className="flex justify-center pt-2 pb-3">
+              <div className="w-10 h-1 rounded-full bg-muted-foreground/20" />
+            </div>
+            <div className="px-5 space-y-3 pb-2">
+              <p className="text-sm font-bold text-center">
+                {lang === 'en' ? 'Send notification?' : 'Отправить уведомление?'}
+              </p>
+              <p className="text-xs text-muted-foreground text-center">
+                {lang === 'en'
+                  ? `Notify ${notifyPrompt.clientName} about this change?`
+                  : `Уведомить ${notifyPrompt.clientName} об этом изменении?`}
+              </p>
+              <button
+                onClick={confirmNotify}
+                className="w-full gradient-primary text-primary-foreground text-sm font-bold py-3 rounded-xl active:scale-[0.98] transition-transform"
+              >
+                {lang === 'en' ? 'Send' : 'Отправить'}
+              </button>
+              <button
+                onClick={() => setNotifyPrompt(null)}
+                className="w-full bg-secondary/50 text-muted-foreground text-sm font-medium py-3 rounded-xl active:scale-[0.98] transition-transform"
+              >
+                {lang === 'en' ? 'Don\'t send' : 'Не отправлять'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
