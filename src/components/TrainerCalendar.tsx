@@ -641,6 +641,10 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             }
 
             toast({ title: lang === 'en' ? 'Time updated for this day' : 'Время обновлено на этот день' });
+            if (session) {
+              const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+              showNotifyPrompt(session, 'session_moved', `🔄 <b>Тренировка перенесена</b>\n📆 ${dateDisplay}\n🕐 Новое время: ${newTime}`);
+            }
           }}
           onMoveEntry={async (entry, newTime) => {
             const session = daySessions.find((s) => s.id === entry.id);
@@ -660,6 +664,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             }
 
             toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+            if (session) {
+              showNotifyPrompt(session, 'session_moved', `🔄 <b>Время тренировки изменено</b>\n🕐 Новое время: ${newTime}${session.is_recurring ? '\n🔄 Для всей серии' : ''}`);
+            }
           }}
         />
       </section>
