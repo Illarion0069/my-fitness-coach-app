@@ -379,9 +379,9 @@ const DayTimeline = ({
 
     {/* iPhone-style move confirmation modal for recurring entries */}
     {pendingMove && (
-      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => setPendingMove(null)}>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setPendingMove(null)}>
         <div
-          className="w-full max-w-sm mx-4 mb-6 space-y-2 animate-in slide-in-from-bottom-4 duration-200"
+          className="w-full max-w-sm mx-4 space-y-2 animate-in zoom-in-95 duration-200"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="rounded-2xl bg-card border border-border overflow-hidden">
