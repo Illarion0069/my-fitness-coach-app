@@ -375,6 +375,51 @@ const DayTimeline = ({
         </div>
       </div>
     </div>
+
+    {/* iPhone-style move confirmation modal for recurring entries */}
+    {pendingMove && (
+      <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 backdrop-blur-sm" onClick={() => setPendingMove(null)}>
+        <div
+          className="w-full max-w-sm mx-4 mb-6 space-y-2 animate-in slide-in-from-bottom-4 duration-200"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="rounded-2xl bg-card border border-border overflow-hidden">
+            <div className="px-4 py-3 text-center border-b border-border">
+              <p className="text-xs text-muted-foreground">
+                {lang === 'en'
+                  ? `Move "${pendingMove.entry.title}" to ${pendingMove.newTime}?`
+                  : `Перенести «${pendingMove.entry.title}» на ${pendingMove.newTime}?`}
+              </p>
+            </div>
+            <button
+              className="w-full px-4 py-3 text-sm font-medium text-primary border-b border-border hover:bg-secondary/50 transition-colors"
+              onClick={() => {
+                onMoveEntryDay?.(pendingMove.entry, pendingMove.newTime);
+                setPendingMove(null);
+              }}
+            >
+              {lang === 'en' ? 'Move this day only' : 'Перенести только этот день'}
+            </button>
+            <button
+              className="w-full px-4 py-3 text-sm font-medium text-primary hover:bg-secondary/50 transition-colors"
+              onClick={() => {
+                onMoveEntry?.(pendingMove.entry, pendingMove.newTime);
+                setPendingMove(null);
+              }}
+            >
+              {lang === 'en' ? 'Move entire series' : 'Перенести всю серию'}
+            </button>
+          </div>
+          <button
+            className="w-full rounded-2xl bg-card border border-border px-4 py-3 text-sm font-semibold text-primary hover:bg-secondary/50 transition-colors"
+            onClick={() => setPendingMove(null)}
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    )}
+  </>
   );
 };
 
