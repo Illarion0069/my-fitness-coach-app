@@ -30,6 +30,7 @@ interface Props {
   onDeleteEntrySeries: (entry: TimelineEntry) => void;
   onSelectTime: (time: string) => void;
   onMoveEntry?: (entry: TimelineEntry, newTime: string) => void;
+  onMoveEntryDay?: (entry: TimelineEntry, newTime: string) => void;
 }
 
 const SLOT_HEIGHT = 44;
