@@ -546,6 +546,44 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           onSelectTime={(time) => {
             setShowBlockModal(time);
           }}
+          onMoveEntryDay={async (entry, newTime) => {
+            const session = daySessions.find((s) => s.id === entry.id);
+            const block = dayBlocks.find((b) => b.id === entry.id);
+
+            if (session && session.is_recurring) {
+              // Add exception for this date
+              const exceptions = [...(session.recurring_exceptions || []), selectedDateStr];
+              await supabase.from('scheduled_sessions').update({ recurring_exceptions: exceptions }).eq('id', session.id);
+              // Create one-off session for this date with new time
+              await supabase.from('scheduled_sessions').insert({
+                user_id: session.user_id,
+                trainer_user_id: session.trainer_user_id,
+                session_date: selectedDateStr,
+                session_time: newTime,
+                is_recurring: false,
+                duration_minutes: session.duration_minutes,
+                notes: session.notes,
+                package_id: session.package_id,
+              });
+              await fetchSessions();
+              onSessionChange?.();
+            } else if (block && block.is_recurring) {
+              const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];
+              await supabase.from('trainer_blocks').update({ recurring_exceptions: exceptions }).eq('id', block.id);
+              await supabase.from('trainer_blocks').insert({
+                trainer_user_id: block.trainer_user_id,
+                block_type: block.block_type,
+                title: block.title,
+                block_date: selectedDateStr,
+                block_time: newTime,
+                duration_minutes: block.duration_minutes,
+                is_recurring: false,
+              });
+              await fetchBlocks();
+            }
+
+            toast({ title: lang === 'en' ? 'Time updated for this day' : 'Время обновлено на этот день' });
+          }}
           onMoveEntry={async (entry, newTime) => {
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
