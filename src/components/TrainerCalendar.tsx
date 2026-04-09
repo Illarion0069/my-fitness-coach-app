@@ -377,6 +377,21 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     await Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Session added' : 'Тренировка добавлена' });
+
+    // Show notify prompt for real clients
+    if (clientId) {
+      const client = clients.find(c => c.user_id === clientId);
+      if (client) {
+        const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
+        const timeDisplay = time ? ` в ${time}` : '';
+        setNotifyPrompt({
+          clientUserId: clientId,
+          clientName: client.full_name,
+          actionType: 'session_added',
+          details: `✅ <b>Тренировка добавлена</b>\n📆 ${dateDisplay}${timeDisplay}\n${isRecurring ? '🔄 Повторяющаяся' : '☝️ Разовая'}`,
+        });
+      }
+    }
   };
 
   const blockTypeLabel = (block: TrainerBlock) => {
