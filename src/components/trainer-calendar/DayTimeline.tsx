@@ -95,10 +95,11 @@ const toneClasses: Record<TimelineEntry['tone'], string> = {
 
 const DayTimeline = ({
   lang, slots, entries, isToday,
-  onDeleteEntry, onDeleteEntryDay, onDeleteEntrySeries, onSelectTime, onMoveEntry,
+  onDeleteEntry, onDeleteEntryDay, onDeleteEntrySeries, onSelectTime, onMoveEntry, onMoveEntryDay,
 }: Props) => {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [editingTime, setEditingTime] = useState<string | null>(null);
+  const [pendingMove, setPendingMove] = useState<{ entry: TimelineEntry; newTime: string } | null>(null);
 
   // Drag state
   const [dragId, setDragId] = useState<string | null>(null);
