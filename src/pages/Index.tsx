@@ -214,7 +214,23 @@ const AppContent = () => {
         forceClientView={clientPreview}
       />
 
-      {showGuide && (
+      {showFirstVisit && (
+        <FirstVisitOffer
+          onDismiss={() => {
+            setShowFirstVisit(false);
+            localStorage.setItem('first_visit_seen', '1');
+            localStorage.setItem('app_guide_seen', '1');
+          }}
+          onProceedToRegister={() => {
+            setShowFirstVisit(false);
+            localStorage.setItem('first_visit_seen', '1');
+            localStorage.setItem('app_guide_seen', '1');
+            setShowWelcome(true);
+          }}
+        />
+      )}
+
+      {showGuide && !showFirstVisit && (
         <AppGuide onComplete={() => {
           setShowGuide(false);
           localStorage.setItem('app_guide_seen', '1');
