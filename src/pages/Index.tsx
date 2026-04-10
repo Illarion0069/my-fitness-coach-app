@@ -83,6 +83,7 @@ const AppContent = () => {
       setClientPreview(false);
     } else {
       setShowGuide(false);
+      setShowFirstVisit(false);
       if (isTrainer) {
         localStorage.setItem('user_role_hint', 'trainer');
         setActiveSection('admin');
