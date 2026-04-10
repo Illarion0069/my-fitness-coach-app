@@ -7,7 +7,6 @@ import HeroSection from '@/components/sections/HeroSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
-import FirstVisitOffer from '@/components/FirstVisitOffer';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
@@ -28,9 +27,8 @@ const AppContent = () => {
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
-  const [showGuide, setShowGuide] = useState(false);
-  const [showFirstVisit, setShowFirstVisit] = useState(() => {
-    return !localStorage.getItem('first_visit_seen') && !localStorage.getItem('user_role_hint');
+  const [showGuide, setShowGuide] = useState(() => {
+    return !localStorage.getItem('app_guide_seen') && !localStorage.getItem('user_role_hint');
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -83,7 +81,6 @@ const AppContent = () => {
       setClientPreview(false);
     } else {
       setShowGuide(false);
-      setShowFirstVisit(false);
       if (isTrainer) {
         localStorage.setItem('user_role_hint', 'trainer');
         setActiveSection('admin');
@@ -214,23 +211,7 @@ const AppContent = () => {
         forceClientView={clientPreview}
       />
 
-      {showFirstVisit && (
-        <FirstVisitOffer
-          onDismiss={() => {
-            setShowFirstVisit(false);
-            localStorage.setItem('first_visit_seen', '1');
-            localStorage.setItem('app_guide_seen', '1');
-          }}
-          onProceedToRegister={() => {
-            setShowFirstVisit(false);
-            localStorage.setItem('first_visit_seen', '1');
-            localStorage.setItem('app_guide_seen', '1');
-            setShowWelcome(true);
-          }}
-        />
-      )}
-
-      {showGuide && !showFirstVisit && (
+      {showGuide && (
         <AppGuide onComplete={() => {
           setShowGuide(false);
           localStorage.setItem('app_guide_seen', '1');
