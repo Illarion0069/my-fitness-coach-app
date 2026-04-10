@@ -28,8 +28,9 @@ const AppContent = () => {
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
-  const [showGuide, setShowGuide] = useState(() => {
-    return !localStorage.getItem('app_guide_seen') && !localStorage.getItem('user_role_hint');
+  const [showGuide, setShowGuide] = useState(false);
+  const [showFirstVisit, setShowFirstVisit] = useState(() => {
+    return !localStorage.getItem('first_visit_seen') && !localStorage.getItem('user_role_hint');
   });
   const containerRef = useRef<HTMLDivElement>(null);
 
