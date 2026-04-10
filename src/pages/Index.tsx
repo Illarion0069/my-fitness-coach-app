@@ -7,6 +7,7 @@ import HeroSection from '@/components/sections/HeroSection';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
+import FirstVisitOffer from '@/components/FirstVisitOffer';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
