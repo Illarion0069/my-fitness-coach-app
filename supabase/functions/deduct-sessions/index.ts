@@ -52,11 +52,24 @@ function dayOfWeek(dateStr: string): number {
   return new Date(`${dateStr}T00:00:00Z`).getUTCDay();
 }
 
-function buildRecurringDueDates(session: ScheduledSession, todayStr: string): string[] {
+type TrainerAvailability = {
+  blockedDates: Set<string>;
+  daysOff: Set<number>;
+};
+
+function buildRecurringDueDates(
+  session: ScheduledSession,
+  todayStr: string,
+  trainerAvailability: Map<string, TrainerAvailability>,
+  trainerIdBySession: Map<string, string>,
+): string[] {
   if (!session.is_recurring || session.recurrence_day === null) return [];
 
   const exceptions = new Set((session.recurring_exceptions || []).map(String));
   const lastDeductedDate = session.deducted_at ? toDateStr(new Date(session.deducted_at)) : null;
+
+  const trainerId = trainerIdBySession.get(session.id);
+  const availability = trainerId ? trainerAvailability.get(trainerId) : undefined;
 
   // Only catch up within the last 7 days to prevent over-deduction
   const maxCatchupStart = addDays(todayStr, -7);
@@ -73,13 +86,32 @@ function buildRecurringDueDates(session: ScheduledSession, todayStr: string): st
 
   const dueDates: string[] = [];
   while (cursor <= todayStr) {
-    if (dayOfWeek(cursor) === session.recurrence_day && !exceptions.has(cursor)) {
+    const dow = dayOfWeek(cursor);
+    const isBlocked = availability?.blockedDates.has(cursor) ?? false;
+    const isDayOff = availability?.daysOff.has(dow) ?? false;
+
+    if (dow === session.recurrence_day && !exceptions.has(cursor) && !isBlocked && !isDayOff) {
       dueDates.push(cursor);
     }
     cursor = addDays(cursor, 1);
   }
 
   return dueDates;
+}
+
+function isSessionDateAllowed(
+  session: ScheduledSession,
+  trainerAvailability: Map<string, TrainerAvailability>,
+  trainerIdBySession: Map<string, string>,
+): boolean {
+  const trainerId = trainerIdBySession.get(session.id);
+  const availability = trainerId ? trainerAvailability.get(trainerId) : undefined;
+  if (!availability) return true;
+
+  const dow = dayOfWeek(session.session_date);
+  if (availability.blockedDates.has(session.session_date)) return false;
+  if (availability.daysOff.has(dow)) return false;
+  return true;
 }
 
 async function getLatestValidPackage(supabase: any, userId: string): Promise<ClientPackage | null> {
@@ -126,7 +158,7 @@ Deno.serve(async (req) => {
     // 1) One-off sessions: deduct any pending session up to today (catch-up)
     const { data: oneOffSessions, error: oneOffError } = await supabase
       .from('scheduled_sessions')
-      .select('id,user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
+      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
       .eq('is_recurring', false)
       .eq('is_deducted', false)
       .lte('session_date', todayStr);
@@ -136,10 +168,31 @@ Deno.serve(async (req) => {
     // 2) Recurring sessions: process all and calculate due occurrences up to today
     const { data: recurringSessions, error: recurringError } = await supabase
       .from('scheduled_sessions')
-      .select('id,user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
+      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
       .eq('is_recurring', true);
 
     if (recurringError) console.error('[deduct-sessions] Error fetching recurring:', recurringError.message);
+
+    // 3) Trainer availability: blocked dates and weekly days off
+    const { data: workingHours, error: whError } = await supabase
+      .from('trainer_working_hours')
+      .select('trainer_user_id,blocked_dates,days_off');
+
+    if (whError) console.error('[deduct-sessions] Error fetching working hours:', whError.message);
+
+    const trainerAvailability = new Map<string, TrainerAvailability>();
+    for (const row of (workingHours || []) as Array<{ trainer_user_id: string; blocked_dates: string[] | null; days_off: number[] | null }>) {
+      trainerAvailability.set(row.trainer_user_id, {
+        blockedDates: new Set((row.blocked_dates || []).map(String)),
+        daysOff: new Set((row.days_off || []).map(Number)),
+      });
+    }
+
+    // Map session.id -> trainer_user_id (used inside helpers)
+    const trainerIdBySession = new Map<string, string>();
+    for (const s of [...(oneOffSessions || []), ...(recurringSessions || [])] as Array<ScheduledSession & { trainer_user_id: string }>) {
+      if (s.trainer_user_id) trainerIdBySession.set(s.id, s.trainer_user_id);
+    }
 
     type DeductionCandidate = {
       session: ScheduledSession;
@@ -150,11 +203,15 @@ Deno.serve(async (req) => {
     const candidates: DeductionCandidate[] = [];
 
     for (const session of (oneOffSessions || []) as ScheduledSession[]) {
+      if (!isSessionDateAllowed(session, trainerAvailability, trainerIdBySession)) {
+        console.log(`  Skip one-off ${session.id} on ${session.session_date} — date is blocked / day off`);
+        continue;
+      }
       candidates.push({ session, dueDates: [session.session_date], dueCount: 1 });
     }
 
     for (const session of (recurringSessions || []) as ScheduledSession[]) {
-      const dueDates = buildRecurringDueDates(session, todayStr);
+      const dueDates = buildRecurringDueDates(session, todayStr, trainerAvailability, trainerIdBySession);
       if (dueDates.length > 0) {
         candidates.push({ session, dueDates, dueCount: dueDates.length });
       }
