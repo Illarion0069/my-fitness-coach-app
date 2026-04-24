@@ -52,11 +52,24 @@ function dayOfWeek(dateStr: string): number {
   return new Date(`${dateStr}T00:00:00Z`).getUTCDay();
 }
 
-function buildRecurringDueDates(session: ScheduledSession, todayStr: string): string[] {
+type TrainerAvailability = {
+  blockedDates: Set<string>;
+  daysOff: Set<number>;
+};
+
+function buildRecurringDueDates(
+  session: ScheduledSession,
+  todayStr: string,
+  trainerAvailability: Map<string, TrainerAvailability>,
+  trainerIdBySession: Map<string, string>,
+): string[] {
   if (!session.is_recurring || session.recurrence_day === null) return [];
 
   const exceptions = new Set((session.recurring_exceptions || []).map(String));
   const lastDeductedDate = session.deducted_at ? toDateStr(new Date(session.deducted_at)) : null;
+
+  const trainerId = trainerIdBySession.get(session.id);
+  const availability = trainerId ? trainerAvailability.get(trainerId) : undefined;
 
   // Only catch up within the last 7 days to prevent over-deduction
   const maxCatchupStart = addDays(todayStr, -7);
@@ -73,13 +86,32 @@ function buildRecurringDueDates(session: ScheduledSession, todayStr: string): st
 
   const dueDates: string[] = [];
   while (cursor <= todayStr) {
-    if (dayOfWeek(cursor) === session.recurrence_day && !exceptions.has(cursor)) {
+    const dow = dayOfWeek(cursor);
+    const isBlocked = availability?.blockedDates.has(cursor) ?? false;
+    const isDayOff = availability?.daysOff.has(dow) ?? false;
+
+    if (dow === session.recurrence_day && !exceptions.has(cursor) && !isBlocked && !isDayOff) {
       dueDates.push(cursor);
     }
     cursor = addDays(cursor, 1);
   }
 
   return dueDates;
+}
+
+function isSessionDateAllowed(
+  session: ScheduledSession,
+  trainerAvailability: Map<string, TrainerAvailability>,
+  trainerIdBySession: Map<string, string>,
+): boolean {
+  const trainerId = trainerIdBySession.get(session.id);
+  const availability = trainerId ? trainerAvailability.get(trainerId) : undefined;
+  if (!availability) return true;
+
+  const dow = dayOfWeek(session.session_date);
+  if (availability.blockedDates.has(session.session_date)) return false;
+  if (availability.daysOff.has(dow)) return false;
+  return true;
 }
 
 async function getLatestValidPackage(supabase: any, userId: string): Promise<ClientPackage | null> {
