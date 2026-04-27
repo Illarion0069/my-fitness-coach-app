@@ -663,6 +663,12 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             setShowBlockModal(time);
           }}
           onMoveEntryDay={async (entry, newTime) => {
+            if (entry.id.startsWith('guest:')) {
+              await supabase.from('guest_bookings').update({ session_time: newTime }).eq('id', entry.id.slice(6));
+              await fetchGuestBookings();
+              toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
 
