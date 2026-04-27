@@ -80,6 +80,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
+  const [guestBookings, setGuestBookings] = useState<GuestBooking[]>([]);
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
