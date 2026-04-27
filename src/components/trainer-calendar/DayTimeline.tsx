@@ -10,7 +10,7 @@ export interface TimelineEntry {
   time: string;
   durationMinutes: number;
   isRecurring: boolean;
-  tone: 'session' | 'travel' | 'blocked' | 'neutral' | 'reload' | 'personal';
+  tone: 'session' | 'travel' | 'blocked' | 'neutral' | 'reload' | 'personal' | 'guest';
 }
 
 interface PositionedEntry extends TimelineEntry {
@@ -91,6 +91,7 @@ const toneClasses: Record<TimelineEntry['tone'], string> = {
   neutral: 'border-border bg-secondary text-foreground',
   reload: 'border-teal-400/30 bg-teal-500/15 text-foreground',
   personal: 'border-blue-400/30 bg-blue-500/15 text-foreground',
+  guest: 'border-amber-400/40 bg-amber-500/15 text-foreground',
 };
 
 const DayTimeline = ({

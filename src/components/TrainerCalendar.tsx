@@ -43,6 +43,16 @@ interface TrainerBlock {
   recurring_exceptions: string[];
 }
 
+interface GuestBooking {
+  id: string;
+  guest_name: string;
+  guest_phone: string;
+  session_date: string;
+  session_time: string | null;
+  status: string;
+  notes: string | null;
+}
+
 interface Props {
   lang: string;
   clients: Profile[];
@@ -70,6 +80,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [blocks, setBlocks] = useState<TrainerBlock[]>([]);
+  const [guestBookings, setGuestBookings] = useState<GuestBooking[]>([]);
   const [clientRemaining, setClientRemaining] = useState<Record<string, { remaining: number; total: number }>>({});
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
@@ -157,8 +168,16 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     }
   };
 
+  const fetchGuestBookings = async () => {
+    const { data } = await supabase
+      .from('guest_bookings')
+      .select('*')
+      .order('session_date', { ascending: true });
+    setGuestBookings((data as GuestBooking[]) || []);
+  };
+
   useEffect(() => {
-    Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchBlockedDates()]);
+    Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchBlockedDates(), fetchGuestBookings()]);
   }, []);
 
 
@@ -187,6 +206,22 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
     return items.sort((a, b) => a.block_time.localeCompare(b.block_time));
   }, [blocks, dayOfWeek, selectedDateStr]);
+
+  const dayGuests = useMemo(() => {
+    return guestBookings
+      .filter((g) => g.session_date === selectedDateStr && g.status !== 'cancelled' && g.status !== 'rejected')
+      .sort((a, b) => (a.session_time || '99:99').localeCompare(b.session_time || '99:99'));
+  }, [guestBookings, selectedDateStr]);
+
+  const deleteGuestBooking = async (id: string) => {
+    const { error } = await supabase.from('guest_bookings').delete().eq('id', id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', variant: 'destructive' });
+      return;
+    }
+    await fetchGuestBookings();
+    toast({ title: lang === 'en' ? 'Guest booking removed' : 'Гостевая запись удалена' });
+  };
 
   const getClientName = (session: ScheduledSession) => {
     const manualMatch = session.notes?.match(/^👤 (.+?) \(manual\)$/);
@@ -484,8 +519,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                 : ('neutral' as const),
     }));
 
-    return [...sessionEntries, ...blockEntries].sort((a, b) => a.time.localeCompare(b.time));
-  }, [clientRemaining, dayBlocks, daySessions, lang]);
+    const guestEntries = dayGuests.map((g) => ({
+      id: `guest:${g.id}`,
+      kind: 'session' as const,
+      title: `👤 ${g.guest_name}`,
+      subtitle: `${lang === 'en' ? 'Guest' : 'Гость'} · ${g.guest_phone}`,
+      time: (g.session_time || '09:00').slice(0, 5),
+      durationMinutes: 60,
+      isRecurring: false,
+      tone: 'guest' as const,
+    }));
+
+    return [...sessionEntries, ...blockEntries, ...guestEntries].sort((a, b) => a.time.localeCompare(b.time));
+  }, [clientRemaining, dayBlocks, daySessions, dayGuests, lang]);
 
 
   return (
@@ -584,18 +630,30 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           entries={timelineEntries}
           isToday={selectedDateStr === format(new Date(), 'yyyy-MM-dd')}
           onDeleteEntry={(entry) => {
+            if (entry.id.startsWith('guest:')) {
+              deleteGuestBooking(entry.id.slice(6));
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
             if (session) deleteOneOffSession(session);
             if (block) deleteBlockSeries(block);
           }}
           onDeleteEntryDay={(entry) => {
+            if (entry.id.startsWith('guest:')) {
+              deleteGuestBooking(entry.id.slice(6));
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
             if (session) deleteRecurringForDay(session);
             if (block) deleteBlockForDay(block);
           }}
           onDeleteEntrySeries={(entry) => {
+            if (entry.id.startsWith('guest:')) {
+              deleteGuestBooking(entry.id.slice(6));
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
             if (session) deleteRecurringSeries(session);
@@ -605,6 +663,12 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             setShowBlockModal(time);
           }}
           onMoveEntryDay={async (entry, newTime) => {
+            if (entry.id.startsWith('guest:')) {
+              await supabase.from('guest_bookings').update({ session_time: newTime }).eq('id', entry.id.slice(6));
+              await fetchGuestBookings();
+              toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
 
@@ -647,6 +711,12 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
             }
           }}
           onMoveEntry={async (entry, newTime) => {
+            if (entry.id.startsWith('guest:')) {
+              await supabase.from('guest_bookings').update({ session_time: newTime }).eq('id', entry.id.slice(6));
+              await fetchGuestBookings();
+              toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
 
