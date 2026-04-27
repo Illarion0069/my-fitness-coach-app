@@ -519,8 +519,19 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                 : ('neutral' as const),
     }));
 
-    return [...sessionEntries, ...blockEntries].sort((a, b) => a.time.localeCompare(b.time));
-  }, [clientRemaining, dayBlocks, daySessions, lang]);
+    const guestEntries = dayGuests.map((g) => ({
+      id: `guest:${g.id}`,
+      kind: 'session' as const,
+      title: `👤 ${g.guest_name}`,
+      subtitle: `${lang === 'en' ? 'Guest' : 'Гость'} · ${g.guest_phone}`,
+      time: (g.session_time || '09:00').slice(0, 5),
+      durationMinutes: 60,
+      isRecurring: false,
+      tone: 'guest' as const,
+    }));
+
+    return [...sessionEntries, ...blockEntries, ...guestEntries].sort((a, b) => a.time.localeCompare(b.time));
+  }, [clientRemaining, dayBlocks, daySessions, dayGuests, lang]);
 
 
   return (
