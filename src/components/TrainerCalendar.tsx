@@ -168,8 +168,16 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     }
   };
 
+  const fetchGuestBookings = async () => {
+    const { data } = await supabase
+      .from('guest_bookings')
+      .select('*')
+      .order('session_date', { ascending: true });
+    setGuestBookings((data as GuestBooking[]) || []);
+  };
+
   useEffect(() => {
-    Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchBlockedDates()]);
+    Promise.all([fetchSessions(), fetchBlocks(), fetchClientPackages(), fetchBlockedDates(), fetchGuestBookings()]);
   }, []);
 
 
