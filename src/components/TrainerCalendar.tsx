@@ -630,18 +630,30 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           entries={timelineEntries}
           isToday={selectedDateStr === format(new Date(), 'yyyy-MM-dd')}
           onDeleteEntry={(entry) => {
+            if (entry.id.startsWith('guest:')) {
+              deleteGuestBooking(entry.id.slice(6));
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
             if (session) deleteOneOffSession(session);
             if (block) deleteBlockSeries(block);
           }}
           onDeleteEntryDay={(entry) => {
+            if (entry.id.startsWith('guest:')) {
+              deleteGuestBooking(entry.id.slice(6));
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
             if (session) deleteRecurringForDay(session);
             if (block) deleteBlockForDay(block);
           }}
           onDeleteEntrySeries={(entry) => {
+            if (entry.id.startsWith('guest:')) {
+              deleteGuestBooking(entry.id.slice(6));
+              return;
+            }
             const session = daySessions.find((s) => s.id === entry.id);
             const block = dayBlocks.find((b) => b.id === entry.id);
             if (session) deleteRecurringSeries(session);
