@@ -207,6 +207,22 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return items.sort((a, b) => a.block_time.localeCompare(b.block_time));
   }, [blocks, dayOfWeek, selectedDateStr]);
 
+  const dayGuests = useMemo(() => {
+    return guestBookings
+      .filter((g) => g.session_date === selectedDateStr && g.status !== 'cancelled' && g.status !== 'rejected')
+      .sort((a, b) => (a.session_time || '99:99').localeCompare(b.session_time || '99:99'));
+  }, [guestBookings, selectedDateStr]);
+
+  const deleteGuestBooking = async (id: string) => {
+    const { error } = await supabase.from('guest_bookings').delete().eq('id', id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', variant: 'destructive' });
+      return;
+    }
+    await fetchGuestBookings();
+    toast({ title: lang === 'en' ? 'Guest booking removed' : 'Гостевая запись удалена' });
+  };
+
   const getClientName = (session: ScheduledSession) => {
     const manualMatch = session.notes?.match(/^👤 (.+?) \(manual\)$/);
     if (manualMatch?.[1]) return manualMatch[1];
