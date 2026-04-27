@@ -43,6 +43,16 @@ interface TrainerBlock {
   recurring_exceptions: string[];
 }
 
+interface GuestBooking {
+  id: string;
+  guest_name: string;
+  guest_phone: string;
+  session_date: string;
+  session_time: string | null;
+  status: string;
+  notes: string | null;
+}
+
 interface Props {
   lang: string;
   clients: Profile[];
