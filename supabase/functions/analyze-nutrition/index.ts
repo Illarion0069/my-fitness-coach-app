@@ -280,9 +280,55 @@ serve(async (req) => {
     const score = Math.min(100, Math.max(0, Math.round((analysis.overall_score as number) || 0)));
     const feedback = (analysis.summary_ru || analysis.summary_en || "") as string;
 
+    // --- AUTHORITATIVE TOTALS: recompute strictly from manual_entries ---
+    // detected_foods from AI are used only for qualitative feedback (positives/issues/scores),
+    // never for calorie/macro totals. This prevents AI from inflating totals with "phantom" items
+    // it sees on photos but the client did not log.
+    const num = (v: unknown) => {
+      const n = Number(v);
+      return Number.isFinite(n) && n > 0 ? n : 0;
+    };
+    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
+    const perMealTotals: Record<string, { calories: number; protein_g: number; carbs_g: number; fat_g: number }> = {};
+    for (const e of manualEntries) {
+      const mt = String((e.meal_type as string) || "snack").toLowerCase();
+      const c = num(e.calories), p = num(e.protein_g), cb = num(e.carbs_g), f = num(e.fat_g);
+      totalCalories += c; totalProtein += p; totalCarbs += cb; totalFat += f;
+      if (!perMealTotals[mt]) perMealTotals[mt] = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+      perMealTotals[mt].calories += c;
+      perMealTotals[mt].protein_g += p;
+      perMealTotals[mt].carbs_g += cb;
+      perMealTotals[mt].fat_g += f;
+    }
+    analysis.total_calories = Math.round(totalCalories);
+    analysis.total_protein_g = Math.round(totalProtein);
+    analysis.total_carbs_g = Math.round(totalCarbs);
+    analysis.total_fat_g = Math.round(totalFat);
+
+    // Override per-meal calorie/macro totals with manual-entry sums.
+    // Keep AI's qualitative fields (score, issues, positives, detected_foods, flags).
+    if (Array.isArray(analysis.meals)) {
+      analysis.meals = (analysis.meals as Array<Record<string, unknown>>).map((m) => {
+        const mt = String((m.meal_type as string) || "").toLowerCase();
+        const t = perMealTotals[mt];
+        if (t) {
+          return {
+            ...m,
+            estimated_calories: t.calories,
+            protein_g: t.protein_g,
+            carbs_g: t.carbs_g,
+            fat_g: t.fat_g,
+          };
+        }
+        // No manual entry for this meal_type — zero out totals (detected_foods stays for context)
+        return { ...m, estimated_calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+      });
+    }
+
     // Increment analysis count and track which manual entries were included
     analysis.analysis_count = currentCount + 1;
     analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
+    analysis.totals_source = "manual_entries";
 
     // --- Save to DB ---
     const { error: upsertError } = await supabase
