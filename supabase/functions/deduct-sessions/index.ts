@@ -65,38 +65,23 @@ function buildRecurringDueDates(
 ): string[] {
   if (!session.is_recurring || session.recurrence_day === null) return [];
 
+  // Strict: deduct ONLY for today. No catch-up of past missed dates.
+  // If cron didn't run on a past date, that's a miss — do not retroactively deduct,
+  // it leads to double-charging when a new package appears after exhaustion.
+  if (dayOfWeek(todayStr) !== session.recurrence_day) return [];
+
   const exceptions = new Set((session.recurring_exceptions || []).map(String));
-  const lastDeductedDate = session.deducted_at ? toDateStr(new Date(session.deducted_at)) : null;
+  if (exceptions.has(todayStr)) return [];
+
+  // Recurring template must have started by today
+  if (session.session_date > todayStr) return [];
 
   const trainerId = trainerIdBySession.get(session.id);
   const availability = trainerId ? trainerAvailability.get(trainerId) : undefined;
+  if (availability?.blockedDates.has(todayStr)) return [];
+  if (availability?.daysOff.has(dayOfWeek(todayStr))) return [];
 
-  // Only catch up within the last 7 days to prevent over-deduction
-  const maxCatchupStart = addDays(todayStr, -7);
-
-  let cursor: string;
-  if (lastDeductedDate) {
-    cursor = addDays(lastDeductedDate, 1);
-  } else {
-    // Never go further back than 7 days from today
-    cursor = session.session_date > maxCatchupStart ? session.session_date : maxCatchupStart;
-  }
-
-  if (cursor > todayStr) return [];
-
-  const dueDates: string[] = [];
-  while (cursor <= todayStr) {
-    const dow = dayOfWeek(cursor);
-    const isBlocked = availability?.blockedDates.has(cursor) ?? false;
-    const isDayOff = availability?.daysOff.has(dow) ?? false;
-
-    if (dow === session.recurrence_day && !exceptions.has(cursor) && !isBlocked && !isDayOff) {
-      dueDates.push(cursor);
-    }
-    cursor = addDays(cursor, 1);
-  }
-
-  return dueDates;
+  return [todayStr];
 }
 
 function isSessionDateAllowed(
