@@ -91,7 +91,7 @@ const SYSTEM_PROMPT = `You are an expert sports nutritionist AI. Analyze the foo
   "summary_en": "Brief summary in English (2-3 sentences). What's good, what needs improvement."
 }
 
-IMPORTANT: For detected_foods, return an array of objects with name, portion_g, calories, protein_g, carbs_g, fat_g for each detected food item. Be as accurate as possible with portion estimates based on visual assessment. Also calculate total_calories, total_protein_g, total_carbs_g, total_fat_g as sums across all meals.`;
+IMPORTANT: For detected_foods, return an array of objects with name, portion_g, calories, protein_g, carbs_g, fat_g for each detected food item — these are used ONLY for qualitative feedback (positives, issues, scoring), NOT for daily totals. The server will recompute total_calories, total_protein_g, total_carbs_g, total_fat_g and per-meal calorie/macro totals strictly from the client's manual_entries (the source of truth). You may still return totals fields, but they will be overridden. Do NOT add extra "phantom" foods to detected_foods that the client did not log via manual_entries — only describe what the client actually entered.`;
 
 function jsonResponse(body: Record<string, unknown>, status = 200) {
   return new Response(JSON.stringify(body), {
