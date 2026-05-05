@@ -148,6 +148,7 @@ const AppContent = () => {
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden"
         onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         <AnimatePresence mode="wait" custom={swipeDirection}>
