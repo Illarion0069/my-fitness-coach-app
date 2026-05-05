@@ -58,13 +58,31 @@ const AppContent = () => {
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
+  const swipeCancelled = useRef(false);
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Ignore multi-touch (pinch/zoom) and zoomed-in state
+    if (e.touches.length > 1 || (window.visualViewport && window.visualViewport.scale > 1.01)) {
+      swipeCancelled.current = true;
+      return;
+    }
+    swipeCancelled.current = false;
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
   };
 
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (e.touches.length > 1) swipeCancelled.current = true;
+  };
+
   const handleTouchEnd = (e: React.TouchEvent) => {
+    if (swipeCancelled.current) return;
+    if (window.visualViewport && window.visualViewport.scale > 1.01) return;
+    // Ignore swipes that originate inside scrollable/interactive elements
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('[data-no-swipe], input, textarea, select, [role="dialog"], .overflow-x-auto, .overflow-x-scroll, .overflow-auto, .overflow-scroll')) {
+      return;
+    }
     const deltaX = e.changedTouches[0].clientX - touchStartX.current;
     const deltaY = e.changedTouches[0].clientY - touchStartY.current;
     if (Math.abs(deltaX) > 120 && Math.abs(deltaX) > Math.abs(deltaY) * 2) {
