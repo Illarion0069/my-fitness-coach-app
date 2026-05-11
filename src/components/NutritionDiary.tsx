@@ -1072,16 +1072,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               </p>
                             </button>
                             {(!isReadOnly || isTrainer) && (
-                              <div className="flex items-center gap-1">
-                                {!isReadOnly && (
-                                  <button type="button" onClick={() => startEditManual(entry)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
-                                    <Edit3 className="w-3.5 h-3.5" />
-                                  </button>
-                                )}
-                                <button type="button" onClick={() => handleDeleteManualEntry(entry.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
+                              <button type="button" onClick={() => handleDeleteManualEntry(entry.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                                <X className="w-3.5 h-3.5" />
+                              </button>
                             )}
                           </div>
                         );
