@@ -20,7 +20,7 @@ export const translations = {
       ru: 'Персональные тренировки, которые подстраиваются под вашу жизнь, а не наоборот',
     },
     cta: { en: 'Book your session', ru: 'Забронировать тренировку' },
-    trainer: { en: 'Illarion Ientin', ru: 'Илларион Иентин' },
+    trainer: { en: 'Illarion Ientin', ru: 'Илларион Ентин' },
     tagline: {
       en: 'Your Elite Personal Trainer in Limassol',
       ru: 'Ваш элитный персональный тренер в Лимассоле',
@@ -163,7 +163,7 @@ export const translations = {
   },
   about: {
     title: { en: 'ABOUT ME', ru: 'ОБО МНЕ' },
-    name: { en: 'Illarion Ientin', ru: 'Илларион Иентин' },
+    name: { en: 'Illarion Ientin', ru: 'Илларион Ентин' },
     bio: {
       en: 'Professional fitness trainer with European accreditation EQF Level 3 and EQF Level 4. I provide high-quality, personalized fitness services designed to help you achieve your goals efficiently and safely. My approach combines modern training methods with individual attention to each client.',
       ru: 'Профессиональный фитнес-тренер с европейской аккредитацией EQF уровня 3 и EQF уровня 4. Я предоставляю высококачественные персонализированные фитнес-услуги, разработанные для эффективного и безопасного достижения ваших целей. Мой подход сочетает современные методы тренировок с индивидуальным вниманием к каждому клиенту.',
