@@ -570,6 +570,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
         <div className="grid grid-cols-7 gap-2">
           {weekDays.map((date) => {
             const active = isSameDay(date, selectedDate);
+            const isCurrentDay = isSameDay(date, new Date());
             const dateStr = format(date, 'yyyy-MM-dd');
             const isBlocked = blockedDates.includes(dateStr);
             const isWeeklyOff = WEEKEND_DAYS.includes(date.getDay());
@@ -581,14 +582,16 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
                 className={`rounded-2xl border px-2 py-2 text-center transition-colors relative ${
                   active
                     ? 'border-primary bg-primary text-primary-foreground'
-                    : isBlocked
-                      ? 'border-destructive/30 bg-destructive/10 text-destructive'
-                      : isWeeklyOff
-                        ? 'border-dashed border-border bg-secondary/20 text-muted-foreground'
-                        : 'border-border bg-secondary/30 text-foreground hover:bg-secondary/50'
+                    : isCurrentDay
+                      ? 'border-primary/60 bg-primary/10 text-foreground'
+                      : isBlocked
+                        ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                        : isWeeklyOff
+                          ? 'border-dashed border-border bg-secondary/20 text-muted-foreground'
+                          : 'border-border bg-secondary/30 text-foreground hover:bg-secondary/50'
                 }`}
               >
-                <p className={`text-[10px] font-medium ${active ? 'text-primary-foreground/80' : isBlocked ? 'text-destructive/70' : 'text-muted-foreground'}`}>
+                <p className={`text-[10px] font-medium ${active ? 'text-primary-foreground/80' : isCurrentDay ? 'text-primary' : isBlocked ? 'text-destructive/70' : 'text-muted-foreground'}`}>
                   {dayNames[date.getDay()]}
                 </p>
                 <p className={`text-sm font-semibold ${isBlocked && !active ? 'line-through' : ''}`}>{format(date, 'd')}</p>
