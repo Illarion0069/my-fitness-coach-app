@@ -479,6 +479,36 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     await fetchData();
   };
 
+  const startEditManual = (entry: ManualEntry) => {
+    setEditingManualId(entry.id);
+    setEditManualName(entry.name || '');
+    setEditManualCal(String(entry.calories || ''));
+    setEditManualProtein(String(entry.protein_g || ''));
+    setEditManualCarbs(String(entry.carbs_g || ''));
+    setEditManualFat(String(entry.fat_g || ''));
+  };
+
+  const handleSaveManualEntry = async () => {
+    if (!log?.id || !editingManualId) return;
+    const entries = ((log.manual_entries || []) as ManualEntry[]).map(e =>
+      e.id === editingManualId
+        ? {
+            ...e,
+            name: editManualName.trim() || e.name,
+            calories: parseInt(editManualCal) || 0,
+            protein_g: parseInt(editManualProtein) || 0,
+            carbs_g: parseInt(editManualCarbs) || 0,
+            fat_g: parseInt(editManualFat) || 0,
+          }
+        : e
+    );
+    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
+    setEditingManualId(null);
+    await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
+    await fetchData();
+  };
+
+
   const handleDeleteAiFood = async (mealType: MealType, foodIndex: number) => {
     if (!log?.id || !analysis || analysis.invalidated) return;
     const updatedAnalysis = { ...analysis };
