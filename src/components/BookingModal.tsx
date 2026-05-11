@@ -440,8 +440,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     const today = isToday(day);
                     const selected = selectedDate && isSameDay(day, selectedDate);
                     const dayOfWeek = getDay(day);
-                    const isDayOff = trainerDaysOff.includes(dayOfWeek);
-                    const isBlocked = trainerBlockedDates.includes(format(day, 'yyyy-MM-dd'));
+                    const isWeekend = trainerDaysOff.includes(dayOfWeek);
+                    const isDayOff = isWeekend && !trainerOverride;
+                    const isBlocked = trainerBlockedDates.includes(format(day, 'yyyy-MM-dd')) && !trainerOverride;
 
                     return (
                       <button
@@ -455,7 +456,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                               ? 'bg-primary/10 text-primary font-bold'
                               : past || !inMonth || isDayOff
                                 ? 'text-muted-foreground/30 cursor-not-allowed'
-                                : 'hover:bg-secondary text-foreground'
+                                : isWeekend && trainerOverride
+                                  ? 'hover:bg-secondary text-foreground/70 ring-1 ring-dashed ring-border'
+                                  : 'hover:bg-secondary text-foreground'
                         }`}
                       >
                         {format(day, 'd')}
