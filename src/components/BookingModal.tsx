@@ -43,10 +43,11 @@ const PACKAGES = [
 ];
 
 const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
-  const { user } = useAuth();
+  const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
   const locale = lang === 'en' ? enUS : ru;
+  const trainerOverride = isTrainer && !forceClientView;
 
   const [step, setStep] = useState<Step>('date');
   const [currentMonth, setCurrentMonth] = useState(new Date());
