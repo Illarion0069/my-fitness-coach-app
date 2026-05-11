@@ -171,11 +171,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 exit={{ opacity: 0, scale: 0.92 }}
                 transition={{ duration: 0.08, ease: 'easeOut' }}
               >
-                {/* Chat badge */}
-                <div className="absolute -bottom-1 -right-1 z-10 w-9 h-9 rounded-full bg-primary flex items-center justify-center shadow-lg pointer-events-none">
-                  <div className="absolute inset-0 rounded-full animate-ping bg-primary/40" style={{ animationDuration: '2s' }} />
-                  <MessageCircle className="w-4 h-4 text-primary-foreground relative z-10" />
-                </div>
+                {/* Chat badge removed — keep only floating messenger icons hint */}
                 {/* Subtle hint — small messenger icons floating */}
                 <div className="absolute top-1/2 -translate-y-1/2 -right-[5.5rem] z-10 flex items-center gap-1 pointer-events-none">
                   <motion.span
