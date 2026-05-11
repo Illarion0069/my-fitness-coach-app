@@ -1038,31 +1038,47 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                           );
                         }
                         return (
-                          <div key={entry.id} className="flex items-center justify-between bg-secondary/30 rounded-xl px-3 py-2">
+                          <div key={entry.id} className="flex items-center justify-between gap-2 bg-secondary/30 rounded-xl px-2 py-2">
+                            {!isReadOnly && (
+                              <button
+                                type="button"
+                                aria-label={lang === 'en' ? 'Edit entry' : 'Редактировать запись'}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  startEditManual(entry);
+                                }}
+                                className="w-9 h-9 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary active:bg-secondary/60 transition-colors flex-shrink-0"
+                              >
+                                <PencilLine className="w-4 h-4" />
+                              </button>
+                            )}
                             <button
-                              onClick={() => !isReadOnly && startEditManual(entry)}
+                              type="button"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (!isReadOnly) startEditManual(entry);
+                              }}
                               disabled={isReadOnly}
-                              className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                              className="flex-1 min-w-0 text-left disabled:cursor-default"
                             >
-                              <PencilLine className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                              <div className="min-w-0">
-                                <p className="text-xs font-medium text-foreground truncate">{entry.name}</p>
-                                <p className="text-[10px] text-muted-foreground">
-                                  {entry.calories}{lang === 'en' ? 'kcal' : 'ккал'}
-                                  {entry.protein_g > 0 && ` · P${entry.protein_g}`}
-                                  {entry.carbs_g > 0 && ` · C${entry.carbs_g}`}
-                                  {entry.fat_g > 0 && ` · F${entry.fat_g}`}
-                                </p>
-                              </div>
+                              <p className="text-xs font-medium text-foreground truncate">{entry.name}</p>
+                              <p className="text-[10px] text-muted-foreground">
+                                {entry.calories}{lang === 'en' ? 'kcal' : 'ккал'}
+                                {entry.protein_g > 0 && ` · P${entry.protein_g}`}
+                                {entry.carbs_g > 0 && ` · C${entry.carbs_g}`}
+                                {entry.fat_g > 0 && ` · F${entry.fat_g}`}
+                              </p>
                             </button>
                             {(!isReadOnly || isTrainer) && (
                               <div className="flex items-center gap-1">
                                 {!isReadOnly && (
-                                  <button onClick={() => startEditManual(entry)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                                  <button type="button" onClick={() => startEditManual(entry)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
                                 )}
-                                <button onClick={() => handleDeleteManualEntry(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
+                                <button type="button" onClick={() => handleDeleteManualEntry(entry.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
                                   <X className="w-3.5 h-3.5" />
                                 </button>
                               </div>
