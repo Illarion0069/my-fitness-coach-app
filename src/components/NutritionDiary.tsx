@@ -171,6 +171,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editManualProtein, setEditManualProtein] = useState('');
   const [editManualCarbs, setEditManualCarbs] = useState('');
   const [editManualFat, setEditManualFat] = useState('');
+  const [confirmDeleteManualId, setConfirmDeleteManualId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -1072,9 +1073,32 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               </p>
                             </button>
                             {(!isReadOnly || isTrainer) && (
-                              <button type="button" onClick={() => handleDeleteManualEntry(entry.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
-                                <X className="w-3.5 h-3.5" />
-                              </button>
+                              confirmDeleteManualId === entry.id ? (
+                                <div className="flex items-center gap-1 flex-shrink-0">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteManualId(null); }}
+                                    className="h-8 px-2 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground"
+                                  >
+                                    {lang === 'en' ? 'Cancel' : 'Отмена'}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleDeleteManualEntry(entry.id); setConfirmDeleteManualId(null); }}
+                                    className="h-8 px-2 rounded-lg bg-destructive text-[11px] font-bold text-destructive-foreground"
+                                  >
+                                    <Check className="w-3 h-3 inline mr-1" />{lang === 'en' ? 'Delete' : 'Удалить'}
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); setConfirmDeleteManualId(entry.id); }}
+                                  className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors flex-shrink-0"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              )
                             )}
                           </div>
                         );
