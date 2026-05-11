@@ -165,6 +165,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editFoodProtein, setEditFoodProtein] = useState('');
   const [editFoodCarbs, setEditFoodCarbs] = useState('');
   const [editFoodFat, setEditFoodFat] = useState('');
+  const [editingManualId, setEditingManualId] = useState<string | null>(null);
+  const [editManualName, setEditManualName] = useState('');
+  const [editManualCal, setEditManualCal] = useState('');
+  const [editManualProtein, setEditManualProtein] = useState('');
+  const [editManualCarbs, setEditManualCarbs] = useState('');
+  const [editManualFat, setEditManualFat] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
@@ -472,6 +478,36 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
     await fetchData();
   };
+
+  const startEditManual = (entry: ManualEntry) => {
+    setEditingManualId(entry.id);
+    setEditManualName(entry.name || '');
+    setEditManualCal(String(entry.calories || ''));
+    setEditManualProtein(String(entry.protein_g || ''));
+    setEditManualCarbs(String(entry.carbs_g || ''));
+    setEditManualFat(String(entry.fat_g || ''));
+  };
+
+  const handleSaveManualEntry = async () => {
+    if (!log?.id || !editingManualId) return;
+    const entries = ((log.manual_entries || []) as ManualEntry[]).map(e =>
+      e.id === editingManualId
+        ? {
+            ...e,
+            name: editManualName.trim() || e.name,
+            calories: parseInt(editManualCal) || 0,
+            protein_g: parseInt(editManualProtein) || 0,
+            carbs_g: parseInt(editManualCarbs) || 0,
+            fat_g: parseInt(editManualFat) || 0,
+          }
+        : e
+    );
+    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
+    setEditingManualId(null);
+    await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
+    await fetchData();
+  };
+
 
   const handleDeleteAiFood = async (mealType: MealType, foodIndex: number) => {
     if (!log?.id || !analysis || analysis.invalidated) return;
@@ -960,27 +996,81 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                       )}
 
                       {/* Manual entries */}
-                      {meal.manualItems.map(entry => (
-                        <div key={entry.id} className="flex items-center justify-between bg-secondary/30 rounded-xl px-3 py-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            <PencilLine className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                            <div>
-                              <p className="text-xs font-medium text-foreground truncate">{entry.name}</p>
-                              <p className="text-[10px] text-muted-foreground">
-                                {entry.calories}{lang === 'en' ? 'kcal' : 'ккал'}
-                                {entry.protein_g > 0 && ` · P${entry.protein_g}`}
-                                {entry.carbs_g > 0 && ` · C${entry.carbs_g}`}
-                                {entry.fat_g > 0 && ` · F${entry.fat_g}`}
-                              </p>
+                      {meal.manualItems.map(entry => {
+                        const isEditingManual = editingManualId === entry.id;
+                        if (isEditingManual) {
+                          return (
+                            <div key={entry.id} className="bg-secondary/50 rounded-xl p-3 space-y-2 border border-primary/30">
+                              <input value={editManualName} onChange={e => setEditManualName(e.target.value)}
+                                className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
+                                placeholder={lang === 'en' ? 'Food name' : 'Название'} />
+                              <div className="grid grid-cols-4 gap-1.5">
+                                <div>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">kcal</label>
+                                  <input type="number" value={editManualCal} onChange={e => setEditManualCal(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">P</label>
+                                  <input type="number" value={editManualProtein} onChange={e => setEditManualProtein(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">C</label>
+                                  <input type="number" value={editManualCarbs} onChange={e => setEditManualCarbs(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">F</label>
+                                  <input type="number" value={editManualFat} onChange={e => setEditManualFat(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                </div>
+                              </div>
+                              <div className="flex gap-1.5">
+                                <button onClick={() => setEditingManualId(null)} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
+                                  {lang === 'en' ? 'Cancel' : 'Отмена'}
+                                </button>
+                                <button onClick={handleSaveManualEntry} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
+                                  <Check className="w-3 h-3 inline mr-1" />{lang === 'en' ? 'Save' : 'OK'}
+                                </button>
+                              </div>
                             </div>
-                          </div>
-                          {(!isReadOnly || isTrainer) && (
-                            <button onClick={() => handleDeleteManualEntry(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
-                              <X className="w-3.5 h-3.5" />
+                          );
+                        }
+                        return (
+                          <div key={entry.id} className="flex items-center justify-between bg-secondary/30 rounded-xl px-3 py-2">
+                            <button
+                              onClick={() => !isReadOnly && startEditManual(entry)}
+                              disabled={isReadOnly}
+                              className="flex items-center gap-2 flex-1 min-w-0 text-left"
+                            >
+                              <PencilLine className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-foreground truncate">{entry.name}</p>
+                                <p className="text-[10px] text-muted-foreground">
+                                  {entry.calories}{lang === 'en' ? 'kcal' : 'ккал'}
+                                  {entry.protein_g > 0 && ` · P${entry.protein_g}`}
+                                  {entry.carbs_g > 0 && ` · C${entry.carbs_g}`}
+                                  {entry.fat_g > 0 && ` · F${entry.fat_g}`}
+                                </p>
+                              </div>
                             </button>
-                          )}
-                        </div>
-                      ))}
+                            {(!isReadOnly || isTrainer) && (
+                              <div className="flex items-center gap-1">
+                                {!isReadOnly && (
+                                  <button onClick={() => startEditManual(entry)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-primary transition-colors">
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                                <button onClick={() => handleDeleteManualEntry(entry.id)} className="w-7 h-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-destructive transition-colors">
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
 
                       {!hasContent && (
                         <p className="text-center text-[11px] text-muted-foreground/50 py-2">
