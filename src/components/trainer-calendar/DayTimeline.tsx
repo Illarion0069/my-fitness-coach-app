@@ -370,7 +370,7 @@ const DayTimeline = ({
             );
           })}
           {entries.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-6 text-center text-sm text-muted-foreground">
               {lang === 'en' ? 'No events yet — tap any slot to add one.' : 'Событий пока нет — нажми на любой слот, чтобы добавить.'}
             </div>
           )}
