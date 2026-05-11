@@ -171,6 +171,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editManualProtein, setEditManualProtein] = useState('');
   const [editManualCarbs, setEditManualCarbs] = useState('');
   const [editManualFat, setEditManualFat] = useState('');
+  const [confirmDeleteManualId, setConfirmDeleteManualId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
