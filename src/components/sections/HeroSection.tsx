@@ -251,10 +251,9 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
             onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
-            className="group w-full bg-primary text-primary-foreground font-bold rounded-2xl border border-primary/40 shadow-[0_4px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_28px_-6px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 transition-all active:scale-[0.98] py-4 text-[15px] tracking-wide flex items-center justify-center gap-2"
+            className="w-full bg-primary text-primary-foreground font-bold rounded-2xl border border-primary/40 shadow-[0_4px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_28px_-6px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 transition-all active:scale-[0.98] py-4 text-[15px] tracking-wide"
           >
-            <span>{lang === 'en' ? 'Book Your Session' : 'Записаться на тренировку'}</span>
-            <span className="opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
+            {lang === 'en' ? 'Book Your Session' : 'Записаться на тренировку'}
           </motion.button>
         </motion.div>
 
