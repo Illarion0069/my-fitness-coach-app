@@ -284,7 +284,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 transition={{ delay: 0.7 + i * 0.05 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
                 whileHover={{ y: -3 }}
-                className={`workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 ? 'col-span-2 row-span-1 bg-gradient-to-br from-card to-primary/5' : ''}`}
+                className={`workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 bg-gradient-to-br from-card to-primary/5' : ''}`}
               >
                 <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>{item.icon}</div>
                 <h3 className={`font-bold text-foreground mb-1 ${i === 0 ? 'text-base' : 'text-[13px]'}`}>{t(item.name)}</h3>
