@@ -161,7 +161,18 @@ const AppContent = () => {
             exit="exit"
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
           >
-            <Suspense fallback={<div className="min-h-screen bg-background" />}>
+            <Suspense fallback={
+              <div className="min-h-screen bg-background px-5 pt-6 pb-28 space-y-4">
+                <div className="h-8 w-1/2 rounded-lg bg-muted/40 animate-pulse" />
+                <div className="h-4 w-2/3 rounded bg-muted/30 animate-pulse" />
+                <div className="grid grid-cols-2 gap-3 mt-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-28 rounded-2xl bg-muted/30 animate-pulse" style={{ animationDelay: `${i * 80}ms` }} />
+                  ))}
+                </div>
+                <div className="h-40 rounded-2xl bg-muted/20 animate-pulse mt-3" />
+              </div>
+            }>
               {renderSection()}
             </Suspense>
           </motion.div>
