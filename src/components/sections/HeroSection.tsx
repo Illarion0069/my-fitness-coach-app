@@ -176,8 +176,8 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                   <div className="absolute inset-0 rounded-full animate-ping bg-primary/40" style={{ animationDuration: '2s' }} />
                   <MessageCircle className="w-4 h-4 text-primary-foreground relative z-10" />
                 </div>
-                {/* Hint text */}
-                <div className="absolute top-1/2 -translate-y-1/2 -right-[7.5rem] z-10 flex items-center gap-1.5 pointer-events-none">
+                {/* Subtle hint — small messenger icons floating */}
+                <div className="absolute top-1/2 -translate-y-1/2 -right-[5.5rem] z-10 flex items-center gap-1 pointer-events-none">
                   <motion.span
                     animate={{ x: [0, -3, 0] }}
                     transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
@@ -185,9 +185,14 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                   >
                     ←
                   </motion.span>
-                  <span className="text-[10px] font-medium text-muted-foreground/70 italic leading-tight max-w-[5rem]">
-                    {lang === 'en' ? 'tap to contact' : 'нажми, чтобы написать'}
-                  </span>
+                  <div className="flex items-center gap-1">
+                    <span className="w-4 h-4 rounded-full bg-[#25D366]/80 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-current"><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.5.5 0 00.612.638l4.685-1.228A11.953 11.953 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0z"/></svg>
+                    </span>
+                    <span className="w-4 h-4 rounded-full bg-[#229ED9]/80 flex items-center justify-center">
+                      <svg viewBox="0 0 24 24" className="w-2.5 h-2.5 text-white fill-current"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0h-.056z"/></svg>
+                    </span>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -220,12 +225,10 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center mb-4"
         >
-          <h1 className={`font-extrabold uppercase tracking-tight font-heading leading-[1.05] ${lang === 'ru' ? 'text-[1.6rem]' : 'text-4xl'}`}>
-            <span className="text-primary">{t(hero.title.line1)}</span>
-            <br />
-            <span className="text-foreground">{t(hero.title.line2)}</span>
-            <br />
-            <span className="text-primary">{t(hero.title.line3)}</span>
+          <h1 className={`uppercase tracking-tight font-heading leading-[1] ${lang === 'ru' ? 'text-[1.6rem]' : 'text-4xl'}`}>
+            <span className="block text-primary font-extrabold">{t(hero.title.line1)}</span>
+            <span className="block text-muted-foreground/80 font-light italic normal-case tracking-normal text-[0.55em] mt-1 mb-1">{t(hero.title.line2)}</span>
+            <span className="block text-foreground font-extrabold">{t(hero.title.line3)}</span>
           </h1>
         </motion.div>
 
@@ -252,9 +255,10 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
             onClick={() => { setBookingInitialStep('date'); setBookingOpen(true); }}
-            className="w-full gradient-primary text-primary-foreground font-extrabold rounded-2xl glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] py-4 text-base tracking-wide"
+            className="group w-full bg-primary text-primary-foreground font-bold rounded-2xl border border-primary/40 shadow-[0_4px_24px_-8px_hsl(var(--primary)/0.5)] hover:shadow-[0_6px_28px_-6px_hsl(var(--primary)/0.6)] hover:-translate-y-0.5 transition-all active:scale-[0.98] py-4 text-[15px] tracking-wide flex items-center justify-center gap-2"
           >
-            {lang === 'en' ? '🔥 Book Your Session' : '🔥 Записаться на тренировку'}
+            <span>{lang === 'en' ? 'Book Your Session' : 'Записаться на тренировку'}</span>
+            <span className="opacity-60 group-hover:translate-x-0.5 transition-transform">→</span>
           </motion.button>
         </motion.div>
 
@@ -263,12 +267,15 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65, duration: 0.5 }}
-          className="w-full pb-28"
+          className="w-full pb-28 mt-12"
         >
-          <h2 className="text-sm font-extrabold text-foreground uppercase tracking-wider mb-3">
-            {t(workouts.title)}
-          </h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-xs font-extrabold text-muted-foreground uppercase tracking-[0.2em]">
+              {t(workouts.title)}
+            </h2>
+            <span className="h-px flex-1 ml-3 bg-border/40" />
+          </div>
+          <div className="grid grid-cols-2 auto-rows-[minmax(0,1fr)] gap-3">
             {workouts.items.slice(0, 4).map((item, i) => (
               <motion.div
                 key={i}
@@ -276,10 +283,11 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.7 + i * 0.05 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
-                className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none"
+                whileHover={{ y: -3 }}
+                className={`workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 bg-gradient-to-br from-card to-primary/5' : ''}`}
               >
-                <div className="text-2xl mb-2">{item.icon}</div>
-                <h3 className="text-[13px] font-bold text-foreground mb-1">{t(item.name)}</h3>
+                <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>{item.icon}</div>
+                <h3 className={`font-bold text-foreground mb-1 ${i === 0 ? 'text-base' : 'text-[13px]'}`}>{t(item.name)}</h3>
                 <AnimatePresence mode="wait">
                   {expandedCard === i ? (
                     <motion.div
