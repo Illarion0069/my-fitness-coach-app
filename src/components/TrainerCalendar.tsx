@@ -548,6 +548,15 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           <div className="min-w-0 flex-1 text-center">
             <p className="text-xs text-muted-foreground">{lang === 'en' ? 'Selected day' : 'Выбранный день'}</p>
             <p className="truncate font-semibold">{format(selectedDate, 'EEEE, d MMMM', { locale })}</p>
+            {!isSameDay(selectedDate, new Date()) && (
+              <button
+                type="button"
+                onClick={() => setSelectedDate(new Date())}
+                className="mt-1 text-[11px] font-medium text-primary hover:underline"
+              >
+                {lang === 'en' ? 'Today' : 'Сегодня'}
+              </button>
+            )}
           </div>
 
           <button
