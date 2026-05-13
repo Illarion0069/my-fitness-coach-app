@@ -149,6 +149,9 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
+  const [todayKcal, setTodayKcal] = useState<number>(0);
+  const [photosCount, setPhotosCount] = useState<number>(0);
+  const [whoopRecovery, setWhoopRecovery] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
