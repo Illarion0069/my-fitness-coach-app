@@ -149,6 +149,9 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
+  const [todayKcal, setTodayKcal] = useState<number>(0);
+  const [photosCount, setPhotosCount] = useState<number>(0);
+  const [whoopRecovery, setWhoopRecovery] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
@@ -215,12 +218,44 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
       setTestResults(data || []);
     };
 
+    const fetchTodayKcal = async () => {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
+      const { data } = await supabase
+        .from('nutrition_logs').select('ai_analysis, manual_entries')
+        .eq('user_id', user.id).eq('log_date', today).maybeSingle();
+      let kcal = 0;
+      const analysis: any = data?.ai_analysis;
+      if (analysis?.total_calories) kcal += Number(analysis.total_calories) || 0;
+      const manual: any[] = Array.isArray(data?.manual_entries) ? data!.manual_entries : [];
+      kcal += manual.reduce((s, m) => s + (Number(m?.calories) || 0), 0);
+      setTodayKcal(Math.round(kcal));
+    };
+
+    const fetchPhotos = async () => {
+      const { count } = await supabase
+        .from('client_progress_photos').select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setPhotosCount(count || 0);
+    };
+
+    const fetchWhoop = async () => {
+      const { data } = await supabase
+        .from('whoop_metrics').select('recovery_score').eq('user_id', user.id)
+        .not('recovery_score', 'is', null)
+        .order('metric_date', { ascending: false }).limit(1).maybeSingle();
+      setWhoopRecovery(data?.recovery_score != null ? Math.round(Number(data.recovery_score)) : null);
+    };
+
     loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
+    fetchTodayKcal(); fetchPhotos(); fetchWhoop();
 
     const channel = supabase
       .channel('dashboard-sessions')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => { fetchSessions(); fetchPkg(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => { fetchSessions(); fetchPast(); fetchPkg(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, fetchPkg)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'food_photos', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_progress_photos', filter: `user_id=eq.${user.id}` }, fetchPhotos)
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
@@ -304,6 +339,17 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   // Test sparkline data
   const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
   const lastTestPct = testSparkData.length > 0 ? testSparkData[testSparkData.length - 1] : null;
+
+  // Sessions completed this month
+  const monthSessionsCount = useMemo(() => {
+    const now = new Date();
+    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return pastSessions.filter(s => s.session_date?.startsWith(monthStr)).length;
+  }, [pastSessions]);
+
+  // Nutrition progress
+  const kcalPct = calorieGoal && calorieGoal > 0 ? Math.min(Math.round((todayKcal / calorieGoal) * 100), 100) : 0;
+  const kcalOver = calorieGoal != null && todayKcal > calorieGoal;
 
   if (!user) return null;
 
@@ -511,13 +557,57 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
             {lang === 'en' ? 'My Progress' : 'Мой прогресс'}
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {/* Body Measurements */}
+            {/* ═════ Nutrition — HERO BENTO (full width) ═════ */}
+            <motion.button
+              onClick={() => setNutritionOpen(true)}
+              whileTap={{ scale: 0.98 }}
+              className="col-span-2 relative overflow-hidden bg-gradient-to-br from-orange-500/15 via-card to-card border border-orange-500/25 rounded-2xl p-4 text-left hover:border-orange-500/50 transition-all group"
+            >
+              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-orange-500/10 blur-2xl" />
+              <div className="relative flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
+                  <UtensilsCrossed className="w-5 h-5 text-orange-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-orange-400/80 uppercase tracking-wider">
+                    {lang === 'en' ? 'Today' : 'Сегодня'}
+                  </p>
+                  <div className="flex items-baseline gap-1.5 mt-0.5">
+                    <span className={`text-2xl font-extrabold font-heading ${kcalOver ? 'text-destructive' : 'text-foreground'}`}>
+                      {todayKcal}
+                    </span>
+                    {calorieGoal ? (
+                      <span className="text-xs text-muted-foreground">/ {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}</span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
+                    )}
+                  </div>
+                  {calorieGoal ? (
+                    <div className="mt-2 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${kcalPct}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className={`h-full rounded-full ${kcalOver ? 'bg-destructive' : 'bg-orange-400'}`}
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      {lang === 'en' ? 'Tap to log meal' : 'Откройте, чтобы добавить'}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+              </div>
+            </motion.button>
+
+            {/* ═════ Body Measurements ═════ */}
             <ModuleCard
               icon={<Ruler className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Body Progress' : 'Замеры тела'}
-              subtitle={measurements.length > 0
-                ? `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`
-                : (lang === 'en' ? 'No data yet' : 'Нет данных')}
+              title={lang === 'en' ? 'Body' : 'Замеры'}
+              subtitle={measurements.length === 0
+                ? (lang === 'en' ? 'Add first record' : 'Добавьте замер')
+                : `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`}
               onClick={() => setMeasurementsOpen(true)}
               preview={weightSparkData.length >= 2 ? (
                 <div className="space-y-1.5">
@@ -534,65 +624,102 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
               ) : undefined}
             />
 
-            {/* Nutrition Diary */}
-            <ModuleCard
-              icon={<UtensilsCrossed className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Nutrition' : 'Питание'}
-              subtitle={lang === 'en' ? 'Food & drink log' : 'Еда и напитки'}
-              onClick={() => setNutritionOpen(true)}
-              accentColor="bg-orange-500/15"
-            />
-
-            {/* Progress Photos */}
-            <ModuleCard
-              icon={<Camera className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Photos' : 'Фото'}
-              subtitle={lang === 'en' ? 'Progress photos' : 'Фото прогресса'}
-              onClick={() => setPhotosOpen(true)}
-            />
-
-            {/* Health Tests */}
+            {/* ═════ Health Tests ═════ */}
             <ModuleCard
               icon={<ClipboardCheck className="w-4.5 h-4.5 text-primary" />}
               title={lang === 'en' ? 'Tests' : 'Тесты'}
-              subtitle={lastTestPct != null
-                ? `${lang === 'en' ? 'Last score' : 'Последний'}: ${lastTestPct}%`
-                : (lang === 'en' ? 'Health assessment' : 'Оценка здоровья')}
+              subtitle={lastTestPct == null
+                ? (lang === 'en' ? 'Take first test' : 'Пройдите тест')
+                : `${testResults.length} ${lang === 'en' ? 'taken' : 'пройдено'}`}
               onClick={() => setTestsOpen(true)}
-              preview={testSparkData.length >= 2 ? (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-1">
-                    <span className="text-lg font-extrabold font-heading text-foreground">{lastTestPct}%</span>
+              preview={testSparkData.length >= 1 ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-lg font-extrabold font-heading text-foreground">{lastTestPct}</span>
+                    <span className="text-[10px] text-muted-foreground">%</span>
                     {testSparkData.length >= 2 && (
                       <span className={`text-[10px] font-bold ml-auto ${testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? 'text-green-400' : 'text-orange-400'}`}>
                         {testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />}
                       </span>
                     )}
                   </div>
-                  <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />
+                  {testSparkData.length >= 2 && <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />}
                 </div>
               ) : undefined}
             />
 
-            {/* Training History */}
+            {/* ═════ Progress Photos ═════ */}
+            <ModuleCard
+              icon={<Camera className="w-4.5 h-4.5 text-primary" />}
+              title={lang === 'en' ? 'Photos' : 'Фото'}
+              subtitle={photosCount === 0
+                ? (lang === 'en' ? 'Upload first photo' : 'Загрузите фото')
+                : `${photosCount} ${lang === 'en' ? (photosCount === 1 ? 'photo' : 'photos') : (photosCount === 1 ? 'фото' : photosCount < 5 ? 'фото' : 'фото')}`}
+              onClick={() => setPhotosOpen(true)}
+              preview={photosCount > 0 ? (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-extrabold font-heading text-foreground">{photosCount}</span>
+                  <Camera className="w-3 h-3 text-muted-foreground ml-auto" />
+                </div>
+              ) : undefined}
+            />
+
+            {/* ═════ Training History ═════ */}
             <ModuleCard
               icon={<History className="w-4.5 h-4.5 text-primary" />}
               title={lang === 'en' ? 'History' : 'История'}
-              subtitle={pastSessions.length > 0
-                ? `${pastSessions.length} ${lang === 'en' ? 'sessions done' : 'тренировок'}`
-                : (lang === 'en' ? 'No sessions yet' : 'Нет данных')}
+              subtitle={pastSessions.length === 0
+                ? (lang === 'en' ? 'No sessions yet' : 'Нет тренировок')
+                : `${pastSessions.length} ${lang === 'en' ? 'total' : 'всего'}`}
               onClick={() => setHistoryOpen(true)}
-              badge={pastSessions.length || undefined}
+              preview={pastSessions.length > 0 ? (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-lg font-extrabold font-heading text-foreground">{monthSessionsCount}</span>
+                  <span className="text-[10px] text-muted-foreground">
+                    {lang === 'en' ? 'this month' : 'в этом месяце'}
+                  </span>
+                </div>
+              ) : undefined}
             />
 
-            {/* Whoop */}
-            <ModuleCard
-              icon={<Activity className="w-4.5 h-4.5 text-primary" />}
-              title="Whoop"
-              subtitle={lang === 'en' ? 'Recovery & strain' : 'Восстановление'}
+            {/* ═════ Whoop — wide bento ═════ */}
+            <motion.button
               onClick={() => setWhoopOpen(true)}
-              accentColor="bg-green-500/15"
-            />
+              whileTap={{ scale: 0.98 }}
+              className="col-span-2 relative overflow-hidden bg-gradient-to-br from-green-500/10 via-card to-card border border-green-500/25 rounded-2xl p-4 text-left hover:border-green-500/50 transition-all"
+            >
+              <div className="flex items-center gap-4">
+                <div className="w-11 h-11 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
+                  <Activity className="w-5 h-5 text-green-400" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] font-bold text-green-400/80 uppercase tracking-wider">Whoop</p>
+                  {whoopRecovery != null ? (
+                    <>
+                      <div className="flex items-baseline gap-1.5 mt-0.5">
+                        <span className="text-2xl font-extrabold font-heading text-foreground">{whoopRecovery}</span>
+                        <span className="text-xs text-muted-foreground">% {lang === 'en' ? 'recovery' : 'восстановление'}</span>
+                      </div>
+                      <div className="mt-2 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${whoopRecovery}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className={`h-full rounded-full ${
+                            whoopRecovery >= 67 ? 'bg-green-400' : whoopRecovery >= 34 ? 'bg-yellow-400' : 'bg-red-400'
+                          }`}
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <p className="text-[12px] text-muted-foreground mt-1">
+                      {lang === 'en' ? 'Connect your Whoop band' : 'Подключите Whoop'}
+                    </p>
+                  )}
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+              </div>
+            </motion.button>
           </div>
         </motion.div>
 
