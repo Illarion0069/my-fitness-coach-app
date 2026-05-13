@@ -340,6 +340,17 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
   const lastTestPct = testSparkData.length > 0 ? testSparkData[testSparkData.length - 1] : null;
 
+  // Sessions completed this month
+  const monthSessionsCount = useMemo(() => {
+    const now = new Date();
+    const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return pastSessions.filter(s => s.session_date?.startsWith(monthStr)).length;
+  }, [pastSessions]);
+
+  // Nutrition progress
+  const kcalPct = calorieGoal && calorieGoal > 0 ? Math.min(Math.round((todayKcal / calorieGoal) * 100), 100) : 0;
+  const kcalOver = calorieGoal != null && todayKcal > calorieGoal;
+
   if (!user) return null;
 
   const remaining = pkg ? pkg.total_sessions - pkg.used_sessions : 0;
