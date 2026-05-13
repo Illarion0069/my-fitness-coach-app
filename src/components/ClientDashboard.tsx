@@ -505,13 +505,30 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
                 </div>
                 <span className="text-[13px] font-medium flex-1">{formatSessionDate(s)}</span>
                 {canCancel(s) ? (
-                  <button
-                    onClick={() => handleCancel(s)}
-                    disabled={cancellingId === s.id}
-                    className="text-[11px] text-destructive/80 font-semibold bg-destructive/8 px-2.5 py-1 rounded-lg hover:bg-destructive/15 transition-colors"
-                  >
-                    {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />}
-                  </button>
+                  confirmCancelId === s.id ? (
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
+                        className="h-7 px-2 rounded-lg bg-secondary/60 text-[10px] font-bold text-muted-foreground"
+                      >
+                        {lang === 'en' ? 'No' : 'Нет'}
+                      </button>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); handleCancel(s); }}
+                        disabled={cancellingId === s.id}
+                        className="h-7 px-2 rounded-lg bg-destructive text-[10px] font-bold text-destructive-foreground"
+                      >
+                        {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Cancel' : 'Отменить')}
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setConfirmCancelId(s.id); }}
+                      className="text-[11px] text-destructive/80 font-semibold bg-destructive/8 px-2.5 py-1 rounded-lg hover:bg-destructive/15 transition-colors"
+                    >
+                      <XCircle className="w-3.5 h-3.5" />
+                    </button>
+                  )
                 ) : (
                   <span className="text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{'<24h'}</span>
                 )}
