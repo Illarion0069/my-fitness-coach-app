@@ -83,6 +83,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const [measurements, setMeasurements] = useState<any[]>([]);
