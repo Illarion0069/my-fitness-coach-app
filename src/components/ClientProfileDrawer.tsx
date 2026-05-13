@@ -83,6 +83,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [openSection, setOpenSection] = useState<string | null>(null);
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const [measurements, setMeasurements] = useState<any[]>([]);
@@ -304,9 +305,18 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                             {s.recurrence_time ? ` ${s.recurrence_time.slice(0, 5)}` : ''}
                           </span>
                         </div>
-                        <button onClick={() => handleCancel(s)} disabled={cancellingId === s.id} className="text-destructive/60 hover:text-destructive transition-colors">
-                          {cancellingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                        </button>
+                        {confirmCancelId === s.id ? (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setConfirmCancelId(null)} className="h-7 px-2 rounded-md bg-secondary text-[10px] font-bold text-muted-foreground">{lang === 'en' ? 'No' : 'Нет'}</button>
+                            <button onClick={() => { setConfirmCancelId(null); handleCancel(s); }} disabled={cancellingId === s.id} className="h-7 px-2 rounded-md bg-destructive text-[10px] font-bold text-destructive-foreground">
+                              {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Cancel' : 'Отменить')}
+                            </button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setConfirmCancelId(s.id)} className="text-destructive/60 hover:text-destructive transition-colors">
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     ))}
                     {sessions.filter(s => !s.is_recurring).map(s => {
@@ -321,9 +331,18 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                             </span>
                           </div>
                           {cancelable ? (
-                            <button onClick={() => handleCancel(s)} disabled={cancellingId === s.id} className="text-destructive hover:text-destructive/80 transition-colors">
-                              {cancellingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                            </button>
+                            confirmCancelId === s.id ? (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => setConfirmCancelId(null)} className="h-7 px-2 rounded-md bg-secondary text-[10px] font-bold text-muted-foreground">{lang === 'en' ? 'No' : 'Нет'}</button>
+                                <button onClick={() => { setConfirmCancelId(null); handleCancel(s); }} disabled={cancellingId === s.id} className="h-7 px-2 rounded-md bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                  {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Cancel' : 'Отменить')}
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmCancelId(s.id)} className="text-destructive hover:text-destructive/80 transition-colors">
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            )
                           ) : (
                             <span className="text-[10px] text-muted-foreground/50">{lang === 'en' ? '< 24h' : '< 24ч'}</span>
                           )}
