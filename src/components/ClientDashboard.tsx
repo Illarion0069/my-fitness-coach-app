@@ -218,7 +218,36 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
       setTestResults(data || []);
     };
 
+    const fetchTodayKcal = async () => {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
+      const { data } = await supabase
+        .from('nutrition_logs').select('ai_analysis, manual_entries')
+        .eq('user_id', user.id).eq('log_date', today).maybeSingle();
+      let kcal = 0;
+      const analysis: any = data?.ai_analysis;
+      if (analysis?.total_calories) kcal += Number(analysis.total_calories) || 0;
+      const manual: any[] = Array.isArray(data?.manual_entries) ? data!.manual_entries : [];
+      kcal += manual.reduce((s, m) => s + (Number(m?.calories) || 0), 0);
+      setTodayKcal(Math.round(kcal));
+    };
+
+    const fetchPhotos = async () => {
+      const { count } = await supabase
+        .from('client_progress_photos').select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id);
+      setPhotosCount(count || 0);
+    };
+
+    const fetchWhoop = async () => {
+      const { data } = await supabase
+        .from('whoop_metrics').select('recovery_score').eq('user_id', user.id)
+        .not('recovery_score', 'is', null)
+        .order('metric_date', { ascending: false }).limit(1).maybeSingle();
+      setWhoopRecovery(data?.recovery_score != null ? Math.round(Number(data.recovery_score)) : null);
+    };
+
     loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
+    fetchTodayKcal(); fetchPhotos(); fetchWhoop();
 
     const channel = supabase
       .channel('dashboard-sessions')
