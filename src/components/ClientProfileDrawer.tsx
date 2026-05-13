@@ -331,9 +331,18 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                             </span>
                           </div>
                           {cancelable ? (
-                            <button onClick={() => handleCancel(s)} disabled={cancellingId === s.id} className="text-destructive hover:text-destructive/80 transition-colors">
-                              {cancellingId === s.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                            </button>
+                            confirmCancelId === s.id ? (
+                              <div className="flex items-center gap-1">
+                                <button onClick={() => setConfirmCancelId(null)} className="h-7 px-2 rounded-md bg-secondary text-[10px] font-bold text-muted-foreground">{lang === 'en' ? 'No' : 'Нет'}</button>
+                                <button onClick={() => { setConfirmCancelId(null); handleCancel(s); }} disabled={cancellingId === s.id} className="h-7 px-2 rounded-md bg-destructive text-[10px] font-bold text-destructive-foreground">
+                                  {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Cancel' : 'Отменить')}
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setConfirmCancelId(s.id)} className="text-destructive hover:text-destructive/80 transition-colors">
+                                <XCircle className="w-4 h-4" />
+                              </button>
+                            )
                           ) : (
                             <span className="text-[10px] text-muted-foreground/50">{lang === 'en' ? '< 24h' : '< 24ч'}</span>
                           )}
