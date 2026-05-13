@@ -147,6 +147,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
