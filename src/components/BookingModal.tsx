@@ -144,6 +144,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             setGuestPhone('');
             return;
           }
+          clearPendingPaymentState();
         } catch {
           clearPendingPaymentState();
         }
