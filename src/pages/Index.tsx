@@ -30,7 +30,22 @@ const AppContent = () => {
   const [showGuide, setShowGuide] = useState(() => {
     return !localStorage.getItem('app_guide_seen') && !localStorage.getItem('user_role_hint');
   });
+  const [remountKey, setRemountKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Force remount of animated section when tab returns from background
+  // (iOS Safari drops requestAnimationFrame, leaving framer-motion stuck off-screen → black screen)
+  useEffect(() => {
+    const bump = () => setRemountKey(k => k + 1);
+    const onVisible = () => { if (document.visibilityState === 'visible') bump(); };
+    const onPageshow = (e: PageTransitionEvent) => { if (e.persisted) bump(); };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onPageshow);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onPageshow);
+    };
+  }, []);
 
   const optimisticIsTrainer = isTrainer || (loading && roleHint === 'trainer');
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
