@@ -852,7 +852,10 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     </p>
                     <button
                       type="button"
-                      onClick={openRevolut}
+                      onClick={() => {
+                        savePendingPaymentState();
+                        openRevolut();
+                      }}
                       className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 glow-primary"
                     >
                       <CreditCard className="w-4 h-4" />
@@ -876,6 +879,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   <button
                     onClick={() => {
                       // Reset and go back to date picker for another booking
+                      clearPendingPaymentState();
                       setStep('date');
                       setSelectedDate(null);
                       setSelectedTime(null);
@@ -889,7 +893,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     {lang === 'en' ? 'Book another session' : 'Записаться ещё'}
                   </button>
                   <button
-                    onClick={() => { onClose(); onBooked?.(); }}
+                    onClick={() => { clearPendingPaymentState(); onClose(); onBooked?.(); }}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm"
                   >
                     {lang === 'en' ? 'Done' : 'Готово'}
