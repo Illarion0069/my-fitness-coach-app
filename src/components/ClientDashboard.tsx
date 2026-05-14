@@ -17,6 +17,7 @@ import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import { UtensilsCrossed } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
+import AddToCalendarButton from './AddToCalendarButton';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
 const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
@@ -504,6 +505,15 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
                   }
                 </div>
                 <span className="text-[13px] font-medium flex-1">{formatSessionDate(s)}</span>
+                {!s.is_recurring && s.session_time && (
+                  <AddToCalendarButton
+                    date={s.session_date}
+                    time={s.session_time}
+                    lang={lang}
+                    title={lang === 'ru' ? 'Тренировка — Limassol Fitness' : 'Training — Limassol Fitness'}
+                    location="Limassol Fitness"
+                  />
+                )}
                 {canCancel(s) ? (
                   confirmCancelId === s.id ? (
                     <div className="flex items-center gap-1 flex-shrink-0">
