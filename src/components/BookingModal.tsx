@@ -51,16 +51,6 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const openPendingPaymentWindow = (lang: 'en' | 'ru') => {
-  const paymentWindow = window.open('', '_blank');
-  if (paymentWindow) {
-    paymentWindow.opener = null;
-    paymentWindow.document.write(`<!doctype html><html><head><title>Revolut</title><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body style="margin:0;background:#0d0d0d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center"><div><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,.25);border-top-color:#e85d3a;border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite"></div><p style="font-size:16px;font-weight:700;margin:0 0 6px">${lang === 'en' ? 'Reserving your slot…' : 'Бронирую слот…'}</p><p style="font-size:13px;color:rgba(255,255,255,.65);margin:0">${lang === 'en' ? 'Revolut will open next.' : 'Сейчас откроется Revolut.'}</p></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></body></html>`);
-    paymentWindow.document.close();
-  }
-  return paymentWindow;
-};
-
 const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
