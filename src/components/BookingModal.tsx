@@ -157,14 +157,13 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   // Reset on open
   useEffect(() => {
     const pendingPayment = readPendingPaymentState();
-    if (open || (restorePendingPayment && pendingPayment)) {
-      if (pendingPayment) {
-        // After returning from Revolut: clear pending state and open the modal
-        // back at the date/time picker so user can book another session.
-        clearPendingPaymentState();
-        if (restorePendingPayment) setInternalOpen(true);
-      }
-
+    // After returning from Revolut: just clear pending state and stay on
+    // the home/dashboard. Do NOT auto-open the booking modal.
+    if (restorePendingPayment && pendingPayment && !open) {
+      clearPendingPaymentState();
+      return;
+    }
+    if (open) {
       const startStep = initialStep || 'date';
       setStep(startStep);
       setCurrentMonth(new Date());
