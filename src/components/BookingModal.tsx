@@ -16,6 +16,7 @@ interface BookingModalProps {
   onBooked?: () => void;
   initialStep?: 'date' | 'my-sessions';
   forceClientView?: boolean;
+  restorePendingPayment?: boolean;
 }
 
 interface TimeSlot {
@@ -59,7 +60,7 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false, restorePendingPayment = false }: BookingModalProps) => {
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -131,7 +132,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   // Reset on open
   useEffect(() => {
     const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
-    if (open || rawPendingPayment) {
+    if (open || (restorePendingPayment && rawPendingPayment)) {
       if (rawPendingPayment) {
         try {
           const pendingPayment = JSON.parse(rawPendingPayment) as StoredBookingPaymentState;
@@ -174,7 +175,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         fetchMySessions();
       }
     }
-  }, [open, initialStep, clearPendingPaymentState]);
+  }, [open, initialStep, clearPendingPaymentState, restorePendingPayment]);
 
   const monthDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
