@@ -42,6 +42,16 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
+const openPendingPaymentWindow = (lang: 'en' | 'ru') => {
+  const paymentWindow = window.open('', '_blank');
+  if (paymentWindow) {
+    paymentWindow.opener = null;
+    paymentWindow.document.write(`<!doctype html><html><head><title>Revolut</title><meta name="viewport" content="width=device-width,initial-scale=1" /></head><body style="margin:0;background:#0d0d0d;color:#fff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:grid;place-items:center;min-height:100vh;text-align:center"><div><div style="width:40px;height:40px;border:3px solid rgba(255,255,255,.25);border-top-color:#e85d3a;border-radius:50%;margin:0 auto 16px;animation:spin 1s linear infinite"></div><p style="font-size:16px;font-weight:700;margin:0 0 6px">${lang === 'en' ? 'Reserving your slot…' : 'Бронирую слот…'}</p><p style="font-size:13px;color:rgba(255,255,255,.65);margin:0">${lang === 'en' ? 'Revolut will open next.' : 'Сейчас откроется Revolut.'}</p></div><style>@keyframes spin{to{transform:rotate(360deg)}}</style></body></html>`);
+    paymentWindow.document.close();
+  }
+  return paymentWindow;
+};
+
 const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
@@ -63,6 +73,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [hasActivePackage, setHasActivePackage] = useState<boolean | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
+  const [completedPendingPayment, setCompletedPendingPayment] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestCountryCode, setGuestCountryCode] = useState('+357');
@@ -100,6 +111,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       setHasActivePackage(null);
       setSelectedPackage(null);
       setPaymentOpened(false);
+      setCompletedPendingPayment(false);
       setGuestName('');
       setGuestPhone('');
       if (startStep === 'my-sessions') {
@@ -208,8 +220,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setStep('time');
   };
 
-  const handleBook = async () => {
+  const handleBook = async (options?: { openRevolutAfterSuccess?: boolean }) => {
     if (!selectedDate || !selectedTime) return;
+    const pendingPaymentWindow = options?.openRevolutAfterSuccess ? openPendingPaymentWindow(lang) : null;
     
     // Guest booking (no auth)
     if (!user) {
@@ -264,6 +277,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         body: bookBody,
       });
       if (error || data?.error) {
+        pendingPaymentWindow?.close();
         const msg = data?.error || error?.message || '';
         if (msg.includes('Unauthorized') || msg.includes('401')) {
           toast({
@@ -285,9 +299,19 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
           });
         }
       } else {
+        if (options?.openRevolutAfterSuccess) {
+          setPaymentOpened(true);
+          setCompletedPendingPayment(true);
+          if (pendingPaymentWindow && !pendingPaymentWindow.closed) {
+            pendingPaymentWindow.location.replace(REVOLUT_LINK);
+          } else {
+            window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
+          }
+        }
         setStep('done');
       }
     } catch (e: any) {
+      pendingPaymentWindow?.close();
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
     setLoading(false);
@@ -676,14 +700,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 {selectedPackage && !paymentOpened && (
                   <button
                     type="button"
-                    onClick={() => {
-                      window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
-                      setPaymentOpened(true);
-                    }}
+                    onClick={() => handleBook({ openRevolutAfterSuccess: true })}
+                    disabled={loading}
                     className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
                   >
-                    <CreditCard className="w-5 h-5" />
-                    {lang === 'en' ? `Pay ${selectedPackage.price}€ via Revolut` : `Оплатить ${selectedPackage.price}€ через Revolut`}
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                    {lang === 'en' ? `Reserve & pay ${selectedPackage.price}€` : `Записаться и оплатить ${selectedPackage.price}€`}
                   </button>
                 )}
 
@@ -692,17 +714,10 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                       <p className="text-xs text-primary font-medium text-center">
                         💳 {lang === 'en'
-                          ? 'Complete the payment in Revolut, then confirm below.'
-                          : 'Завершите оплату в Revolut, затем подтвердите ниже.'}
+                          ? 'Your slot is already reserved. Complete the payment in Revolut.'
+                          : 'Ваш слот уже забронирован. Завершите оплату в Revolut.'}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setStep('confirm')}
-                      className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-                    >
-                      <Check className="w-5 h-5" />
-                      {lang === 'en' ? 'I have paid — Confirm booking' : 'Я оплатил — Подтвердить запись'}
-                    </button>
                   </div>
                 )}
 
@@ -778,6 +793,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : completedPendingPayment ? (
+                    <>{lang === 'en' ? 'Finish' : 'Готово'}</>
                   ) : (
                     <>{lang === 'en' ? 'Confirm Booking' : 'Подтвердить запись'}</>
                   )}
