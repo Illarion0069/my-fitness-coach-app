@@ -132,31 +132,13 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   // Reset on open
   useEffect(() => {
     const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
-    if (open || (restorePendingPayment && rawPendingPayment)) {
-      if (rawPendingPayment) {
-        try {
-          const pendingPayment = JSON.parse(rawPendingPayment) as StoredBookingPaymentState;
-          const pkg = PACKAGES.find((item) => item.id === pendingPayment.packageId);
-          const isFresh = Date.now() - pendingPayment.savedAt < 30 * 60 * 1000;
-          if (pkg && isFresh) {
-            setInternalOpen(true);
-            setStep('done');
-            setCurrentMonth(new Date(pendingPayment.date + 'T12:00:00'));
-            setSelectedDate(new Date(pendingPayment.date + 'T12:00:00'));
-            setSelectedTime(pendingPayment.time);
-            setSlots([]);
-            setHasActivePackage(false);
-            setSelectedPackage(pkg);
-            setPaymentOpened(true);
-            setCompletedPendingPayment(true);
-            setGuestName('');
-            setGuestPhone('');
-            return;
-          }
-          clearPendingPaymentState();
-        } catch {
-          clearPendingPaymentState();
-        }
+    const hasPending = !!rawPendingPayment;
+    if (open || (restorePendingPayment && hasPending)) {
+      if (hasPending) {
+        // After returning from Revolut: clear pending state and open the modal
+        // back at the date/time picker so user can book another session.
+        clearPendingPaymentState();
+        if (restorePendingPayment) setInternalOpen(true);
       }
 
       const startStep = initialStep || 'date';
