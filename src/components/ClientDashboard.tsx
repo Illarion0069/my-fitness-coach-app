@@ -842,6 +842,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
         initialStep={bookingStep}
         onBooked={() => setBookingOpen(false)}
         forceClientView={forceClientView}
+        restorePendingPayment
       />
     </div>
   );
