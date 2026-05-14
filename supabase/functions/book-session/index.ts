@@ -389,35 +389,36 @@ Deno.serve(async (req) => {
       const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
       if (trainer.daysOff.includes(dayOfWeek)) {
         return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      const bookHour = Number(time.split(':')[0]);
-      if (bookHour < trainer.workStart || bookHour >= trainer.workEnd) {
+      const requestedMinutes = timeToMinutes(time);
+      const workStartMinutes = trainer.workStart * 60;
+      const latestStartMinutes = trainer.workEnd * 60;
+      if (requestedMinutes < workStartMinutes || requestedMinutes > latestStartMinutes) {
         return new Response(JSON.stringify({ error: 'Time outside working hours' }), {
-          status: 400,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
       const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
-      const requestedMinutes = timeToMinutes(time);
       const requesterIsTrainer = await isTrainer(user.id);
       const maxAllowed = requesterIsTrainer ? MAX_CLIENTS_PER_SLOT : 1;
 
       if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, trainerBlocks)) {
         return new Response(JSON.stringify({ error: 'Slot is blocked by trainer' }), {
-          status: 409,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       if (countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions) >= maxAllowed) {
         return new Response(JSON.stringify({ error: 'Slot is not available' }), {
-          status: 409,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -616,23 +617,31 @@ Deno.serve(async (req) => {
       const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
       if (trainer.daysOff.includes(dayOfWeek)) {
         return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
-          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      const requestedMinutes = timeToMinutes(time);
+      const workStartMinutes = trainer.workStart * 60;
+      const latestStartMinutes = trainer.workEnd * 60;
+      if (requestedMinutes < workStartMinutes || requestedMinutes > latestStartMinutes) {
+        return new Response(JSON.stringify({ error: 'Time outside working hours' }), {
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       const bookedSessions = await getBookedSessions(date, dayOfWeek);
       const trainerBlocks = await getTrainerBlocks(date, dayOfWeek);
-      const requestedMinutes = timeToMinutes(time);
 
       if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, trainerBlocks)) {
         return new Response(JSON.stringify({ error: 'Slot is blocked' }), {
-          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       if (countOverlapping(requestedMinutes, DEFAULT_DURATION, bookedSessions) >= 1) {
         return new Response(JSON.stringify({ error: 'Slot is not available' }), {
-          status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
