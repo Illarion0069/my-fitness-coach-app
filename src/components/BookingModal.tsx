@@ -878,7 +878,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                               : 'Разрешите всплывающие окна или откройте ссылку оплаты из сообщения.',
                             variant: 'destructive',
                           });
+                          return;
                         }
+                        // Close booking modal so the user lands on their dashboard
+                        // while paying in the Revolut window.
+                        setInternalOpen(false);
+                        onClose();
                       }}
                       className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 glow-primary"
                     >
