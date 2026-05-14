@@ -94,6 +94,21 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     { code: '+1', country: '🇺🇸', label: 'US' },
   ];
 
+  const savePendingPaymentState = useCallback(() => {
+    if (!selectedDate || !selectedTime || !selectedPackage) return;
+    const payload: StoredBookingPaymentState = {
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      time: selectedTime,
+      packageId: selectedPackage.id,
+      savedAt: Date.now(),
+    };
+    sessionStorage.setItem(BOOKING_PAYMENT_STATE_KEY, JSON.stringify(payload));
+  }, [selectedDate, selectedPackage, selectedTime]);
+
+  const clearPendingPaymentState = useCallback(() => {
+    sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+  }, []);
+
   // Fetch trainer blocked dates on mount
   useEffect(() => {
     (async () => {
@@ -109,6 +124,31 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   // Reset on open
   useEffect(() => {
     if (open) {
+      const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
+      if (rawPendingPayment) {
+        try {
+          const pendingPayment = JSON.parse(rawPendingPayment) as StoredBookingPaymentState;
+          const pkg = PACKAGES.find((item) => item.id === pendingPayment.packageId);
+          const isFresh = Date.now() - pendingPayment.savedAt < 30 * 60 * 1000;
+          if (pkg && isFresh) {
+            setStep('done');
+            setCurrentMonth(new Date(pendingPayment.date + 'T12:00:00'));
+            setSelectedDate(new Date(pendingPayment.date + 'T12:00:00'));
+            setSelectedTime(pendingPayment.time);
+            setSlots([]);
+            setHasActivePackage(false);
+            setSelectedPackage(pkg);
+            setPaymentOpened(true);
+            setCompletedPendingPayment(true);
+            setGuestName('');
+            setGuestPhone('');
+            return;
+          }
+        } catch {
+          clearPendingPaymentState();
+        }
+      }
+
       const startStep = initialStep || 'date';
       setStep(startStep);
       setCurrentMonth(new Date());
@@ -125,7 +165,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         fetchMySessions();
       }
     }
-  }, [open, initialStep]);
+  }, [open, initialStep, clearPendingPaymentState]);
 
   const monthDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
