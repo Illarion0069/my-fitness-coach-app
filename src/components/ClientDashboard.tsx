@@ -17,6 +17,7 @@ import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import { UtensilsCrossed } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
+import AddToCalendarButton from './AddToCalendarButton';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
 const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
