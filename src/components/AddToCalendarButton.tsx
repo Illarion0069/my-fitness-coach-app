@@ -16,6 +16,13 @@ const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
 const daysInMonth = (y: number, m: number) =>
   [31, isLeap(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
 
+const escapeIcsText = (value: string) =>
+  value
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+
 const toLocalStamp = (date: string, time: string, addMin = 0) => {
   const [Y, M, D] = date.split('-').map(Number);
   const [h, m] = time.split(':').map(Number);
@@ -77,12 +84,15 @@ const AddToCalendarButton = ({
 
   const buildIcs = () => {
     const uid = `${start}-${Math.random().toString(36).slice(2, 9)}@limassol-fitness.com`;
+    const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
     return [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
       'PRODID:-//Limassol Fitness//EN',
       'CALSCALE:GREGORIAN',
       'METHOD:PUBLISH',
+      'X-WR-CALNAME:Limassol Fitness',
+      'X-WR-TIMEZONE:Asia/Nicosia',
       'BEGIN:VTIMEZONE',
       'TZID:Asia/Nicosia',
       'BEGIN:STANDARD',
@@ -102,12 +112,12 @@ const AddToCalendarButton = ({
       'END:VTIMEZONE',
       'BEGIN:VEVENT',
       `UID:${uid}`,
-      `DTSTAMP:${start}`,
+      `DTSTAMP:${stamp}`,
       `DTSTART;TZID=Asia/Nicosia:${start}`,
       `DTEND;TZID=Asia/Nicosia:${end}`,
-      `SUMMARY:${title}`,
-      `LOCATION:${location}`,
-      `DESCRIPTION:${description}`,
+      `SUMMARY:${escapeIcsText(title)}`,
+      `LOCATION:${escapeIcsText(location)}`,
+      `DESCRIPTION:${escapeIcsText(description || title)}`,
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
       'DESCRIPTION:Reminder',
@@ -115,26 +125,41 @@ const AddToCalendarButton = ({
       'END:VALARM',
       'END:VEVENT',
       'END:VCALENDAR',
-    ].join('\r\n');
+    ].join('\r\n') + '\r\n';
   };
 
-  const openIcs = () => {
+  const openIcs = async () => {
     const ics = buildIcs();
+    const fileName = `limassol-fitness-training-${date}.ics`;
+    const file = new File([ics], fileName, { type: 'text/calendar' });
+
+    if (isIOS() && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title, text: title });
+        setOpen(false);
+        return;
+      } catch (error) {
+        if ((error as DOMException)?.name === 'AbortError') {
+          setOpen(false);
+          return;
+        }
+      }
+    }
+
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
     if (isIOS()) {
-      // iOS Safari ignores blob downloads — use data URL so Calendar opens it
-      const dataUrl = 'data:text/calendar;charset=utf-8,' + encodeURIComponent(ics);
-      window.location.href = dataUrl;
+      window.open(url, '_blank');
     } else {
-      const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `training-${date}.ics`;
+      a.download = fileName;
+      a.rel = 'noopener';
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
+    setTimeout(() => URL.revokeObjectURL(url), 30000);
     setOpen(false);
   };
 
