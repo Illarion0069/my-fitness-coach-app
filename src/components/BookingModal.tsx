@@ -33,6 +33,14 @@ interface MySession {
 type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'my-sessions';
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
+const BOOKING_PAYMENT_STATE_KEY = 'booking_pending_revolut_state';
+
+type StoredBookingPaymentState = {
+  date: string;
+  time: string;
+  packageId: string;
+  savedAt: number;
+};
 
 const openRevolut = () => {
   // Synchronous open in new tab — preserves user gesture, no popup blocker, no blank intermediate window
