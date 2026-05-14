@@ -683,14 +683,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 {selectedPackage && !paymentOpened && (
                   <button
                     type="button"
-                    onClick={() => {
-                      window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
-                      setPaymentOpened(true);
-                    }}
+                    onClick={() => handleBook({ openRevolutAfterSuccess: true })}
+                    disabled={loading}
                     className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
                   >
-                    <CreditCard className="w-5 h-5" />
-                    {lang === 'en' ? `Pay ${selectedPackage.price}€ via Revolut` : `Оплатить ${selectedPackage.price}€ через Revolut`}
+                    {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <CreditCard className="w-5 h-5" />}
+                    {lang === 'en' ? `Reserve & pay ${selectedPackage.price}€` : `Записаться и оплатить ${selectedPackage.price}€`}
                   </button>
                 )}
 
@@ -699,17 +697,10 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     <div className="bg-primary/5 border border-primary/20 rounded-xl p-3">
                       <p className="text-xs text-primary font-medium text-center">
                         💳 {lang === 'en'
-                          ? 'Complete the payment in Revolut, then confirm below.'
-                          : 'Завершите оплату в Revolut, затем подтвердите ниже.'}
+                          ? 'Your slot is already reserved. Complete the payment in Revolut.'
+                          : 'Ваш слот уже забронирован. Завершите оплату в Revolut.'}
                       </p>
                     </div>
-                    <button
-                      onClick={() => setStep('confirm')}
-                      className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
-                    >
-                      <Check className="w-5 h-5" />
-                      {lang === 'en' ? 'I have paid — Confirm booking' : 'Я оплатил — Подтвердить запись'}
-                    </button>
                   </div>
                 )}
 
@@ -785,6 +776,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 >
                   {loading ? (
                     <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : completedPendingPayment ? (
+                    <>{lang === 'en' ? 'Finish' : 'Готово'}</>
                   ) : (
                     <>{lang === 'en' ? 'Confirm Booking' : 'Подтвердить запись'}</>
                   )}
