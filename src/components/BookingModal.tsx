@@ -902,7 +902,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     {lang === 'en' ? 'Book another session' : 'Записаться ещё'}
                   </button>
                   <button
-                    onClick={() => { clearPendingPaymentState(); onClose(); onBooked?.(); }}
+                    onClick={() => { clearPendingPaymentState(); setInternalOpen(false); onClose(); onBooked?.(); }}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm"
                   >
                     {lang === 'en' ? 'Done' : 'Готово'}
