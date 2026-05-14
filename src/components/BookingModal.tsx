@@ -16,6 +16,7 @@ interface BookingModalProps {
   onBooked?: () => void;
   initialStep?: 'date' | 'my-sessions';
   forceClientView?: boolean;
+  restorePendingPayment?: boolean;
 }
 
 interface TimeSlot {
@@ -33,6 +34,14 @@ interface MySession {
 type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'my-sessions';
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
+const BOOKING_PAYMENT_STATE_KEY = 'booking_pending_revolut_state';
+
+type StoredBookingPaymentState = {
+  date: string;
+  time: string;
+  packageId: string;
+  savedAt: number;
+};
 
 const openRevolut = () => {
   // Synchronous open in new tab — preserves user gesture, no popup blocker, no blank intermediate window
@@ -51,7 +60,7 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false, restorePendingPayment = false }: BookingModalProps) => {
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -73,6 +82,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
   const [completedPendingPayment, setCompletedPendingPayment] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestCountryCode, setGuestCountryCode] = useState('+357');
@@ -85,6 +95,27 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     { code: '+44', country: '🇬🇧', label: 'UK' },
     { code: '+1', country: '🇺🇸', label: 'US' },
   ];
+
+  const savePendingPaymentState = useCallback(() => {
+    if (!selectedDate || !selectedTime || !selectedPackage) return;
+    const payload: StoredBookingPaymentState = {
+      date: format(selectedDate, 'yyyy-MM-dd'),
+      time: selectedTime,
+      packageId: selectedPackage.id,
+      savedAt: Date.now(),
+    };
+    sessionStorage.setItem(BOOKING_PAYMENT_STATE_KEY, JSON.stringify(payload));
+  }, [selectedDate, selectedPackage, selectedTime]);
+
+  const clearPendingPaymentState = useCallback(() => {
+    sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+  }, []);
+
+  const handleModalClose = useCallback(() => {
+    clearPendingPaymentState();
+    setInternalOpen(false);
+    onClose();
+  }, [clearPendingPaymentState, onClose]);
 
   // Fetch trainer blocked dates on mount
   useEffect(() => {
@@ -100,7 +131,34 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
   // Reset on open
   useEffect(() => {
-    if (open) {
+    const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
+    if (open || (restorePendingPayment && rawPendingPayment)) {
+      if (rawPendingPayment) {
+        try {
+          const pendingPayment = JSON.parse(rawPendingPayment) as StoredBookingPaymentState;
+          const pkg = PACKAGES.find((item) => item.id === pendingPayment.packageId);
+          const isFresh = Date.now() - pendingPayment.savedAt < 30 * 60 * 1000;
+          if (pkg && isFresh) {
+            setInternalOpen(true);
+            setStep('done');
+            setCurrentMonth(new Date(pendingPayment.date + 'T12:00:00'));
+            setSelectedDate(new Date(pendingPayment.date + 'T12:00:00'));
+            setSelectedTime(pendingPayment.time);
+            setSlots([]);
+            setHasActivePackage(false);
+            setSelectedPackage(pkg);
+            setPaymentOpened(true);
+            setCompletedPendingPayment(true);
+            setGuestName('');
+            setGuestPhone('');
+            return;
+          }
+          clearPendingPaymentState();
+        } catch {
+          clearPendingPaymentState();
+        }
+      }
+
       const startStep = initialStep || 'date';
       setStep(startStep);
       setCurrentMonth(new Date());
@@ -117,7 +175,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         fetchMySessions();
       }
     }
-  }, [open, initialStep]);
+  }, [open, initialStep, clearPendingPaymentState, restorePendingPayment]);
 
   const monthDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -328,7 +386,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setCancellingId(null);
   };
 
-  if (!open) return null;
+  if (!open && !internalOpen) return null;
 
   return (
     <AnimatePresence>
@@ -337,7 +395,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
-        onClick={onClose}
+        onClick={handleModalClose}
       >
         <motion.div
           initial={{ y: '100%' }}
@@ -384,7 +442,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   }
                 </h2>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+              <button onClick={handleModalClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -804,7 +862,10 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     </p>
                     <button
                       type="button"
-                      onClick={openRevolut}
+                      onClick={() => {
+                        savePendingPaymentState();
+                        openRevolut();
+                      }}
                       className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 glow-primary"
                     >
                       <CreditCard className="w-4 h-4" />
@@ -828,6 +889,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   <button
                     onClick={() => {
                       // Reset and go back to date picker for another booking
+                      clearPendingPaymentState();
                       setStep('date');
                       setSelectedDate(null);
                       setSelectedTime(null);
@@ -841,7 +903,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     {lang === 'en' ? 'Book another session' : 'Записаться ещё'}
                   </button>
                   <button
-                    onClick={() => { onClose(); onBooked?.(); }}
+                    onClick={() => { clearPendingPaymentState(); setInternalOpen(false); onClose(); onBooked?.(); }}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm"
                   >
                     {lang === 'en' ? 'Done' : 'Готово'}
