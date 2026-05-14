@@ -11,15 +11,39 @@ interface Props {
   lang?: 'en' | 'ru' | string;
 }
 
-// Cyprus = UTC+2 (winter) / UTC+3 (summer). Use floating local time in ICS to avoid TZ headaches.
+// Cyprus = Asia/Nicosia. We emit a *floating* wall-clock stamp (no Z, no offset)
+// and let the calendar app resolve it via TZID / ctz. This is DST-safe because
+// the calendar (Google/Apple) applies the Asia/Nicosia rules itself.
+// We do pure string-based wall-clock arithmetic so the result never depends on
+// the *browser's* local timezone (which could itself be in DST transition).
 const pad = (n: number) => String(n).padStart(2, '0');
 
+const isLeap = (y: number) => (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+const daysInMonth = (y: number, m: number) =>
+  [31, isLeap(y) ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][m - 1];
+
 const toLocalStamp = (date: string, time: string, addMin = 0) => {
-  const [h, m] = time.split(':').map(Number);
   const [Y, M, D] = date.split('-').map(Number);
-  const d = new Date(Y, M - 1, D, h || 0, m || 0);
-  d.setMinutes(d.getMinutes() + addMin);
-  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}T${pad(d.getHours())}${pad(d.getMinutes())}00`;
+  const [h, m] = time.split(':').map(Number);
+  let year = Y, month = M, day = D, hour = h || 0, minute = (m || 0) + addMin;
+
+  // Normalize minutes -> hours -> days -> months (wall-clock, no TZ involved)
+  hour += Math.floor(minute / 60);
+  minute = ((minute % 60) + 60) % 60;
+  day += Math.floor(hour / 24);
+  hour = ((hour % 24) + 24) % 24;
+  while (day > daysInMonth(year, month)) {
+    day -= daysInMonth(year, month);
+    month += 1;
+    if (month > 12) { month = 1; year += 1; }
+  }
+  while (day < 1) {
+    month -= 1;
+    if (month < 1) { month = 12; year -= 1; }
+    day += daysInMonth(year, month);
+  }
+
+  return `${year}${pad(month)}${pad(day)}T${pad(hour)}${pad(minute)}00`;
 };
 
 const AddToCalendarButton = ({
