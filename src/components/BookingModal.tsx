@@ -870,7 +870,16 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       type="button"
                       onClick={() => {
                         savePendingPaymentState();
-                        openRevolut();
+                        const opened = openRevolut();
+                        if (!opened) {
+                          toast({
+                            title: lang === 'en' ? 'Revolut did not open' : 'Revolut не открылся',
+                            description: lang === 'en'
+                              ? 'Allow pop-ups or open the payment link from the message.'
+                              : 'Разрешите всплывающие окна или откройте ссылку оплаты из сообщения.',
+                            variant: 'destructive',
+                          });
+                        }
                       }}
                       className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 glow-primary"
                     >
