@@ -380,7 +380,16 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
       </div>
 
       {/* Booking Modal */}
-      <BookingModal open={bookingOpen} onClose={() => setBookingOpen(false)} onLoginRequest={onProfileClick} initialStep={bookingInitialStep} />
+      <BookingModal
+        open={bookingOpen}
+        onClose={() => {
+          setBookingOpen(false);
+          setBookingInitialStep('date');
+        }}
+        onLoginRequest={onProfileClick}
+        initialStep={bookingInitialStep}
+        restorePendingPayment
+      />
     </section>
   );
 };
