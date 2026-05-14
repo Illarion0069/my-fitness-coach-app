@@ -878,7 +878,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       setSelectedPackage(null);
                       setCompletedPendingPayment(false);
                       setHasActivePackage(null);
-                      onBooked?.();
+                      // Don't call onBooked — that would close the modal in parent
                     }}
                     className="w-full bg-secondary text-foreground font-semibold py-3 rounded-2xl text-sm hover:bg-secondary/80 transition-colors"
                   >
