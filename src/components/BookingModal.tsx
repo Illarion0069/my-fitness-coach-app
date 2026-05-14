@@ -81,6 +81,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
   const [completedPendingPayment, setCompletedPendingPayment] = useState(false);
+  const [internalOpen, setInternalOpen] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestCountryCode, setGuestCountryCode] = useState('+357');
@@ -109,6 +110,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
   }, []);
 
+  const handleModalClose = useCallback(() => {
+    clearPendingPaymentState();
+    setInternalOpen(false);
+    onClose();
+  }, [clearPendingPaymentState, onClose]);
+
   // Fetch trainer blocked dates on mount
   useEffect(() => {
     (async () => {
@@ -123,14 +130,15 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
   // Reset on open
   useEffect(() => {
-    if (open) {
-      const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
+    const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
+    if (open || rawPendingPayment) {
       if (rawPendingPayment) {
         try {
           const pendingPayment = JSON.parse(rawPendingPayment) as StoredBookingPaymentState;
           const pkg = PACKAGES.find((item) => item.id === pendingPayment.packageId);
           const isFresh = Date.now() - pendingPayment.savedAt < 30 * 60 * 1000;
           if (pkg && isFresh) {
+            setInternalOpen(true);
             setStep('done');
             setCurrentMonth(new Date(pendingPayment.date + 'T12:00:00'));
             setSelectedDate(new Date(pendingPayment.date + 'T12:00:00'));
