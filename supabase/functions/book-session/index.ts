@@ -425,7 +425,7 @@ Deno.serve(async (req) => {
       const pkg = await getLatestValidPackage(user.id);
       if (!pkg && !pendingPayment) {
         return new Response(JSON.stringify({ error: 'No active package with remaining sessions', requiresPayment: true }), {
-          status: 402,
+          status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
