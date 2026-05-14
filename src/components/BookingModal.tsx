@@ -229,10 +229,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setStep('time');
   };
 
-  const handleBook = async (options?: { openRevolutAfterSuccess?: boolean }) => {
+  const handleBook = async (options?: { goToPaymentDoneAfter?: boolean }) => {
     if (!selectedDate || !selectedTime) return;
-    const pendingPaymentWindow = options?.openRevolutAfterSuccess ? openPendingPaymentWindow(lang) : null;
-    
+
     // Guest booking (no auth)
     if (!user) {
       if (!guestName.trim() || !guestPhone.trim()) {
@@ -286,7 +285,6 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         body: bookBody,
       });
       if (error || data?.error) {
-        pendingPaymentWindow?.close();
         const msg = data?.error || error?.message || '';
         if (msg.includes('Unauthorized') || msg.includes('401')) {
           toast({
@@ -295,7 +293,6 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             variant: 'destructive',
           });
         } else if (data?.requiresPayment) {
-          // Server detected no balance — show payment step
           setHasActivePackage(false);
           setSelectedPackage(null);
           setPaymentOpened(false);
@@ -308,19 +305,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
           });
         }
       } else {
-        if (options?.openRevolutAfterSuccess) {
-          setPaymentOpened(true);
+        if (options?.goToPaymentDoneAfter) {
           setCompletedPendingPayment(true);
-          if (pendingPaymentWindow && !pendingPaymentWindow.closed) {
-            pendingPaymentWindow.location.replace(REVOLUT_LINK);
-          } else {
-            window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
-          }
         }
         setStep('done');
       }
     } catch (e: any) {
-      pendingPaymentWindow?.close();
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
     setLoading(false);
