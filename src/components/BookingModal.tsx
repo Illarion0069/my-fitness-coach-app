@@ -674,16 +674,17 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 </div>
 
                 {selectedPackage && !paymentOpened && (
-                  <a
-                    href={REVOLUT_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => setPaymentOpened(true)}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
+                      setPaymentOpened(true);
+                    }}
                     className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] flex items-center justify-center gap-2"
                   >
                     <CreditCard className="w-5 h-5" />
                     {lang === 'en' ? `Pay ${selectedPackage.price}€ via Revolut` : `Оплатить ${selectedPackage.price}€ через Revolut`}
-                  </a>
+                  </button>
                 )}
 
                 {paymentOpened && (
