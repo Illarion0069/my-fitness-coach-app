@@ -63,6 +63,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [hasActivePackage, setHasActivePackage] = useState<boolean | null>(null);
   const [selectedPackage, setSelectedPackage] = useState<typeof PACKAGES[0] | null>(null);
   const [paymentOpened, setPaymentOpened] = useState(false);
+  const [completedPendingPayment, setCompletedPendingPayment] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
   const [guestCountryCode, setGuestCountryCode] = useState('+357');
@@ -100,6 +101,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       setHasActivePackage(null);
       setSelectedPackage(null);
       setPaymentOpened(false);
+      setCompletedPendingPayment(false);
       setGuestName('');
       setGuestPhone('');
       if (startStep === 'my-sessions') {
@@ -208,7 +210,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setStep('time');
   };
 
-  const handleBook = async () => {
+  const handleBook = async (options?: { openRevolutAfterSuccess?: boolean }) => {
     if (!selectedDate || !selectedTime) return;
     
     // Guest booking (no auth)
@@ -285,6 +287,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
           });
         }
       } else {
+        if (options?.openRevolutAfterSuccess) {
+          setPaymentOpened(true);
+          setCompletedPendingPayment(true);
+          window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
+        }
         setStep('done');
       }
     } catch (e: any) {
