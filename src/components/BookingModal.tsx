@@ -35,6 +35,7 @@ type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'm
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 const BOOKING_PAYMENT_STATE_KEY = 'booking_pending_revolut_state';
+const PENDING_PAYMENT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 type StoredBookingPaymentState = {
   date: string;
@@ -43,13 +44,35 @@ type StoredBookingPaymentState = {
   savedAt: number;
 };
 
-const openRevolut = () => {
-  // Synchronous open in new tab — preserves user gesture, no popup blocker, no blank intermediate window
-  const w = window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
-  if (!w) {
-    // Popup blocked → fallback to same-tab navigation
-    window.location.href = REVOLUT_LINK;
+const readPendingPaymentState = (): StoredBookingPaymentState | null => {
+  const raw = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY) || localStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as StoredBookingPaymentState;
+    if (!parsed.savedAt || Date.now() - parsed.savedAt > PENDING_PAYMENT_MAX_AGE_MS) {
+      sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+      localStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+    localStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+    return null;
   }
+};
+
+const openRevolut = () => {
+  // Do not use noopener in the feature string here: some browsers return null even
+  // when the tab/app opens, which previously triggered a same-tab redirect and lost the app state.
+  const w = window.open(REVOLUT_LINK, '_blank');
+  if (w) {
+    try { w.opener = null; } catch {}
+    w.focus?.();
+    return true;
+  }
+  return false;
 };
 
 const PACKAGES = [
