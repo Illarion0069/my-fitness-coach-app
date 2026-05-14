@@ -34,6 +34,15 @@ type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'm
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 
+const openRevolut = () => {
+  // Synchronous open in new tab — preserves user gesture, no popup blocker, no blank intermediate window
+  const w = window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
+  if (!w) {
+    // Popup blocked → fallback to same-tab navigation
+    window.location.href = REVOLUT_LINK;
+  }
+};
+
 const PACKAGES = [
   { id: 'consultation', sessions: 1, price: 50, label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, isConsultation: true },
   { id: 'single', sessions: 1, price: 100, label: { en: 'Single Session', ru: 'Разовая тренировка' } },
