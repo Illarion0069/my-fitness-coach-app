@@ -222,6 +222,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
   const handleBook = async (options?: { openRevolutAfterSuccess?: boolean }) => {
     if (!selectedDate || !selectedTime) return;
+    const pendingPaymentWindow = options?.openRevolutAfterSuccess ? openPendingPaymentWindow(lang) : null;
     
     // Guest booking (no auth)
     if (!user) {
@@ -300,11 +301,16 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         if (options?.openRevolutAfterSuccess) {
           setPaymentOpened(true);
           setCompletedPendingPayment(true);
-          window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
+          if (pendingPaymentWindow && !pendingPaymentWindow.closed) {
+            pendingPaymentWindow.location.replace(REVOLUT_LINK);
+          } else {
+            window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
+          }
         }
         setStep('done');
       }
     } catch (e: any) {
+      pendingPaymentWindow?.close();
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
     setLoading(false);
