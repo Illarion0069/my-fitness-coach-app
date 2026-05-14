@@ -277,6 +277,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         body: bookBody,
       });
       if (error || data?.error) {
+        pendingPaymentWindow?.close();
         const msg = data?.error || error?.message || '';
         if (msg.includes('Unauthorized') || msg.includes('401')) {
           toast({
