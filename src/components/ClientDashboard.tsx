@@ -838,9 +838,15 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
       {/* Booking Modal */}
       <BookingModal
         open={bookingOpen}
-        onClose={() => setBookingOpen(false)}
+        onClose={() => {
+          setBookingOpen(false);
+          setBookingStep('date');
+        }}
         initialStep={bookingStep}
-        onBooked={() => setBookingOpen(false)}
+        onBooked={() => {
+          setBookingOpen(false);
+          setBookingStep('date');
+        }}
         forceClientView={forceClientView}
         restorePendingPayment
       />

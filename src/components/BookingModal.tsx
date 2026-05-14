@@ -35,6 +35,7 @@ type Step = 'date' | 'time' | 'guest-info' | 'payment' | 'confirm' | 'done' | 'm
 
 const REVOLUT_LINK = 'https://revolut.me/illarion';
 const BOOKING_PAYMENT_STATE_KEY = 'booking_pending_revolut_state';
+const PENDING_PAYMENT_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
 type StoredBookingPaymentState = {
   date: string;
@@ -43,13 +44,35 @@ type StoredBookingPaymentState = {
   savedAt: number;
 };
 
-const openRevolut = () => {
-  // Synchronous open in new tab — preserves user gesture, no popup blocker, no blank intermediate window
-  const w = window.open(REVOLUT_LINK, '_blank', 'noopener,noreferrer');
-  if (!w) {
-    // Popup blocked → fallback to same-tab navigation
-    window.location.href = REVOLUT_LINK;
+const readPendingPaymentState = (): StoredBookingPaymentState | null => {
+  const raw = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY) || localStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw) as StoredBookingPaymentState;
+    if (!parsed.savedAt || Date.now() - parsed.savedAt > PENDING_PAYMENT_MAX_AGE_MS) {
+      sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+      localStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+      return null;
+    }
+    return parsed;
+  } catch {
+    sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+    localStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+    return null;
   }
+};
+
+const openRevolut = () => {
+  // Do not use noopener in the feature string here: some browsers return null even
+  // when the tab/app opens, which previously triggered a same-tab redirect and lost the app state.
+  const w = window.open(REVOLUT_LINK, '_blank');
+  if (w) {
+    try { w.opener = null; } catch {}
+    w.focus?.();
+    return true;
+  }
+  return false;
 };
 
 const PACKAGES = [
@@ -105,10 +128,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       savedAt: Date.now(),
     };
     sessionStorage.setItem(BOOKING_PAYMENT_STATE_KEY, JSON.stringify(payload));
+    localStorage.setItem(BOOKING_PAYMENT_STATE_KEY, JSON.stringify(payload));
   }, [selectedDate, selectedPackage, selectedTime]);
 
   const clearPendingPaymentState = useCallback(() => {
     sessionStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
+    localStorage.removeItem(BOOKING_PAYMENT_STATE_KEY);
   }, []);
 
   const handleModalClose = useCallback(() => {
@@ -131,10 +156,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
   // Reset on open
   useEffect(() => {
-    const rawPendingPayment = sessionStorage.getItem(BOOKING_PAYMENT_STATE_KEY);
-    const hasPending = !!rawPendingPayment;
-    if (open || (restorePendingPayment && hasPending)) {
-      if (hasPending) {
+    const pendingPayment = readPendingPaymentState();
+    if (open || (restorePendingPayment && pendingPayment)) {
+      if (pendingPayment) {
         // After returning from Revolut: clear pending state and open the modal
         // back at the date/time picker so user can book another session.
         clearPendingPaymentState();
@@ -846,7 +870,16 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       type="button"
                       onClick={() => {
                         savePendingPaymentState();
-                        openRevolut();
+                        const opened = openRevolut();
+                        if (!opened) {
+                          toast({
+                            title: lang === 'en' ? 'Revolut did not open' : 'Revolut не открылся',
+                            description: lang === 'en'
+                              ? 'Allow pop-ups or open the payment link from the message.'
+                              : 'Разрешите всплывающие окна или откройте ссылку оплаты из сообщения.',
+                            variant: 'destructive',
+                          });
+                        }
                       }}
                       className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 glow-primary"
                     >
