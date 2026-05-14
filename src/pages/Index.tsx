@@ -11,6 +11,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
+const TestSection = lazy(() => import('@/components/sections/TestSection'));
 
 const getInitialSection = () => {
   const hint = localStorage.getItem('user_role_hint');
@@ -51,10 +52,12 @@ const AppContent = () => {
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
   const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
+  const routableSections = [...sections, 'test'];
 
   const handleNavigate = (section: string) => {
-    const currentIdx = sections.indexOf(activeSection);
-    const nextIdx = sections.indexOf(section);
+    if (!routableSections.includes(section)) section = 'home';
+    const currentIdx = routableSections.indexOf(activeSection);
+    const nextIdx = routableSections.indexOf(section);
     setSwipeDirection(nextIdx > currentIdx ? 1 : -1);
     setActiveSection(section);
     setTimeout(() => containerRef.current?.scrollTo({ top: 0 }), 0);
@@ -62,6 +65,7 @@ const AppContent = () => {
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
     const currentIdx = sections.indexOf(activeSection);
+    if (currentIdx === -1) return;
     if (direction === 'left' && currentIdx < sections.length - 1) {
       setSwipeDirection(1);
       setActiveSection(sections[currentIdx + 1]);
@@ -153,6 +157,7 @@ const AppContent = () => {
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection />;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
+      case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       default: return null;
     }
   };
