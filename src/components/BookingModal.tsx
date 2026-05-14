@@ -857,12 +857,6 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     {lang === 'en' ? 'Done' : 'Готово'}
                   </button>
                 </div>
-                <button
-                  onClick={() => { onClose(); onBooked?.(); }}
-                  className="gradient-primary text-primary-foreground font-bold py-3 px-8 rounded-2xl text-sm"
-                >
-                  {lang === 'en' ? 'Done' : 'Готово'}
-                </button>
               </div>
             )}
 
