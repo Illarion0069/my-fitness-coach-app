@@ -385,7 +385,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setCancellingId(null);
   };
 
-  if (!open) return null;
+  if (!open && !internalOpen) return null;
 
   return (
     <AnimatePresence>
@@ -394,7 +394,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         className="fixed inset-0 z-[210] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center"
-        onClick={onClose}
+        onClick={handleModalClose}
       >
         <motion.div
           initial={{ y: '100%' }}
@@ -441,7 +441,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   }
                 </h2>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+              <button onClick={handleModalClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
