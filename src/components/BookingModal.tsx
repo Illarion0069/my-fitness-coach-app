@@ -801,6 +801,28 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     {selectedDate && format(selectedDate, 'EEEE, d MMMM', { locale })} {lang === 'en' ? 'at' : 'в'} {selectedTime}
                   </p>
                 </div>
+
+                {completedPendingPayment && selectedPackage && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-3 text-left">
+                    <p className="text-sm font-bold text-center">
+                      {lang === 'en' ? 'Complete your payment' : 'Осталось оплатить'}
+                    </p>
+                    <p className="text-xs text-muted-foreground text-center">
+                      {lang === 'en'
+                        ? `Pay ${selectedPackage.price}€ via Revolut to confirm your slot. You can return to the app anytime.`
+                        : `Оплатите ${selectedPackage.price}€ через Revolut для подтверждения слота. Вы сможете вернуться в приложение в любой момент.`}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={openRevolut}
+                      className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm flex items-center justify-center gap-2 glow-primary"
+                    >
+                      <CreditCard className="w-4 h-4" />
+                      {lang === 'en' ? `Pay ${selectedPackage.price}€ in Revolut` : `Оплатить ${selectedPackage.price}€ в Revolut`}
+                    </button>
+                  </div>
+                )}
+
                 <p className="text-xs text-muted-foreground">
                   {!user
                     ? (lang === 'en'
@@ -811,6 +833,30 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       : 'Вы получите подтверждение в Telegram')
                   }
                 </p>
+
+                <div className="flex flex-col gap-2 pt-2">
+                  <button
+                    onClick={() => {
+                      // Reset and go back to date picker for another booking
+                      setStep('date');
+                      setSelectedDate(null);
+                      setSelectedTime(null);
+                      setSelectedPackage(null);
+                      setCompletedPendingPayment(false);
+                      setHasActivePackage(null);
+                      onBooked?.();
+                    }}
+                    className="w-full bg-secondary text-foreground font-semibold py-3 rounded-2xl text-sm hover:bg-secondary/80 transition-colors"
+                  >
+                    {lang === 'en' ? 'Book another session' : 'Записаться ещё'}
+                  </button>
+                  <button
+                    onClick={() => { onClose(); onBooked?.(); }}
+                    className="w-full gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm"
+                  >
+                    {lang === 'en' ? 'Done' : 'Готово'}
+                  </button>
+                </div>
                 <button
                   onClick={() => { onClose(); onBooked?.(); }}
                   className="gradient-primary text-primary-foreground font-bold py-3 px-8 rounded-2xl text-sm"
