@@ -18,6 +18,9 @@ interface Profile {
   email: string;
   phone: string;
   avatar_url: string | null;
+  archived_at: string | null;
+  archive_reason: string | null;
+  reactivation_sent_at: string | null;
 }
 
 interface ClientPackage {
@@ -48,6 +51,7 @@ const AdminSection = () => {
   const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
+  const [archiveView, setArchiveView] = useState<'active' | 'archived'>('active');
 
   const fetchSupplementalData = useCallback(async () => {
     const [{ data: pkgData }, { data: sessData }] = await Promise.all([
@@ -155,7 +159,61 @@ const AdminSection = () => {
     }
   };
 
-  // Compute weekly session counts per client
+  const archiveClient = async (client: Profile) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('user_id', client.user_id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setSelectedClient(null);
+    fetchData();
+    toast({
+      title: lang === 'en' ? 'Moved to archive' : 'В архиве',
+      description: client.full_name,
+    });
+  };
+
+  const unarchiveClient = async (client: Profile) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ archived_at: null, archive_reason: null })
+      .eq('user_id', client.user_id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    fetchData();
+    toast({
+      title: lang === 'en' ? 'Restored to active' : 'Возвращён в активные',
+      description: client.full_name,
+    });
+  };
+
+  const sendReactivationOffer = async (client: Profile) => {
+    const message = `💪 <b>Limassol Fitness</b>\n\n${client.full_name}, давно не виделись! Скучаем по вашим тренировкам.\n\n🎁 <b>Возвращайтесь со скидкой -20%</b> на любой пакет тренировок:\n• 8 занятий — <s>750€</s> <b>600€</b>\n• 12 занятий — <s>1030€</s> <b>824€</b>\n• 20 занятий — <s>1599€</s> <b>1279€</b>\n\nПросто напишите тренеру — забронируем удобное время. Ждём! 🔥`;
+    const { data, error } = await supabase.functions.invoke('send-telegram', {
+      body: { action: 'sendReminder', client_user_id: client.user_id, message },
+    });
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    await supabase
+      .from('profiles')
+      .update({ reactivation_sent_at: new Date().toISOString() })
+      .eq('user_id', client.user_id);
+    fetchData();
+    const sentToClient = data?.sent_to === 'client';
+    toast({
+      title: lang === 'en' ? 'Offer sent' : 'Предложение отправлено',
+      description: sentToClient
+        ? (lang === 'en' ? `Sent to ${client.full_name} via Telegram` : `Отправлено ${client.full_name} в Telegram`)
+        : (lang === 'en' ? `${client.full_name} has no Telegram — sent to you` : `У ${client.full_name} нет Telegram — отправлено вам`),
+    });
+  };
   const weeklySessionCounts = useMemo(() => {
     const now = new Date();
     const dayOfWeek = now.getDay();
@@ -187,6 +245,11 @@ const AdminSection = () => {
       const client = clients.find(c => c.user_id === userId);
       if (!client) return false;
 
+      // Archive view filter (top-level)
+      const isArchived = !!client.archived_at;
+      if (archiveView === 'active' && isArchived) return false;
+      if (archiveView === 'archived' && !isArchived) return false;
+
       // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -194,8 +257,8 @@ const AdminSection = () => {
         if (!match) return false;
       }
 
-      // Active package filter
-      if (filterActive !== 'all') {
+      // Active package filter (only relevant for non-archived view)
+      if (archiveView === 'active' && filterActive !== 'all') {
         const clientPkgs = packages[userId] || [];
         const hasActive = clientPkgs.some(p => p.is_active);
         if (filterActive === 'active' && !hasActive) return false;
@@ -204,7 +267,12 @@ const AdminSection = () => {
 
       return true;
     });
-  }, [clientOrder, clients, packages, searchQuery, filterActive]);
+  }, [clientOrder, clients, packages, searchQuery, filterActive, archiveView]);
+
+  const archivedCount = useMemo(
+    () => clients.filter(c => !!c.archived_at).length,
+    [clients]
+  );
 
 
   const sendNotification = async (client: Profile, message: string) => {
@@ -389,6 +457,37 @@ const AdminSection = () => {
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
           <>
+          {/* Active / Archive top tabs */}
+          <div className="flex gap-1 mb-3 p-1 bg-secondary/40 rounded-xl">
+            <button
+              onClick={() => { setArchiveView('active'); setSelectedClient(null); }}
+              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${
+                archiveView === 'active'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {lang === 'en' ? 'Active' : 'Активные'}
+            </button>
+            <button
+              onClick={() => { setArchiveView('archived'); setSelectedClient(null); }}
+              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                archiveView === 'archived'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {lang === 'en' ? 'Archive' : 'Архив'}
+              {archivedCount > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                  archiveView === 'archived' ? 'bg-primary-foreground/20' : 'bg-secondary'
+                }`}>
+                  {archivedCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Search + filter bar */}
           <div className="space-y-2 mb-3">
             <div className="relative">
@@ -552,6 +651,9 @@ const AdminSection = () => {
                       onSendRenewal={() => sendRenewalNotification(client)}
                       onSendGymRenewal={() => sendGymRenewalNotification(client)}
                       onDeleteClient={() => deleteClient(client)}
+                      onArchiveClient={() => archiveClient(client)}
+                      onUnarchiveClient={() => unarchiveClient(client)}
+                      onSendReactivation={() => sendReactivationOffer(client)}
                     />
                   )}
                 </div>

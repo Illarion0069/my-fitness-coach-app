@@ -379,6 +379,8 @@ export type Database = {
       }
       profiles: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
           avatar_url: string | null
           created_at: string
           daily_calorie_goal: number | null
@@ -386,12 +388,15 @@ export type Database = {
           full_name: string
           id: string
           phone: string
+          reactivation_sent_at: string | null
           telegram_chat_id: string | null
           telegram_link_code: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
           avatar_url?: string | null
           created_at?: string
           daily_calorie_goal?: number | null
@@ -399,12 +404,15 @@ export type Database = {
           full_name: string
           id?: string
           phone: string
+          reactivation_sent_at?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
           avatar_url?: string | null
           created_at?: string
           daily_calorie_goal?: number | null
@@ -412,6 +420,7 @@ export type Database = {
           full_name?: string
           id?: string
           phone?: string
+          reactivation_sent_at?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           updated_at?: string

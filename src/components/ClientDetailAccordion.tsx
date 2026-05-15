@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User } from 'lucide-react';
+import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User, Archive, ArchiveRestore, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
@@ -28,6 +28,9 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string;
+  archived_at?: string | null;
+  archive_reason?: string | null;
+  reactivation_sent_at?: string | null;
 }
 
 interface Props {
@@ -42,6 +45,9 @@ interface Props {
   onSendRenewal: () => void;
   onSendGymRenewal: () => void;
   onDeleteClient?: () => void;
+  onArchiveClient?: () => void;
+  onUnarchiveClient?: () => void;
+  onSendReactivation?: () => void;
 }
 
 type TabId = 'info' | 'packages' | 'schedule' | 'measurements' | 'whoop' | 'tests' | 'photos' | 'nutrition';
@@ -69,6 +75,9 @@ const ClientDetailAccordion = ({
   onSendRenewal,
   onSendGymRenewal,
   onDeleteClient,
+  onArchiveClient,
+  onUnarchiveClient,
+  onSendReactivation,
 }: Props) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('info');
@@ -233,6 +242,50 @@ const ClientDetailAccordion = ({
                 <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
               </button>
             </div>
+
+            {/* Archive status banner (when archived) */}
+            {client.archived_at && (
+              <div className="pt-2 space-y-2">
+                <div className="bg-secondary/40 border border-border/50 rounded-xl p-3 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <Archive className="w-3 h-3" />
+                    {lang === 'en' ? 'In archive' : 'В архиве'}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {lang === 'en' ? 'Since' : 'С'} {new Date(client.archived_at).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU')}
+                  </p>
+                  {client.reactivation_sent_at && (
+                    <p className="text-[11px] text-primary font-semibold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      {lang === 'en' ? 'Offer sent' : 'Предложение отправлено'} {new Date(client.reactivation_sent_at).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU')}
+                    </p>
+                  )}
+                </div>
+
+                {onSendReactivation && (
+                  <ReactivationButton
+                    onSend={onSendReactivation}
+                    lang={lang}
+                    alreadySent={!!client.reactivation_sent_at}
+                  />
+                )}
+
+                {onUnarchiveClient && (
+                  <button
+                    onClick={onUnarchiveClient}
+                    className="w-full bg-primary/10 border border-primary/30 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-primary/20 transition-colors"
+                  >
+                    <ArchiveRestore className="w-3.5 h-3.5" />
+                    {lang === 'en' ? 'Restore to active' : 'Вернуть в активные'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Archive (only when active) */}
+            {!client.archived_at && onArchiveClient && (
+              <ArchiveClientButton onArchive={onArchiveClient} lang={lang} />
+            )}
 
             {/* Delete client */}
             {onDeleteClient && (
@@ -458,6 +511,88 @@ const DeleteClientButton = ({ onDeleteClient, lang }: { onDeleteClient: () => vo
       className="w-full mt-2 bg-destructive/10 border border-destructive/30 text-destructive text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-destructive/20 transition-colors"
     >
       <Trash2 className="w-3.5 h-3.5" /> {lang === 'en' ? 'Delete client' : 'Удалить клиента'}
+    </button>
+  );
+};
+
+const ArchiveClientButton = ({ onArchive, lang }: { onArchive: () => void; lang: string }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="w-full mt-2 space-y-1.5">
+        <p className="text-xs text-foreground font-semibold text-center">
+          {lang === 'en' ? 'Move to archive?' : 'В архив?'}
+        </p>
+        <p className="text-[11px] text-muted-foreground text-center">
+          {lang === 'en'
+            ? 'Client will be hidden from active list but data is kept.'
+            : 'Клиент скроется из активных, данные сохранятся.'}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setConfirming(false); onArchive(); }}
+            className="flex-1 bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            {lang === 'en' ? 'Yes, archive' : 'Да, в архив'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-secondary/80 transition-colors"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full mt-2 bg-secondary/50 border border-border/50 text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
+    >
+      <Archive className="w-3.5 h-3.5" /> {lang === 'en' ? 'Move to archive' : 'В архив'}
+    </button>
+  );
+};
+
+const ReactivationButton = ({ onSend, lang, alreadySent }: { onSend: () => void; lang: string; alreadySent: boolean }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="w-full space-y-1.5">
+        <p className="text-xs text-foreground font-semibold text-center">
+          {lang === 'en' ? 'Send -20% offer in Telegram?' : 'Отправить предложение -20% в Telegram?'}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setConfirming(false); onSend(); }}
+            className="flex-1 bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            {lang === 'en' ? 'Yes, send' : 'Да, отправить'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-secondary/80 transition-colors"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors"
+    >
+      <Sparkles className="w-3.5 h-3.5" />
+      {alreadySent
+        ? (lang === 'en' ? 'Send offer again' : 'Отправить предложение ещё раз')
+        : (lang === 'en' ? 'Send -20% offer' : 'Отправить -20%')}
     </button>
   );
 };
