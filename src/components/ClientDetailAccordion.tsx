@@ -515,4 +515,86 @@ const DeleteClientButton = ({ onDeleteClient, lang }: { onDeleteClient: () => vo
   );
 };
 
+const ArchiveClientButton = ({ onArchive, lang }: { onArchive: () => void; lang: string }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="w-full mt-2 space-y-1.5">
+        <p className="text-xs text-foreground font-semibold text-center">
+          {lang === 'en' ? 'Move to archive?' : 'В архив?'}
+        </p>
+        <p className="text-[11px] text-muted-foreground text-center">
+          {lang === 'en'
+            ? 'Client will be hidden from active list but data is kept.'
+            : 'Клиент скроется из активных, данные сохранятся.'}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setConfirming(false); onArchive(); }}
+            className="flex-1 bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            {lang === 'en' ? 'Yes, archive' : 'Да, в архив'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-secondary/80 transition-colors"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full mt-2 bg-secondary/50 border border-border/50 text-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
+    >
+      <Archive className="w-3.5 h-3.5" /> {lang === 'en' ? 'Move to archive' : 'В архив'}
+    </button>
+  );
+};
+
+const ReactivationButton = ({ onSend, lang, alreadySent }: { onSend: () => void; lang: string; alreadySent: boolean }) => {
+  const [confirming, setConfirming] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="w-full space-y-1.5">
+        <p className="text-xs text-foreground font-semibold text-center">
+          {lang === 'en' ? 'Send -20% offer in Telegram?' : 'Отправить предложение -20% в Telegram?'}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => { setConfirming(false); onSend(); }}
+            className="flex-1 bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-primary/90 transition-colors"
+          >
+            {lang === 'en' ? 'Yes, send' : 'Да, отправить'}
+          </button>
+          <button
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-xs font-bold py-2.5 rounded-xl hover:bg-secondary/80 transition-colors"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button
+      onClick={() => setConfirming(true)}
+      className="w-full bg-primary text-primary-foreground text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-primary/90 transition-colors"
+    >
+      <Sparkles className="w-3.5 h-3.5" />
+      {alreadySent
+        ? (lang === 'en' ? 'Send offer again' : 'Отправить предложение ещё раз')
+        : (lang === 'en' ? 'Send -20% offer' : 'Отправить -20%')}
+    </button>
+  );
+};
+
 export default ClientDetailAccordion;
