@@ -651,6 +651,9 @@ const AdminSection = () => {
                       onSendRenewal={() => sendRenewalNotification(client)}
                       onSendGymRenewal={() => sendGymRenewalNotification(client)}
                       onDeleteClient={() => deleteClient(client)}
+                      onArchiveClient={() => archiveClient(client)}
+                      onUnarchiveClient={() => unarchiveClient(client)}
+                      onSendReactivation={() => sendReactivationOffer(client)}
                     />
                   )}
                 </div>
