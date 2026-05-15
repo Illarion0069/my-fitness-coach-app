@@ -243,6 +243,50 @@ const ClientDetailAccordion = ({
               </button>
             </div>
 
+            {/* Archive status banner (when archived) */}
+            {client.archived_at && (
+              <div className="pt-2 space-y-2">
+                <div className="bg-secondary/40 border border-border/50 rounded-xl p-3 space-y-1">
+                  <div className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                    <Archive className="w-3 h-3" />
+                    {lang === 'en' ? 'In archive' : 'В архиве'}
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    {lang === 'en' ? 'Since' : 'С'} {new Date(client.archived_at).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU')}
+                  </p>
+                  {client.reactivation_sent_at && (
+                    <p className="text-[11px] text-primary font-semibold flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      {lang === 'en' ? 'Offer sent' : 'Предложение отправлено'} {new Date(client.reactivation_sent_at).toLocaleDateString(lang === 'en' ? 'en-GB' : 'ru-RU')}
+                    </p>
+                  )}
+                </div>
+
+                {onSendReactivation && (
+                  <ReactivationButton
+                    onSend={onSendReactivation}
+                    lang={lang}
+                    alreadySent={!!client.reactivation_sent_at}
+                  />
+                )}
+
+                {onUnarchiveClient && (
+                  <button
+                    onClick={onUnarchiveClient}
+                    className="w-full bg-primary/10 border border-primary/30 text-primary text-xs font-bold py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-primary/20 transition-colors"
+                  >
+                    <ArchiveRestore className="w-3.5 h-3.5" />
+                    {lang === 'en' ? 'Restore to active' : 'Вернуть в активные'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Archive (only when active) */}
+            {!client.archived_at && onArchiveClient && (
+              <ArchiveClientButton onArchive={onArchiveClient} lang={lang} />
+            )}
+
             {/* Delete client */}
             {onDeleteClient && (
               <DeleteClientButton onDeleteClient={onDeleteClient} lang={lang} />
