@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User } from 'lucide-react';
+import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User, Archive, ArchiveRestore, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
@@ -28,6 +28,9 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string;
+  archived_at?: string | null;
+  archive_reason?: string | null;
+  reactivation_sent_at?: string | null;
 }
 
 interface Props {
@@ -42,6 +45,9 @@ interface Props {
   onSendRenewal: () => void;
   onSendGymRenewal: () => void;
   onDeleteClient?: () => void;
+  onArchiveClient?: () => void;
+  onUnarchiveClient?: () => void;
+  onSendReactivation?: () => void;
 }
 
 type TabId = 'info' | 'packages' | 'schedule' | 'measurements' | 'whoop' | 'tests' | 'photos' | 'nutrition';
@@ -69,6 +75,9 @@ const ClientDetailAccordion = ({
   onSendRenewal,
   onSendGymRenewal,
   onDeleteClient,
+  onArchiveClient,
+  onUnarchiveClient,
+  onSendReactivation,
 }: Props) => {
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<TabId>('info');
