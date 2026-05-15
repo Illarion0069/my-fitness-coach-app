@@ -18,6 +18,9 @@ interface Profile {
   email: string;
   phone: string;
   avatar_url: string | null;
+  archived_at: string | null;
+  archive_reason: string | null;
+  reactivation_sent_at: string | null;
 }
 
 interface ClientPackage {
