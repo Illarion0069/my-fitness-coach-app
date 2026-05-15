@@ -51,6 +51,7 @@ const AdminSection = () => {
   const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
+  const [archiveView, setArchiveView] = useState<'active' | 'archived'>('active');
 
   const fetchSupplementalData = useCallback(async () => {
     const [{ data: pkgData }, { data: sessData }] = await Promise.all([
