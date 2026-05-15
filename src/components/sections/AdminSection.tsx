@@ -457,6 +457,37 @@ const AdminSection = () => {
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
           <>
+          {/* Active / Archive top tabs */}
+          <div className="flex gap-1 mb-3 p-1 bg-secondary/40 rounded-xl">
+            <button
+              onClick={() => { setArchiveView('active'); setSelectedClient(null); }}
+              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${
+                archiveView === 'active'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {lang === 'en' ? 'Active' : 'Активные'}
+            </button>
+            <button
+              onClick={() => { setArchiveView('archived'); setSelectedClient(null); }}
+              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
+                archiveView === 'archived'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {lang === 'en' ? 'Archive' : 'Архив'}
+              {archivedCount > 0 && (
+                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
+                  archiveView === 'archived' ? 'bg-primary-foreground/20' : 'bg-secondary'
+                }`}>
+                  {archivedCount}
+                </span>
+              )}
+            </button>
+          </div>
+
           {/* Search + filter bar */}
           <div className="space-y-2 mb-3">
             <div className="relative">
