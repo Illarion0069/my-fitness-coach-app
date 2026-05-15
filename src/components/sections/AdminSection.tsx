@@ -191,6 +191,11 @@ const AdminSection = () => {
       const client = clients.find(c => c.user_id === userId);
       if (!client) return false;
 
+      // Archive view filter (top-level)
+      const isArchived = !!client.archived_at;
+      if (archiveView === 'active' && isArchived) return false;
+      if (archiveView === 'archived' && !isArchived) return false;
+
       // Search filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -198,8 +203,8 @@ const AdminSection = () => {
         if (!match) return false;
       }
 
-      // Active package filter
-      if (filterActive !== 'all') {
+      // Active package filter (only relevant for non-archived view)
+      if (archiveView === 'active' && filterActive !== 'all') {
         const clientPkgs = packages[userId] || [];
         const hasActive = clientPkgs.some(p => p.is_active);
         if (filterActive === 'active' && !hasActive) return false;
@@ -208,7 +213,12 @@ const AdminSection = () => {
 
       return true;
     });
-  }, [clientOrder, clients, packages, searchQuery, filterActive]);
+  }, [clientOrder, clients, packages, searchQuery, filterActive, archiveView]);
+
+  const archivedCount = useMemo(
+    () => clients.filter(c => !!c.archived_at).length,
+    [clients]
+  );
 
 
   const sendNotification = async (client: Profile, message: string) => {
