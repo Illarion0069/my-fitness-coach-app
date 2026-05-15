@@ -159,7 +159,61 @@ const AdminSection = () => {
     }
   };
 
-  // Compute weekly session counts per client
+  const archiveClient = async (client: Profile) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('user_id', client.user_id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setSelectedClient(null);
+    fetchData();
+    toast({
+      title: lang === 'en' ? 'Moved to archive' : 'В архиве',
+      description: client.full_name,
+    });
+  };
+
+  const unarchiveClient = async (client: Profile) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ archived_at: null, archive_reason: null })
+      .eq('user_id', client.user_id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    fetchData();
+    toast({
+      title: lang === 'en' ? 'Restored to active' : 'Возвращён в активные',
+      description: client.full_name,
+    });
+  };
+
+  const sendReactivationOffer = async (client: Profile) => {
+    const message = `💪 <b>Limassol Fitness</b>\n\n${client.full_name}, давно не виделись! Скучаем по вашим тренировкам.\n\n🎁 <b>Возвращайтесь со скидкой -20%</b> на любой пакет тренировок:\n• 8 занятий — <s>750€</s> <b>600€</b>\n• 12 занятий — <s>1030€</s> <b>824€</b>\n• 20 занятий — <s>1599€</s> <b>1279€</b>\n\nПросто напишите тренеру — забронируем удобное время. Ждём! 🔥`;
+    const { data, error } = await supabase.functions.invoke('send-telegram', {
+      body: { action: 'sendReminder', client_user_id: client.user_id, message },
+    });
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    await supabase
+      .from('profiles')
+      .update({ reactivation_sent_at: new Date().toISOString() })
+      .eq('user_id', client.user_id);
+    fetchData();
+    const sentToClient = data?.sent_to === 'client';
+    toast({
+      title: lang === 'en' ? 'Offer sent' : 'Предложение отправлено',
+      description: sentToClient
+        ? (lang === 'en' ? `Sent to ${client.full_name} via Telegram` : `Отправлено ${client.full_name} в Telegram`)
+        : (lang === 'en' ? `${client.full_name} has no Telegram — sent to you` : `У ${client.full_name} нет Telegram — отправлено вам`),
+    });
+  };
   const weeklySessionCounts = useMemo(() => {
     const now = new Date();
     const dayOfWeek = now.getDay();
