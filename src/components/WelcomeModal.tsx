@@ -145,6 +145,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   const [forgotPhone, setForgotPhone] = useState('');
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotDeliveredTo, setForgotDeliveredTo] = useState<string>('');
+  const [autoLoginCreds, setAutoLoginCreds] = useState<{ email: string; password: string } | null>(null);
 
   useEffect(() => {
     if (open) {
