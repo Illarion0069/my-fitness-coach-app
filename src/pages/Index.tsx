@@ -271,12 +271,16 @@ const AppContent = () => {
   );
 };
 
+import { ThemeProvider } from '@/contexts/ThemeContext';
+
 const Index = () => (
-  <LanguageProvider>
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  </LanguageProvider>
+  <ThemeProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
+  </ThemeProvider>
 );
 
 export default Index;

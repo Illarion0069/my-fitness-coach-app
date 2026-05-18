@@ -8,6 +8,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import BookingModal from '@/components/BookingModal';
 import ClientDashboard from '@/components/ClientDashboard';
 import LanguageSwitch from '@/components/LanguageSwitch';
+import ThemeToggle from '@/components/ThemeToggle';
 import { supabase } from '@/integrations/supabase/client';
 
 interface HeroSectionProps {
@@ -73,7 +74,10 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
         {/* Top bar */}
         <div className="flex items-center justify-between px-5 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top, 12px), 12px)' }}>
           <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
-          <LanguageSwitch />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <LanguageSwitch />
+          </div>
         </div>
         <ClientDashboard forceClientView={!!clientPreview} />
       </section>
