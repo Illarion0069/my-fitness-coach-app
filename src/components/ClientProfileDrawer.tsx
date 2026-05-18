@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight, History, Camera, KeyRound, Eye, EyeOff, Settings } from 'lucide-react';
+import { X, Activity, LogOut, CalendarDays, RotateCw, XCircle, Loader2, Ruler, ClipboardCheck, ChevronDown, ChevronRight, History, Camera, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
