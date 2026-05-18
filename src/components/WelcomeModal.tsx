@@ -637,9 +637,17 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center mx-auto">
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('Your password has been updated. You can now sign in.', 'Пароль обновлён. Теперь вы можете войти.')}
+                  <p className="text-sm text-foreground">
+                    {t(
+                      'A new password has been sent to your Telegram. Open the bot, copy the password, and sign in.',
+                      'Новый пароль отправлен в ваш Telegram. Откройте бота, скопируйте пароль и войдите.'
+                    )}
                   </p>
+                  {forgotDeliveredTo && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {t('For account:', 'Для аккаунта:')} <span className="font-mono">{forgotDeliveredTo}</span>
+                    </p>
+                  )}
                   <button
                     onClick={() => { setStep('login'); setFormError(null); }}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
