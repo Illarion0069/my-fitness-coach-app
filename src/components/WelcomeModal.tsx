@@ -340,6 +340,8 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     setSubmitting(false);
   };
 
+  if (!open) return null;
+
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
 
