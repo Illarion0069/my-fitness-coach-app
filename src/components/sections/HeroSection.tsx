@@ -90,6 +90,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
       <div className="flex items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
         <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <button
             onClick={() => setLang(lang === 'en' ? 'ru' : 'en')}
             className="text-[11px] font-bold text-muted-foreground hover:text-foreground border border-border/50 bg-secondary/50 rounded-lg px-2.5 py-1.5 transition-colors"
