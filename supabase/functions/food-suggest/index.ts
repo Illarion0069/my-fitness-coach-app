@@ -85,7 +85,7 @@ CRITICAL accuracy rules:
         model: "google/gemini-2.5-flash-lite",
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: `Search: "${query.trim()}" (user language: ${lang || "ru"})` },
+          { role: "user", content: `Search: "${safeQuery}" (user language: ${lang === "en" ? "en" : "ru"})` },
         ],
       }),
     });
