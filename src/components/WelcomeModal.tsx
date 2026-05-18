@@ -239,9 +239,16 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
 
   const handleLogin = async () => {
     setFormError(null);
-    if (!loginPhone.trim() || loginPhone.length < 5) {
-      setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
-      return;
+    if (loginMode === 'phone') {
+      if (!loginPhone.trim() || loginPhone.length < 5) {
+        setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
+        return;
+      }
+    } else {
+      if (!loginEmail.trim() || !/^\S+@\S+\.\S+$/.test(loginEmail.trim())) {
+        setFormError(t('Please enter a valid email', 'Введите корректный email'));
+        return;
+      }
     }
     if (!loginPassword) {
       setFormError(t('Please enter your password', 'Введите пароль'));
@@ -250,9 +257,11 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     setSubmitting(true);
     setPendingAuthResolution(false);
     try {
-      const fakeEmail = phoneToEmail(loginCountryCode, loginPhone);
+      const emailForAuth = loginMode === 'phone'
+        ? phoneToEmail(loginCountryCode, loginPhone)
+        : loginEmail.trim().toLowerCase();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: fakeEmail,
+        email: emailForAuth,
         password: loginPassword,
       });
       if (error) throw error;
