@@ -279,7 +279,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       setPendingAuthResolution(true);
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials')) {
-        setFormError(t('Wrong phone number or password', 'Неверный номер или пароль'));
+        setFormError(t('Wrong credentials', 'Неверные данные для входа'));
       } else {
         setFormError(err.message);
       }
