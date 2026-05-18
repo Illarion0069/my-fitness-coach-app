@@ -198,7 +198,16 @@ const AdminSection = () => {
       body: { action: 'sendReminder', client_user_id: client.user_id, message },
     });
     if (error) {
-      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      let detail = error.message;
+      try {
+        const ctx = (error as any).context;
+        if (ctx && typeof ctx.json === 'function') {
+          const body = await ctx.json();
+          if (body?.error) detail = body.error;
+        }
+      } catch {}
+      console.error('sendReactivationOffer failed:', detail, error);
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: detail, variant: 'destructive' });
       return;
     }
     await supabase
