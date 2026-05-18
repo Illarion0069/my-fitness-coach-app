@@ -1,78 +1,61 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 type Theme = 'dark' | 'light';
-type ThemeMode = 'dark' | 'light' | 'system';
 
 interface ThemeContextValue {
-  theme: Theme;          // resolved (system → actual)
-  mode: ThemeMode;       // user choice
-  setMode: (m: ThemeMode) => void;
+  theme: Theme;
+  setTheme: (t: Theme) => void;
   toggle: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 const STORAGE_KEY = 'theme';
 
-const getSystem = (): Theme =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
-
-const getInitialMode = (): ThemeMode => {
+const getInitial = (): Theme => {
   if (typeof window === 'undefined') return 'dark';
-  const stored = localStorage.getItem(STORAGE_KEY) as ThemeMode | null;
-  return stored ?? 'dark';
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return stored === 'light' ? 'light' : 'dark';
 };
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
-  const [mode, setModeState] = useState<ThemeMode>(getInitialMode);
-  const [systemTheme, setSystemTheme] = useState<Theme>(getSystem);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(prefers-color-scheme: light)');
-    const handler = () => setSystemTheme(mq.matches ? 'light' : 'dark');
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
-
-  const theme: Theme = mode === 'system' ? systemTheme : mode;
+  const [theme, setThemeState] = useState<Theme>(getInitial);
 
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.style.colorScheme = theme;
-    // Sync browser chrome / PWA status bar
-    const meta = document.querySelector('meta[name="theme-color"]');
     const color = theme === 'dark' ? '#0d0d0d' : '#ffffff';
-    if (meta) meta.setAttribute('content', color);
-    else {
-      const m = document.createElement('meta');
-      m.name = 'theme-color';
-      m.content = color;
-      document.head.appendChild(m);
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement('meta');
+      meta.setAttribute('name', 'theme-color');
+      document.head.appendChild(meta);
     }
+    meta.setAttribute('content', color);
   }, [theme]);
 
-  const setMode = (m: ThemeMode) => {
-    localStorage.setItem(STORAGE_KEY, m);
-    setModeState(m);
+  const setTheme = (t: Theme) => {
+    localStorage.setItem(STORAGE_KEY, t);
+    setThemeState(t);
   };
 
-  const toggle = () => setMode(theme === 'dark' ? 'light' : 'dark');
+  const toggle = () => setTheme(theme === 'dark' ? 'light' : 'dark');
 
   return (
-    <ThemeContext.Provider value={{ theme, mode, setMode, toggle }}>
+    <ThemeContext.Provider value={{ theme, setTheme, toggle }}>
       {children}
     </ThemeContext.Provider>
   );
 };
 
-export const useTheme = () => {
+export const useTheme = (): ThemeContextValue => {
   const ctx = useContext(ThemeContext);
   if (ctx) return ctx;
-  // Fallback for consumers rendered outside the provider (e.g. global Toaster in App.tsx)
+  // Safe fallback for consumers rendered outside the provider (e.g. global Toaster)
   const theme: Theme =
     typeof document !== 'undefined' && document.documentElement.classList.contains('light')
       ? 'light'
       : 'dark';
-  return { theme, mode: theme as ThemeMode, setMode: () => {}, toggle: () => {} };
+  return { theme, setTheme: () => {}, toggle: () => {} };
 };
