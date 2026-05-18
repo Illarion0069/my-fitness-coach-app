@@ -19,7 +19,107 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // ACTION: request_reset — client enters phone, we send code to their Telegram
+    // ACTION: send_new_password — lookup by phone OR email, generate a strong password,
+    // update the auth user, deliver via Telegram. One-shot, no codes needed.
+    if (action === "send_new_password") {
+      const mode = body.mode === "email" ? "email" : "phone";
+      const identifier = String(body.identifier || "").trim();
+      if (!identifier || identifier.length < 5) {
+        return json({ error: "invalid_identifier" }, 400);
+      }
+
+      // Lookup profile
+      let profileQuery = adminClient
+        .from("profiles")
+        .select("user_id, full_name, telegram_chat_id, phone, email");
+      if (mode === "phone") {
+        profileQuery = profileQuery.eq("phone", identifier);
+      } else {
+        profileQuery = profileQuery.ilike("email", identifier);
+      }
+      const { data: profile } = await profileQuery.maybeSingle();
+
+      if (!profile) {
+        return json({ error: "not_found" }, 404);
+      }
+      if (!profile.telegram_chat_id) {
+        return json({ error: "no_telegram" }, 400);
+      }
+
+      // Generate strong unique password — bypasses HIBP because it's random
+      const genPassword = () => {
+        const letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+        const digits = "23456789";
+        const symbols = "!@#$%&*+-";
+        const all = letters + digits + symbols;
+        const pick = (s: string, n: number) => {
+          let out = "";
+          const buf = new Uint32Array(n);
+          crypto.getRandomValues(buf);
+          for (let i = 0; i < n; i++) out += s[buf[i] % s.length];
+          return out;
+        };
+        // Guaranteed mix: 2 upper, 2 lower, 2 digits, 2 symbols + 4 random
+        const parts =
+          pick("ABCDEFGHJKLMNPQRSTUVWXYZ", 2) +
+          pick("abcdefghjkmnpqrstuvwxyz", 2) +
+          pick(digits, 2) +
+          pick(symbols, 2) +
+          pick(all, 4);
+        // Shuffle
+        const arr = parts.split("");
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return "Fit-" + arr.join("");
+      };
+
+      // Try up to 3 times in case HIBP rejects (extremely unlikely with random)
+      let newPassword = "";
+      let lastErr: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        newPassword = genPassword();
+        const { error } = await adminClient.auth.admin.updateUserById(profile.user_id, {
+          password: newPassword,
+        });
+        if (!error) { lastErr = null; break; }
+        lastErr = error;
+        const msg = (error.message || "").toLowerCase();
+        if (!msg.includes("pwned") && !msg.includes("breach") && !msg.includes("compromised")) break;
+      }
+      if (lastErr) {
+        console.error("updateUserById failed:", lastErr);
+        return json({ error: "update_failed", message: lastErr.message }, 500);
+      }
+
+      // Send via Telegram
+      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+      const tgText =
+        `🔐 <b>Новый пароль для входа</b>\n\n` +
+        `Логин: <code>${mode === "phone" ? profile.phone : (profile.email || profile.phone)}</code>\n` +
+        `Пароль: <code>${newPassword}</code>\n\n` +
+        `Войдите и при желании смените пароль в профиле.\n` +
+        `Если вы не запрашивали сброс — сообщите тренеру.`;
+      const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: profile.telegram_chat_id,
+          text: tgText,
+          parse_mode: "HTML",
+        }),
+      });
+      if (!tgRes.ok) {
+        const errText = await tgRes.text();
+        console.error("Telegram send failed:", errText);
+        return json({ error: "telegram_failed" }, 500);
+      }
+
+      return json({ success: true, delivered_via: "telegram" });
+    }
+
+    // ACTION: request_reset — legacy code-based flow (kept for backwards compat)
     if (action === "request_reset") {
       const { phone } = body;
       if (!phone || typeof phone !== "string" || phone.length < 5) {
