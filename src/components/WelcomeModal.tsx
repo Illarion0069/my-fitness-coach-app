@@ -396,8 +396,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                 : step === 'register' ? t('New Client', 'Новый клиент')
                 : step === 'telegram' ? t('Stay Connected', 'Будьте на связи')
                 : step === 'forgot' ? t('Reset Password', 'Сброс пароля')
-                : step === 'forgot-code' ? t('Enter Code', 'Введите код')
-                : step === 'forgot-done' ? t('Password Updated', 'Пароль обновлён')
+                : step === 'forgot-done' ? t('Password Sent', 'Пароль отправлен')
                 : t('Welcome Back', 'С возвращением')}
             </h3>
             {step === 'welcome' && (
