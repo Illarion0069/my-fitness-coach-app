@@ -68,6 +68,11 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
 export const useTheme = () => {
   const ctx = useContext(ThemeContext);
-  if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
-  return ctx;
+  if (ctx) return ctx;
+  // Fallback for consumers rendered outside the provider (e.g. global Toaster in App.tsx)
+  const theme: Theme =
+    typeof document !== 'undefined' && document.documentElement.classList.contains('light')
+      ? 'light'
+      : 'dark';
+  return { theme, mode: theme as ThemeMode, setMode: () => {}, toggle: () => {} };
 };
