@@ -140,10 +140,11 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   const [pendingAuthResolution, setPendingAuthResolution] = useState(false);
 
   // Forgot password state
+  const [forgotMode, setForgotMode] = useState<'phone' | 'email'>('phone');
   const [forgotCountryCode, setForgotCountryCode] = useState('+357');
   const [forgotPhone, setForgotPhone] = useState('');
-  const [resetCode, setResetCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotDeliveredTo, setForgotDeliveredTo] = useState<string>('');
 
   useEffect(() => {
     if (open) {
