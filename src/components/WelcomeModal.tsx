@@ -650,13 +650,46 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                       {t('For account:', 'Для аккаунта:')} <span className="font-mono">{forgotDeliveredTo}</span>
                     </p>
                   )}
+                  {autoLoginCreds && (
+                    <button
+                      onClick={async () => {
+                        if (!autoLoginCreds) return;
+                        setSubmitting(true);
+                        setFormError(null);
+                        try {
+                          const { error } = await supabase.auth.signInWithPassword({
+                            email: autoLoginCreds.email,
+                            password: autoLoginCreds.password,
+                          });
+                          if (error) throw error;
+                          setPendingAuthResolution(true);
+                          setAutoLoginCreds(null);
+                        } catch (err: any) {
+                          setFormError(err.message || t('Auto sign-in failed', 'Не удалось войти автоматически'));
+                          setSubmitting(false);
+                        }
+                      }}
+                      disabled={submitting}
+                      className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-60"
+                    >
+                      <LogIn className="w-4 h-4" />
+                      {submitting
+                        ? t('Signing in…', 'Входим…')
+                        : t('Sign in automatically', 'Войти автоматически')}
+                    </button>
+                  )}
                   <button
-                    onClick={() => { setStep('login'); setFormError(null); }}
-                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
+                    onClick={() => { setStep('login'); setFormError(null); setAutoLoginCreds(null); }}
+                    className={`w-full ${autoLoginCreds ? 'text-xs text-muted-foreground hover:text-foreground py-2' : 'gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99]'} transition-all`}
                   >
-                    <LogIn className="w-4 h-4" />
-                    {t('Sign In', 'Войти')}
+                    {!autoLoginCreds && <LogIn className="w-4 h-4" />}
+                    {autoLoginCreds
+                      ? t('Sign in manually instead', 'Ввести пароль вручную')
+                      : t('Sign In', 'Войти')}
                   </button>
+                  {formError && (
+                    <p className="text-xs text-destructive">{formError}</p>
+                  )}
                 </motion.div>
               )}
 
