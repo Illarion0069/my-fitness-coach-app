@@ -585,6 +585,55 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
       measurements={measurements}
       lang={lang}
     />
+
+    <AnimatePresence>
+      {confirmSignOut && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setConfirmSignOut(false)}
+        >
+          <motion.div
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-card border border-border/50 rounded-2xl p-5 w-full max-w-xs shadow-2xl"
+          >
+            <div className="flex items-center gap-2.5 mb-3">
+              <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center">
+                <LogOut className="w-4 h-4 text-destructive" />
+              </div>
+              <p className="text-sm font-bold">
+                {lang === 'en' ? 'Sign out?' : 'Выйти из аккаунта?'}
+              </p>
+            </div>
+            <p className="text-xs text-muted-foreground mb-4">
+              {lang === 'en'
+                ? 'You will need to sign in again to access your profile.'
+                : 'Чтобы вернуться в кабинет, потребуется снова войти.'}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmSignOut(false)}
+                className="flex-1 text-xs font-semibold py-2.5 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors"
+              >
+                {lang === 'en' ? 'Cancel' : 'Отмена'}
+              </button>
+              <button
+                onClick={async () => { setConfirmSignOut(false); await signOut(); onClose(); }}
+                className="flex-1 text-xs font-bold py-2.5 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+              >
+                {lang === 'en' ? 'Sign out' : 'Выйти'}
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
     </>
   );
 };
