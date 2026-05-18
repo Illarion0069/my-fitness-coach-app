@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 import trainerLogo from '@/assets/trainer-logo.png';
 
-type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-code' | 'forgot-done';
+type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-done';
 
 interface WelcomeModalProps {
   open: boolean;
