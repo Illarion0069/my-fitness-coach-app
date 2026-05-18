@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 import trainerLogo from '@/assets/trainer-logo.png';
 
-type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-code' | 'forgot-done';
+type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-done';
 
 interface WelcomeModalProps {
   open: boolean;
@@ -140,10 +140,11 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   const [pendingAuthResolution, setPendingAuthResolution] = useState(false);
 
   // Forgot password state
+  const [forgotMode, setForgotMode] = useState<'phone' | 'email'>('phone');
   const [forgotCountryCode, setForgotCountryCode] = useState('+357');
   const [forgotPhone, setForgotPhone] = useState('');
-  const [resetCode, setResetCode] = useState('');
-  const [newPassword, setNewPassword] = useState('');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotDeliveredTo, setForgotDeliveredTo] = useState<string>('');
 
   useEffect(() => {
     if (open) {
@@ -290,70 +291,48 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
 
   const handleForgotRequest = async () => {
     setFormError(null);
-    if (!forgotPhone.trim() || forgotPhone.length < 5) {
-      setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
-      return;
+    let identifier = '';
+    if (forgotMode === 'phone') {
+      if (!forgotPhone.trim() || forgotPhone.length < 5) {
+        setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
+        return;
+      }
+      identifier = `${forgotCountryCode}${forgotPhone}`;
+    } else {
+      const email = forgotEmail.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setFormError(t('Please enter a valid email', 'Введите корректный email'));
+        return;
+      }
+      identifier = email;
     }
     setSubmitting(true);
     try {
-      const fullPhone = `${forgotCountryCode}${forgotPhone}`;
       const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { action: 'request_reset', phone: fullPhone },
+        body: { action: 'send_new_password', mode: forgotMode, identifier },
       });
-      if (error) throw error;
-      if (data?.error === 'not_found') {
-        throw new Error(t('Phone number not found', 'Номер телефона не найден'));
-      }
-      if (data?.error === 'no_telegram') {
-        throw new Error(t('No Telegram linked to this account. Contact your trainer.', 'К аккаунту не привязан Telegram. Обратитесь к тренеру.'));
-      }
-      if (data?.error) throw new Error(data.error);
-      setStep('forgot-code');
-    } catch (err: any) {
-      setFormError(err.message);
-    }
-    setSubmitting(false);
-  };
-
-  const handleForgotVerify = async () => {
-    setFormError(null);
-    if (!resetCode.trim() || resetCode.length !== 6) {
-      setFormError(t('Enter the 6-digit code', 'Введите 6-значный код'));
-      return;
-    }
-    if (newPassword.length < 8) {
-      setFormError(t('Password must be at least 8 characters', 'Пароль минимум 8 символов'));
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const fullPhone = `${forgotCountryCode}${forgotPhone}`;
-      const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { action: 'verify_and_reset', phone: fullPhone, code: resetCode, new_password: newPassword },
-      });
-      // Read structured error from response body even on non-2xx
       let payload: any = data;
-      if (error && (error as any).context && typeof (error as any).context.json === 'function') {
+      if (error && (error as any).context?.json) {
         try { payload = await (error as any).context.json(); } catch {}
       } else if (error && !payload) {
         throw error;
       }
-      if (payload?.error === 'invalid_code') {
-        throw new Error(t('Invalid or expired code', 'Неверный или истёкший код'));
+      if (payload?.error === 'not_found') {
+        throw new Error(forgotMode === 'phone'
+          ? t('Phone number not found', 'Номер телефона не найден')
+          : t('Email not found', 'Email не найден'));
       }
-      if (payload?.error === 'pwned_password') {
+      if (payload?.error === 'no_telegram') {
         throw new Error(t(
-          'This password was found in known data breaches. Try a more unique one — add digits and a symbol.',
-          'Этот пароль найден в утечках. Попробуйте уникальный — добавьте цифры и символ.'
+          'No Telegram linked to this account. Contact your trainer to reset.',
+          'К аккаунту не привязан Telegram. Обратитесь к тренеру для сброса.'
         ));
       }
-      if (payload?.error === 'weak_password') {
-        throw new Error(t(
-          'Password is too weak. Min 8 characters with letters, digits and a symbol.',
-          'Пароль слишком слабый. Минимум 8 символов: буквы, цифры и символ.'
-        ));
+      if (payload?.error === 'telegram_failed') {
+        throw new Error(t('Failed to send Telegram message. Try again.', 'Не удалось отправить в Telegram. Попробуйте ещё раз.'));
       }
       if (payload?.error) throw new Error(payload.message || payload.error);
+      setForgotDeliveredTo(identifier);
       setStep('forgot-done');
     } catch (err: any) {
       setFormError(err.message);
@@ -362,6 +341,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   };
 
   if (!open) return null;
+
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
 
@@ -416,8 +396,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                 : step === 'register' ? t('New Client', 'Новый клиент')
                 : step === 'telegram' ? t('Stay Connected', 'Будьте на связи')
                 : step === 'forgot' ? t('Reset Password', 'Сброс пароля')
-                : step === 'forgot-code' ? t('Enter Code', 'Введите код')
-                : step === 'forgot-done' ? t('Password Updated', 'Пароль обновлён')
+                : step === 'forgot-done' ? t('Password Sent', 'Пароль отправлен')
                 : t('Welcome Back', 'С возвращением')}
             </h3>
             {step === 'welcome' && (
@@ -576,7 +555,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   {divider}
                   {googleButton}
 
-                  <button onClick={() => { setStep('forgot'); setFormError(null); setForgotCountryCode(loginCountryCode); setForgotPhone(loginPhone); }} className="w-full text-xs text-primary/70 hover:text-primary py-1 transition-colors">
+                  <button onClick={() => { setStep('forgot'); setFormError(null); setForgotMode(loginMode); setForgotCountryCode(loginCountryCode); setForgotPhone(loginPhone); setForgotEmail(loginEmail); }} className="w-full text-xs text-primary/70 hover:text-primary py-1 transition-colors">
                     {t('Forgot password?', 'Забыли пароль?')}
                   </button>
                   <button onClick={() => { setStep('welcome'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
@@ -585,19 +564,52 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                 </motion.div>
               )}
 
-              {/* Step: Forgot Password — enter phone */}
+              {/* Step: Forgot Password — phone/email toggle, single-shot via Telegram */}
               {step === 'forgot' && (
                 <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
                   <p className="text-xs text-muted-foreground text-center">
-                    {t('Enter your phone number. We\'ll send a reset code to your Telegram.', 'Введите номер телефона. Мы отправим код сброса в ваш Telegram.')}
+                    {t(
+                      'We\'ll generate a new password and send it to your Telegram instantly.',
+                      'Мы сгенерируем новый пароль и мгновенно отправим его в ваш Telegram.'
+                    )}
                   </p>
-                  <CountryCodeSelect
-                    value={forgotCountryCode}
-                    onChange={setForgotCountryCode}
-                    phoneNumber={forgotPhone}
-                    onPhoneChange={setForgotPhone}
-                    placeholder={t('Phone number', 'Номер телефона')}
-                  />
+
+                  {/* Phone / Email toggle */}
+                  <div className="flex bg-secondary/30 rounded-xl p-1 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode('phone'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${forgotMode === 'phone' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {t('Phone', 'Телефон')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode('email'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${forgotMode === 'email' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {t('Email', 'Email')}
+                    </button>
+                  </div>
+
+                  {forgotMode === 'phone' ? (
+                    <CountryCodeSelect
+                      value={forgotCountryCode}
+                      onChange={setForgotCountryCode}
+                      phoneNumber={forgotPhone}
+                      onPhoneChange={setForgotPhone}
+                      placeholder={t('Phone number', 'Номер телефона')}
+                    />
+                  ) : (
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      placeholder={t('Email', 'Email')}
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      className={inputClass}
+                    />
+                  )}
 
                   <InlineMessage message={formError} variant="error" />
 
@@ -609,52 +621,12 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <>
                         <KeyRound className="w-4 h-4" />
-                        {t('Send Code', 'Отправить код')}
+                        {t('Send New Password', 'Отправить новый пароль')}
                       </>
                     )}
                   </button>
                   <button onClick={() => { setStep('login'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
                     ← {t('Back to login', 'Назад к входу')}
-                  </button>
-                </motion.div>
-              )}
-
-              {/* Step: Forgot Code — enter code + new password */}
-              {step === 'forgot-code' && (
-                <motion.div key="forgot-code" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('Check your Telegram for the 6-digit code.', 'Проверьте Telegram — мы отправили 6-значный код.')}
-                  </p>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={t('6-digit code', '6-значный код')}
-                    value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className={inputClass + ' text-center text-lg tracking-[0.3em] font-bold'}
-                    maxLength={6}
-                  />
-                  <div>
-                    <PasswordInput value={newPassword} onChange={setNewPassword} placeholder={t('New password', 'Новый пароль')} className={inputClass} />
-                    <PasswordChecklist password={newPassword} lang={lang} />
-                  </div>
-
-                  <InlineMessage message={formError} variant="error" />
-
-                  <button
-                    onClick={handleForgotVerify}
-                    disabled={submitting}
-                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
-                  >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                      <>
-                        <KeyRound className="w-4 h-4" />
-                        {t('Reset Password', 'Сбросить пароль')}
-                      </>
-                    )}
-                  </button>
-                  <button onClick={() => { setStep('forgot'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
-                    ← {t('Back', 'Назад')}
                   </button>
                 </motion.div>
               )}
@@ -665,9 +637,17 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/15 flex items-center justify-center mx-auto">
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <p className="text-sm text-muted-foreground">
-                    {t('Your password has been updated. You can now sign in.', 'Пароль обновлён. Теперь вы можете войти.')}
+                  <p className="text-sm text-foreground">
+                    {t(
+                      'A new password has been sent to your Telegram. Open the bot, copy the password, and sign in.',
+                      'Новый пароль отправлен в ваш Telegram. Откройте бота, скопируйте пароль и войдите.'
+                    )}
                   </p>
+                  {forgotDeliveredTo && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {t('For account:', 'Для аккаунта:')} <span className="font-mono">{forgotDeliveredTo}</span>
+                    </p>
+                  )}
                   <button
                     onClick={() => { setStep('login'); setFormError(null); }}
                     className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl flex items-center justify-center gap-2 hover:scale-[1.01] active:scale-[0.99] transition-all"
