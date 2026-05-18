@@ -114,7 +114,7 @@ const ConsultationModal = ({ open, onClose, onProceedToRegister }: ConsultationM
                 {/* Price badge */}
                 <div className="flex items-center justify-center mb-6">
                   <div className="gradient-primary text-primary-foreground font-extrabold text-2xl py-3 px-8 rounded-2xl shadow-lg">
-                    50€
+                    75€
                   </div>
                 </div>
 
@@ -152,8 +152,8 @@ const ConsultationModal = ({ open, onClose, onProceedToRegister }: ConsultationM
                   <CreditCard className="w-10 h-10 text-primary mb-3" />
                   <p className="text-sm text-muted-foreground text-center">
                     {lang === 'en'
-                      ? 'Pay €50 via Revolut to confirm your consultation booking'
-                      : 'Оплатите 50€ через Revolut для подтверждения записи'}
+                      ? 'Pay €75 via Revolut to confirm your consultation booking'
+                      : 'Оплатите 75€ через Revolut для подтверждения записи'}
                   </p>
                 </div>
 
@@ -163,7 +163,7 @@ const ConsultationModal = ({ open, onClose, onProceedToRegister }: ConsultationM
                   className="w-full bg-[#0075EB] hover:bg-[#0066d1] text-white font-bold py-3.5 rounded-2xl text-base flex items-center justify-center gap-2 transition-colors mb-4"
                 >
                   <ExternalLink className="w-4 h-4" />
-                  {lang === 'en' ? 'Pay €50 via Revolut' : 'Оплатить 50€ через Revolut'}
+                  {lang === 'en' ? 'Pay €75 via Revolut' : 'Оплатить 75€ через Revolut'}
                 </button>
 
                 {paymentOpened && (

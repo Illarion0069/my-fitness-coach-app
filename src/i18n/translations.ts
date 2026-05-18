@@ -96,8 +96,8 @@ export const translations = {
   pricing: {
     title: { en: 'PRICING', ru: 'ЦЕНЫ' },
     gymNote: {
-      en: 'Gym membership 150€/month is paid separately',
-      ru: 'Абонемент зала 150€/мес оплачивается отдельно',
+      en: 'Gym membership 175€/month is paid separately',
+      ru: 'Абонемент зала 175€/мес оплачивается отдельно',
     },
     buy: { en: 'Buy Now', ru: 'Купить' },
     packages: [
@@ -105,7 +105,7 @@ export const translations = {
         id: 'consultation',
         sessions: 1,
         period: { en: '', ru: '' },
-        price: 50,
+        price: 75,
         popular: false,
         isConsultation: true,
         label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' },
