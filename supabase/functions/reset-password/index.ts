@@ -116,7 +116,20 @@ serve(async (req) => {
         return json({ error: "telegram_failed" }, 500);
       }
 
-      return json({ success: true, delivered_via: "telegram" });
+      // Fetch the auth email so the client can auto-login with one tap
+      let authEmail: string | null = null;
+      try {
+        const { data: userRes } = await adminClient.auth.admin.getUserById(profile.user_id);
+        authEmail = userRes?.user?.email ?? null;
+      } catch (e) {
+        console.warn("getUserById failed:", e);
+      }
+
+      return json({
+        success: true,
+        delivered_via: "telegram",
+        auto_login: authEmail ? { email: authEmail, password: newPassword } : null,
+      });
     }
 
     // ACTION: request_reset — legacy code-based flow (kept for backwards compat)
