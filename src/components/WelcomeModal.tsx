@@ -564,19 +564,52 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                 </motion.div>
               )}
 
-              {/* Step: Forgot Password — enter phone */}
+              {/* Step: Forgot Password — phone/email toggle, single-shot via Telegram */}
               {step === 'forgot' && (
                 <motion.div key="forgot" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
                   <p className="text-xs text-muted-foreground text-center">
-                    {t('Enter your phone number. We\'ll send a reset code to your Telegram.', 'Введите номер телефона. Мы отправим код сброса в ваш Telegram.')}
+                    {t(
+                      'We\'ll generate a new password and send it to your Telegram instantly.',
+                      'Мы сгенерируем новый пароль и мгновенно отправим его в ваш Telegram.'
+                    )}
                   </p>
-                  <CountryCodeSelect
-                    value={forgotCountryCode}
-                    onChange={setForgotCountryCode}
-                    phoneNumber={forgotPhone}
-                    onPhoneChange={setForgotPhone}
-                    placeholder={t('Phone number', 'Номер телефона')}
-                  />
+
+                  {/* Phone / Email toggle */}
+                  <div className="flex bg-secondary/30 rounded-xl p-1 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode('phone'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${forgotMode === 'phone' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {t('Phone', 'Телефон')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setForgotMode('email'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${forgotMode === 'email' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {t('Email', 'Email')}
+                    </button>
+                  </div>
+
+                  {forgotMode === 'phone' ? (
+                    <CountryCodeSelect
+                      value={forgotCountryCode}
+                      onChange={setForgotCountryCode}
+                      phoneNumber={forgotPhone}
+                      onPhoneChange={setForgotPhone}
+                      placeholder={t('Phone number', 'Номер телефона')}
+                    />
+                  ) : (
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      placeholder={t('Email', 'Email')}
+                      value={forgotEmail}
+                      onChange={(e) => setForgotEmail(e.target.value)}
+                      className={inputClass}
+                    />
+                  )}
 
                   <InlineMessage message={formError} variant="error" />
 
@@ -588,52 +621,12 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                     {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
                       <>
                         <KeyRound className="w-4 h-4" />
-                        {t('Send Code', 'Отправить код')}
+                        {t('Send New Password', 'Отправить новый пароль')}
                       </>
                     )}
                   </button>
                   <button onClick={() => { setStep('login'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
                     ← {t('Back to login', 'Назад к входу')}
-                  </button>
-                </motion.div>
-              )}
-
-              {/* Step: Forgot Code — enter code + new password */}
-              {step === 'forgot-code' && (
-                <motion.div key="forgot-code" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-                  <p className="text-xs text-muted-foreground text-center">
-                    {t('Check your Telegram for the 6-digit code.', 'Проверьте Telegram — мы отправили 6-значный код.')}
-                  </p>
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder={t('6-digit code', '6-значный код')}
-                    value={resetCode}
-                    onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className={inputClass + ' text-center text-lg tracking-[0.3em] font-bold'}
-                    maxLength={6}
-                  />
-                  <div>
-                    <PasswordInput value={newPassword} onChange={setNewPassword} placeholder={t('New password', 'Новый пароль')} className={inputClass} />
-                    <PasswordChecklist password={newPassword} lang={lang} />
-                  </div>
-
-                  <InlineMessage message={formError} variant="error" />
-
-                  <button
-                    onClick={handleForgotVerify}
-                    disabled={submitting}
-                    className="w-full gradient-primary text-primary-foreground font-bold py-3.5 rounded-xl disabled:opacity-50 transition-all hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2"
-                  >
-                    {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (
-                      <>
-                        <KeyRound className="w-4 h-4" />
-                        {t('Reset Password', 'Сбросить пароль')}
-                      </>
-                    )}
-                  </button>
-                  <button onClick={() => { setStep('forgot'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
-                    ← {t('Back', 'Назад')}
                   </button>
                 </motion.div>
               )}
