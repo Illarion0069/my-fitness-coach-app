@@ -133,6 +133,8 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   const [submitting, setSubmitting] = useState(false);
   const [loginCountryCode, setLoginCountryCode] = useState('+357');
   const [loginPhone, setLoginPhone] = useState('');
+  const [loginEmail, setLoginEmail] = useState('');
+  const [loginMode, setLoginMode] = useState<'phone' | 'email'>('phone');
   const [loginPassword, setLoginPassword] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [pendingAuthResolution, setPendingAuthResolution] = useState(false);
@@ -237,9 +239,16 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
 
   const handleLogin = async () => {
     setFormError(null);
-    if (!loginPhone.trim() || loginPhone.length < 5) {
-      setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
-      return;
+    if (loginMode === 'phone') {
+      if (!loginPhone.trim() || loginPhone.length < 5) {
+        setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
+        return;
+      }
+    } else {
+      if (!loginEmail.trim() || !/^\S+@\S+\.\S+$/.test(loginEmail.trim())) {
+        setFormError(t('Please enter a valid email', 'Введите корректный email'));
+        return;
+      }
     }
     if (!loginPassword) {
       setFormError(t('Please enter your password', 'Введите пароль'));
@@ -248,9 +257,11 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     setSubmitting(true);
     setPendingAuthResolution(false);
     try {
-      const fakeEmail = phoneToEmail(loginCountryCode, loginPhone);
+      const emailForAuth = loginMode === 'phone'
+        ? phoneToEmail(loginCountryCode, loginPhone)
+        : loginEmail.trim().toLowerCase();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: fakeEmail,
+        email: emailForAuth,
         password: loginPassword,
       });
       if (error) throw error;
@@ -268,7 +279,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       setPendingAuthResolution(true);
     } catch (err: any) {
       if (err.message?.includes('Invalid login credentials')) {
-        setFormError(t('Wrong phone number or password', 'Неверный номер или пароль'));
+        setFormError(t('Wrong credentials', 'Неверные данные для входа'));
       } else {
         setFormError(err.message);
       }
@@ -510,13 +521,41 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
               {/* Step: Login */}
               {step === 'login' && (
                 <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-                  <CountryCodeSelect
-                    value={loginCountryCode}
-                    onChange={setLoginCountryCode}
-                    phoneNumber={loginPhone}
-                    onPhoneChange={setLoginPhone}
-                    placeholder={t('Phone number', 'Номер телефона')}
-                  />
+                  <div className="flex gap-1 p-1 bg-secondary/40 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => { setLoginMode('phone'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${loginMode === 'phone' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {t('Phone', 'Телефон')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setLoginMode('email'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${loginMode === 'email' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Email
+                    </button>
+                  </div>
+                  {loginMode === 'phone' ? (
+                    <CountryCodeSelect
+                      value={loginCountryCode}
+                      onChange={setLoginCountryCode}
+                      phoneNumber={loginPhone}
+                      onPhoneChange={setLoginPhone}
+                      placeholder={t('Phone number', 'Номер телефона')}
+                    />
+                  ) : (
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className={inputClass}
+                    />
+                  )}
                   <PasswordInput value={loginPassword} onChange={setLoginPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
 
                   <InlineMessage message={formError} variant="error" />
