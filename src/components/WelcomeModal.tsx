@@ -334,6 +334,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       }
       if (payload?.error) throw new Error(payload.message || payload.error);
       setForgotDeliveredTo(identifier);
+      setAutoLoginCreds(payload?.auto_login ?? null);
       setStep('forgot-done');
     } catch (err: any) {
       setFormError(err.message);
