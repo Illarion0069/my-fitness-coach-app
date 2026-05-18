@@ -163,7 +163,7 @@ const AppContent = () => {
   };
 
   return (
-    <div className="dark h-screen bg-background text-foreground flex flex-col">
+    <div className="h-screen bg-background text-foreground flex flex-col">
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden"
@@ -271,12 +271,16 @@ const AppContent = () => {
   );
 };
 
+import { ThemeProvider } from '@/contexts/ThemeContext';
+
 const Index = () => (
-  <LanguageProvider>
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  </LanguageProvider>
+  <ThemeProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </LanguageProvider>
+  </ThemeProvider>
 );
 
 export default Index;
