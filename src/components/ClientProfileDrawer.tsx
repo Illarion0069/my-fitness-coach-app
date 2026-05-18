@@ -460,36 +460,55 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                 <WhoopWidget />
               </AccordionSection>
 
-              {/* Settings */}
-              <AccordionSection
-                icon={<Settings className="w-4 h-4 text-primary" />}
-                title={lang === 'en' ? 'Settings' : 'Настройки'}
-                isOpen={openSection === 'settings'}
-                onToggle={() => toggleSection('settings')}
-              >
-                <div className="space-y-2">
-                  {/* Account info */}
-                  <div className="bg-secondary/20 rounded-lg p-2.5">
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-bold mb-1">
-                      {lang === 'en' ? 'Account' : 'Аккаунт'}
-                    </p>
-                    <p className="text-xs font-semibold truncate">{profile?.full_name}</p>
-                    <p className="text-[11px] text-muted-foreground truncate">{profile?.email || profile?.phone}</p>
-                  </div>
-
-                  {/* Change password */}
-                  {!showChangePwd ? (
-                    <button
-                      onClick={() => setShowChangePwd(true)}
-                      className="w-full flex items-center gap-2 text-xs font-semibold py-2.5 px-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+              {/* Buy package */}
+              <div className="border border-border/30 rounded-xl p-3.5 mt-2">
+                <p className="text-xs font-extrabold text-foreground uppercase tracking-wider mb-2">
+                  {lang === 'en' ? 'Buy a Package' : 'Купить пакет'}
+                </p>
+                <div className="space-y-1.5">
+                  {[
+                    { id: 'consultation', label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, price: 50 },
+                    { id: 'single', label: { en: 'Single Session', ru: 'Разовая тренировка' }, price: 100 },
+                    { id: 'pack8', label: { en: '8 sessions', ru: '8 занятий' }, price: 750 },
+                    { id: 'pack12', label: { en: '12 sessions', ru: '12 занятий' }, price: 1030 },
+                    { id: 'pack20', label: { en: '20 sessions', ru: '20 занятий' }, price: 1599 },
+                  ].map((p) => (
+                    <a
+                      key={p.id}
+                      href="https://revolut.me/illarion"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center justify-between bg-secondary/20 rounded-lg p-2.5 hover:bg-secondary/40 transition-colors"
                     >
-                      <KeyRound className="w-3.5 h-3.5 text-primary" />
-                      <span className="flex-1 text-left">{lang === 'en' ? 'Change password' : 'Сменить пароль'}</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
-                    </button>
-                  ) : (
-                    <div className="space-y-2 p-3 bg-secondary/20 rounded-lg border border-border/30">
-                      <p className="text-xs font-semibold">{lang === 'en' ? 'New password' : 'Новый пароль'}</p>
+                      <span className="text-xs font-bold">{p.label[lang]}</span>
+                      <span className="text-xs font-extrabold text-primary">{p.price}€</span>
+                    </a>
+                  ))}
+                </div>
+                <p className="text-[10px] text-muted-foreground/60 mt-2 text-center">
+                  {lang === 'en'
+                    ? 'Payment via Revolut. Gym membership 150€/month paid separately.'
+                    : 'Оплата через Revolut. Абонемент зала 150€/мес оплачивается отдельно.'}
+                </p>
+              </div>
+            </div>
+
+            {/* Sticky footer: account actions */}
+            <div className="border-t border-border/50 bg-card" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 0px)' }}>
+              <AnimatePresence initial={false}>
+                {showChangePwd && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="p-4 space-y-2 bg-secondary/20 border-b border-border/30">
+                      <p className="text-xs font-bold flex items-center gap-1.5">
+                        <KeyRound className="w-3.5 h-3.5 text-primary" />
+                        {lang === 'en' ? 'New password' : 'Новый пароль'}
+                      </p>
                       <div className="relative">
                         <input
                           type={pwdVisible ? 'text' : 'password'}
@@ -533,52 +552,26 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                         </button>
                       </div>
                     </div>
-                  )}
-                </div>
-              </AccordionSection>
+                  </motion.div>
+                )}
+              </AnimatePresence>
 
-              {/* Buy package */}
-              <div className="border border-border/30 rounded-xl p-3.5 mt-2">
-                <p className="text-xs font-extrabold text-foreground uppercase tracking-wider mb-2">
-                  {lang === 'en' ? 'Buy a Package' : 'Купить пакет'}
-                </p>
-                <div className="space-y-1.5">
-                  {[
-                    { id: 'consultation', label: { en: 'Consultation (1h)', ru: 'Консультация (1 час)' }, price: 50 },
-                    { id: 'single', label: { en: 'Single Session', ru: 'Разовая тренировка' }, price: 100 },
-                    { id: 'pack8', label: { en: '8 sessions', ru: '8 занятий' }, price: 750 },
-                    { id: 'pack12', label: { en: '12 sessions', ru: '12 занятий' }, price: 1030 },
-                    { id: 'pack20', label: { en: '20 sessions', ru: '20 занятий' }, price: 1599 },
-                  ].map((p) => (
-                    <a
-                      key={p.id}
-                      href="https://revolut.me/illarion"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between bg-secondary/20 rounded-lg p-2.5 hover:bg-secondary/40 transition-colors"
-                    >
-                      <span className="text-xs font-bold">{p.label[lang]}</span>
-                      <span className="text-xs font-extrabold text-primary">{p.price}€</span>
-                    </a>
-                  ))}
-                </div>
-                <p className="text-[10px] text-muted-foreground/60 mt-2 text-center">
-                  {lang === 'en'
-                    ? 'Payment via Revolut. Gym membership 150€/month paid separately.'
-                    : 'Оплата через Revolut. Абонемент зала 150€/мес оплачивается отдельно.'}
-                </p>
+              <div className="p-4 grid grid-cols-2 gap-2">
+                <button
+                  onClick={() => setShowChangePwd(v => !v)}
+                  className="flex items-center justify-center gap-1.5 text-xs font-bold py-3 rounded-xl border border-border/50 hover:bg-secondary/40 transition-colors"
+                >
+                  <KeyRound className="w-3.5 h-3.5" />
+                  {lang === 'en' ? 'Password' : 'Пароль'}
+                </button>
+                <button
+                  onClick={async () => { await signOut(); onClose(); }}
+                  className="flex items-center justify-center gap-1.5 text-xs font-bold text-destructive py-3 rounded-xl border border-destructive/30 hover:bg-destructive/10 transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  {lang === 'en' ? 'Sign out' : 'Выйти'}
+                </button>
               </div>
-            </div>
-
-            {/* Sign out */}
-            <div className="p-5 pt-2 border-t border-border/50">
-              <button
-                onClick={async () => { await signOut(); onClose(); }}
-                className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-destructive py-3 rounded-xl hover:bg-destructive/10 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                {lang === 'en' ? 'Sign out' : 'Выйти'}
-              </button>
             </div>
           </motion.div>
         </motion.div>
