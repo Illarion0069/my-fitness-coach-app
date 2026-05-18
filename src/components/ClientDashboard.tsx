@@ -796,15 +796,137 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
           </a>
         </div>
 
-        {/* ═══════════ Sign Out ═══════════ */}
-        <button
-          onClick={signOut}
-          className="w-full flex items-center justify-center gap-2 text-sm text-muted-foreground hover:text-destructive transition-colors py-4 mt-2"
-        >
-          <LogOut className="w-4 h-4" />
-          {lang === 'en' ? 'Sign out' : 'Выйти'}
-        </button>
+        {/* ═══════════ Account ═══════════ */}
+        <div className="mt-4 border-t border-border/30 pt-4 space-y-2">
+          <AnimatePresence initial={false}>
+            {showChangePwd && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-3 space-y-2 bg-secondary/20 rounded-xl border border-border/30">
+                  <p className="text-xs font-bold flex items-center gap-1.5">
+                    <KeyRound className="w-3.5 h-3.5 text-primary" />
+                    {lang === 'en' ? 'New password' : 'Новый пароль'}
+                  </p>
+                  <div className="relative">
+                    <input
+                      type={pwdVisible ? 'text' : 'password'}
+                      value={newPwd}
+                      onChange={(e) => setNewPwd(e.target.value)}
+                      placeholder={lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов'}
+                      className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:border-primary"
+                      autoComplete="new-password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setPwdVisible(v => !v)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    >
+                      {pwdVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                  <input
+                    type={pwdVisible ? 'text' : 'password'}
+                    value={newPwd2}
+                    onChange={(e) => setNewPwd2(e.target.value)}
+                    placeholder={lang === 'en' ? 'Repeat password' : 'Повторите пароль'}
+                    className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                    autoComplete="new-password"
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => { setShowChangePwd(false); setNewPwd(''); setNewPwd2(''); }}
+                      disabled={pwdSaving}
+                      className="flex-1 text-xs font-semibold py-2 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors disabled:opacity-50"
+                    >
+                      {lang === 'en' ? 'Cancel' : 'Отмена'}
+                    </button>
+                    <button
+                      onClick={handleChangePassword}
+                      disabled={pwdSaving || newPwd.length < 8 || newPwd !== newPwd2}
+                      className="flex-1 text-xs font-bold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    >
+                      {pwdSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+                      {lang === 'en' ? 'Save' : 'Сохранить'}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setShowChangePwd(v => !v)}
+              className="flex items-center justify-center gap-1.5 text-xs font-bold py-3 rounded-xl border border-border/50 hover:bg-secondary/40 transition-colors"
+            >
+              <KeyRound className="w-3.5 h-3.5" />
+              {lang === 'en' ? 'Password' : 'Пароль'}
+            </button>
+            <button
+              onClick={() => setConfirmSignOut(true)}
+              className="flex items-center justify-center gap-1.5 text-xs font-bold text-destructive py-3 rounded-xl border border-destructive/30 hover:bg-destructive/10 transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              {lang === 'en' ? 'Sign out' : 'Выйти'}
+            </button>
+          </div>
+        </div>
       </div>
+
+      {/* ═══════════ Sign-out confirmation ═══════════ */}
+      <AnimatePresence>
+        {confirmSignOut && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[110] bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setConfirmSignOut(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-card border border-border/50 rounded-2xl p-5 w-full max-w-xs shadow-2xl"
+            >
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-9 h-9 rounded-xl bg-destructive/15 flex items-center justify-center">
+                  <LogOut className="w-4 h-4 text-destructive" />
+                </div>
+                <p className="text-sm font-bold">
+                  {lang === 'en' ? 'Sign out?' : 'Выйти из аккаунта?'}
+                </p>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">
+                {lang === 'en'
+                  ? 'You will need to sign in again to access your profile.'
+                  : 'Чтобы вернуться в кабинет, потребуется снова войти.'}
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setConfirmSignOut(false)}
+                  className="flex-1 text-xs font-semibold py-2.5 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors"
+                >
+                  {lang === 'en' ? 'Cancel' : 'Отмена'}
+                </button>
+                <button
+                  onClick={async () => { setConfirmSignOut(false); await signOut(); }}
+                  className="flex-1 text-xs font-bold py-2.5 rounded-lg bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-colors"
+                >
+                  {lang === 'en' ? 'Sign out' : 'Выйти'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* ═══════════ Fullscreen Modules ═══════════ */}
       {measurementsOpen && (
