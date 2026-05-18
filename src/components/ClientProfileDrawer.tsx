@@ -460,6 +460,83 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                 <WhoopWidget />
               </AccordionSection>
 
+              {/* Settings */}
+              <AccordionSection
+                icon={<Settings className="w-4 h-4 text-primary" />}
+                title={lang === 'en' ? 'Settings' : 'Настройки'}
+                isOpen={openSection === 'settings'}
+                onToggle={() => toggleSection('settings')}
+              >
+                <div className="space-y-2">
+                  {/* Account info */}
+                  <div className="bg-secondary/20 rounded-lg p-2.5">
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground/70 font-bold mb-1">
+                      {lang === 'en' ? 'Account' : 'Аккаунт'}
+                    </p>
+                    <p className="text-xs font-semibold truncate">{profile?.full_name}</p>
+                    <p className="text-[11px] text-muted-foreground truncate">{profile?.email || profile?.phone}</p>
+                  </div>
+
+                  {/* Change password */}
+                  {!showChangePwd ? (
+                    <button
+                      onClick={() => setShowChangePwd(true)}
+                      className="w-full flex items-center gap-2 text-xs font-semibold py-2.5 px-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors"
+                    >
+                      <KeyRound className="w-3.5 h-3.5 text-primary" />
+                      <span className="flex-1 text-left">{lang === 'en' ? 'Change password' : 'Сменить пароль'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                    </button>
+                  ) : (
+                    <div className="space-y-2 p-3 bg-secondary/20 rounded-lg border border-border/30">
+                      <p className="text-xs font-semibold">{lang === 'en' ? 'New password' : 'Новый пароль'}</p>
+                      <div className="relative">
+                        <input
+                          type={pwdVisible ? 'text' : 'password'}
+                          value={newPwd}
+                          onChange={(e) => setNewPwd(e.target.value)}
+                          placeholder={lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов'}
+                          className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:border-primary"
+                          autoComplete="new-password"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setPwdVisible(v => !v)}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {pwdVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                      <input
+                        type={pwdVisible ? 'text' : 'password'}
+                        value={newPwd2}
+                        onChange={(e) => setNewPwd2(e.target.value)}
+                        placeholder={lang === 'en' ? 'Repeat password' : 'Повторите пароль'}
+                        className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                        autoComplete="new-password"
+                      />
+                      <div className="flex gap-2 pt-1">
+                        <button
+                          onClick={() => { setShowChangePwd(false); setNewPwd(''); setNewPwd2(''); }}
+                          disabled={pwdSaving}
+                          className="flex-1 text-xs font-semibold py-2 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors disabled:opacity-50"
+                        >
+                          {lang === 'en' ? 'Cancel' : 'Отмена'}
+                        </button>
+                        <button
+                          onClick={handleChangePassword}
+                          disabled={pwdSaving || newPwd.length < 8 || newPwd !== newPwd2}
+                          className="flex-1 text-xs font-bold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                        >
+                          {pwdSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+                          {lang === 'en' ? 'Save' : 'Сохранить'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </AccordionSection>
+
               {/* Buy package */}
               <div className="border border-border/30 rounded-xl p-3.5 mt-2">
                 <p className="text-xs font-extrabold text-foreground uppercase tracking-wider mb-2">
@@ -493,63 +570,8 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
               </div>
             </div>
 
-            {/* Change password + Sign out */}
-            <div className="p-5 pt-2 border-t border-border/50 space-y-2">
-              {!showChangePwd ? (
-                <button
-                  onClick={() => setShowChangePwd(true)}
-                  className="w-full flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground py-2.5 rounded-xl hover:bg-secondary/40 hover:text-foreground transition-colors"
-                >
-                  <KeyRound className="w-3.5 h-3.5" />
-                  {lang === 'en' ? 'Change password' : 'Сменить пароль'}
-                </button>
-              ) : (
-                <div className="space-y-2 p-3 bg-secondary/20 rounded-xl border border-border/30">
-                  <p className="text-xs font-semibold">{lang === 'en' ? 'New password' : 'Новый пароль'}</p>
-                  <div className="relative">
-                    <input
-                      type={pwdVisible ? 'text' : 'password'}
-                      value={newPwd}
-                      onChange={(e) => setNewPwd(e.target.value)}
-                      placeholder={lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов'}
-                      className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:border-primary"
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPwdVisible(v => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {pwdVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <input
-                    type={pwdVisible ? 'text' : 'password'}
-                    value={newPwd2}
-                    onChange={(e) => setNewPwd2(e.target.value)}
-                    placeholder={lang === 'en' ? 'Repeat password' : 'Повторите пароль'}
-                    className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    autoComplete="new-password"
-                  />
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => { setShowChangePwd(false); setNewPwd(''); setNewPwd2(''); }}
-                      disabled={pwdSaving}
-                      className="flex-1 text-xs font-semibold py-2 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors disabled:opacity-50"
-                    >
-                      {lang === 'en' ? 'Cancel' : 'Отмена'}
-                    </button>
-                    <button
-                      onClick={handleChangePassword}
-                      disabled={pwdSaving || newPwd.length < 8 || newPwd !== newPwd2}
-                      className="flex-1 text-xs font-bold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-                    >
-                      {pwdSaving && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {lang === 'en' ? 'Save' : 'Сохранить'}
-                    </button>
-                  </div>
-                </div>
-              )}
+            {/* Sign out */}
+            <div className="p-5 pt-2 border-t border-border/50">
               <button
                 onClick={async () => { await signOut(); onClose(); }}
                 className="w-full flex items-center justify-center gap-2 text-sm font-semibold text-destructive py-3 rounded-xl hover:bg-destructive/10 transition-colors"
