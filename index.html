@@ -8,7 +8,7 @@
     <meta name="author" content="Illarion Ientin" />
     <meta name="theme-color" content="#F97316" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Limassol Fitness" />
     <link rel="icon" href="/favicon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/logo-192.png" />
@@ -95,10 +95,7 @@
     <script>
       (function () {
         try {
-          var m = localStorage.getItem('theme') || 'dark';
-          var t = m === 'system'
-            ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark')
-            : m;
+          var t = localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
           document.documentElement.classList.add(t);
           document.documentElement.style.colorScheme = t;
           var meta = document.querySelector('meta[name="theme-color"]');
