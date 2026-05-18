@@ -166,6 +166,46 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
 
+  // Account actions
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [newPwd, setNewPwd] = useState('');
+  const [newPwd2, setNewPwd2] = useState('');
+  const [pwdVisible, setPwdVisible] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (newPwd.length < 8) {
+      toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
+      return;
+    }
+    if (newPwd !== newPwd2) {
+      toast({ title: lang === 'en' ? 'Passwords do not match' : 'Пароли не совпадают', variant: 'destructive' });
+      return;
+    }
+    setPwdSaving(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { action: 'change_password', new_password: newPwd },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).message || (data as any).error);
+      toast({ title: lang === 'en' ? 'Password updated' : 'Пароль обновлён' });
+      setNewPwd(''); setNewPwd2(''); setShowChangePwd(false);
+    } catch (e: any) {
+      const msg = String(e?.message || '');
+      toast({
+        title: lang === 'en' ? 'Failed to update password' : 'Не удалось обновить пароль',
+        description: msg.toLowerCase().includes('pwned') || msg.toLowerCase().includes('breach')
+          ? (lang === 'en' ? 'This password was found in a breach. Choose another.' : 'Этот пароль скомпрометирован. Выберите другой.')
+          : msg,
+        variant: 'destructive',
+      });
+    } finally {
+      setPwdSaving(false);
+    }
+  };
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
 
