@@ -93,6 +93,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
   const [newPwd2, setNewPwd2] = useState('');
   const [pwdVisible, setPwdVisible] = useState(false);
   const [pwdSaving, setPwdSaving] = useState(false);
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
 
   const handleChangePassword = async () => {
     if (newPwd.length < 8) {
