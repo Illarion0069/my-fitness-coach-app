@@ -355,13 +355,13 @@ serve(async (req) => {
         const summaryRu = (analysis.summary_ru || analysis.summary_en || feedback || "") as string;
         const appUrl = "https://my-fitness-coach-app.lovable.app";
 
-        const scoreEmoji = score >= 80 ? "🟢" : score >= 50 ? "🟡" : "🔴";
+        const scoreEmoji = score >= 75 ? "🟢" : score >= 50 ? "🟡" : "🔴";
 
         // Build meals detail — now one entry per meal_type
         const meals = (analysis.meals as Array<Record<string, unknown>>) || [];
         const mealsDetail = meals.map((m) => {
           const mealScore = (m.score as number) || 0;
-          const mealEmoji = mealScore >= 80 ? "✅" : mealScore >= 50 ? "⚠️" : "❌";
+          const mealEmoji = mealScore >= 75 ? "✅" : mealScore >= 50 ? "⚠️" : "❌";
           const detectedFoods = (m.detected_foods as Array<Record<string, unknown>>) || [];
           const foods = detectedFoods.map((f) => {
             if (typeof f === "string") return f;

@@ -30,12 +30,12 @@ const NUTRITION_STREAK_MILESTONES: { days: number; icon: string }[] = [
 
 const NUTRITION_QUALITY_LEVELS: { threshold: number; icon: string; label_en: string; label_ru: string }[] = [
   { threshold: 60, icon: "🥉", label_en: "Bronze", label_ru: "Бронза" },
-  { threshold: 80, icon: "🥈", label_en: "Silver", label_ru: "Серебро" },
+  { threshold: 75, icon: "🥈", label_en: "Silver", label_ru: "Серебро" },
   { threshold: 95, icon: "🥇", label_en: "Gold", label_ru: "Золото" },
 ];
 
-// Free session: every 3 consecutive weeks with avg ≥80% → +1 free session
-const FREE_SESSION_MIN_THRESHOLD = 80;
+// Free session: every 3 consecutive weeks with avg ≥75% → +1 free session
+const FREE_SESSION_MIN_THRESHOLD = 75;
 const FREE_SESSION_WEEKS_REQUIRED = 3;
 
 
@@ -266,8 +266,8 @@ serve(async (req) => {
       }
     }
 
-    // ═══════════ 3. Repeating 3-week ≥80% streak → free session ═══════════
-    // Look at up to 12 weeks of data to find consecutive weeks with avg ≥80%
+    // ═══════════ 3. Repeating 3-week ≥75% streak → free session ═══════════
+    // Look at up to 12 weeks of data to find consecutive weeks with avg ≥75%
     const todayFor12w = new Date(getLocalToday() + "T12:00:00");
     const twelveWeeksAgo = new Date(todayFor12w);
     twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 84);
@@ -330,14 +330,14 @@ serve(async (req) => {
             achievement_type: "nutrition_quality",
             title_en: `3-Week Quality #${cycle}`,
             title_ru: `3 недели качества #${cycle}`,
-            description_en: `Maintained ≥80% nutrition score for 3 consecutive weeks! Free session earned!`,
-            description_ru: `≥80% балл питания 3 недели подряд! Бесплатная тренировка!`,
+            description_en: `Maintained ≥75% nutrition score for 3 consecutive weeks! Free session earned!`,
+            description_ru: `≥75% балл питания 3 недели подряд! Бесплатная тренировка!`,
             icon: "🥈", // Silver badge for the reward
           });
 
           const granted = await grantFreeSession(
             supabase, userId,
-            `3-week nutrition streak reward #${cycle} (consecutive weeks ≥80%)`
+            `3-week nutrition streak reward #${cycle} (consecutive weeks ≥75%)`
           );
           if (granted) freeSessionGranted = true;
 
@@ -354,11 +354,11 @@ serve(async (req) => {
             const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
 
             if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-              const trainerMsg = `🎁 <b>3-Week Nutrition Reward #${cycle}!</b>\n\n👤 <b>${clientName}</b> держит ≥80% балл питания уже ${consecutiveWeeks} недель подряд!\n\n🏋️ +1 бесплатная тренировка автоматически добавлена.\n\n🥈🥈🥈`;
+              const trainerMsg = `🎁 <b>3-Week Nutrition Reward #${cycle}!</b>\n\n👤 <b>${clientName}</b> держит ≥75% балл питания уже ${consecutiveWeeks} недель подряд!\n\n🏋️ +1 бесплатная тренировка автоматически добавлена.\n\n🥈🥈🥈`;
               await sendTelegram(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerMsg);
 
               if (clientProfile?.telegram_chat_id) {
-                const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы держите балл питания ≥80% уже ${consecutiveWeeks} недель подряд!\n\n🏋️ +1 бесплатная тренировка добавлена!\n\nПродолжайте! 💪🥈`;
+                const clientMsg = `🎁 <b>Поздравляем!</b>\n\nВы держите балл питания ≥75% уже ${consecutiveWeeks} недель подряд!\n\n🏋️ +1 бесплатная тренировка добавлена!\n\nПродолжайте! 💪🥈`;
                 await sendTelegram(TELEGRAM_BOT_TOKEN, clientProfile.telegram_chat_id, clientMsg);
               }
             }
