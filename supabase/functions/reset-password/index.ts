@@ -71,8 +71,8 @@ serve(async (req) => {
       if (!phone || !code || !new_password) {
         return json({ error: "Missing fields" }, 400);
       }
-      if (new_password.length < 6) {
-        return json({ error: "Password too short" }, 400);
+      if (new_password.length < 8) {
+        return json({ error: "weak_password", message: "Password must be at least 8 characters" }, 400);
       }
 
       // Find valid code
@@ -114,7 +114,11 @@ serve(async (req) => {
       });
 
       if (error) {
-        return json({ error: error.message }, 500);
+        const msg = (error.message || "").toLowerCase();
+        let code = "update_failed";
+        if (msg.includes("pwned") || msg.includes("compromised") || msg.includes("breach")) code = "pwned_password";
+        else if (msg.includes("weak") || msg.includes("short") || msg.includes("at least")) code = "weak_password";
+        return json({ error: code, message: error.message }, 400);
       }
 
       return json({ success: true });

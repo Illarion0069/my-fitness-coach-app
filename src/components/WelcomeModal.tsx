@@ -310,8 +310,8 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       setFormError(t('Enter the 6-digit code', 'Введите 6-значный код'));
       return;
     }
-    if (newPassword.length < 6) {
-      setFormError(t('Password must be at least 6 characters', 'Пароль минимум 6 символов'));
+    if (newPassword.length < 8) {
+      setFormError(t('Password must be at least 8 characters', 'Пароль минимум 8 символов'));
       return;
     }
     setSubmitting(true);
@@ -320,11 +320,29 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
       const { data, error } = await supabase.functions.invoke('reset-password', {
         body: { action: 'verify_and_reset', phone: fullPhone, code: resetCode, new_password: newPassword },
       });
-      if (error) throw error;
-      if (data?.error === 'invalid_code') {
+      // Read structured error from response body even on non-2xx
+      let payload: any = data;
+      if (error && (error as any).context && typeof (error as any).context.json === 'function') {
+        try { payload = await (error as any).context.json(); } catch {}
+      } else if (error && !payload) {
+        throw error;
+      }
+      if (payload?.error === 'invalid_code') {
         throw new Error(t('Invalid or expired code', 'Неверный или истёкший код'));
       }
-      if (data?.error) throw new Error(data.error);
+      if (payload?.error === 'pwned_password') {
+        throw new Error(t(
+          'This password was found in known data breaches. Try a more unique one — add digits and a symbol.',
+          'Этот пароль найден в утечках. Попробуйте уникальный — добавьте цифры и символ.'
+        ));
+      }
+      if (payload?.error === 'weak_password') {
+        throw new Error(t(
+          'Password is too weak. Min 8 characters with letters, digits and a symbol.',
+          'Пароль слишком слабый. Минимум 8 символов: буквы, цифры и символ.'
+        ));
+      }
+      if (payload?.error) throw new Error(payload.message || payload.error);
       setStep('forgot-done');
     } catch (err: any) {
       setFormError(err.message);
