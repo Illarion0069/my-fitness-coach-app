@@ -521,13 +521,41 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
               {/* Step: Login */}
               {step === 'login' && (
                 <motion.div key="login" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="space-y-3">
-                  <CountryCodeSelect
-                    value={loginCountryCode}
-                    onChange={setLoginCountryCode}
-                    phoneNumber={loginPhone}
-                    onPhoneChange={setLoginPhone}
-                    placeholder={t('Phone number', 'Номер телефона')}
-                  />
+                  <div className="flex gap-1 p-1 bg-secondary/40 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => { setLoginMode('phone'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${loginMode === 'phone' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      {t('Phone', 'Телефон')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setLoginMode('email'); setFormError(null); }}
+                      className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${loginMode === 'email' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      Email
+                    </button>
+                  </div>
+                  {loginMode === 'phone' ? (
+                    <CountryCodeSelect
+                      value={loginCountryCode}
+                      onChange={setLoginCountryCode}
+                      phoneNumber={loginPhone}
+                      onPhoneChange={setLoginPhone}
+                      placeholder={t('Phone number', 'Номер телефона')}
+                    />
+                  ) : (
+                    <input
+                      type="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      value={loginEmail}
+                      onChange={(e) => setLoginEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      className={inputClass}
+                    />
+                  )}
                   <PasswordInput value={loginPassword} onChange={setLoginPassword} placeholder={t('Password', 'Пароль')} className={inputClass} />
 
                   <InlineMessage message={formError} variant="error" />
