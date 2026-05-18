@@ -6,6 +6,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Rate limit configuration
+const MAX_ATTEMPTS_PER_IDENTIFIER = 3; // per window
+const MAX_ATTEMPTS_PER_IP = 10;        // per window
+const WINDOW_MINUTES = 15;
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -19,39 +24,100 @@ serve(async (req) => {
     const body = await req.json();
     const { action } = body;
 
-    // ACTION: send_new_password — lookup by phone OR email, generate a strong password,
-    // update the auth user, deliver via Telegram. One-shot, no codes needed.
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("cf-connecting-ip") ||
+      "unknown";
+
+    // Helper: log an attempt (best-effort, never throws)
+    const logAttempt = async (identifier: string, success: boolean, errorCode?: string) => {
+      try {
+        await adminClient.from("password_reset_attempts").insert({
+          identifier: identifier.slice(0, 100),
+          ip,
+          success,
+          error_code: errorCode ?? null,
+        });
+      } catch (e) {
+        console.warn("logAttempt failed:", e);
+      }
+    };
+
+    // Helper: check rate limits
+    const isRateLimited = async (identifier: string): Promise<{ limited: boolean; reason?: string }> => {
+      const since = new Date(Date.now() - WINDOW_MINUTES * 60_000).toISOString();
+      const { count: idCount } = await adminClient
+        .from("password_reset_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("identifier", identifier)
+        .gte("created_at", since);
+      if ((idCount ?? 0) >= MAX_ATTEMPTS_PER_IDENTIFIER) {
+        return { limited: true, reason: "identifier" };
+      }
+      const { count: ipCount } = await adminClient
+        .from("password_reset_attempts")
+        .select("id", { count: "exact", head: true })
+        .eq("ip", ip)
+        .gte("created_at", since);
+      if ((ipCount ?? 0) >= MAX_ATTEMPTS_PER_IP) {
+        return { limited: true, reason: "ip" };
+      }
+      return { limited: false };
+    };
+
+    // ACTION: send_new_password — lookup by phone OR email, generate password, deliver via Telegram.
     if (action === "send_new_password") {
       const mode = body.mode === "email" ? "email" : "phone";
       const identifier = String(body.identifier || "").trim();
-      if (!identifier || identifier.length < 5) {
+      if (!identifier || identifier.length < 5 || identifier.length > 100) {
         return json({ error: "invalid_identifier" }, 400);
+      }
+
+      // Rate limit BEFORE doing anything else
+      const rl = await isRateLimited(identifier);
+      if (rl.limited) {
+        await logAttempt(identifier, false, `rate_limit_${rl.reason}`);
+        return json({
+          error: "rate_limited",
+          message: `Слишком много попыток. Подождите ${WINDOW_MINUTES} минут или свяжитесь с тренером.`,
+        }, 429);
       }
 
       // Lookup profile
       let profileQuery = adminClient
         .from("profiles")
-        .select("user_id, full_name, telegram_chat_id, phone, email");
+        .select("user_id, full_name, telegram_chat_id, phone, email")
+        .limit(1);
       if (mode === "phone") {
         profileQuery = profileQuery.eq("phone", identifier);
       } else {
         profileQuery = profileQuery.ilike("email", identifier);
       }
-      const { data: profile } = await profileQuery.maybeSingle();
+      const { data: profileRows } = await profileQuery;
+      const profile = profileRows?.[0];
 
-      if (!profile) {
-        return json({ error: "not_found" }, 404);
-      }
-      if (!profile.telegram_chat_id) {
-        return json({ error: "no_telegram" }, 400);
+      // UNIFIED RESPONSE — do not leak account existence.
+      // If account is missing or has no telegram, return a generic-looking response
+      // but still log internally for monitoring.
+      if (!profile || !profile.telegram_chat_id) {
+        await logAttempt(identifier, false, !profile ? "not_found" : "no_telegram");
+        // Return success-shape but no auto_login + a soft hint that an account
+        // without Telegram cannot be auto-recovered.
+        return json({
+          success: true,
+          delivered_via: null,
+          auto_login: null,
+          message: "Если аккаунт существует и привязан к Telegram, новый пароль отправлен. Если сообщения нет — свяжитесь с тренером.",
+        });
       }
 
-      // Generate strong unique password — bypasses HIBP because it's random
+      // Generate strong unique password
       const genPassword = () => {
-        const letters = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ";
+        const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        const lower = "abcdefghjkmnpqrstuvwxyz";
         const digits = "23456789";
         const symbols = "!@#$%&*+-";
-        const all = letters + digits + symbols;
+        const all = upper + lower + digits + symbols;
         const pick = (s: string, n: number) => {
           let out = "";
           const buf = new Uint32Array(n);
@@ -59,23 +125,18 @@ serve(async (req) => {
           for (let i = 0; i < n; i++) out += s[buf[i] % s.length];
           return out;
         };
-        // Guaranteed mix: 2 upper, 2 lower, 2 digits, 2 symbols + 4 random
-        const parts =
-          pick("ABCDEFGHJKLMNPQRSTUVWXYZ", 2) +
-          pick("abcdefghjkmnpqrstuvwxyz", 2) +
-          pick(digits, 2) +
-          pick(symbols, 2) +
-          pick(all, 4);
-        // Shuffle
+        const parts = pick(upper, 2) + pick(lower, 3) + pick(digits, 3) + pick(symbols, 2) + pick(all, 6);
         const arr = parts.split("");
+        // Fisher-Yates with crypto
+        const r = new Uint32Array(arr.length);
+        crypto.getRandomValues(r);
         for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
+          const j = r[i] % (i + 1);
           [arr[i], arr[j]] = [arr[j], arr[i]];
         }
-        return "Fit-" + arr.join("");
+        return arr.join("");
       };
 
-      // Try up to 3 times in case HIBP rejects (extremely unlikely with random)
       let newPassword = "";
       let lastErr: any = null;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -90,6 +151,7 @@ serve(async (req) => {
       }
       if (lastErr) {
         console.error("updateUserById failed:", lastErr);
+        await logAttempt(identifier, false, "update_failed");
         return json({ error: "update_failed", message: lastErr.message }, 500);
       }
 
@@ -113,6 +175,7 @@ serve(async (req) => {
       if (!tgRes.ok) {
         const errText = await tgRes.text();
         console.error("Telegram send failed:", errText);
+        await logAttempt(identifier, false, "telegram_failed");
         return json({ error: "telegram_failed" }, 500);
       }
 
@@ -124,6 +187,8 @@ serve(async (req) => {
       } catch (e) {
         console.warn("getUserById failed:", e);
       }
+
+      await logAttempt(identifier, true);
 
       return json({
         success: true,
@@ -139,31 +204,32 @@ serve(async (req) => {
         return json({ error: "Invalid phone number" }, 400);
       }
 
-      // Find profile by phone
-      const { data: profile } = await adminClient
+      const rl = await isRateLimited(phone);
+      if (rl.limited) {
+        await logAttempt(phone, false, `rate_limit_${rl.reason}`);
+        return json({ error: "rate_limited" }, 429);
+      }
+
+      const { data: profileRows } = await adminClient
         .from("profiles")
         .select("user_id, full_name, telegram_chat_id, phone")
         .eq("phone", phone)
-        .maybeSingle();
+        .limit(1);
+      const profile = profileRows?.[0];
 
-      if (!profile) {
-        return json({ error: "not_found" }, 404);
+      if (!profile || !profile.telegram_chat_id) {
+        await logAttempt(phone, false, !profile ? "not_found" : "no_telegram");
+        // Unified response
+        return json({ success: true });
       }
 
-      if (!profile.telegram_chat_id) {
-        return json({ error: "no_telegram" }, 400);
-      }
-
-      // Generate 6-digit code
       const code = String(Math.floor(100000 + Math.random() * 900000));
 
-      // Store code
       await adminClient.from("password_reset_codes").insert({
         phone,
         code,
       });
 
-      // Send code via Telegram
       const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
       await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
@@ -175,6 +241,7 @@ serve(async (req) => {
         }),
       });
 
+      await logAttempt(phone, true);
       return json({ success: true });
     }
 
@@ -188,7 +255,6 @@ serve(async (req) => {
         return json({ error: "weak_password", message: "Password must be at least 8 characters" }, 400);
       }
 
-      // Find valid code
       const { data: resetCode } = await adminClient
         .from("password_reset_codes")
         .select("*")
@@ -204,13 +270,11 @@ serve(async (req) => {
         return json({ error: "invalid_code" }, 400);
       }
 
-      // Mark code as used
       await adminClient
         .from("password_reset_codes")
         .update({ used: true })
         .eq("id", resetCode.id);
 
-      // Find user by phone
       const { data: profile } = await adminClient
         .from("profiles")
         .select("user_id")
@@ -221,7 +285,6 @@ serve(async (req) => {
         return json({ error: "User not found" }, 404);
       }
 
-      // Update password
       const { error } = await adminClient.auth.admin.updateUserById(profile.user_id, {
         password: new_password,
       });
@@ -254,7 +317,6 @@ serve(async (req) => {
         return json({ error: "Unauthorized" }, 401);
       }
 
-      // Check trainer role
       const { data: roleData } = await adminClient
         .from("user_roles")
         .select("role")
@@ -277,6 +339,46 @@ serve(async (req) => {
 
       if (error) {
         return json({ error: error.message }, 500);
+      }
+
+      return json({ success: true });
+    }
+
+    // ACTION: change_password — authenticated user changes their own password
+    if (action === "change_password") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) {
+        return json({ error: "Unauthorized" }, 401);
+      }
+
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const authClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+
+      const { data: { user } } = await authClient.auth.getUser();
+      if (!user) {
+        return json({ error: "Unauthorized" }, 401);
+      }
+
+      const { new_password } = body;
+      if (!new_password || typeof new_password !== "string" || new_password.length < 8) {
+        return json({ error: "weak_password", message: "Минимум 8 символов" }, 400);
+      }
+      if (new_password.length > 128) {
+        return json({ error: "weak_password", message: "Слишком длинный пароль" }, 400);
+      }
+
+      const { error } = await adminClient.auth.admin.updateUserById(user.id, {
+        password: new_password,
+      });
+
+      if (error) {
+        const msg = (error.message || "").toLowerCase();
+        let code = "update_failed";
+        if (msg.includes("pwned") || msg.includes("compromised") || msg.includes("breach")) code = "pwned_password";
+        else if (msg.includes("weak") || msg.includes("short") || msg.includes("at least")) code = "weak_password";
+        return json({ error: code, message: error.message }, 400);
       }
 
       return json({ success: true });
