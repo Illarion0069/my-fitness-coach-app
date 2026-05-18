@@ -555,7 +555,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                   {divider}
                   {googleButton}
 
-                  <button onClick={() => { setStep('forgot'); setFormError(null); setForgotCountryCode(loginCountryCode); setForgotPhone(loginPhone); }} className="w-full text-xs text-primary/70 hover:text-primary py-1 transition-colors">
+                  <button onClick={() => { setStep('forgot'); setFormError(null); setForgotMode(loginMode); setForgotCountryCode(loginCountryCode); setForgotPhone(loginPhone); setForgotEmail(loginEmail); }} className="w-full text-xs text-primary/70 hover:text-primary py-1 transition-colors">
                     {t('Forgot password?', 'Забыли пароль?')}
                   </button>
                   <button onClick={() => { setStep('welcome'); setFormError(null); }} className="w-full text-xs text-muted-foreground hover:text-foreground py-2 transition-colors">
