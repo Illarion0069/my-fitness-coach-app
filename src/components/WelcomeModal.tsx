@@ -291,70 +291,48 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
 
   const handleForgotRequest = async () => {
     setFormError(null);
-    if (!forgotPhone.trim() || forgotPhone.length < 5) {
-      setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
-      return;
+    let identifier = '';
+    if (forgotMode === 'phone') {
+      if (!forgotPhone.trim() || forgotPhone.length < 5) {
+        setFormError(t('Please enter a valid phone number', 'Введите корректный номер телефона'));
+        return;
+      }
+      identifier = `${forgotCountryCode}${forgotPhone}`;
+    } else {
+      const email = forgotEmail.trim().toLowerCase();
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        setFormError(t('Please enter a valid email', 'Введите корректный email'));
+        return;
+      }
+      identifier = email;
     }
     setSubmitting(true);
     try {
-      const fullPhone = `${forgotCountryCode}${forgotPhone}`;
       const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { action: 'request_reset', phone: fullPhone },
+        body: { action: 'send_new_password', mode: forgotMode, identifier },
       });
-      if (error) throw error;
-      if (data?.error === 'not_found') {
-        throw new Error(t('Phone number not found', 'Номер телефона не найден'));
-      }
-      if (data?.error === 'no_telegram') {
-        throw new Error(t('No Telegram linked to this account. Contact your trainer.', 'К аккаунту не привязан Telegram. Обратитесь к тренеру.'));
-      }
-      if (data?.error) throw new Error(data.error);
-      setStep('forgot-code');
-    } catch (err: any) {
-      setFormError(err.message);
-    }
-    setSubmitting(false);
-  };
-
-  const handleForgotVerify = async () => {
-    setFormError(null);
-    if (!resetCode.trim() || resetCode.length !== 6) {
-      setFormError(t('Enter the 6-digit code', 'Введите 6-значный код'));
-      return;
-    }
-    if (newPassword.length < 8) {
-      setFormError(t('Password must be at least 8 characters', 'Пароль минимум 8 символов'));
-      return;
-    }
-    setSubmitting(true);
-    try {
-      const fullPhone = `${forgotCountryCode}${forgotPhone}`;
-      const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { action: 'verify_and_reset', phone: fullPhone, code: resetCode, new_password: newPassword },
-      });
-      // Read structured error from response body even on non-2xx
       let payload: any = data;
-      if (error && (error as any).context && typeof (error as any).context.json === 'function') {
+      if (error && (error as any).context?.json) {
         try { payload = await (error as any).context.json(); } catch {}
       } else if (error && !payload) {
         throw error;
       }
-      if (payload?.error === 'invalid_code') {
-        throw new Error(t('Invalid or expired code', 'Неверный или истёкший код'));
+      if (payload?.error === 'not_found') {
+        throw new Error(forgotMode === 'phone'
+          ? t('Phone number not found', 'Номер телефона не найден')
+          : t('Email not found', 'Email не найден'));
       }
-      if (payload?.error === 'pwned_password') {
+      if (payload?.error === 'no_telegram') {
         throw new Error(t(
-          'This password was found in known data breaches. Try a more unique one — add digits and a symbol.',
-          'Этот пароль найден в утечках. Попробуйте уникальный — добавьте цифры и символ.'
+          'No Telegram linked to this account. Contact your trainer to reset.',
+          'К аккаунту не привязан Telegram. Обратитесь к тренеру для сброса.'
         ));
       }
-      if (payload?.error === 'weak_password') {
-        throw new Error(t(
-          'Password is too weak. Min 8 characters with letters, digits and a symbol.',
-          'Пароль слишком слабый. Минимум 8 символов: буквы, цифры и символ.'
-        ));
+      if (payload?.error === 'telegram_failed') {
+        throw new Error(t('Failed to send Telegram message. Try again.', 'Не удалось отправить в Telegram. Попробуйте ещё раз.'));
       }
       if (payload?.error) throw new Error(payload.message || payload.error);
+      setForgotDeliveredTo(identifier);
       setStep('forgot-done');
     } catch (err: any) {
       setFormError(err.message);
@@ -362,7 +340,6 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
     setSubmitting(false);
   };
 
-  if (!open) return null;
 
   const inputClass = "w-full bg-secondary/50 border border-border/50 rounded-xl px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:border-primary/50";
 
