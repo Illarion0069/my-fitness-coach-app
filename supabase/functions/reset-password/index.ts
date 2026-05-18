@@ -150,8 +150,8 @@ serve(async (req) => {
       }
 
       const { client_user_id, new_password } = body;
-      if (!client_user_id || !new_password || new_password.length < 6) {
-        return json({ error: "Invalid params" }, 400);
+      if (!client_user_id || !new_password || new_password.length < 8) {
+        return json({ error: "Password must be at least 8 characters" }, 400);
       }
 
       const { error } = await adminClient.auth.admin.updateUserById(client_user_id, {

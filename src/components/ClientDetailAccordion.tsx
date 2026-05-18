@@ -125,8 +125,8 @@ const ClientDetailAccordion = ({
   };
 
   const handleResetPassword = async () => {
-    if (resetPw.length < 6) {
-      toast({ title: lang === 'en' ? 'Min 6 characters' : 'Минимум 6 символов', variant: 'destructive' });
+    if (resetPw.length < 8) {
+      toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
       return;
     }
     setResettingPw(true);
@@ -140,7 +140,17 @@ const ClientDetailAccordion = ({
       setResetPw('');
       setShowResetPw(false);
     } catch (e: any) {
-      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e.message, variant: 'destructive' });
+      const raw = (e?.message || '').toLowerCase();
+      const isPwned = raw.includes('pwned') || raw.includes('compromised') || raw.includes('breach');
+      const isWeak = raw.includes('weak') || raw.includes('short') || raw.includes('length');
+      const friendly = isPwned
+        ? (lang === 'en'
+            ? 'This password was found in a public breach. Try a unique one (e.g. add numbers/symbols).'
+            : 'Этот пароль найден в утечках. Попробуйте уникальный — добавьте цифры и символы.')
+        : isWeak
+        ? (lang === 'en' ? 'Password is too weak. Use 8+ chars with letters, digits and a symbol.' : 'Пароль слишком слабый. Минимум 8 символов: буквы, цифры и символ.')
+        : e?.message || (lang === 'en' ? 'Unknown error' : 'Неизвестная ошибка');
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: friendly, variant: 'destructive' });
     }
     setResettingPw(false);
   };
