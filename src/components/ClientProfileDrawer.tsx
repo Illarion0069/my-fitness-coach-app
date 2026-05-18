@@ -566,7 +566,7 @@ const ClientProfileDrawer = ({ open, onClose }: ClientProfileDrawerProps) => {
                   {lang === 'en' ? 'Password' : 'Пароль'}
                 </button>
                 <button
-                  onClick={async () => { await signOut(); onClose(); }}
+                  onClick={() => setConfirmSignOut(true)}
                   className="flex items-center justify-center gap-1.5 text-xs font-bold text-destructive py-3 rounded-xl border border-destructive/30 hover:bg-destructive/10 transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
