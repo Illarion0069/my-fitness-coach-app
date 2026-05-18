@@ -71,8 +71,8 @@ serve(async (req) => {
       if (!phone || !code || !new_password) {
         return json({ error: "Missing fields" }, 400);
       }
-      if (new_password.length < 6) {
-        return json({ error: "Password too short" }, 400);
+      if (new_password.length < 8) {
+        return json({ error: "weak_password", message: "Password must be at least 8 characters" }, 400);
       }
 
       // Find valid code
