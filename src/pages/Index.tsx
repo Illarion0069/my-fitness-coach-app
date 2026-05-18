@@ -163,7 +163,7 @@ const AppContent = () => {
   };
 
   return (
-    <div className="dark h-screen bg-background text-foreground flex flex-col">
+    <div className="h-screen bg-background text-foreground flex flex-col">
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden"
