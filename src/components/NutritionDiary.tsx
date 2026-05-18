@@ -73,7 +73,7 @@ const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: stri
   { key: 'snack', labelRu: 'Перекус', labelEn: 'Snack', emoji: '🍎', icon: '🍏' },
 ];
 
-const scoreColor = (s: number) => s >= 80 ? 'text-green-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400';
+const scoreColor = (s: number) => s >= 75 ? 'text-green-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400';
 
 // Animated number component with smooth rolling effect
 const AnimatedNumber = ({ value, className, duration = 0.6 }: { value: number; className?: string; duration?: number }) => {
@@ -758,7 +758,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             <button
               onClick={() => isTrainer && log?.ai_score != null ? (setOverrideScore(String(log?.trainer_override_score ?? log?.ai_score ?? '')), setOverrideNote(log?.trainer_override_note || ''), setShowOverrideModal(true)) : undefined}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                displayScore >= 80 ? 'bg-green-500/15 text-green-400' : displayScore >= 50 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
+                displayScore >= 75 ? 'bg-green-500/15 text-green-400' : displayScore >= 50 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
               }`}
             >
               <Sparkles className="w-3.5 h-3.5" />
@@ -784,7 +784,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       {/* AI Feedback */}
       {displayScore != null && (
         <div className={`rounded-2xl p-3.5 border border-border/30 ${
-          displayScore >= 80 ? 'bg-green-500/5' : displayScore >= 50 ? 'bg-yellow-500/5' : 'bg-red-500/5'
+          displayScore >= 75 ? 'bg-green-500/5' : displayScore >= 50 ? 'bg-yellow-500/5' : 'bg-red-500/5'
         }`}>
           {isOverridden && log?.trainer_override_note && (
             <p className="text-[11px] text-foreground/80 leading-relaxed mb-1.5 italic">✏️ {log.trainer_override_note}</p>
@@ -804,7 +804,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             <div className="mt-2 space-y-1.5">
               {(analysis.meals as any[]).map((m: any, i: number) => {
                 const mealScore = m.score as number;
-                const scoreColor = mealScore >= 80 ? 'text-green-400' : mealScore >= 50 ? 'text-yellow-400' : 'text-red-400';
+                const scoreColor = mealScore >= 75 ? 'text-green-400' : mealScore >= 50 ? 'text-yellow-400' : 'text-red-400';
                 const mealLabel = m.meal_type === 'breakfast' ? (lang === 'en' ? 'Breakfast' : 'Завтрак')
                   : m.meal_type === 'lunch' ? (lang === 'en' ? 'Lunch' : 'Обед')
                   : m.meal_type === 'dinner' ? (lang === 'en' ? 'Dinner' : 'Ужин')
@@ -989,7 +989,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                         <div className="flex items-center gap-2">
                           <div className="flex-1 h-1.5 bg-muted/30 rounded-full overflow-hidden">
                             <div className={`h-full rounded-full transition-all ${
-                              meal.aiMeal.score >= 80 ? 'bg-green-400' : meal.aiMeal.score >= 50 ? 'bg-yellow-400' : 'bg-red-400'
+                              meal.aiMeal.score >= 75 ? 'bg-green-400' : meal.aiMeal.score >= 50 ? 'bg-yellow-400' : 'bg-red-400'
                             }`} style={{ width: `${meal.aiMeal.score}%` }} />
                           </div>
                           <span className={`text-[10px] font-bold ${scoreColor(meal.aiMeal.score)}`}>{meal.aiMeal.score}%</span>

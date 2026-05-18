@@ -100,7 +100,7 @@ const ConsultationBanner = ({ onBook, alwaysShow = false }: ConsultationBannerPr
                 onClick={handleClick}
                 className="gradient-primary text-primary-foreground font-bold py-1.5 px-3 rounded-lg text-[11px] glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] mt-2 w-full"
               >
-                {lang === 'en' ? 'Book — 75€' : 'Записаться — 75€'}
+                {lang === 'en' ? 'Book — 50€' : 'Записаться — 50€'}
               </button>
             </motion.div>
           ) : (
@@ -116,7 +116,7 @@ const ConsultationBanner = ({ onBook, alwaysShow = false }: ConsultationBannerPr
               <span className="absolute -top-0.5 -left-0.5 w-2 h-2 rounded-full bg-destructive" />
 
               <span className="text-[11px] font-bold text-primary-foreground whitespace-nowrap">
-                75€
+                50€
               </span>
               <ChevronLeft className="w-3 h-3 text-primary-foreground/70" />
             </motion.button>
