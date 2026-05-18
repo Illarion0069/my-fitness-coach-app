@@ -320,6 +320,33 @@ export type Database = {
         }
         Relationships: []
       }
+      password_reset_attempts: {
+        Row: {
+          created_at: string
+          error_code: string | null
+          id: string
+          identifier: string
+          ip: string | null
+          success: boolean
+        }
+        Insert: {
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          identifier: string
+          ip?: string | null
+          success?: boolean
+        }
+        Update: {
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          identifier?: string
+          ip?: string | null
+          success?: boolean
+        }
+        Relationships: []
+      }
       password_reset_codes: {
         Row: {
           code: string
@@ -780,6 +807,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cleanup_password_reset_data: { Args: never; Returns: undefined }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
