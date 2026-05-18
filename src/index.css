@@ -78,6 +78,7 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
+    transition: background-color 0.25s ease, color 0.25s ease;
   }
   h1, h2, h3 {
     font-family: 'Bebas Neue', 'Inter', sans-serif;

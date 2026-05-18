@@ -40,6 +40,16 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
     root.style.colorScheme = theme;
+    // Sync browser chrome / PWA status bar
+    const meta = document.querySelector('meta[name="theme-color"]');
+    const color = theme === 'dark' ? '#0d0d0d' : '#ffffff';
+    if (meta) meta.setAttribute('content', color);
+    else {
+      const m = document.createElement('meta');
+      m.name = 'theme-color';
+      m.content = color;
+      document.head.appendChild(m);
+    }
   }, [theme]);
 
   const setMode = (m: ThemeMode) => {
