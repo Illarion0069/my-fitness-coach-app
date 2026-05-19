@@ -67,11 +67,15 @@ Your nutrition philosophy follows evidence-based fat-loss principles aligned wit
 - If the day is too low in kcal (< ~1100 for women, < ~1400 for men) — DO flag it as too aggressive a deficit (it slows metabolism, breaks adherence). Recommend bringing kcal up to a healthy deficit, NOT a surplus.
 
 ## Personalization and humor:
-- The user message will include the client's first name (CLIENT_FIRST_NAME). ALWAYS address the client by that first name in "summary_ru" and "summary_en" — start the summary with their name (e.g. "Анна, ..." / "Anna, ...").
-- Use a warm, supportive coach tone — never robotic, never preachy.
-- OCCASIONALLY (roughly 1 of 3 analyses, and ONLY when there is something light to joke about — e.g. late-night pizza, suspicious "salad" drowned in sauce, third coffee with syrup) add a SHORT, GENTLE, GOOD-NATURED joke or wink. Examples: "пицца в 22:30 — герой дня, но не герой дефицита 😉", "салат, конечно, но под майонезом он немного притворяется".
-- The joke must be kind, never sarcastic, never shaming, never about body/weight/appearance. If the day is rough or emotional, skip the joke entirely and be supportive instead.
-- Never joke more than once per summary. Keep the overall summary 2–3 sentences total.
+- The user message will include CLIENT_FIRST_NAME. You MUST address the client by that exact first name in BOTH "summary_ru" and "summary_en" — start the summary with the name + comma (e.g. "Анна, ..." / "Anna, ..."). This is a hard rule, no exceptions. If you skip the name, the response will be considered broken.
+- Use a warm, supportive coach tone — never robotic, never preachy. Sound like a friend who genuinely cares.
+- ALWAYS try to add ONE short, gentle, good-natured joke or playful wink into the summary (roughly 1 of 2 analyses). The joke does NOT have to be about food — it can touch ANY light everyday topic that fits the day's data, for example:
+  • a late-night meal → "ужин в полночь — это уже завтрак для жаворонков 🌙"
+  • a third coffee → "третий кофе — кажется, кто-то решил перегнать эспрессо-машину ☕️"
+  • a heroic salad after a heroic pizza → "салат после пиццы — классический сюжет с искуплением 😄"
+  • Monday vibes / weekend mood / typical Cyprus heat / gym day vs rest day → playful nod to that ("понедельник — день, когда холодильник особенно болтливый").
+- The joke MUST be kind, light, and inclusive. NEVER sarcastic. NEVER shaming. NEVER about body, weight, appearance, age, gender, ethnicity, religion, politics, mental health, money, or relationships. If the day looks rough or emotional, SKIP the joke and just be supportive.
+- Never more than ONE joke per summary. Keep the overall summary 2–3 sentences total. Start with the client's name, end with the most important next step.
 
 ## Response format (JSON only, no markdown):
 {
@@ -230,25 +234,60 @@ serve(async (req) => {
 
     const photoCount = photos?.length || 0;
 
-    // Fetch client's first name for personalized feedback
+    // --- Bulletproof client name resolution ---
+    // Priority: profiles.full_name → auth user metadata (full_name/name) → email local-part → "друг"
+    const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+    const extractFirst = (raw: string | null | undefined): string => {
+      if (!raw) return "";
+      const cleaned = String(raw).trim().replace(/[._\-]+/g, " ");
+      const first = cleaned.split(/\s+/)[0] || "";
+      // strip anything that's not a letter (keeps cyrillic + latin)
+      const lettersOnly = first.replace(/[^\p{L}]/gu, "");
+      return lettersOnly;
+    };
+
     const { data: clientProfile, error: profileErr } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, email")
       .eq("user_id", user_id)
       .maybeSingle();
-    const fullName = (clientProfile?.full_name as string) || "";
-    const rawFirst = fullName.trim().split(/\s+/)[0] || "";
-    const nameFallbackUsed = !rawFirst;
-    const firstName = rawFirst || "Клиент";
+
+    let nameSource: "profile_full_name" | "auth_metadata" | "email_prefix" | "fallback" = "fallback";
+    let firstName = extractFirst(clientProfile?.full_name as string | undefined);
+    if (firstName) nameSource = "profile_full_name";
+
+    // Fallback: auth.users metadata
+    if (!firstName) {
+      try {
+        const { data: authUserRes } = await supabase.auth.admin.getUserById(user_id);
+        const meta = (authUserRes?.user?.user_metadata || {}) as Record<string, unknown>;
+        firstName = extractFirst((meta.full_name as string) || (meta.name as string) || (meta.first_name as string));
+        if (firstName) nameSource = "auth_metadata";
+        // Final fallback: email local part
+        if (!firstName) {
+          const email = (clientProfile?.email as string) || authUserRes?.user?.email || "";
+          const local = email.split("@")[0] || "";
+          firstName = extractFirst(local);
+          if (firstName) nameSource = "email_prefix";
+        }
+      } catch (authErr) {
+        console.error(`[analyze-nutrition][NAME] auth lookup failed for user=${user_id}:`, authErr);
+      }
+    }
+
+    const nameFallbackUsed = !firstName;
+    if (!firstName) firstName = "друг";
+    else firstName = capitalize(firstName);
 
     if (profileErr) {
       console.error(`[analyze-nutrition][NAME] profile fetch error for user=${user_id}:`, profileErr);
     }
     if (nameFallbackUsed) {
-      console.warn(`[analyze-nutrition][NAME] EMPTY first name for user=${user_id} (full_name="${fullName}", profileExists=${!!clientProfile}). Using fallback "Клиент".`);
+      console.warn(`[analyze-nutrition][NAME] FALLBACK used for user=${user_id} (profile.full_name="${clientProfile?.full_name || ""}", email="${clientProfile?.email || ""}"). Using "друг".`);
     } else {
-      console.log(`[analyze-nutrition][NAME] user=${user_id} firstName="${firstName}"`);
+      console.log(`[analyze-nutrition][NAME] user=${user_id} firstName="${firstName}" source=${nameSource}`);
     }
+    const fullName = (clientProfile?.full_name as string) || "";
 
     const userContent: unknown[] = [
       {
@@ -361,22 +400,41 @@ serve(async (req) => {
     analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
     analysis.totals_source = "manual_entries";
 
-    // --- Verify AI actually addressed the client by name ---
-    const summaryRuStr = String(analysis.summary_ru || "");
-    const summaryEnStr = String(analysis.summary_en || "");
-    const nameUsedInSummary = !nameFallbackUsed && (
-      summaryRuStr.toLowerCase().includes(firstName.toLowerCase()) ||
-      summaryEnStr.toLowerCase().includes(firstName.toLowerCase())
-    );
-    if (!nameFallbackUsed && !nameUsedInSummary) {
-      console.warn(`[analyze-nutrition][NAME] AI did NOT address client by name. user=${user_id} firstName="${firstName}" summary_ru="${summaryRuStr.slice(0, 120)}..."`);
+    // --- Server-side name enforcement: guarantee summary starts with the client's name ---
+    const ensureNamePrefix = (text: string, name: string): { text: string; injected: boolean } => {
+      if (!text || !name) return { text, injected: false };
+      const trimmed = text.trim();
+      // Already starts with the name (any case) followed by punctuation or space?
+      const re = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s,.:!?—-]`, "i");
+      if (re.test(trimmed)) return { text: trimmed, injected: false };
+      // Also accept if name appears in first 25 chars (e.g. "Привет, Анна! ...")
+      if (trimmed.slice(0, 25).toLowerCase().includes(name.toLowerCase())) {
+        return { text: trimmed, injected: false };
+      }
+      return { text: `${name}, ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`, injected: true };
+    };
+
+    const summaryRuOrig = String(analysis.summary_ru || "");
+    const summaryEnOrig = String(analysis.summary_en || "");
+    const ruRes = ensureNamePrefix(summaryRuOrig, firstName);
+    const enRes = ensureNamePrefix(summaryEnOrig, firstName);
+    analysis.summary_ru = ruRes.text;
+    analysis.summary_en = enRes.text;
+    const nameInjected = ruRes.injected || enRes.injected;
+    const nameUsedInSummary = !nameFallbackUsed && !nameInjected;
+
+    if (nameInjected) {
+      console.warn(`[analyze-nutrition][NAME] AI omitted name — server INJECTED. user=${user_id} firstName="${firstName}"`);
     }
     analysis.name_debug = {
       first_name: firstName,
+      source: nameSource,
       fallback_used: nameFallbackUsed,
-      used_in_summary: nameUsedInSummary,
+      ai_used_name: nameUsedInSummary,
+      server_injected: nameInjected,
       full_name: fullName,
     };
+    const summaryRuStr = String(analysis.summary_ru || "");
 
     // --- Save to DB ---
     const { error: upsertError } = await supabase
