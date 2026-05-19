@@ -959,9 +959,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                     className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                     placeholder={lang === 'en' ? 'Food name' : 'Название'} />
                                   <div className="grid grid-cols-5 gap-1.5">
-                                    <div>
+                                     <div>
                                       <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
-                                      <input type="number" value={editFoodPortion} onChange={e => setEditFoodPortion(e.target.value)}
+                                      <input type="number" value={editFoodPortion} onChange={e => handlePortionChange(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                     <div>
@@ -985,11 +985,21 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                   </div>
+                                  <button
+                                    onClick={handleRecalcFoodMacros}
+                                    disabled={editFoodRecalcLoading || !editFoodName.trim()}
+                                    className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                                  >
+                                    {editFoodRecalcLoading
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <Sparkles className="w-3 h-3" />}
+                                    {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                  </button>
                                   <div className="flex gap-1.5">
-                                    <button onClick={() => setEditingFood(null)} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
+                                    <button onClick={() => { setEditingFood(null); setEditFoodOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
                                       {lang === 'en' ? 'Cancel' : 'Отмена'}
                                     </button>
-                                    <button onClick={handleEditAiFood} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
+                                    <button onClick={() => { handleEditAiFood(); setEditFoodOrig(null); }} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
                                       <Check className="w-3 h-3 inline mr-1" />{lang === 'en' ? 'Save' : 'OK'}
                                     </button>
                                   </div>
