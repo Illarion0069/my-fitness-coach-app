@@ -450,14 +450,14 @@ serve(async (req) => {
     if (upsertError) throw upsertError;
 
     // --- Alert trainer if name was missing or not used ---
-    if (nameFallbackUsed || !nameUsedInSummary) {
+    if (nameFallbackUsed || nameMissingInClientFacing) {
       try {
         const TG_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
         const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
         if (TG_TOKEN && TG_CHAT) {
           const reason = nameFallbackUsed
             ? `❌ Имя клиента ПУСТОЕ в профиле (full_name="${fullName}")`
-            : `⚠️ AI не обратился по имени "${firstName}" в саммари`;
+            : `⚠️ AI не обратился по имени "${firstName}" в RU-саммари (сервер вставил имя автоматически)`;
           const alertMsg = `🚨 <b>Алерт: персонализация питания</b>\n\n${reason}\n\n👤 user_id: <code>${user_id}</code>\n📅 ${log_date}\n\n💬 Саммари: ${summaryRuStr.slice(0, 200)}${summaryRuStr.length > 200 ? "…" : ""}`;
           await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
             method: "POST",
