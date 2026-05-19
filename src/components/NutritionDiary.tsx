@@ -166,6 +166,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editFoodProtein, setEditFoodProtein] = useState('');
   const [editFoodCarbs, setEditFoodCarbs] = useState('');
   const [editFoodFat, setEditFoodFat] = useState('');
+  // Snapshot of original food at edit-start — used to auto-scale macros when portion changes
+  const [editFoodOrig, setEditFoodOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const [editFoodRecalcLoading, setEditFoodRecalcLoading] = useState(false);
   const [editingManualId, setEditingManualId] = useState<string | null>(null);
   const [editManualName, setEditManualName] = useState('');
   const [editManualCal, setEditManualCal] = useState('');
