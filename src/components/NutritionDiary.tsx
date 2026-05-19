@@ -166,6 +166,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editFoodProtein, setEditFoodProtein] = useState('');
   const [editFoodCarbs, setEditFoodCarbs] = useState('');
   const [editFoodFat, setEditFoodFat] = useState('');
+  // Snapshot of original food at edit-start — used to auto-scale macros when portion changes
+  const [editFoodOrig, setEditFoodOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const [editFoodRecalcLoading, setEditFoodRecalcLoading] = useState(false);
   const [editingManualId, setEditingManualId] = useState<string | null>(null);
   const [editManualName, setEditManualName] = useState('');
   const [editManualCal, setEditManualCal] = useState('');
@@ -579,6 +582,66 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditFoodProtein(String(food.protein_g || ''));
     setEditFoodCarbs(String(food.carbs_g || ''));
     setEditFoodFat(String(food.fat_g || ''));
+    setEditFoodOrig({
+      portion_g: Number(food.portion_g) || 0,
+      calories: Number(food.calories) || 0,
+      protein_g: Number(food.protein_g) || 0,
+      carbs_g: Number(food.carbs_g) || 0,
+      fat_g: Number(food.fat_g) || 0,
+    });
+  };
+
+  // When user edits the portion (g), auto-scale macros proportionally
+  // from the snapshot taken at edit-start. User can still override fields after.
+  const handlePortionChange = (newPortionStr: string) => {
+    setEditFoodPortion(newPortionStr);
+    if (!editFoodOrig || !editFoodOrig.portion_g) return;
+    const newPortion = parseInt(newPortionStr);
+    if (!newPortion || newPortion <= 0) return;
+    const ratio = newPortion / editFoodOrig.portion_g;
+    setEditFoodCal(String(Math.round(editFoodOrig.calories * ratio)));
+    setEditFoodProtein(String(Math.round(editFoodOrig.protein_g * ratio)));
+    setEditFoodCarbs(String(Math.round(editFoodOrig.carbs_g * ratio)));
+    setEditFoodFat(String(Math.round(editFoodOrig.fat_g * ratio)));
+  };
+
+  // Recalculate KBJU from current name+portion via food-suggest AI
+  const handleRecalcFoodMacros = async () => {
+    const name = editFoodName.trim();
+    if (!name) {
+      toast({ title: lang === 'en' ? 'Enter a name first' : 'Сначала введите название', variant: 'destructive' });
+      return;
+    }
+    const portion = parseInt(editFoodPortion) || 100;
+    setEditFoodRecalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('food-suggest', {
+        body: { query: name, lang },
+      });
+      if (error) throw error;
+      const top = data?.suggestions?.[0];
+      if (!top) {
+        toast({ title: lang === 'en' ? 'No match found' : 'Не нашли совпадений', variant: 'destructive' });
+        return;
+      }
+      // food-suggest returns values per 100g
+      const k = portion / 100;
+      const cal = Math.round((Number(top.calories) || 0) * k);
+      const p = Math.round((Number(top.protein_g) || 0) * k);
+      const c = Math.round((Number(top.carbs_g) || 0) * k);
+      const f = Math.round((Number(top.fat_g) || 0) * k);
+      setEditFoodCal(String(cal));
+      setEditFoodProtein(String(p));
+      setEditFoodCarbs(String(c));
+      setEditFoodFat(String(f));
+      // Reset baseline so future portion-change scales from the new values
+      setEditFoodOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Recalc failed' : 'Ошибка пересчёта', description: e?.message, variant: 'destructive' });
+    } finally {
+      setEditFoodRecalcLoading(false);
+    }
   };
 
   // Computed totals — recover analysis from ai_feedback if ai_analysis is broken
@@ -896,9 +959,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                     className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                     placeholder={lang === 'en' ? 'Food name' : 'Название'} />
                                   <div className="grid grid-cols-5 gap-1.5">
-                                    <div>
+                                     <div>
                                       <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
-                                      <input type="number" value={editFoodPortion} onChange={e => setEditFoodPortion(e.target.value)}
+                                      <input type="number" value={editFoodPortion} onChange={e => handlePortionChange(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                     <div>
@@ -922,11 +985,21 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                   </div>
+                                  <button
+                                    onClick={handleRecalcFoodMacros}
+                                    disabled={editFoodRecalcLoading || !editFoodName.trim()}
+                                    className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                                  >
+                                    {editFoodRecalcLoading
+                                      ? <Loader2 className="w-3 h-3 animate-spin" />
+                                      : <Sparkles className="w-3 h-3" />}
+                                    {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                  </button>
                                   <div className="flex gap-1.5">
-                                    <button onClick={() => setEditingFood(null)} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
+                                    <button onClick={() => { setEditingFood(null); setEditFoodOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
                                       {lang === 'en' ? 'Cancel' : 'Отмена'}
                                     </button>
-                                    <button onClick={handleEditAiFood} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
+                                    <button onClick={() => { handleEditAiFood(); setEditFoodOrig(null); }} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
                                       <Check className="w-3 h-3 inline mr-1" />{lang === 'en' ? 'Save' : 'OK'}
                                     </button>
                                   </div>
