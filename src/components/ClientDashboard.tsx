@@ -7,6 +7,7 @@ import {
   KeyRound, Eye, EyeOff,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -265,27 +266,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
       const { data } = await supabase
         .from('nutrition_logs').select('ai_analysis, manual_entries')
         .eq('user_id', user.id).eq('log_date', today).maybeSingle();
-      let kcal = 0;
-      const analysis: any = data?.ai_analysis;
-      const aiActive = analysis && !analysis.invalidated;
-      if (aiActive) {
-        if (Number(analysis.total_calories) > 0) {
-          kcal += Number(analysis.total_calories) || 0;
-        } else if (Array.isArray(analysis.meals)) {
-          kcal += analysis.meals.reduce((s: number, m: any) => s + (Number(m?.estimated_calories) || 0), 0);
-        }
-      }
-      const includedIds = new Set<string>(
-        aiActive && Array.isArray(analysis.included_manual_ids) ? analysis.included_manual_ids : []
-      );
-      const manual: any[] = Array.isArray(data?.manual_entries) ? data!.manual_entries : [];
-      for (const m of manual) {
-        // Skip manual entries already counted by AI (photo-linked or explicitly included)
-        if (aiActive && m?.photo_id) continue;
-        if (includedIds.has(m?.id)) continue;
-        kcal += Number(m?.calories) || 0;
-      }
-      setTodayKcal(Math.round(kcal));
+      setTodayKcal(computeNutritionTotals(data).calories);
     };
 
     const fetchPhotos = async () => {

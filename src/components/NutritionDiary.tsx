@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -610,36 +611,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     return new Set(ids);
   }, [analysis]);
 
-  const totals = useMemo(() => {
-    let calories = 0, protein = 0, carbs = 0, fat = 0;
-    // From AI analysis — use top-level totals, fallback to summing meals
-    if (analysis && !analysis.invalidated) {
-      const meals = (analysis.meals || []) as any[];
-      if (analysis.total_calories > 0) {
-        calories += (analysis.total_calories || 0);
-        protein += (analysis.total_protein_g || 0);
-        carbs += (analysis.total_carbs_g || 0);
-        fat += (analysis.total_fat_g || 0);
-      } else {
-        for (const m of meals) {
-          calories += m.estimated_calories || 0;
-          protein += m.protein_g || 0;
-          carbs += m.carbs_g || 0;
-          fat += m.fat_g || 0;
-        }
-      }
-    }
-    // Only add manual entries NOT already included in the AI analysis
-    for (const e of manualEntries) {
-      if (e.photo_id && analysis && !analysis.invalidated) continue; // photo-detected items already in AI totals
-      if (includedManualIds.has(e.id)) continue; // AI already counted this entry
-      calories += e.calories || 0;
-      protein += e.protein_g || 0;
-      carbs += e.carbs_g || 0;
-      fat += e.fat_g || 0;
-    }
-    return { calories: Math.round(calories), protein: Math.round(protein), carbs: Math.round(carbs), fat: Math.round(fat) };
-  }, [analysis, manualEntries, includedManualIds]);
+  const totals = useMemo(
+    () => computeNutritionTotals({ ai_analysis: analysis, manual_entries: manualEntries }),
+    [analysis, manualEntries]
+  );
 
   // Per-meal data
   const mealData = useMemo(() => {
