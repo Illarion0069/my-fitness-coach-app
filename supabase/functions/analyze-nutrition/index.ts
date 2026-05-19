@@ -400,22 +400,41 @@ serve(async (req) => {
     analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
     analysis.totals_source = "manual_entries";
 
-    // --- Verify AI actually addressed the client by name ---
-    const summaryRuStr = String(analysis.summary_ru || "");
-    const summaryEnStr = String(analysis.summary_en || "");
-    const nameUsedInSummary = !nameFallbackUsed && (
-      summaryRuStr.toLowerCase().includes(firstName.toLowerCase()) ||
-      summaryEnStr.toLowerCase().includes(firstName.toLowerCase())
-    );
-    if (!nameFallbackUsed && !nameUsedInSummary) {
-      console.warn(`[analyze-nutrition][NAME] AI did NOT address client by name. user=${user_id} firstName="${firstName}" summary_ru="${summaryRuStr.slice(0, 120)}..."`);
+    // --- Server-side name enforcement: guarantee summary starts with the client's name ---
+    const ensureNamePrefix = (text: string, name: string): { text: string; injected: boolean } => {
+      if (!text || !name) return { text, injected: false };
+      const trimmed = text.trim();
+      // Already starts with the name (any case) followed by punctuation or space?
+      const re = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s,.:!?—-]`, "i");
+      if (re.test(trimmed)) return { text: trimmed, injected: false };
+      // Also accept if name appears in first 25 chars (e.g. "Привет, Анна! ...")
+      if (trimmed.slice(0, 25).toLowerCase().includes(name.toLowerCase())) {
+        return { text: trimmed, injected: false };
+      }
+      return { text: `${name}, ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`, injected: true };
+    };
+
+    const summaryRuOrig = String(analysis.summary_ru || "");
+    const summaryEnOrig = String(analysis.summary_en || "");
+    const ruRes = ensureNamePrefix(summaryRuOrig, firstName);
+    const enRes = ensureNamePrefix(summaryEnOrig, firstName);
+    analysis.summary_ru = ruRes.text;
+    analysis.summary_en = enRes.text;
+    const nameInjected = ruRes.injected || enRes.injected;
+    const nameUsedInSummary = !nameFallbackUsed && !nameInjected;
+
+    if (nameInjected) {
+      console.warn(`[analyze-nutrition][NAME] AI omitted name — server INJECTED. user=${user_id} firstName="${firstName}"`);
     }
     analysis.name_debug = {
       first_name: firstName,
+      source: nameSource,
       fallback_used: nameFallbackUsed,
-      used_in_summary: nameUsedInSummary,
+      ai_used_name: nameUsedInSummary,
+      server_injected: nameInjected,
       full_name: fullName,
     };
+    const summaryRuStr = String(analysis.summary_ru || "");
 
     // --- Save to DB ---
     const { error: upsertError } = await supabase
