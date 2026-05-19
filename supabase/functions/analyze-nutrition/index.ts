@@ -229,10 +229,20 @@ serve(async (req) => {
     }
 
     const photoCount = photos?.length || 0;
+
+    // Fetch client's first name for personalized feedback
+    const { data: clientProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    const fullName = (clientProfile?.full_name as string) || "";
+    const firstName = fullName.trim().split(/\s+/)[0] || "Клиент";
+
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
