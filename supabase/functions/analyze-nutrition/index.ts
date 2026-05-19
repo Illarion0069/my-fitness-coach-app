@@ -234,25 +234,60 @@ serve(async (req) => {
 
     const photoCount = photos?.length || 0;
 
-    // Fetch client's first name for personalized feedback
+    // --- Bulletproof client name resolution ---
+    // Priority: profiles.full_name → auth user metadata (full_name/name) → email local-part → "друг"
+    const capitalize = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1).toLowerCase() : s;
+    const extractFirst = (raw: string | null | undefined): string => {
+      if (!raw) return "";
+      const cleaned = String(raw).trim().replace(/[._\-]+/g, " ");
+      const first = cleaned.split(/\s+/)[0] || "";
+      // strip anything that's not a letter (keeps cyrillic + latin)
+      const lettersOnly = first.replace(/[^\p{L}]/gu, "");
+      return lettersOnly;
+    };
+
     const { data: clientProfile, error: profileErr } = await supabase
       .from("profiles")
-      .select("full_name")
+      .select("full_name, email")
       .eq("user_id", user_id)
       .maybeSingle();
-    const fullName = (clientProfile?.full_name as string) || "";
-    const rawFirst = fullName.trim().split(/\s+/)[0] || "";
-    const nameFallbackUsed = !rawFirst;
-    const firstName = rawFirst || "Клиент";
+
+    let nameSource: "profile_full_name" | "auth_metadata" | "email_prefix" | "fallback" = "fallback";
+    let firstName = extractFirst(clientProfile?.full_name as string | undefined);
+    if (firstName) nameSource = "profile_full_name";
+
+    // Fallback: auth.users metadata
+    if (!firstName) {
+      try {
+        const { data: authUserRes } = await supabase.auth.admin.getUserById(user_id);
+        const meta = (authUserRes?.user?.user_metadata || {}) as Record<string, unknown>;
+        firstName = extractFirst((meta.full_name as string) || (meta.name as string) || (meta.first_name as string));
+        if (firstName) nameSource = "auth_metadata";
+        // Final fallback: email local part
+        if (!firstName) {
+          const email = (clientProfile?.email as string) || authUserRes?.user?.email || "";
+          const local = email.split("@")[0] || "";
+          firstName = extractFirst(local);
+          if (firstName) nameSource = "email_prefix";
+        }
+      } catch (authErr) {
+        console.error(`[analyze-nutrition][NAME] auth lookup failed for user=${user_id}:`, authErr);
+      }
+    }
+
+    const nameFallbackUsed = !firstName;
+    if (!firstName) firstName = "друг";
+    else firstName = capitalize(firstName);
 
     if (profileErr) {
       console.error(`[analyze-nutrition][NAME] profile fetch error for user=${user_id}:`, profileErr);
     }
     if (nameFallbackUsed) {
-      console.warn(`[analyze-nutrition][NAME] EMPTY first name for user=${user_id} (full_name="${fullName}", profileExists=${!!clientProfile}). Using fallback "Клиент".`);
+      console.warn(`[analyze-nutrition][NAME] FALLBACK used for user=${user_id} (profile.full_name="${clientProfile?.full_name || ""}", email="${clientProfile?.email || ""}"). Using "друг".`);
     } else {
-      console.log(`[analyze-nutrition][NAME] user=${user_id} firstName="${firstName}"`);
+      console.log(`[analyze-nutrition][NAME] user=${user_id} firstName="${firstName}" source=${nameSource}`);
     }
+    const fullName = (clientProfile?.full_name as string) || "";
 
     const userContent: unknown[] = [
       {
