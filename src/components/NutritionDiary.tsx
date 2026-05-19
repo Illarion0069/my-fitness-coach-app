@@ -582,6 +582,66 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditFoodProtein(String(food.protein_g || ''));
     setEditFoodCarbs(String(food.carbs_g || ''));
     setEditFoodFat(String(food.fat_g || ''));
+    setEditFoodOrig({
+      portion_g: Number(food.portion_g) || 0,
+      calories: Number(food.calories) || 0,
+      protein_g: Number(food.protein_g) || 0,
+      carbs_g: Number(food.carbs_g) || 0,
+      fat_g: Number(food.fat_g) || 0,
+    });
+  };
+
+  // When user edits the portion (g), auto-scale macros proportionally
+  // from the snapshot taken at edit-start. User can still override fields after.
+  const handlePortionChange = (newPortionStr: string) => {
+    setEditFoodPortion(newPortionStr);
+    if (!editFoodOrig || !editFoodOrig.portion_g) return;
+    const newPortion = parseInt(newPortionStr);
+    if (!newPortion || newPortion <= 0) return;
+    const ratio = newPortion / editFoodOrig.portion_g;
+    setEditFoodCal(String(Math.round(editFoodOrig.calories * ratio)));
+    setEditFoodProtein(String(Math.round(editFoodOrig.protein_g * ratio)));
+    setEditFoodCarbs(String(Math.round(editFoodOrig.carbs_g * ratio)));
+    setEditFoodFat(String(Math.round(editFoodOrig.fat_g * ratio)));
+  };
+
+  // Recalculate KBJU from current name+portion via food-suggest AI
+  const handleRecalcFoodMacros = async () => {
+    const name = editFoodName.trim();
+    if (!name) {
+      toast({ title: lang === 'en' ? 'Enter a name first' : 'Сначала введите название', variant: 'destructive' });
+      return;
+    }
+    const portion = parseInt(editFoodPortion) || 100;
+    setEditFoodRecalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('food-suggest', {
+        body: { query: name, lang },
+      });
+      if (error) throw error;
+      const top = data?.suggestions?.[0];
+      if (!top) {
+        toast({ title: lang === 'en' ? 'No match found' : 'Не нашли совпадений', variant: 'destructive' });
+        return;
+      }
+      // food-suggest returns values per 100g
+      const k = portion / 100;
+      const cal = Math.round((Number(top.calories) || 0) * k);
+      const p = Math.round((Number(top.protein_g) || 0) * k);
+      const c = Math.round((Number(top.carbs_g) || 0) * k);
+      const f = Math.round((Number(top.fat_g) || 0) * k);
+      setEditFoodCal(String(cal));
+      setEditFoodProtein(String(p));
+      setEditFoodCarbs(String(c));
+      setEditFoodFat(String(f));
+      // Reset baseline so future portion-change scales from the new values
+      setEditFoodOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Recalc failed' : 'Ошибка пересчёта', description: e?.message, variant: 'destructive' });
+    } finally {
+      setEditFoodRecalcLoading(false);
+    }
   };
 
   // Computed totals — recover analysis from ai_feedback if ai_analysis is broken
