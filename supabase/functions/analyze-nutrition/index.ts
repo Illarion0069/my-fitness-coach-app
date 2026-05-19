@@ -361,6 +361,23 @@ serve(async (req) => {
     analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
     analysis.totals_source = "manual_entries";
 
+    // --- Verify AI actually addressed the client by name ---
+    const summaryRuStr = String(analysis.summary_ru || "");
+    const summaryEnStr = String(analysis.summary_en || "");
+    const nameUsedInSummary = !nameFallbackUsed && (
+      summaryRuStr.toLowerCase().includes(firstName.toLowerCase()) ||
+      summaryEnStr.toLowerCase().includes(firstName.toLowerCase())
+    );
+    if (!nameFallbackUsed && !nameUsedInSummary) {
+      console.warn(`[analyze-nutrition][NAME] AI did NOT address client by name. user=${user_id} firstName="${firstName}" summary_ru="${summaryRuStr.slice(0, 120)}..."`);
+    }
+    analysis.name_debug = {
+      first_name: firstName,
+      fallback_used: nameFallbackUsed,
+      used_in_summary: nameUsedInSummary,
+      full_name: fullName,
+    };
+
     // --- Save to DB ---
     const { error: upsertError } = await supabase
       .from("nutrition_logs")
@@ -369,6 +386,27 @@ serve(async (req) => {
         { onConflict: "user_id,log_date" }
       );
     if (upsertError) throw upsertError;
+
+    // --- Alert trainer if name was missing or not used ---
+    if (nameFallbackUsed || !nameUsedInSummary) {
+      try {
+        const TG_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
+        const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
+        if (TG_TOKEN && TG_CHAT) {
+          const reason = nameFallbackUsed
+            ? `❌ Имя клиента ПУСТОЕ в профиле (full_name="${fullName}")`
+            : `⚠️ AI не обратился по имени "${firstName}" в саммари`;
+          const alertMsg = `🚨 <b>Алерт: персонализация питания</b>\n\n${reason}\n\n👤 user_id: <code>${user_id}</code>\n📅 ${log_date}\n\n💬 Саммари: ${summaryRuStr.slice(0, 200)}${summaryRuStr.length > 200 ? "…" : ""}`;
+          await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: TG_CHAT, text: alertMsg, parse_mode: "HTML", disable_web_page_preview: true }),
+          });
+        }
+      } catch (alertErr) {
+        console.error("[analyze-nutrition][NAME] alert send failed:", alertErr);
+      }
+    }
 
     // --- Notify trainer via Telegram ---
     try {
