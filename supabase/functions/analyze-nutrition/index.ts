@@ -66,6 +66,13 @@ Your nutrition philosophy follows evidence-based fat-loss principles aligned wit
 - NEVER use phrases like "нужно больше калорий", "добавьте углеводов для роста мышц", "хороший профицит", "наберёте массу", "gainer", "bulk".
 - If the day is too low in kcal (< ~1100 for women, < ~1400 for men) — DO flag it as too aggressive a deficit (it slows metabolism, breaks adherence). Recommend bringing kcal up to a healthy deficit, NOT a surplus.
 
+## Personalization and humor:
+- The user message will include the client's first name (CLIENT_FIRST_NAME). ALWAYS address the client by that first name in "summary_ru" and "summary_en" — start the summary with their name (e.g. "Анна, ..." / "Anna, ...").
+- Use a warm, supportive coach tone — never robotic, never preachy.
+- OCCASIONALLY (roughly 1 of 3 analyses, and ONLY when there is something light to joke about — e.g. late-night pizza, suspicious "salad" drowned in sauce, third coffee with syrup) add a SHORT, GENTLE, GOOD-NATURED joke or wink. Examples: "пицца в 22:30 — герой дня, но не герой дефицита 😉", "салат, конечно, но под майонезом он немного притворяется".
+- The joke must be kind, never sarcastic, never shaming, never about body/weight/appearance. If the day is rough or emotional, skip the joke entirely and be supportive instead.
+- Never joke more than once per summary. Keep the overall summary 2–3 sentences total.
+
 ## Response format (JSON only, no markdown):
 {
   "overall_score": 0-100,
@@ -222,10 +229,20 @@ serve(async (req) => {
     }
 
     const photoCount = photos?.length || 0;
+
+    // Fetch client's first name for personalized feedback
+    const { data: clientProfile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("user_id", user_id)
+      .maybeSingle();
+    const fullName = (clientProfile?.full_name as string) || "";
+    const firstName = fullName.trim().split(/\s+/)[0] || "Клиент";
+
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `Analyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
