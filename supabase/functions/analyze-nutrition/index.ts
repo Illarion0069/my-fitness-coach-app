@@ -420,7 +420,11 @@ serve(async (req) => {
     const enRes = ensureNamePrefix(summaryEnOrig, firstName);
     analysis.summary_ru = ruRes.text;
     analysis.summary_en = enRes.text;
-    const nameInjected = ruRes.injected || enRes.injected;
+    const nameInjectedRu = ruRes.injected;
+    const nameInjectedEn = enRes.injected;
+    const nameInjected = nameInjectedRu || nameInjectedEn;
+    // Alert only когда имя отсутствует в RU-саммари (именно её видит клиент/тренер)
+    const nameMissingInClientFacing = !nameFallbackUsed && nameInjectedRu;
     const nameUsedInSummary = !nameFallbackUsed && !nameInjected;
 
     if (nameInjected) {
