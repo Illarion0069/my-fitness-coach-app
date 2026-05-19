@@ -231,13 +231,24 @@ serve(async (req) => {
     const photoCount = photos?.length || 0;
 
     // Fetch client's first name for personalized feedback
-    const { data: clientProfile } = await supabase
+    const { data: clientProfile, error: profileErr } = await supabase
       .from("profiles")
       .select("full_name")
       .eq("user_id", user_id)
       .maybeSingle();
     const fullName = (clientProfile?.full_name as string) || "";
-    const firstName = fullName.trim().split(/\s+/)[0] || "Клиент";
+    const rawFirst = fullName.trim().split(/\s+/)[0] || "";
+    const nameFallbackUsed = !rawFirst;
+    const firstName = rawFirst || "Клиент";
+
+    if (profileErr) {
+      console.error(`[analyze-nutrition][NAME] profile fetch error for user=${user_id}:`, profileErr);
+    }
+    if (nameFallbackUsed) {
+      console.warn(`[analyze-nutrition][NAME] EMPTY first name for user=${user_id} (full_name="${fullName}", profileExists=${!!clientProfile}). Using fallback "Клиент".`);
+    } else {
+      console.log(`[analyze-nutrition][NAME] user=${user_id} firstName="${firstName}"`);
+    }
 
     const userContent: unknown[] = [
       {
