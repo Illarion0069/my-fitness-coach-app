@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
