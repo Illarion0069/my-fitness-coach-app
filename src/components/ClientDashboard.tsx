@@ -164,6 +164,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [historyOpen, setHistoryOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
+  const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
   const [whoopOpen, setWhoopOpen] = useState(false);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
