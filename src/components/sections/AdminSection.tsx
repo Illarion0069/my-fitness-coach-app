@@ -56,9 +56,10 @@ const AdminSection = () => {
   const [tiersByUser, setTiersByUser] = useState<Record<string, Tier>>({});
 
   const fetchSupplementalData = useCallback(async () => {
-    const [{ data: pkgData }, { data: sessData }] = await Promise.all([
+    const [{ data: pkgData }, { data: sessData }, { data: achData }] = await Promise.all([
       supabase.from('client_packages').select('*').order('created_at', { ascending: false }),
       supabase.from('scheduled_sessions').select('user_id, session_date, is_recurring, recurrence_day'),
+      supabase.from('client_achievements').select('user_id, achievement_key').like('achievement_key', 'nutrition_quality_week_%'),
     ]);
 
     const grouped: Record<string, ClientPackage[]> = {};
@@ -66,6 +67,15 @@ const AdminSection = () => {
       if (!grouped[p.user_id]) grouped[p.user_id] = [];
       grouped[p.user_id].push(p);
     });
+
+    const keysByUser: Record<string, string[]> = {};
+    ((achData || []) as { user_id: string; achievement_key: string }[]).forEach((a) => {
+      if (!keysByUser[a.user_id]) keysByUser[a.user_id] = [];
+      keysByUser[a.user_id].push(a.achievement_key);
+    });
+    const tiers: Record<string, Tier> = {};
+    for (const uid of Object.keys(keysByUser)) tiers[uid] = highestTierFromKeys(keysByUser[uid]);
+    setTiersByUser(tiers);
 
     setPackages(grouped);
     setAllSessions((sessData || []) as { user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]);
