@@ -37,18 +37,22 @@ interface Props {
 }
 
 /**
- * Renders a small medal overlay (bottom-right) for a given tier.
+ * Renders a small medal overlay (top-right) for a given tier.
  * Place inside a `relative` parent (typically the avatar wrapper).
  */
-const AvatarTierBadge = ({ tier, size = 20, className = '' }: Props) => {
+const AvatarTierBadge = ({ tier, size = 22, className = '' }: Props) => {
   if (!tier) return null;
   return (
-    <img
-      src={TIER_IMG[tier]}
-      alt={`${tier} tier`}
+    <div
       style={{ width: size, height: size }}
-      className={`absolute -top-1 -right-1 object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] pointer-events-none z-10 ${className}`}
-    />
+      className={`absolute -top-1 -right-1 rounded-full bg-background ring-2 ring-background flex items-center justify-center pointer-events-none z-10 ${className}`}
+    >
+      <img
+        src={TIER_IMG[tier]}
+        alt={`${tier} tier`}
+        className="w-full h-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
+      />
+    </div>
   );
 };
 
