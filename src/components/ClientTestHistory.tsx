@@ -68,7 +68,7 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
         >
           {lang === 'en' ? 'Done' : 'Готово'}
         </button>
-        <TestSection testType={takingTest} onClose={finish} autoCloseAfterMs={6000} />
+        <TestSection testType={takingTest} onClose={finish} autoCloseAfterMs={4000} />
       </div>
     );
   }
