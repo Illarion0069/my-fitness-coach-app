@@ -133,28 +133,53 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
     return { text: `(${savedValue})`, score: savedValue };
   };
 
+  const availableTests: { type: TestType; title: string; subtitle: string; done: boolean }[] = [
+    {
+      type: 'baseline',
+      title: lang === 'en' ? 'Test #1 · Baseline' : 'Тест №1 · Базовый',
+      subtitle: lang === 'en' ? 'Nutrition & Health · 10 questions' : 'Питание и здоровье · 10 вопросов',
+      done: results.some(r => (r.test_type ?? 'baseline') === 'baseline'),
+    },
+    {
+      type: 'progress_2m',
+      title: lang === 'en' ? 'Test #2 · Progress 2m' : 'Тест №2 · Прогресс 2 мес',
+      subtitle: lang === 'en' ? 'Body & Discipline · 10 questions' : 'Тело и дисциплина · 10 вопросов',
+      done: results.some(r => r.test_type === 'progress_2m'),
+    },
+  ];
+
   return (
-    <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-2">
-        <button
-          onClick={() => setTakingTest('baseline')}
-          className="flex items-center justify-center gap-2 bg-secondary/60 text-foreground font-bold py-2.5 rounded-xl text-xs hover:bg-secondary transition-colors"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          {lang === 'en' ? 'Test #1' : 'Тест №1'}
-        </button>
-        <button
-          onClick={() => setTakingTest('progress_2m')}
-          className={`flex items-center justify-center gap-2 font-bold py-2.5 rounded-xl text-xs transition-all ${
-            hasProgress2m
-              ? 'bg-secondary/60 text-foreground hover:bg-secondary'
-              : 'gradient-primary text-primary-foreground glow-primary hover:scale-[1.02]'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5" />
-          {lang === 'en' ? 'Test #2' : 'Тест №2'}
-        </button>
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider flex items-center gap-1 px-1">
+          <Plus className="w-3 h-3" />
+          {lang === 'en' ? 'Take a new test' : 'Пройти новый тест'}
+        </p>
+        {availableTests.map(t => (
+          <button
+            key={t.type}
+            onClick={() => setTakingTest(t.type)}
+            className="w-full bg-card border border-border/40 rounded-xl p-3 flex items-center gap-3 text-left hover:border-primary/40 transition-colors"
+          >
+            <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+              t.done ? 'bg-secondary' : 'gradient-primary glow-primary'
+            }`}>
+              <Sparkles className={`w-4 h-4 ${t.done ? 'text-muted-foreground' : 'text-primary-foreground'}`} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[13px] font-bold text-foreground leading-tight">{t.title}</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">{t.subtitle}</p>
+            </div>
+            {t.done && (
+              <span className="text-[9px] font-bold bg-green-500/15 text-green-400 px-1.5 py-0.5 rounded">
+                ✓
+              </span>
+            )}
+            <ArrowRight className="w-4 h-4 text-muted-foreground shrink-0" />
+          </button>
+        ))}
       </div>
+
 
       <div className="bg-secondary/30 rounded-xl p-3 space-y-2">
         <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider flex items-center gap-1">
