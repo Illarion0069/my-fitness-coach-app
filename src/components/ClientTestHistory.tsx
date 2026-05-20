@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Activity, Apple, Heart, TrendingUp, TrendingDown, Minus, ClipboardCheck, ArrowRight, RefreshCw, ChevronDown, Sparkles } from 'lucide-react';
+import { Activity, Apple, Heart, TrendingUp, TrendingDown, Minus, ClipboardCheck, ArrowRight, ChevronDown, Sparkles, Plus } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { translations } from '@/i18n/translations';
 import TestSection, { type TestType } from '@/components/sections/TestSection';
