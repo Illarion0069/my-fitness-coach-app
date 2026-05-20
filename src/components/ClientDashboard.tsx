@@ -17,7 +17,7 @@ import ClientTestHistory from './ClientTestHistory';
 import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
-import { UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
