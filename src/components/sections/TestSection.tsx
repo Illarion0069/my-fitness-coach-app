@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Activity, Heart, Apple, ArrowRight, LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, Activity, Heart, Apple, ArrowRight, LogIn, UserPlus, Sparkles, CheckCircle2 } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,9 +17,10 @@ interface TestSectionProps {
   onLoginClick?: () => void;
   testType?: TestType;
   onClose?: () => void;
+  autoCloseAfterMs?: number;
 }
 
-const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSectionProps) => {
+const TestSection = ({ onLoginClick, testType = 'baseline', onClose, autoCloseAfterMs }: TestSectionProps) => {
   const { t, lang } = useLanguage();
   const { user, profile } = useAuth();
   const test = testType === 'progress_2m' ? translations.test2 : translations.test;
@@ -40,6 +41,16 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSecti
   const [currentQ, setCurrentQ] = useState(0);
   // answers store the selected option INDEX (0..3), not the score
   const [answers, setAnswers] = useState<number[]>([]);
+  const [showFarewell, setShowFarewell] = useState(false);
+
+  // Auto-close on result step (e.g. after a logged-in user completes a test)
+  useEffect(() => {
+    if (step !== 'result' || !autoCloseAfterMs || !onClose) return;
+    const farewellAt = Math.max(autoCloseAfterMs - 1400, 400);
+    const t1 = setTimeout(() => setShowFarewell(true), farewellAt);
+    const t2 = setTimeout(() => onClose(), autoCloseAfterMs);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [step, autoCloseAfterMs, onClose]);
 
   const totalQuestions = test.questions.length;
 
@@ -412,6 +423,75 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSecti
             >
               {lang === 'en' ? 'Take again' : 'Пройти снова'}
             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showFarewell && (
+          <motion.div
+            key="farewell"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 1.1, opacity: 0, y: -10 }}
+              transition={{ type: 'spring', damping: 16, stiffness: 240 }}
+              className="flex flex-col items-center text-center px-8"
+            >
+              <motion.div
+                animate={{ rotate: [0, -8, 8, -4, 4, 0], scale: [1, 1.08, 1] }}
+                transition={{ duration: 1.2, ease: 'easeInOut' }}
+                className="relative w-24 h-24 rounded-3xl gradient-primary glow-primary flex items-center justify-center mb-5"
+              >
+                <CheckCircle2 className="w-12 h-12 text-primary-foreground" strokeWidth={2.5} />
+                <motion.div
+                  initial={{ scale: 0.4, opacity: 0 }}
+                  animate={{ scale: 1.6, opacity: 0 }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
+                  className="absolute inset-0 rounded-3xl border-2 border-primary"
+                />
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+                    animate={{
+                      x: Math.cos((i / 6) * Math.PI * 2) * 70,
+                      y: Math.sin((i / 6) * Math.PI * 2) * 70,
+                      opacity: 0,
+                      scale: 1.2,
+                    }}
+                    transition={{ duration: 1, delay: 0.1, ease: 'easeOut' }}
+                    className="absolute"
+                  >
+                    <Sparkles className="w-4 h-4 text-primary" />
+                  </motion.div>
+                ))}
+              </motion.div>
+              <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-3xl font-extrabold font-heading uppercase tracking-tight mb-2"
+              >
+                {lang === 'en' ? 'Thank you!' : 'Спасибо!'}
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="text-sm text-muted-foreground max-w-[260px]"
+              >
+                {lang === 'en'
+                  ? 'Your results are saved and sent to the trainer.'
+                  : 'Результаты сохранены и отправлены тренеру.'}
+              </motion.p>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
