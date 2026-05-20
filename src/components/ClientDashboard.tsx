@@ -680,7 +680,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
         {/* ═══════════ Test #2 banner (60+ days, no progress test yet) ═══════════ */}
         {(() => {
-          const createdAt = profile?.created_at ? new Date(profile.created_at) : null;
+          const createdAt = user?.created_at ? new Date(user.created_at) : null;
           const daysSinceSignup = createdAt ? (Date.now() - createdAt.getTime()) / 86400000 : 0;
           const hasProgress2m = testResults.some(t => t.test_type === 'progress_2m');
           const dismissed = typeof window !== 'undefined' && localStorage.getItem('test2_banner_dismissed') === '1';
