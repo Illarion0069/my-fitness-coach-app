@@ -679,13 +679,59 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         {/* ═══════════ Achievements ═══════════ */}
         <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
 
+        {/* ═══════════ Test #1 banner (baseline not yet taken) ═══════════ */}
+        {(() => {
+          const hasBaseline = testResults.some(t => t.test_type === 'baseline' || !t.test_type);
+          const dismissed = typeof window !== 'undefined' && localStorage.getItem('test1_banner_dismissed') === '1';
+          if (hasBaseline || dismissed) return null;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative overflow-hidden rounded-2xl p-4 mb-4 border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card"
+            >
+              <button
+                onClick={() => { localStorage.setItem('test1_banner_dismissed', '1'); setTestResults(t => [...t]); }}
+                aria-label="dismiss"
+                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/60 text-muted-foreground hover:text-foreground flex items-center justify-center text-xs"
+              >
+                ×
+              </button>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center glow-primary shrink-0">
+                  <ClipboardCheck className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-primary uppercase tracking-wider mb-0.5">
+                    {lang === 'en' ? 'Test #1 · Baseline' : 'Тест №1 · Старт'}
+                  </p>
+                  <p className="text-sm font-extrabold mb-1">
+                    {lang === 'en' ? 'Take the baseline test to set your starting point' : 'Пройдите стартовый тест, чтобы зафиксировать точку отсчёта'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    {lang === 'en' ? '16 questions · 3 minutes' : '16 вопросов · 3 минуты'}
+                  </p>
+                  <button
+                    onClick={() => { setTestsInitial('baseline'); setTestsOpen(true); }}
+                    className="inline-flex items-center gap-1.5 gradient-primary text-primary-foreground font-bold text-xs px-4 py-2 rounded-lg glow-primary hover:scale-[1.03] transition-transform"
+                  >
+                    {lang === 'en' ? 'Take Test #1' : 'Пройти тест №1'}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+
         {/* ═══════════ Test #2 banner (60+ days, no progress test yet) ═══════════ */}
         {(() => {
           const createdAt = user?.created_at ? new Date(user.created_at) : null;
           const daysSinceSignup = createdAt ? (Date.now() - createdAt.getTime()) / 86400000 : 0;
           const hasProgress2m = testResults.some(t => t.test_type === 'progress_2m');
+          const hasBaseline = testResults.some(t => t.test_type === 'baseline' || !t.test_type);
           const dismissed = typeof window !== 'undefined' && localStorage.getItem('test2_banner_dismissed') === '1';
-          if (daysSinceSignup < 60 || hasProgress2m || dismissed) return null;
+          if (!hasBaseline || daysSinceSignup < 60 || hasProgress2m || dismissed) return null;
           return (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
