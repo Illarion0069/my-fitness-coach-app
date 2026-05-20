@@ -164,6 +164,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [historyOpen, setHistoryOpen] = useState(false);
   const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
+  const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
   const [whoopOpen, setWhoopOpen] = useState(false);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
@@ -713,7 +714,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                     {lang === 'en' ? '10 questions · 2 minutes' : '10 вопросов · 2 минуты'}
                   </p>
                   <button
-                    onClick={() => setTestsOpen(true)}
+                    onClick={() => { setTestsInitial('progress_2m'); setTestsOpen(true); }}
                     className="inline-flex items-center gap-1.5 gradient-primary text-primary-foreground font-bold text-xs px-4 py-2 rounded-lg glow-primary hover:scale-[1.03] transition-transform"
                   >
                     {lang === 'en' ? 'Take Test #2' : 'Пройти тест №2'}
@@ -810,7 +811,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               subtitle={lastTestPct == null
                 ? (lang === 'en' ? 'Take first test' : 'Пройдите тест')
                 : `${testResults.length} ${lang === 'en' ? 'taken' : 'пройдено'}`}
-              onClick={() => setTestsOpen(true)}
+              onClick={() => { setTestsInitial(null); setTestsOpen(true); }}
               preview={testSparkData.length >= 1 ? (
                 <div className="space-y-1.5">
                   <div className="flex items-baseline gap-1">
@@ -1061,11 +1062,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
       <FullscreenModule
         open={testsOpen}
-        onClose={() => setTestsOpen(false)}
+        onClose={() => { setTestsOpen(false); setTestsInitial(null); }}
         title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
         icon={<ClipboardCheck className="w-5 h-5 text-primary" />}
       >
-        <ClientTestHistory userId={user.id} lang={lang} />
+        <ClientTestHistory
+          userId={user.id}
+          lang={lang}
+          initialTest={testsInitial}
+          onAllDone={() => { setTestsOpen(false); setTestsInitial(null); }}
+        />
       </FullscreenModule>
 
       <FullscreenModule
