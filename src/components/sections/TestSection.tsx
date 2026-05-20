@@ -337,8 +337,8 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSecti
             <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-6">{t(test.resultTitle)}</h2>
 
             <div className="flex gap-8 mb-6">
-              <ScoreRing percentage={nutritionPct} label={lang === 'en' ? 'Nutrition' : 'Питание'} icon={Apple} color="hsl(8, 85%, 58%)" />
-              <ScoreRing percentage={healthPct} label={lang === 'en' ? 'Health' : 'Здоровье'} icon={Heart} color="hsl(8, 85%, 58%)" />
+              <ScoreRing percentage={nutritionPct} label={t(sectionALabel)} icon={Apple} color="hsl(8, 85%, 58%)" />
+              <ScoreRing percentage={healthPct} label={t(sectionBLabel)} icon={Heart} color="hsl(8, 85%, 58%)" />
             </div>
 
             <div className="bg-card rounded-2xl p-4 w-full max-w-sm mb-4 border border-border/50">
@@ -354,30 +354,35 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSecti
               }`}>{t(getLevel(overallPct))}</span>
             </div>
 
-            <div className="bg-card rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4 border border-border/50">
-              <h4 className="text-sm font-extrabold flex items-center gap-2">
-                📊 {lang === 'en' ? 'WHO Standards' : 'Стандарты ВОЗ'}
-              </h4>
-              <WhoBar percentage={nutritionPct} label={lang === 'en' ? 'Nutrition' : 'Питание'} />
-              <WhoBar percentage={healthPct} label={lang === 'en' ? 'Health' : 'Здоровье'} />
-            </div>
+            {!isProgress && (
+              <>
+                <div className="bg-card rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4 border border-border/50">
+                  <h4 className="text-sm font-extrabold flex items-center gap-2">
+                    📊 {lang === 'en' ? 'WHO Standards' : 'Стандарты ВОЗ'}
+                  </h4>
+                  <WhoBar percentage={nutritionPct} label={t(sectionALabel)} />
+                  <WhoBar percentage={healthPct} label={t(sectionBLabel)} />
+                </div>
 
-            <div className="w-full max-w-sm space-y-3 mb-4">
-              <div className="bg-card rounded-2xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Apple className="w-4 h-4 text-green-400" />
-                  <span className="text-sm font-extrabold">{lang === 'en' ? 'Nutrition' : 'Питание'}</span>
+                <div className="w-full max-w-sm space-y-3 mb-4">
+                  <div className="bg-card rounded-2xl p-4 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Apple className="w-4 h-4 text-green-400" />
+                      <span className="text-sm font-extrabold">{t(sectionALabel)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
+                  </div>
+                  <div className="bg-card rounded-2xl p-4 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Heart className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-extrabold">{t(sectionBLabel)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(healthPct, 'health'))}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
-              </div>
-              <div className="bg-card rounded-2xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Heart className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-extrabold">{lang === 'en' ? 'Health' : 'Здоровье'}</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(healthPct, 'health'))}</p>
-              </div>
-            </div>
+              </>
+            )}
+
 
             {/* Registration CTA for guests */}
             {!user && (
