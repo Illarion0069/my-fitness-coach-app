@@ -714,7 +714,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                     {lang === 'en' ? '10 questions · 2 minutes' : '10 вопросов · 2 минуты'}
                   </p>
                   <button
-                    onClick={() => setTestsOpen(true)}
+                    onClick={() => { setTestsInitial('progress_2m'); setTestsOpen(true); }}
                     className="inline-flex items-center gap-1.5 gradient-primary text-primary-foreground font-bold text-xs px-4 py-2 rounded-lg glow-primary hover:scale-[1.03] transition-transform"
                   >
                     {lang === 'en' ? 'Take Test #2' : 'Пройти тест №2'}
