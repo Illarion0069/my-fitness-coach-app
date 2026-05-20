@@ -27,6 +27,8 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [takingTest, setTakingTest] = useState<null | TestType>(initialTest);
+  // true → "Done" returns to dashboard (entered via banner); false → returns to test list
+  const [returnHomeOnDone, setReturnHomeOnDone] = useState<boolean>(initialTest !== null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadResults = () => {
