@@ -1062,11 +1062,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
       <FullscreenModule
         open={testsOpen}
-        onClose={() => setTestsOpen(false)}
+        onClose={() => { setTestsOpen(false); setTestsInitial(null); }}
         title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
         icon={<ClipboardCheck className="w-5 h-5 text-primary" />}
       >
-        <ClientTestHistory userId={user.id} lang={lang} />
+        <ClientTestHistory
+          userId={user.id}
+          lang={lang}
+          initialTest={testsInitial}
+          onAllDone={() => { setTestsOpen(false); setTestsInitial(null); }}
+        />
       </FullscreenModule>
 
       <FullscreenModule
