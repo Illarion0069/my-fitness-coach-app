@@ -561,6 +561,7 @@ export type Database = {
           nutrition_max: number
           nutrition_score: number
           overall_percentage: number
+          test_type: string
           user_id: string
         }
         Insert: {
@@ -572,6 +573,7 @@ export type Database = {
           nutrition_max: number
           nutrition_score: number
           overall_percentage: number
+          test_type?: string
           user_id: string
         }
         Update: {
@@ -583,6 +585,7 @@ export type Database = {
           nutrition_max?: number
           nutrition_score?: number
           overall_percentage?: number
+          test_type?: string
           user_id?: string
         }
         Relationships: []
