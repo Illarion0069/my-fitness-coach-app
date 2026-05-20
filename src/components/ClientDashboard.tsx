@@ -147,6 +147,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [tier, setTier] = useState<Tier>(null);
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
