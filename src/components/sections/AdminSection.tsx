@@ -10,6 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 import FinanceStatsView from '@/components/FinanceStatsView';
+import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from '@/components/AvatarTierBadge';
 
 interface Profile {
   id: string;
