@@ -290,8 +290,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       setWhoopRecovery(data?.recovery_score != null ? Math.round(Number(data.recovery_score)) : null);
     };
 
+    const fetchTier = async () => {
+      const { data } = await supabase
+        .from('client_achievements').select('achievement_key')
+        .eq('user_id', user.id)
+        .like('achievement_key', 'nutrition_quality_week_%');
+      setTier(highestTierFromKeys((data || []).map((r: any) => r.achievement_key)));
+    };
+
     loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
-    fetchTodayKcal(); fetchPhotos(); fetchWhoop();
+    fetchTodayKcal(); fetchPhotos(); fetchWhoop(); fetchTier();
 
     const channel = supabase
       .channel('dashboard-sessions')
