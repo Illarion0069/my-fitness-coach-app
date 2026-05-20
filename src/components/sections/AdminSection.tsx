@@ -573,7 +573,7 @@ const AdminSection = () => {
                      {(() => {
                        const tier = tiersByUser[client.user_id] || null;
                        return (
-                         <div className={`relative w-9 h-9 rounded-full shrink-0 ${tier ? tierRingClass(tier) : ''}`}>
+                         <div className="relative w-9 h-9 shrink-0">
                            {client.avatar_url ? (
                              <img
                                src={client.avatar_url}
@@ -587,7 +587,7 @@ const AdminSection = () => {
                                </span>
                              </div>
                            )}
-                           <AvatarTierBadge tier={tier} size={14} />
+                           <AvatarTierBadge tier={tier} size={16} />
                          </div>
                        );
                      })()}

@@ -433,9 +433,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <div
               onClick={() => fileInputRef.current?.click()}
               className={`relative w-16 h-16 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
-                tier
-                  ? tierRingClass(tier)
-                  : avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
+                avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
               }`}
             >
               {avatarUrl ? (
@@ -446,7 +444,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 </div>
               )}
             </div>
-            <AvatarTierBadge tier={tier} size={22} />
+            <AvatarTierBadge tier={tier} size={26} />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
