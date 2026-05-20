@@ -778,39 +778,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               ) : undefined}
             />
 
-            {/* ═════ Progress Photos ═════ */}
-            <ModuleCard
-              icon={<Camera className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Photos' : 'Фото'}
-              subtitle={photosCount === 0
-                ? (lang === 'en' ? 'Upload first photo' : 'Загрузите фото')
-                : `${photosCount} ${lang === 'en' ? (photosCount === 1 ? 'photo' : 'photos') : (photosCount === 1 ? 'фото' : photosCount < 5 ? 'фото' : 'фото')}`}
-              onClick={() => setPhotosOpen(true)}
-              preview={photosCount > 0 ? (
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-extrabold font-heading text-foreground">{photosCount}</span>
-                  <Camera className="w-3 h-3 text-muted-foreground ml-auto" />
-                </div>
-              ) : undefined}
-            />
-
-            {/* ═════ Training History ═════ */}
-            <ModuleCard
-              icon={<History className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'History' : 'История'}
-              subtitle={pastSessions.length === 0
-                ? (lang === 'en' ? 'No sessions yet' : 'Нет тренировок')
-                : `${pastSessions.length} ${lang === 'en' ? 'total' : 'всего'}`}
-              onClick={() => setHistoryOpen(true)}
-              preview={pastSessions.length > 0 ? (
-                <div className="flex items-baseline gap-1">
-                  <span className="text-lg font-extrabold font-heading text-foreground">{monthSessionsCount}</span>
-                  <span className="text-[10px] text-muted-foreground">
-                    {lang === 'en' ? 'this month' : 'в этом месяце'}
-                  </span>
-                </div>
-              ) : undefined}
-            />
+            {/* Photos and History moved out of modules grid — history lives inside the balance card */}
 
             {/* ═════ Whoop — wide bento ═════ */}
             <motion.button
