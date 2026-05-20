@@ -426,6 +426,75 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose, autoCloseAf
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showFarewell && (
+          <motion.div
+            key="farewell"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-background/80 backdrop-blur-md"
+          >
+            <motion.div
+              initial={{ scale: 0.6, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 1.1, opacity: 0, y: -10 }}
+              transition={{ type: 'spring', damping: 16, stiffness: 240 }}
+              className="flex flex-col items-center text-center px-8"
+            >
+              <motion.div
+                animate={{ rotate: [0, -8, 8, -4, 4, 0], scale: [1, 1.08, 1] }}
+                transition={{ duration: 1.2, ease: 'easeInOut' }}
+                className="relative w-24 h-24 rounded-3xl gradient-primary glow-primary flex items-center justify-center mb-5"
+              >
+                <CheckCircle2 className="w-12 h-12 text-primary-foreground" strokeWidth={2.5} />
+                <motion.div
+                  initial={{ scale: 0.4, opacity: 0 }}
+                  animate={{ scale: 1.6, opacity: 0 }}
+                  transition={{ duration: 1.2, repeat: Infinity, ease: 'easeOut' }}
+                  className="absolute inset-0 rounded-3xl border-2 border-primary"
+                />
+                {[...Array(6)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+                    animate={{
+                      x: Math.cos((i / 6) * Math.PI * 2) * 70,
+                      y: Math.sin((i / 6) * Math.PI * 2) * 70,
+                      opacity: 0,
+                      scale: 1.2,
+                    }}
+                    transition={{ duration: 1, delay: 0.1, ease: 'easeOut' }}
+                    className="absolute"
+                  >
+                    <Sparkles className="w-4 h-4 text-primary" />
+                  </motion.div>
+                ))}
+              </motion.div>
+              <motion.h3
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 }}
+                className="text-3xl font-extrabold font-heading uppercase tracking-tight mb-2"
+              >
+                {lang === 'en' ? 'Thank you!' : 'Спасибо!'}
+              </motion.h3>
+              <motion.p
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+                className="text-sm text-muted-foreground max-w-[260px]"
+              >
+                {lang === 'en'
+                  ? 'Your results are saved and sent to the trainer.'
+                  : 'Результаты сохранены и отправлены тренеру.'}
+              </motion.p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </section>
   );
 };
