@@ -108,7 +108,7 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
     return <Minus className="w-3 h-3 text-muted-foreground" />;
   };
 
-  const hasProgress2m = results.some(r => r.test_type === 'progress_2m');
+  const langKey0 = lang;
   const langKey = (lang === 'en' ? 'en' : 'ru') as 'en' | 'ru';
 
   const getTestBank = (type: string | null) =>
