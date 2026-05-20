@@ -61,14 +61,19 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
   }
 
   if (takingTest) {
-    const finish = () => { setTakingTest(null); onAllDone?.(); };
+    const finish = () => {
+      setTakingTest(null);
+      if (returnHomeOnDone) onAllDone?.();
+    };
     return (
       <div className="-mx-4 -my-4">
         <button
           onClick={finish}
           className="absolute top-3 right-4 z-[70] text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur px-3 py-1.5 rounded-full"
         >
-          {lang === 'en' ? 'Done' : 'Готово'}
+          {returnHomeOnDone
+            ? (lang === 'en' ? 'Done' : 'Готово')
+            : (lang === 'en' ? '← Back to list' : '← К списку')}
         </button>
         <TestSection testType={takingTest} onClose={finish} autoCloseAfterMs={4000} />
       </div>
