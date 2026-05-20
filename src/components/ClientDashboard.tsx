@@ -258,10 +258,11 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
     const fetchTests = async () => {
       const { data } = await supabase
-        .from('test_results').select('overall_percentage, created_at').eq('user_id', user.id)
+        .from('test_results').select('overall_percentage, created_at, test_type').eq('user_id', user.id)
         .order('created_at', { ascending: true }).limit(20);
-      setTestResults(data || []);
+      setTestResults((data || []) as any);
     };
+
 
     const fetchTodayKcal = async () => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
