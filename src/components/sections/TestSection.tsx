@@ -284,11 +284,12 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSecti
           >
             <div className="flex items-center gap-2 mb-3">
               {NUTRITION_INDICES.includes(currentQ) ? (
-                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
+                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{t(sectionALabel)}</span></>
               ) : (
-                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье'}</span></>
+                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{t(sectionBLabel)}</span></>
               )}
             </div>
+
 
             <div className="flex items-center gap-3 mb-6">
               <button
