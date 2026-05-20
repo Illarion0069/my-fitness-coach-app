@@ -152,7 +152,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
-  const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
+  const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
   const [photosCount, setPhotosCount] = useState<number>(0);
   const [whoopRecovery, setWhoopRecovery] = useState<number | null>(null);
