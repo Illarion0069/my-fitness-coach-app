@@ -224,9 +224,12 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
 
   if (loading) return null;
 
-  const earnedKeys = new Set(achievements.map(a => a.icon));
-  const lockedMilestones = ALL_MILESTONES.filter(m => !earnedKeys.has(m.icon));
-  const displayLocked = lockedMilestones.length > 0 ? lockedMilestones : ALL_MILESTONES;
+  const earnedByIcon = new Map(achievements.map(a => [a.icon, a]));
+  // Single ordered list: earned first (preserving milestone order), then locked
+  const ordered = [
+    ...ALL_MILESTONES.filter(m => earnedByIcon.has(m.icon)),
+    ...ALL_MILESTONES.filter(m => !earnedByIcon.has(m.icon)),
+  ];
 
   return (
     <>
@@ -238,79 +241,67 @@ const AchievementsWidget = ({ userId, isTrainer = false }: AchievementsWidgetPro
             {lang === 'en' ? 'Achievements' : 'Достижения'}
           </p>
           <span className="text-[10px] bg-primary/15 text-primary px-1.5 py-0.5 rounded-full font-bold ml-auto">
-            {achievements.length}
+            {achievements.length}/{ALL_MILESTONES.length}
           </span>
         </div>
 
-        {/* Earned achievements */}
-        {achievements.length > 0 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
-            {achievements.map((a, i) => (
-              <motion.div
-                key={a.id}
+        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
+          {ordered.map((item, i) => {
+            const earned = earnedByIcon.get(item.icon);
+            const isEarned = !!earned;
+            const typeColor = isEarned
+              ? (item.icon === '🥉' || item.icon === '🥈' || item.icon === '🥇'
+                  ? TYPE_COLORS.nutrition_quality
+                  : TYPE_COLORS.nutrition_streak)
+              : 'from-muted/40 to-muted/10 border-border/30';
+            return (
+              <motion.button
+                key={item.icon}
                 initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
+                animate={{ opacity: isEarned || isTrainer ? 1 : 0.6, scale: 1 }}
                 transition={{ delay: i * 0.05 }}
-                className={`shrink-0 bg-gradient-to-b ${TYPE_COLORS[a.achievement_type] || 'from-primary/20 to-primary/5 border-primary/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center`}
+                whileTap={{ scale: 0.93 }}
+                onClick={() => !isEarned && setSelectedLocked(item)}
+                disabled={isEarned}
+                className={`shrink-0 bg-gradient-to-b ${typeColor} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden ${isEarned ? 'shadow-[0_0_12px_rgba(255,215,0,0.15)]' : 'hover:border-primary/30 transition-colors'}`}
               >
-                <BadgeIcon icon={a.icon} size="md" className="mx-auto mb-1" />
-                <p className="text-[10px] font-bold text-foreground leading-tight">
-                  {lang === 'en' ? a.title_en : a.title_ru}
+                {!isEarned && !isTrainer && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10">
+                    <span className="text-lg opacity-50">🔒</span>
+                  </div>
+                )}
+                <BadgeIcon
+                  icon={item.icon}
+                  size="md"
+                  className={`mx-auto mb-1 ${isEarned ? '' : isTrainer ? '' : 'blur-[2px]'}`}
+                />
+                <p className={`text-[10px] font-bold leading-tight ${
+                  isEarned
+                    ? 'text-foreground'
+                    : isTrainer ? 'text-foreground/70' : 'text-muted-foreground blur-[1px]'
+                }`}>
+                  {lang === 'en' ? item.title_en : item.title_ru}
                 </p>
-                <p className="text-[8px] text-muted-foreground mt-0.5">
-                  {new Date(a.earned_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
-                    day: 'numeric', month: 'short'
-                  })}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        )}
-
-        {/* Locked milestones */}
-        {displayLocked.length > 0 && (
-          <div className="space-y-1.5">
-            {achievements.length > 0 && (
-              <p className="text-[10px] text-muted-foreground px-1 font-semibold">
-                {lang === 'en' ? 'Next goals:' : 'Следующие цели:'}
-              </p>
-            )}
-            <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
-              {displayLocked.map((item, i) => (
-                <motion.button
-                  key={i}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: isTrainer ? 1 : 0.6, scale: 1 }}
-                  transition={{ delay: i * 0.05 }}
-                  whileTap={{ scale: 0.93 }}
-                  onClick={() => setSelectedLocked(item)}
-                  className={`shrink-0 bg-gradient-to-b ${isTrainer ? 'from-muted/60 to-muted/20 border-border/50' : 'from-muted/40 to-muted/10 border-border/30'} border rounded-2xl px-3 py-2.5 min-w-[90px] text-center relative overflow-hidden hover:border-primary/30 transition-colors`}
-                >
-                  {!isTrainer && (
-                    <div className="absolute inset-0 flex items-center justify-center z-10">
-                      <span className="text-lg opacity-50">🔒</span>
-                    </div>
-                  )}
-                  <BadgeIcon icon={item.icon} size="md" className={`mx-auto mb-1 ${isTrainer ? '' : 'blur-[2px]'}`} />
-                  <p className={`text-[10px] font-bold leading-tight ${isTrainer ? 'text-foreground/70' : 'text-muted-foreground blur-[1px]'}`}>
-                    {lang === 'en' ? item.title_en : item.title_ru}
+                {isEarned ? (
+                  <p className="text-[8px] text-primary mt-0.5 font-semibold">
+                    ✓ {new Date(earned.earned_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' })}
                   </p>
-                  {isTrainer && (
-                    <p className="text-[8px] text-muted-foreground mt-0.5 italic">
-                      {lang === 'en' ? 'not earned' : 'не получен'}
-                    </p>
-                  )}
-                </motion.button>
-              ))}
-            </div>
-            {achievements.length === 0 && (
-              <p className="text-[10px] text-muted-foreground text-center italic">
-                {lang === 'en'
-                  ? 'Tap any badge to learn how to unlock it!'
-                  : 'Нажми на бейдж, чтобы узнать, как его получить!'}
-              </p>
-            )}
-          </div>
+                ) : isTrainer ? (
+                  <p className="text-[8px] text-muted-foreground mt-0.5 italic">
+                    {lang === 'en' ? 'not earned' : 'не получен'}
+                  </p>
+                ) : null}
+              </motion.button>
+            );
+          })}
+        </div>
+
+        {achievements.length === 0 && (
+          <p className="text-[10px] text-muted-foreground text-center italic">
+            {lang === 'en'
+              ? 'Tap any badge to learn how to unlock it!'
+              : 'Нажми на бейдж, чтобы узнать, как его получить!'}
+          </p>
         )}
       </div>
 
