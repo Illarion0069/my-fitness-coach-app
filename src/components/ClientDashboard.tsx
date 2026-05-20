@@ -19,6 +19,7 @@ import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
+import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
 const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
