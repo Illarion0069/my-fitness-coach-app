@@ -53,6 +53,7 @@ const AdminSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
   const [archiveView, setArchiveView] = useState<'active' | 'archived'>('active');
+  const [tiersByUser, setTiersByUser] = useState<Record<string, Tier>>({});
 
   const fetchSupplementalData = useCallback(async () => {
     const [{ data: pkgData }, { data: sessData }] = await Promise.all([
