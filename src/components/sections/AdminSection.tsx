@@ -570,19 +570,27 @@ const AdminSection = () => {
                      <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
                        <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
                      </div>
-                     {client.avatar_url ? (
-                       <img
-                         src={client.avatar_url}
-                         alt={client.full_name}
-                         className="w-9 h-9 rounded-full object-cover shrink-0"
-                       />
-                     ) : (
-                       <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                         <span className="text-xs font-bold text-primary">
-                           {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                         </span>
-                       </div>
-                     )}
+                     {(() => {
+                       const tier = tiersByUser[client.user_id] || null;
+                       return (
+                         <div className={`relative w-9 h-9 rounded-full shrink-0 ${tier ? tierRingClass(tier) : ''}`}>
+                           {client.avatar_url ? (
+                             <img
+                               src={client.avatar_url}
+                               alt={client.full_name}
+                               className="w-9 h-9 rounded-full object-cover"
+                             />
+                           ) : (
+                             <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
+                               <span className="text-xs font-bold text-primary">
+                                 {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                               </span>
+                             </div>
+                           )}
+                           <AvatarTierBadge tier={tier} size={14} />
+                         </div>
+                       );
+                     })()}
                      <button
                        onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                        className="flex-1 text-left flex items-center justify-between min-w-0"
