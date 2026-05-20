@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
-  History, ChevronRight, RotateCw, XCircle, Loader2,
+  History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  KeyRound, Eye, EyeOff,
+  KeyRound, Eye, EyeOff, ShoppingCart,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -135,9 +135,10 @@ const FullscreenModule = ({ open, onClose, title, icon, children }: FullscreenMo
 /* ──────────────────────── Main Dashboard ──────────────────────── */
 interface ClientDashboardProps {
   forceClientView?: boolean;
+  onNavigate?: (section: string) => void;
 }
 
-const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
+const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboardProps) => {
   const { user, profile, signOut, refreshProfile } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -166,6 +167,7 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
   const [whoopOpen, setWhoopOpen] = useState(false);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [balanceExpanded, setBalanceExpanded] = useState(false);
 
   // Account actions
   const [showChangePwd, setShowChangePwd] = useState(false);
@@ -456,23 +458,32 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`relative overflow-hidden rounded-2xl p-5 ${
+            className={`relative overflow-hidden rounded-2xl ${
               exhausted ? 'bg-destructive/10 border border-destructive/30' : 'gradient-primary'
             }`}
           >
             {/* Decorative circles */}
             {!exhausted && (
               <>
-                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10" />
-                <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5" />
+                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/10 pointer-events-none" />
+                <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
               </>
             )}
-            <div className="relative z-10">
+            <button
+              type="button"
+              onClick={() => setBalanceExpanded(v => !v)}
+              className="relative z-10 w-full text-left p-5 active:scale-[0.99] transition-transform"
+            >
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-xs font-medium ${exhausted ? 'text-destructive' : 'text-primary-foreground/80'}`}>
                   {pkg.package_name}
                 </p>
-                <Activity className={`w-5 h-5 ${exhausted ? 'text-destructive' : 'text-primary-foreground/60'}`} />
+                <div className="flex items-center gap-2">
+                  <Activity className={`w-5 h-5 ${exhausted ? 'text-destructive' : 'text-primary-foreground/60'}`} />
+                  <motion.div animate={{ rotate: balanceExpanded ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                    <ChevronDown className={`w-4 h-4 ${exhausted ? 'text-destructive' : 'text-primary-foreground/70'}`} />
+                  </motion.div>
+                </div>
               </div>
               <div className="flex items-baseline gap-1.5 mb-3">
                 <span className={`text-3xl font-extrabold font-heading ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
@@ -511,7 +522,71 @@ const ClientDashboard = ({ forceClientView = false }: ClientDashboardProps) => {
                   </p>
                 );
               })()}
-            </div>
+            </button>
+
+            {/* ═════ Expanded: history + buy more ═════ */}
+            <AnimatePresence initial={false}>
+              {balanceExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25, ease: 'easeOut' }}
+                  className="relative z-10 overflow-hidden"
+                >
+                  <div className={`px-5 pb-5 pt-1 border-t ${exhausted ? 'border-destructive/20' : 'border-white/15'}`}>
+                    <p className={`text-[10px] font-bold uppercase tracking-wider mt-3 mb-2 ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`}>
+                      {lang === 'en' ? 'Recent sessions' : 'История тренировок'}
+                    </p>
+                    {pastSessions.length === 0 ? (
+                      <p className={`text-xs ${exhausted ? 'text-destructive/60' : 'text-primary-foreground/60'}`}>
+                        {lang === 'en' ? 'No completed sessions yet' : 'Пока нет завершённых тренировок'}
+                      </p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {pastSessions.slice(0, 5).map(s => (
+                          <div
+                            key={s.id}
+                            className={`flex items-center gap-2 rounded-lg px-2.5 py-2 ${exhausted ? 'bg-destructive/10' : 'bg-white/10'}`}
+                          >
+                            <CalendarDays className={`w-3.5 h-3.5 shrink-0 ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`} />
+                            <span className={`text-xs font-medium flex-1 ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
+                              {new Date(s.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short', weekday: 'short' })}
+                              {s.session_time ? ` · ${s.session_time.slice(0, 5)}` : ''}
+                            </span>
+                            <span className={`text-[10px] ${exhausted ? 'text-destructive/60' : 'text-primary-foreground/60'}`}>✓</span>
+                          </div>
+                        ))}
+                        {pastSessions.length > 5 && (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setHistoryOpen(true); }}
+                            className={`w-full text-[11px] font-semibold py-1.5 rounded-lg ${exhausted ? 'text-destructive hover:bg-destructive/10' : 'text-primary-foreground/90 hover:bg-white/10'}`}
+                          >
+                            {lang === 'en' ? `View all (${pastSessions.length})` : `Показать все (${pastSessions.length})`}
+                          </button>
+                        )}
+                      </div>
+                    )}
+
+                    {onNavigate && (
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); onNavigate('pricing'); }}
+                        className={`mt-4 w-full flex items-center justify-center gap-2 rounded-xl py-2.5 text-xs font-bold transition-colors ${
+                          exhausted
+                            ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                            : 'bg-white text-primary hover:bg-white/90'
+                        }`}
+                      >
+                        <ShoppingCart className="w-3.5 h-3.5" />
+                        {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
+                      </button>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
 

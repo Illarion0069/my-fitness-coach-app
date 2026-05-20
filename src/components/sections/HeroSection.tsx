@@ -79,7 +79,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             <LanguageSwitch />
           </div>
         </div>
-        <ClientDashboard forceClientView={!!clientPreview} />
+        <ClientDashboard forceClientView={!!clientPreview} onNavigate={onNavigate} />
       </section>
     );
   }
