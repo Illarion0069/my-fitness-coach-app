@@ -167,6 +167,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [whoopOpen, setWhoopOpen] = useState(false);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
+  const [balanceExpanded, setBalanceExpanded] = useState(false);
 
   // Account actions
   const [showChangePwd, setShowChangePwd] = useState(false);
