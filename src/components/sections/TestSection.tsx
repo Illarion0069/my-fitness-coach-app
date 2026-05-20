@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Activity, Heart, Apple, ArrowRight, LogIn, UserPlus } from 'lucide-react';
+import { ArrowLeft, Activity, Heart, Apple, ArrowRight, LogIn, UserPlus, Sparkles, CheckCircle2 } from 'lucide-react';
 import PhoneInput from '@/components/PhoneInput';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -17,9 +17,10 @@ interface TestSectionProps {
   onLoginClick?: () => void;
   testType?: TestType;
   onClose?: () => void;
+  autoCloseAfterMs?: number;
 }
 
-const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSectionProps) => {
+const TestSection = ({ onLoginClick, testType = 'baseline', onClose, autoCloseAfterMs }: TestSectionProps) => {
   const { t, lang } = useLanguage();
   const { user, profile } = useAuth();
   const test = testType === 'progress_2m' ? translations.test2 : translations.test;
