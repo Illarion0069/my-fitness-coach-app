@@ -59,15 +59,16 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
   }
 
   if (takingTest) {
+    const finish = () => { setTakingTest(null); onAllDone?.(); };
     return (
       <div className="-mx-4 -my-4">
         <button
-          onClick={() => { setTakingTest(null); onAllDone?.(); }}
-          className="absolute top-3 right-4 z-50 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur px-3 py-1.5 rounded-full"
+          onClick={finish}
+          className="absolute top-3 right-4 z-[70] text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur px-3 py-1.5 rounded-full"
         >
           {lang === 'en' ? 'Done' : 'Готово'}
         </button>
-        <TestSection testType={takingTest} />
+        <TestSection testType={takingTest} onClose={finish} autoCloseAfterMs={6000} />
       </div>
     );
   }
