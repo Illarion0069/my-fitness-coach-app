@@ -19,6 +19,7 @@ import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
+import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
 const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
@@ -146,6 +147,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [tier, setTier] = useState<Tier>(null);
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
@@ -288,8 +290,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       setWhoopRecovery(data?.recovery_score != null ? Math.round(Number(data.recovery_score)) : null);
     };
 
+    const fetchTier = async () => {
+      const { data } = await supabase
+        .from('client_achievements').select('achievement_key')
+        .eq('user_id', user.id)
+        .like('achievement_key', 'nutrition_quality_week_%');
+      setTier(highestTierFromKeys((data || []).map((r: any) => r.achievement_key)));
+    };
+
     loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
-    fetchTodayKcal(); fetchPhotos(); fetchWhoop();
+    fetchTodayKcal(); fetchPhotos(); fetchWhoop(); fetchTier();
 
     const channel = supabase
       .channel('dashboard-sessions')
@@ -423,7 +433,9 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <div
               onClick={() => fileInputRef.current?.click()}
               className={`relative w-16 h-16 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
-                avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
+                tier
+                  ? tierRingClass(tier)
+                  : avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
               }`}
             >
               {avatarUrl ? (
@@ -434,6 +446,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 </div>
               )}
             </div>
+            <AvatarTierBadge tier={tier} size={22} />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}

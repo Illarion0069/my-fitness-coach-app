@@ -10,6 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 import FinanceStatsView from '@/components/FinanceStatsView';
+import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from '@/components/AvatarTierBadge';
 
 interface Profile {
   id: string;
@@ -52,11 +53,13 @@ const AdminSection = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
   const [archiveView, setArchiveView] = useState<'active' | 'archived'>('active');
+  const [tiersByUser, setTiersByUser] = useState<Record<string, Tier>>({});
 
   const fetchSupplementalData = useCallback(async () => {
-    const [{ data: pkgData }, { data: sessData }] = await Promise.all([
+    const [{ data: pkgData }, { data: sessData }, { data: achData }] = await Promise.all([
       supabase.from('client_packages').select('*').order('created_at', { ascending: false }),
       supabase.from('scheduled_sessions').select('user_id, session_date, is_recurring, recurrence_day'),
+      supabase.from('client_achievements').select('user_id, achievement_key').like('achievement_key', 'nutrition_quality_week_%'),
     ]);
 
     const grouped: Record<string, ClientPackage[]> = {};
@@ -64,6 +67,15 @@ const AdminSection = () => {
       if (!grouped[p.user_id]) grouped[p.user_id] = [];
       grouped[p.user_id].push(p);
     });
+
+    const keysByUser: Record<string, string[]> = {};
+    ((achData || []) as { user_id: string; achievement_key: string }[]).forEach((a) => {
+      if (!keysByUser[a.user_id]) keysByUser[a.user_id] = [];
+      keysByUser[a.user_id].push(a.achievement_key);
+    });
+    const tiers: Record<string, Tier> = {};
+    for (const uid of Object.keys(keysByUser)) tiers[uid] = highestTierFromKeys(keysByUser[uid]);
+    setTiersByUser(tiers);
 
     setPackages(grouped);
     setAllSessions((sessData || []) as { user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]);
@@ -558,19 +570,27 @@ const AdminSection = () => {
                      <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
                        <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
                      </div>
-                     {client.avatar_url ? (
-                       <img
-                         src={client.avatar_url}
-                         alt={client.full_name}
-                         className="w-9 h-9 rounded-full object-cover shrink-0"
-                       />
-                     ) : (
-                       <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
-                         <span className="text-xs font-bold text-primary">
-                           {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-                         </span>
-                       </div>
-                     )}
+                     {(() => {
+                       const tier = tiersByUser[client.user_id] || null;
+                       return (
+                         <div className={`relative w-9 h-9 rounded-full shrink-0 ${tier ? tierRingClass(tier) : ''}`}>
+                           {client.avatar_url ? (
+                             <img
+                               src={client.avatar_url}
+                               alt={client.full_name}
+                               className="w-9 h-9 rounded-full object-cover"
+                             />
+                           ) : (
+                             <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
+                               <span className="text-xs font-bold text-primary">
+                                 {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                               </span>
+                             </div>
+                           )}
+                           <AvatarTierBadge tier={tier} size={14} />
+                         </div>
+                       );
+                     })()}
                      <button
                        onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                        className="flex-1 text-left flex items-center justify-between min-w-0"
