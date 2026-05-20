@@ -27,6 +27,8 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [takingTest, setTakingTest] = useState<null | TestType>(initialTest);
+  // true → "Done" returns to dashboard (entered via banner); false → returns to test list
+  const [returnHomeOnDone, setReturnHomeOnDone] = useState<boolean>(initialTest !== null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadResults = () => {
@@ -59,14 +61,19 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
   }
 
   if (takingTest) {
-    const finish = () => { setTakingTest(null); onAllDone?.(); };
+    const finish = () => {
+      setTakingTest(null);
+      if (returnHomeOnDone) onAllDone?.();
+    };
     return (
       <div className="-mx-4 -my-4">
         <button
           onClick={finish}
           className="absolute top-3 right-4 z-[70] text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur px-3 py-1.5 rounded-full"
         >
-          {lang === 'en' ? 'Done' : 'Готово'}
+          {returnHomeOnDone
+            ? (lang === 'en' ? 'Done' : 'Готово')
+            : (lang === 'en' ? '← Back to list' : '← К списку')}
         </button>
         <TestSection testType={takingTest} onClose={finish} autoCloseAfterMs={4000} />
       </div>
@@ -89,7 +96,7 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
             : 'Пройдите 2-минутный тест здоровья — тренер увидит вашу стартовую точку.'}
         </p>
         <button
-          onClick={() => setTakingTest('baseline')}
+          onClick={() => { setReturnHomeOnDone(false); setTakingTest('baseline'); }}
           className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-8 py-3 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
         >
           {lang === 'en' ? 'Take the test' : 'Пройти тест'}
@@ -158,7 +165,7 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
         {availableTests.map(t => (
           <button
             key={t.type}
-            onClick={() => setTakingTest(t.type)}
+            onClick={() => { setReturnHomeOnDone(false); setTakingTest(t.type); }}
             className="w-full bg-card border border-border/40 rounded-xl p-3 flex items-center gap-3 text-left hover:border-primary/40 transition-colors"
           >
             <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
