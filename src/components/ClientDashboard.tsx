@@ -811,7 +811,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               subtitle={lastTestPct == null
                 ? (lang === 'en' ? 'Take first test' : 'Пройдите тест')
                 : `${testResults.length} ${lang === 'en' ? 'taken' : 'пройдено'}`}
-              onClick={() => setTestsOpen(true)}
+              onClick={() => { setTestsInitial(null); setTestsOpen(true); }}
               preview={testSparkData.length >= 1 ? (
                 <div className="space-y-1.5">
                   <div className="flex items-baseline gap-1">
