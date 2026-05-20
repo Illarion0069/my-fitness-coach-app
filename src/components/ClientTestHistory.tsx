@@ -19,12 +19,14 @@ interface TestResult {
 interface ClientTestHistoryProps {
   userId: string;
   lang: string;
+  initialTest?: TestType | null;
+  onAllDone?: () => void;
 }
 
-const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
+const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: ClientTestHistoryProps) => {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [takingTest, setTakingTest] = useState<null | TestType>(null);
+  const [takingTest, setTakingTest] = useState<null | TestType>(initialTest);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadResults = () => {
