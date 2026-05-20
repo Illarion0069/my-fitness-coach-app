@@ -96,7 +96,7 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: Clie
             : 'Пройдите 2-минутный тест здоровья — тренер увидит вашу стартовую точку.'}
         </p>
         <button
-          onClick={() => setTakingTest('baseline')}
+          onClick={() => { setReturnHomeOnDone(false); setTakingTest('baseline'); }}
           className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-8 py-3 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
         >
           {lang === 'en' ? 'Take the test' : 'Пройти тест'}
