@@ -41,6 +41,16 @@ const TestSection = ({ onLoginClick, testType = 'baseline', onClose, autoCloseAf
   const [currentQ, setCurrentQ] = useState(0);
   // answers store the selected option INDEX (0..3), not the score
   const [answers, setAnswers] = useState<number[]>([]);
+  const [showFarewell, setShowFarewell] = useState(false);
+
+  // Auto-close on result step (e.g. after a logged-in user completes a test)
+  useEffect(() => {
+    if (step !== 'result' || !autoCloseAfterMs || !onClose) return;
+    const farewellAt = Math.max(autoCloseAfterMs - 1400, 400);
+    const t1 = setTimeout(() => setShowFarewell(true), farewellAt);
+    const t2 = setTimeout(() => onClose(), autoCloseAfterMs);
+    return () => { clearTimeout(t1); clearTimeout(t2); };
+  }, [step, autoCloseAfterMs, onClose]);
 
   const totalQuestions = test.questions.length;
 
