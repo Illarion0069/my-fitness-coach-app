@@ -17,7 +17,7 @@ import ClientTestHistory from './ClientTestHistory';
 import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
-import { UtensilsCrossed } from 'lucide-react';
+import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
@@ -152,7 +152,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
-  const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string }[]>([]);
+  const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
   const [photosCount, setPhotosCount] = useState<number>(0);
   const [whoopRecovery, setWhoopRecovery] = useState<number | null>(null);
@@ -258,10 +258,11 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
     const fetchTests = async () => {
       const { data } = await supabase
-        .from('test_results').select('overall_percentage, created_at').eq('user_id', user.id)
+        .from('test_results').select('overall_percentage, created_at, test_type').eq('user_id', user.id)
         .order('created_at', { ascending: true }).limit(20);
-      setTestResults(data || []);
+      setTestResults((data || []) as any);
     };
+
 
     const fetchTodayKcal = async () => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
@@ -677,7 +678,55 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         {/* ═══════════ Achievements ═══════════ */}
         <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
 
+        {/* ═══════════ Test #2 banner (60+ days, no progress test yet) ═══════════ */}
+        {(() => {
+          const createdAt = user?.created_at ? new Date(user.created_at) : null;
+          const daysSinceSignup = createdAt ? (Date.now() - createdAt.getTime()) / 86400000 : 0;
+          const hasProgress2m = testResults.some(t => t.test_type === 'progress_2m');
+          const dismissed = typeof window !== 'undefined' && localStorage.getItem('test2_banner_dismissed') === '1';
+          if (daysSinceSignup < 60 || hasProgress2m || dismissed) return null;
+          return (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="relative overflow-hidden rounded-2xl p-4 mb-4 border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card"
+            >
+              <button
+                onClick={() => { localStorage.setItem('test2_banner_dismissed', '1'); setTestResults(t => [...t]); }}
+                aria-label="dismiss"
+                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/60 text-muted-foreground hover:text-foreground flex items-center justify-center text-xs"
+              >
+                ×
+              </button>
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center glow-primary shrink-0">
+                  <ClipboardCheck className="w-5 h-5 text-primary-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-bold text-primary uppercase tracking-wider mb-0.5">
+                    {lang === 'en' ? 'Test #2 · Progress check' : 'Тест №2 · Проверка прогресса'}
+                  </p>
+                  <p className="text-sm font-extrabold mb-1">
+                    {lang === 'en' ? 'Time to measure your 2-month results' : 'Пора измерить результаты за 2 месяца'}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mb-3">
+                    {lang === 'en' ? '10 questions · 2 minutes' : '10 вопросов · 2 минуты'}
+                  </p>
+                  <button
+                    onClick={() => setTestsOpen(true)}
+                    className="inline-flex items-center gap-1.5 gradient-primary text-primary-foreground font-bold text-xs px-4 py-2 rounded-lg glow-primary hover:scale-[1.03] transition-transform"
+                  >
+                    {lang === 'en' ? 'Take Test #2' : 'Пройти тест №2'}
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          );
+        })()}
+
         {/* ═══════════ Modules Grid ═══════════ */}
+
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

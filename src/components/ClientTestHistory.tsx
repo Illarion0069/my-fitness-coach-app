@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Activity, Apple, Heart, TrendingUp, TrendingDown, Minus, ClipboardCheck, ArrowRight, RefreshCw } from 'lucide-react';
+import { Activity, Apple, Heart, TrendingUp, TrendingDown, Minus, ClipboardCheck, ArrowRight, RefreshCw, ChevronDown, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import TestSection from '@/components/sections/TestSection';
+import { translations } from '@/i18n/translations';
+import TestSection, { type TestType } from '@/components/sections/TestSection';
 
 interface TestResult {
   id: string;
@@ -11,6 +12,8 @@ interface TestResult {
   health_max: number;
   overall_percentage: number;
   created_at: string;
+  answers: number[] | null;
+  test_type: string | null;
 }
 
 interface ClientTestHistoryProps {
@@ -21,15 +24,16 @@ interface ClientTestHistoryProps {
 const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
-  const [takingTest, setTakingTest] = useState(false);
+  const [takingTest, setTakingTest] = useState<null | TestType>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   const loadResults = () => {
     supabase
       .from('test_results')
-      .select('id, nutrition_score, nutrition_max, health_score, health_max, overall_percentage, created_at')
+      .select('id, nutrition_score, nutrition_max, health_score, health_max, overall_percentage, created_at, answers, test_type')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(10)
+      .limit(20)
       .then(({ data }) => {
         setResults((data || []) as TestResult[]);
         setLoading(false);
@@ -40,9 +44,8 @@ const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
     loadResults();
   }, [userId]);
 
-  // Re-fetch results when user closes the test view
   useEffect(() => {
-    if (!takingTest) loadResults();
+    if (takingTest === null) loadResults();
   }, [takingTest]);
 
   if (loading) {
@@ -53,22 +56,21 @@ const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
     );
   }
 
-  // Active test mode
   if (takingTest) {
     return (
       <div className="-mx-4 -my-4">
         <button
-          onClick={() => setTakingTest(false)}
+          onClick={() => setTakingTest(null)}
           className="absolute top-3 right-4 z-50 text-xs text-muted-foreground hover:text-foreground bg-card/80 backdrop-blur px-3 py-1.5 rounded-full"
         >
           {lang === 'en' ? 'Close' : 'Закрыть'}
         </button>
-        <TestSection />
+        <TestSection testType={takingTest} />
       </div>
     );
   }
 
-  // Empty state — new client without any test
+  // Empty state
   if (results.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center px-4">
@@ -84,7 +86,7 @@ const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
             : 'Пройдите 2-минутный тест здоровья — тренер увидит вашу стартовую точку.'}
         </p>
         <button
-          onClick={() => setTakingTest(true)}
+          onClick={() => setTakingTest('baseline')}
           className="group flex items-center gap-2 gradient-primary text-primary-foreground font-bold px-8 py-3 rounded-2xl text-sm uppercase tracking-wider glow-primary hover:scale-105 transition-transform"
         >
           {lang === 'en' ? 'Take the test' : 'Пройти тест'}
@@ -104,15 +106,53 @@ const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
     return <Minus className="w-3 h-3 text-muted-foreground" />;
   };
 
+  const hasProgress2m = results.some(r => r.test_type === 'progress_2m');
+  const langKey = (lang === 'en' ? 'en' : 'ru') as 'en' | 'ru';
+
+  const getTestBank = (type: string | null) =>
+    type === 'progress_2m' ? translations.test2 : translations.test;
+
+  const getTestLabel = (type: string | null) =>
+    type === 'progress_2m'
+      ? (lang === 'en' ? 'Test #2 · Progress' : 'Тест №2 · Прогресс')
+      : (lang === 'en' ? 'Test #1 · Baseline' : 'Тест №1 · Базовый');
+
+  const renderAnswerText = (type: string | null, qIdx: number, savedValue: number): { text: string; score: number } => {
+    const bank = getTestBank(type);
+    const q = bank.questions[qIdx];
+    if (!q) return { text: '—', score: 0 };
+    // New records store option index (0..3)
+    if (savedValue >= 0 && savedValue <= 3) {
+      return { text: q.options[langKey][savedValue] ?? '—', score: q.scores[savedValue] ?? 0 };
+    }
+    // Legacy: stored as score (1..4) — find first option with matching score
+    const matchIdx = q.scores.findIndex(s => s === savedValue);
+    if (matchIdx >= 0) return { text: q.options[langKey][matchIdx], score: savedValue };
+    return { text: `(${savedValue})`, score: savedValue };
+  };
+
   return (
     <div className="space-y-3">
-      <button
-        onClick={() => setTakingTest(true)}
-        className="w-full flex items-center justify-center gap-2 gradient-primary text-primary-foreground font-bold py-3 rounded-2xl text-sm glow-primary hover:scale-[1.02] transition-transform"
-      >
-        <RefreshCw className="w-4 h-4" />
-        {lang === 'en' ? 'Take test again' : 'Пройти тест ещё раз'}
-      </button>
+      <div className="grid grid-cols-2 gap-2">
+        <button
+          onClick={() => setTakingTest('baseline')}
+          className="flex items-center justify-center gap-2 bg-secondary/60 text-foreground font-bold py-2.5 rounded-xl text-xs hover:bg-secondary transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+          {lang === 'en' ? 'Test #1' : 'Тест №1'}
+        </button>
+        <button
+          onClick={() => setTakingTest('progress_2m')}
+          className={`flex items-center justify-center gap-2 font-bold py-2.5 rounded-xl text-xs transition-all ${
+            hasProgress2m
+              ? 'bg-secondary/60 text-foreground hover:bg-secondary'
+              : 'gradient-primary text-primary-foreground glow-primary hover:scale-[1.02]'
+          }`}
+        >
+          <Sparkles className="w-3.5 h-3.5" />
+          {lang === 'en' ? 'Test #2' : 'Тест №2'}
+        </button>
+      </div>
 
       <div className="bg-secondary/30 rounded-xl p-3 space-y-2">
         <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider flex items-center gap-1">
@@ -128,27 +168,71 @@ const ClientTestHistory = ({ userId, lang }: ClientTestHistoryProps) => {
           const date = new Date(r.created_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
             day: 'numeric', month: 'short', year: idx === 0 ? undefined : '2-digit',
           });
+          const isOpen = expandedId === r.id;
+          const isProgress = r.test_type === 'progress_2m';
+          const bank = getTestBank(r.test_type);
+          const sectionA = isProgress ? (lang === 'en' ? 'Body' : 'Тело') : (lang === 'en' ? 'Nutrition' : 'Питание');
+          const sectionB = isProgress ? (lang === 'en' ? 'Discipline' : 'Дисциплина') : (lang === 'en' ? 'Health' : 'Здоровье');
 
           return (
-            <div key={r.id} className="bg-card/50 rounded-lg p-2.5 flex items-center gap-3">
-              <div className="flex flex-col items-center min-w-[40px]">
-                <span className={`text-lg font-extrabold ${
-                  r.overall_percentage >= 80 ? 'text-green-400' :
-                  r.overall_percentage >= 60 ? 'text-yellow-400' :
-                  r.overall_percentage >= 40 ? 'text-orange-400' :
-                  'text-red-400'
-                }`}>{r.overall_percentage}%</span>
-                <TrendIcon current={r.overall_percentage} previous={prev?.overall_percentage} />
-              </div>
-              <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center gap-2 text-[11px]">
-                  <Apple className="w-3 h-3 text-green-400 shrink-0" />
-                  <span className="text-muted-foreground">{nutritionPct}%</span>
-                  <Heart className="w-3 h-3 text-primary shrink-0 ml-1" />
-                  <span className="text-muted-foreground">{healthPct}%</span>
+            <div key={r.id} className="bg-card/50 rounded-lg overflow-hidden">
+              <button
+                onClick={() => setExpandedId(isOpen ? null : r.id)}
+                className="w-full p-2.5 flex items-center gap-3 text-left hover:bg-card transition-colors"
+              >
+                <div className="flex flex-col items-center min-w-[40px]">
+                  <span className={`text-lg font-extrabold ${
+                    r.overall_percentage >= 80 ? 'text-green-400' :
+                    r.overall_percentage >= 60 ? 'text-yellow-400' :
+                    r.overall_percentage >= 40 ? 'text-orange-400' :
+                    'text-red-400'
+                  }`}>{r.overall_percentage}%</span>
+                  <TrendIcon current={r.overall_percentage} previous={prev?.overall_percentage} />
                 </div>
-                <p className="text-[10px] text-muted-foreground/60">{date}</p>
-              </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <div className="flex items-center gap-1.5">
+                    <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
+                      isProgress ? 'bg-primary/20 text-primary' : 'bg-secondary text-muted-foreground'
+                    }`}>
+                      {getTestLabel(r.test_type)}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <Apple className="w-3 h-3 text-green-400 shrink-0" />
+                    <span className="text-muted-foreground">{sectionA} {nutritionPct}%</span>
+                    <Heart className="w-3 h-3 text-primary shrink-0 ml-1" />
+                    <span className="text-muted-foreground">{sectionB} {healthPct}%</span>
+                  </div>
+                  <p className="text-[10px] text-muted-foreground/60">{date}</p>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isOpen && (
+                <div className="border-t border-border/30 p-3 space-y-2 bg-background/40">
+                  {(r.answers || []).map((val, qIdx) => {
+                    const q = bank.questions[qIdx];
+                    if (!q) return null;
+                    const { text, score } = renderAnswerText(r.test_type, qIdx, val);
+                    return (
+                      <div key={qIdx} className="text-[11px] leading-snug">
+                        <p className="text-muted-foreground">
+                          <span className="text-foreground/60 font-bold">{qIdx + 1}.</span> {q.q[langKey]}
+                        </p>
+                        <p className="text-foreground font-semibold pl-4 flex items-center gap-1.5">
+                          → {text}
+                          <span className={`text-[9px] font-bold px-1 py-0.5 rounded ${
+                            score >= 4 ? 'bg-green-500/20 text-green-400' :
+                            score >= 3 ? 'bg-yellow-500/20 text-yellow-400' :
+                            score >= 2 ? 'bg-orange-500/20 text-orange-400' :
+                            'bg-red-500/20 text-red-400'
+                          }`}>{score}/4</span>
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })}

@@ -11,19 +11,34 @@ import { supabase } from '@/integrations/supabase/client';
 const NUTRITION_INDICES = [0, 1, 2, 3, 4];
 const HEALTH_INDICES = [5, 6, 7, 8, 9];
 
+export type TestType = 'baseline' | 'progress_2m';
+
 interface TestSectionProps {
   onLoginClick?: () => void;
+  testType?: TestType;
+  onClose?: () => void;
 }
 
-const TestSection = ({ onLoginClick }: TestSectionProps) => {
+const TestSection = ({ onLoginClick, testType = 'baseline', onClose }: TestSectionProps) => {
   const { t, lang } = useLanguage();
   const { user, profile } = useAuth();
-  const test = translations.test;
+  const test = testType === 'progress_2m' ? translations.test2 : translations.test;
+  const isProgress = testType === 'progress_2m';
+
+  // Section labels per test type
+  const sectionALabel = isProgress
+    ? { en: 'Body & Training', ru: 'Тело и тренировки' }
+    : { en: 'Nutrition', ru: 'Питание' };
+  const sectionBLabel = isProgress
+    ? { en: 'Discipline & Well-being', ru: 'Дисциплина и самочувствие' }
+    : { en: 'Health & Lifestyle', ru: 'Здоровье' };
+
   const [step, setStep] = useState<'intro' | 'info' | 'quiz' | 'result'>('intro');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [countryCode, setCountryCode] = useState('+357');
   const [currentQ, setCurrentQ] = useState(0);
+  // answers store the selected option INDEX (0..3), not the score
   const [answers, setAnswers] = useState<number[]>([]);
 
   const totalQuestions = test.questions.length;
@@ -32,13 +47,8 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
   const effectivePhone = user && profile ? profile.phone : `${countryCode}${phone}`;
 
   const handleStart = () => {
-    if (user) {
-      // Logged in — skip info step
-      setStep('quiz');
-    } else {
-      // Not logged in — ask name & phone first
-      setStep('info');
-    }
+    if (user) setStep('quiz');
+    else setStep('info');
   };
 
   const handleInfoSubmit = () => {
@@ -46,9 +56,11 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
     setStep('quiz');
   };
 
-  const handleAnswer = (scoreIndex: number) => {
-    const score = test.questions[currentQ].scores[scoreIndex];
-    const newAnswers = [...answers, score];
+  const escapeHtml = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const handleAnswer = (optionIndex: number) => {
+    const newAnswers = [...answers, optionIndex];
     setAnswers(newAnswers);
 
     if (currentQ < totalQuestions - 1) {
@@ -60,7 +72,6 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
       const healthPct = Math.round((healthScore / healthMax) * 100);
       const overallPct = Math.round(((nutritionScore + healthScore) / (nutritionMax + healthMax)) * 100);
 
-      // Save to database if logged in
       if (user) {
         supabase.from('test_results').insert({
           user_id: user.id,
@@ -69,14 +80,31 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
           health_score: healthScore,
           health_max: healthMax,
           overall_percentage: overallPct,
-          answers: newAnswers.map(a => Number(a)),
-        }).then(({ error }) => {
+          answers: newAnswers,
+          test_type: testType,
+        } as any).then(({ error }) => {
           if (error) console.error('Save test result error:', error);
         });
       }
 
-      // Always send to Telegram
-      const msg = `🏋️ <b>New Health Test</b>\n👤 ${effectiveName}\n📱 ${effectivePhone}\n\n🍎 Nutrition: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n❤️ Health: ${healthPct}% (${healthScore}/${healthMax})\n📊 Overall: ${overallPct}%${!user ? '\n\n⚠️ Guest (not registered)' : ''}`;
+      // Full Telegram report with every question and chosen answer
+      const testLabel = isProgress ? 'Тест №2 · Прогресс 2 мес' : 'Тест №1 · Базовый';
+      const qaLines = test.questions.map((q, i) => {
+        const idx = newAnswers[i];
+        const optionText = q.options[lang][idx] ?? '—';
+        const score = q.scores[idx] ?? 0;
+        return `${i + 1}. <b>${escapeHtml(q.q[lang])}</b>\n   → ${escapeHtml(optionText)} <i>(${score}/4)</i>`;
+      }).join('\n\n');
+
+      const sectionA = isProgress ? 'Тело' : 'Питание';
+      const sectionB = isProgress ? 'Дисциплина' : 'Здоровье';
+
+      const msg =
+        `🏋️ <b>${testLabel}</b>\n👤 ${escapeHtml(effectiveName || '—')}\n📱 ${escapeHtml(effectivePhone || '—')}\n\n` +
+        `${sectionA}: ${nutritionPct}% (${nutritionScore}/${nutritionMax})\n` +
+        `${sectionB}: ${healthPct}% (${healthScore}/${healthMax})\n` +
+        `📊 <b>Итого: ${overallPct}%</b>${!user ? '\n\n⚠️ Гость (не зарегистрирован)' : ''}\n\n` +
+        `━━━━━━━━━━━━━━\n<b>Ответы:</b>\n\n${qaLines}`;
 
       supabase.functions.invoke('send-telegram', {
         body: { action: 'testResult', message: msg },
@@ -85,12 +113,15 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
   };
 
   const calculateScores = (ans: number[]) => {
-    const nutritionScore = NUTRITION_INDICES.reduce((sum, i) => sum + (ans[i] || 0), 0);
-    const healthScore = HEALTH_INDICES.reduce((sum, i) => sum + (ans[i] || 0), 0);
+    // ans contains option indices; convert to scores via questions[i].scores[index]
+    const scoreAt = (i: number) => test.questions[i]?.scores[ans[i]] ?? 0;
+    const nutritionScore = NUTRITION_INDICES.reduce((sum, i) => sum + scoreAt(i), 0);
+    const healthScore = HEALTH_INDICES.reduce((sum, i) => sum + scoreAt(i), 0);
     const nutritionMax = NUTRITION_INDICES.length * 4;
     const healthMax = HEALTH_INDICES.length * 4;
     return { nutritionScore, nutritionMax, healthScore, healthMax };
   };
+
 
   const { nutritionScore, nutritionMax, healthScore, healthMax } = calculateScores(answers);
   const nutritionPct = Math.round((nutritionScore / nutritionMax) * 100);
@@ -253,11 +284,12 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
           >
             <div className="flex items-center gap-2 mb-3">
               {NUTRITION_INDICES.includes(currentQ) ? (
-                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{lang === 'en' ? 'Nutrition' : 'Питание'}</span></>
+                <><Apple className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{t(sectionALabel)}</span></>
               ) : (
-                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{lang === 'en' ? 'Health & Lifestyle' : 'Здоровье'}</span></>
+                <><Heart className="w-4 h-4 text-primary" /><span className="text-xs font-bold text-primary uppercase tracking-wider">{t(sectionBLabel)}</span></>
               )}
             </div>
+
 
             <div className="flex items-center gap-3 mb-6">
               <button
@@ -305,8 +337,8 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
             <h2 className="text-2xl font-extrabold uppercase tracking-tight mb-6">{t(test.resultTitle)}</h2>
 
             <div className="flex gap-8 mb-6">
-              <ScoreRing percentage={nutritionPct} label={lang === 'en' ? 'Nutrition' : 'Питание'} icon={Apple} color="hsl(8, 85%, 58%)" />
-              <ScoreRing percentage={healthPct} label={lang === 'en' ? 'Health' : 'Здоровье'} icon={Heart} color="hsl(8, 85%, 58%)" />
+              <ScoreRing percentage={nutritionPct} label={t(sectionALabel)} icon={Apple} color="hsl(8, 85%, 58%)" />
+              <ScoreRing percentage={healthPct} label={t(sectionBLabel)} icon={Heart} color="hsl(8, 85%, 58%)" />
             </div>
 
             <div className="bg-card rounded-2xl p-4 w-full max-w-sm mb-4 border border-border/50">
@@ -322,30 +354,35 @@ const TestSection = ({ onLoginClick }: TestSectionProps) => {
               }`}>{t(getLevel(overallPct))}</span>
             </div>
 
-            <div className="bg-card rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4 border border-border/50">
-              <h4 className="text-sm font-extrabold flex items-center gap-2">
-                📊 {lang === 'en' ? 'WHO Standards' : 'Стандарты ВОЗ'}
-              </h4>
-              <WhoBar percentage={nutritionPct} label={lang === 'en' ? 'Nutrition' : 'Питание'} />
-              <WhoBar percentage={healthPct} label={lang === 'en' ? 'Health' : 'Здоровье'} />
-            </div>
+            {!isProgress && (
+              <>
+                <div className="bg-card rounded-2xl p-4 w-full max-w-sm space-y-4 mb-4 border border-border/50">
+                  <h4 className="text-sm font-extrabold flex items-center gap-2">
+                    📊 {lang === 'en' ? 'WHO Standards' : 'Стандарты ВОЗ'}
+                  </h4>
+                  <WhoBar percentage={nutritionPct} label={t(sectionALabel)} />
+                  <WhoBar percentage={healthPct} label={t(sectionBLabel)} />
+                </div>
 
-            <div className="w-full max-w-sm space-y-3 mb-4">
-              <div className="bg-card rounded-2xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Apple className="w-4 h-4 text-green-400" />
-                  <span className="text-sm font-extrabold">{lang === 'en' ? 'Nutrition' : 'Питание'}</span>
+                <div className="w-full max-w-sm space-y-3 mb-4">
+                  <div className="bg-card rounded-2xl p-4 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Apple className="w-4 h-4 text-green-400" />
+                      <span className="text-sm font-extrabold">{t(sectionALabel)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
+                  </div>
+                  <div className="bg-card rounded-2xl p-4 border border-border/50">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Heart className="w-4 h-4 text-primary" />
+                      <span className="text-sm font-extrabold">{t(sectionBLabel)}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(healthPct, 'health'))}</p>
+                  </div>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(nutritionPct, 'nutrition'))}</p>
-              </div>
-              <div className="bg-card rounded-2xl p-4 border border-border/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <Heart className="w-4 h-4 text-primary" />
-                  <span className="text-sm font-extrabold">{lang === 'en' ? 'Health' : 'Здоровье'}</span>
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">{t(getWhoComparison(healthPct, 'health'))}</p>
-              </div>
-            </div>
+              </>
+            )}
+
 
             {/* Registration CTA for guests */}
             {!user && (
