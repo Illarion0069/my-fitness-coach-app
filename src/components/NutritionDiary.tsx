@@ -251,20 +251,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       return;
     }
     setPendingFile(file);
+    // Auto-infer meal type from time of day and open combined picker
+    const now = new Date();
+    const h = now.getHours();
+    const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+    setPendingMealType(inferred);
+    const hh = String(h).padStart(2, '0');
+    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+    setPendingMealTime(`${hh}:${mm}`);
     setShowMealPicker(true);
     if (fileRef.current) fileRef.current.value = '';
   };
 
   const handleSelectMealType = (mealType: MealType) => {
     setPendingMealType(mealType);
-    // Default time based on meal type
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-    const defaultTimes: Record<MealType, string> = { breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: `${hh}:${mm}` };
-    setPendingMealTime(defaultTimes[mealType]);
-    setShowMealPicker(false);
-    setShowTimePicker(true);
   };
 
   const handleUploadWithTime = async () => {
