@@ -1292,48 +1292,22 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
-      {/* Source Picker Modal */}
+      {/* Combined Meal + Time + Source Picker Modal */}
       <AnimatePresence>
         {showSourcePicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSourcePicker(false)}
             className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-3 border border-border/40">
-              <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'Photo source' : 'Источник фото'}</p>
-              <button onClick={() => { setShowSourcePicker(false); cameraRef.current?.click(); }}
-                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95">
-                <Camera className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Camera' : 'Камера'}</span>
-              </button>
-              <button onClick={() => { setShowSourcePicker(false); fileRef.current?.click(); }}
-                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95">
-                <ImagePlus className="w-5 h-5 text-primary" />
-                <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Gallery' : 'Галерея'}</span>
-              </button>
-              <button onClick={() => setShowSourcePicker(false)} className="w-full text-xs text-muted-foreground py-2 text-center">
-                {lang === 'en' ? 'Cancel' : 'Отмена'}
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Meal Type + Time Picker Modal (combined) */}
-      <AnimatePresence>
-        {showMealPicker && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowMealPicker(false); setPendingFile(null); setPendingMealType(null); }}
-            className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
               className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-4 border border-border/40">
               <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'Meal & time' : 'Приём пищи и время'}</p>
+
               <div className="grid grid-cols-2 gap-2">
                 {MEAL_TYPES.map(mt => {
                   const selected = pendingMealType === mt.key;
                   return (
-                    <button key={mt.key} onClick={() => handleSelectMealType(mt.key)}
-                      className={`flex items-center gap-2.5 rounded-2xl p-3.5 transition-colors active:scale-95 border ${
+                    <button key={mt.key} onClick={() => setPendingMealType(mt.key)}
+                      className={`flex items-center gap-2.5 rounded-2xl p-3 transition-colors active:scale-95 border ${
                         selected ? 'bg-primary/15 border-primary/60' : 'bg-secondary/50 hover:bg-secondary/70 border-transparent'
                       }`}>
                       <span className="text-xl">{mt.emoji}</span>
@@ -1342,25 +1316,38 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   );
                 })}
               </div>
-              <div className="flex items-center justify-center gap-2">
+
+              <div className="flex items-center justify-center">
                 <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
                   className="bg-secondary/50 border border-border/50 rounded-2xl px-5 py-2.5 text-xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => { setShowMealPicker(false); setPendingFile(null); setPendingMealType(null); }}
-                  className="flex-1 py-3 rounded-2xl bg-secondary/50 text-sm font-bold text-muted-foreground active:scale-95">
-                  {lang === 'en' ? 'Cancel' : 'Отмена'}
-                </button>
-                <button onClick={() => { setShowMealPicker(false); handleUploadWithTime(); }}
-                  disabled={!pendingMealType}
-                  className="flex-1 py-3 rounded-2xl bg-primary text-sm font-bold text-primary-foreground active:scale-95 disabled:opacity-40">
-                  {lang === 'en' ? 'Upload' : 'Загрузить'}
-                </button>
+
+              <div className="pt-1 space-y-2">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">{lang === 'en' ? 'Photo source' : 'Источник фото'}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => { setShowSourcePicker(false); cameraRef.current?.click(); }}
+                    disabled={!pendingMealType}
+                    className="flex flex-col items-center gap-1.5 bg-primary/15 hover:bg-primary/25 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
+                    <Camera className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Camera' : 'Камера'}</span>
+                  </button>
+                  <button onClick={() => { setShowSourcePicker(false); fileRef.current?.click(); }}
+                    disabled={!pendingMealType}
+                    className="flex flex-col items-center gap-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
+                    <ImagePlus className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Gallery' : 'Галерея'}</span>
+                  </button>
+                </div>
               </div>
+
+              <button onClick={() => setShowSourcePicker(false)} className="w-full text-xs text-muted-foreground py-2 text-center">
+                {lang === 'en' ? 'Cancel' : 'Отмена'}
+              </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+
 
 
       {/* Quick Add Modal */}
