@@ -21,9 +21,10 @@ interface ClientTestHistoryProps {
   lang: string;
   initialTest?: TestType | null;
   onAllDone?: () => void;
+  trainerView?: boolean;
 }
 
-const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone }: ClientTestHistoryProps) => {
+const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone, trainerView = false }: ClientTestHistoryProps) => {
   const [results, setResults] = useState<TestResult[]>([]);
   const [loading, setLoading] = useState(true);
   const [takingTest, setTakingTest] = useState<null | TestType>(initialTest);
