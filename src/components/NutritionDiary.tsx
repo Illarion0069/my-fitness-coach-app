@@ -268,7 +268,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     const path = `${user.id}/${date}_${Date.now()}.${ext}`;
 
     try {
-      const { error: uploadError } = await supabase.storage.from('food-photos').upload(path, pendingFile, { upsert: true });
+      const { error: uploadError } = await supabase.storage.from('food-photos').upload(path, file, { upsert: true });
       if (uploadError) throw uploadError;
       const { data: { publicUrl } } = supabase.storage.from('food-photos').getPublicUrl(path);
       const { data: validation, error: valError } = await supabase.functions.invoke('validate-food-photo', {
