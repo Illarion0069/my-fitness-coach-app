@@ -83,6 +83,23 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone, traine
 
   // Empty state
   if (results.length === 0) {
+    if (trainerView) {
+      return (
+        <div className="flex flex-col items-center justify-center py-12 text-center px-4">
+          <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center mb-4">
+            <ClipboardCheck className="w-7 h-7 text-muted-foreground" />
+          </div>
+          <h3 className="text-base font-extrabold mb-2">
+            {lang === 'en' ? 'No tests completed yet' : 'Клиент ещё не проходил тесты'}
+          </h3>
+          <p className="text-xs text-muted-foreground max-w-[260px]">
+            {lang === 'en'
+              ? 'Results will appear here once the client completes a health assessment.'
+              : 'Результаты появятся здесь, когда клиент пройдёт тест здоровья.'}
+          </p>
+        </div>
+      );
+    }
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center px-4">
         <div className="w-16 h-16 rounded-2xl gradient-primary flex items-center justify-center mb-4 glow-primary">
