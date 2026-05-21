@@ -175,6 +175,7 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone, traine
 
   return (
     <div className="space-y-4">
+      {!trainerView && (
       <div className="space-y-2">
         <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider flex items-center gap-1 px-1">
           <Plus className="w-3 h-3" />
