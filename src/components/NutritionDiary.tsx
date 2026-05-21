@@ -1248,7 +1248,18 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 {lang === 'en' ? 'Add meal' : 'Добавить приём пищи'}
               </p>
 
-              <button onClick={() => { setShowAddMenu(false); setShowSourcePicker(true); }}
+              <button onClick={() => {
+                  setShowAddMenu(false);
+                  // Auto-infer meal & time from current time of day
+                  const now = new Date();
+                  const h = now.getHours();
+                  const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+                  setPendingMealType(inferred);
+                  const hh = String(h).padStart(2, '0');
+                  const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+                  setPendingMealTime(`${hh}:${mm}`);
+                  setShowSourcePicker(true);
+                }}
                 disabled={photosAtLimit || uploading}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98] disabled:opacity-40">
                 <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -1259,6 +1270,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'AI will detect food and macros' : 'ИИ определит еду и КБЖУ'}</p>
                 </div>
               </button>
+
 
               <button onClick={() => { setShowAddMenu(false); const now = new Date(); setQuickAddTime(`${String(now.getHours()).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
