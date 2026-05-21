@@ -398,7 +398,7 @@ const ClientDetailAccordion = ({
         return <TrainerWhoopWidget userId={client.user_id} lang={lang} />;
 
       case 'tests':
-        return <ClientTestHistory userId={client.user_id} lang={lang} />;
+        return <ClientTestHistory userId={client.user_id} lang={lang} trainerView />;
 
       case 'photos':
         return <ClientProgressPhotos userId={client.user_id} lang={lang} />;
