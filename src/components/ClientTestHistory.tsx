@@ -205,6 +205,9 @@ const ClientTestHistory = ({ userId, lang, initialTest = null, onAllDone, traine
           </button>
         ))}
       </div>
+      )}
+
+
 
 
       <div className="bg-secondary/30 rounded-xl p-3 space-y-2">
