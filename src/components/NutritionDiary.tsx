@@ -257,15 +257,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
 
-  const handleUploadWithTime = async () => {
-    if (!pendingFile || !user || !pendingMealType) return;
+  const handleUploadWithTime = async (fileOverride?: File) => {
+    const file = fileOverride || pendingFile;
+    if (!file || !user || !pendingMealType) return;
     if (!VALID_MEAL_TYPES.includes(pendingMealType)) return;
-    setShowTimePicker(false);
     setUploading(true);
     const mealType = pendingMealType;
     const mealTime = pendingMealTime || null;
-    const ext = pendingFile.name.split('.').pop();
+    const ext = file.name.split('.').pop();
     const path = `${user.id}/${date}_${Date.now()}.${ext}`;
+
     try {
       const { error: uploadError } = await supabase.storage.from('food-photos').upload(path, pendingFile, { upsert: true });
       if (uploadError) throw uploadError;
