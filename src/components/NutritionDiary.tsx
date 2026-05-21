@@ -251,20 +251,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       return;
     }
     setPendingFile(file);
+    // Auto-infer meal type from time of day and open combined picker
+    const now = new Date();
+    const h = now.getHours();
+    const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+    setPendingMealType(inferred);
+    const hh = String(h).padStart(2, '0');
+    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+    setPendingMealTime(`${hh}:${mm}`);
     setShowMealPicker(true);
     if (fileRef.current) fileRef.current.value = '';
   };
 
   const handleSelectMealType = (mealType: MealType) => {
     setPendingMealType(mealType);
-    // Default time based on meal type
-    const now = new Date();
-    const hh = String(now.getHours()).padStart(2, '0');
-    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-    const defaultTimes: Record<MealType, string> = { breakfast: '08:00', lunch: '13:00', dinner: '19:00', snack: `${hh}:${mm}` };
-    setPendingMealTime(defaultTimes[mealType]);
-    setShowMealPicker(false);
-    setShowTimePicker(true);
   };
 
   const handleUploadWithTime = async () => {
@@ -1316,72 +1316,41 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
-      {/* Meal Type Picker Modal */}
+      {/* Meal Type + Time Picker Modal (combined) */}
       <AnimatePresence>
         {showMealPicker && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowMealPicker(false); setPendingFile(null); }}
-            className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              onClick={e => e.stopPropagation()}
-              className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-3 border border-border/40">
-              <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'What meal?' : 'Какой приём пищи?'}</p>
-              <div className="grid grid-cols-2 gap-2">
-                {MEAL_TYPES.map(mt => (
-                  <button key={mt.key} onClick={() => handleSelectMealType(mt.key)}
-                    className="flex items-center gap-2.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-3.5 transition-colors active:scale-95">
-                    <span className="text-xl">{mt.emoji}</span>
-                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? mt.labelEn : mt.labelRu}</span>
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => { setShowMealPicker(false); setPendingFile(null); }}
-                className="w-full text-xs text-muted-foreground py-2 text-center">
-                {lang === 'en' ? 'Cancel' : 'Отмена'}
-              </button>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Time Picker Modal */}
-      <AnimatePresence>
-        {showTimePicker && pendingMealType && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowTimePicker(false); setPendingFile(null); setPendingMealType(null); }}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => { setShowMealPicker(false); setPendingFile(null); setPendingMealType(null); }}
             className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
               className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-4 border border-border/40">
-              <p className="text-sm font-bold text-foreground text-center">
-                {MEAL_TYPES.find(m => m.key === pendingMealType)?.emoji}{' '}
-                {lang === 'en' ? 'When did you eat?' : 'Во сколько вы ели?'}
-              </p>
-              <div className="flex justify-center">
-                <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
-                  className="bg-secondary/50 border border-border/50 rounded-2xl px-6 py-3 text-2xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
+              <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'Meal & time' : 'Приём пищи и время'}</p>
+              <div className="grid grid-cols-2 gap-2">
+                {MEAL_TYPES.map(mt => {
+                  const selected = pendingMealType === mt.key;
+                  return (
+                    <button key={mt.key} onClick={() => handleSelectMealType(mt.key)}
+                      className={`flex items-center gap-2.5 rounded-2xl p-3.5 transition-colors active:scale-95 border ${
+                        selected ? 'bg-primary/15 border-primary/60' : 'bg-secondary/50 hover:bg-secondary/70 border-transparent'
+                      }`}>
+                      <span className="text-xl">{mt.emoji}</span>
+                      <span className="text-sm font-bold text-foreground">{lang === 'en' ? mt.labelEn : mt.labelRu}</span>
+                    </button>
+                  );
+                })}
               </div>
-              <div className="flex gap-3 justify-center">
-                <button onClick={() => {
-                  const [h] = pendingMealTime.split(':').map(Number);
-                  const newH = (h - 1 + 24) % 24;
-                  setPendingMealTime(`${String(newH).padStart(2, '0')}:00`);
-                }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
-                  <Minus className="w-4 h-4" />
-                </button>
-                <button onClick={() => {
-                  const [h] = pendingMealTime.split(':').map(Number);
-                  const newH = (h + 1) % 24;
-                  setPendingMealTime(`${String(newH).padStart(2, '0')}:00`);
-                }} className="w-10 h-10 rounded-xl bg-secondary/50 flex items-center justify-center active:scale-95 text-muted-foreground">
-                  <Plus className="w-4 h-4" />
-                </button>
+              <div className="flex items-center justify-center gap-2">
+                <input type="time" value={pendingMealTime} onChange={e => setPendingMealTime(e.target.value)}
+                  className="bg-secondary/50 border border-border/50 rounded-2xl px-5 py-2.5 text-xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
               </div>
               <div className="flex gap-2">
-                <button onClick={() => { setShowTimePicker(false); setShowMealPicker(true); }}
+                <button onClick={() => { setShowMealPicker(false); setPendingFile(null); setPendingMealType(null); }}
                   className="flex-1 py-3 rounded-2xl bg-secondary/50 text-sm font-bold text-muted-foreground active:scale-95">
-                  {lang === 'en' ? 'Back' : 'Назад'}
+                  {lang === 'en' ? 'Cancel' : 'Отмена'}
                 </button>
-                <button onClick={handleUploadWithTime}
-                  className="flex-1 py-3 rounded-2xl bg-primary text-sm font-bold text-primary-foreground active:scale-95">
+                <button onClick={() => { setShowMealPicker(false); handleUploadWithTime(); }}
+                  disabled={!pendingMealType}
+                  className="flex-1 py-3 rounded-2xl bg-primary text-sm font-bold text-primary-foreground active:scale-95 disabled:opacity-40">
                   {lang === 'en' ? 'Upload' : 'Загрузить'}
                 </button>
               </div>
@@ -1389,6 +1358,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           </motion.div>
         )}
       </AnimatePresence>
+
 
       {/* Quick Add Modal */}
       <AnimatePresence>
