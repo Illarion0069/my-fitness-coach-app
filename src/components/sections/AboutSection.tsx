@@ -367,16 +367,10 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             <SectionTitle eyebrow={lang === 'en' ? 'Voices' : 'Отзывы'} noMargin>
               {t(reviews.title)}
             </SectionTitle>
-            <a
-              href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0"
-            >
+            <div className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0">
               <Star className="w-3.5 h-3.5 fill-primary text-primary" />
               5.0
-              <ArrowUpRight className="w-3 h-3" />
-            </a>
+            </div>
           </div>
           <p className="text-[12px] text-muted-foreground mb-4">{t(reviews.subtitle)}</p>
           <div className="space-y-3">
