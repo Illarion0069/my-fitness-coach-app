@@ -136,15 +136,14 @@ const faq = [
 ];
 
 const languagesList = [
-  { code: 'RU', label: { en: 'Russian', ru: 'Русский' }, level: { en: 'Native', ru: 'Родной' } },
-  { code: 'EN', label: { en: 'English', ru: 'Английский' }, level: { en: 'Fluent', ru: 'Свободно' } },
-  { code: 'UA', label: { en: 'Ukrainian', ru: 'Украинский' }, level: { en: 'Fluent', ru: 'Свободно' } },
+  { code: 'RU', label: { en: 'Russian', ru: 'Русский' } },
+  { code: 'EN', label: { en: 'English', ru: 'Английский' } },
+  { code: 'UA', label: { en: 'Ukrainian', ru: 'Украинский' } },
 ];
 
 const hours = [
-  { day: { en: 'Mon – Fri', ru: 'Пн – Пт' }, time: '07:00 – 21:00' },
-  { day: { en: 'Saturday', ru: 'Суббота' }, time: '09:00 – 18:00' },
-  { day: { en: 'Sunday', ru: 'Воскресенье' }, time: { en: 'By request', ru: 'По запросу' } },
+  { day: { en: 'Mon – Fri', ru: 'Пн – Пт' }, time: '07:00 – 20:00' },
+  { day: { en: 'Sat – Sun', ru: 'Сб – Вс' }, time: { en: 'Closed', ru: 'Выходной' } },
 ];
 
 const fade = (delay = 0) => ({
@@ -457,8 +456,7 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             {languagesList.map((l, i) => (
               <div key={i} className="bg-card border border-border/50 rounded-xl p-3 text-center">
                 <div className="text-base font-heading font-extrabold text-primary">{l.code}</div>
-                <div className="text-[11px] font-bold mt-0.5">{t(l.label)}</div>
-                <div className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{t(l.level)}</div>
+                <div className="text-[11px] font-bold mt-1">{t(l.label)}</div>
               </div>
             ))}
           </div>
@@ -497,23 +495,35 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
               {lang === 'en' ? 'Training Gym' : 'Тренируемся в'}
             </h2>
           </div>
-          <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/5 p-5">
-            <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
-            <div className="relative flex items-center gap-4">
-              {/* Stylized Reload logo */}
-              <div className="shrink-0 w-16 h-16 rounded-2xl gradient-primary flex flex-col items-center justify-center text-primary-foreground shadow-lg shadow-primary/30">
-                <span className="text-[9px] font-extrabold uppercase tracking-[0.15em] leading-none opacity-80">RE</span>
-                <span className="text-base font-heading font-extrabold uppercase tracking-tight leading-none -mt-0.5">LOAD</span>
+          <a
+            href="https://reload-fitness.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="relative block overflow-hidden rounded-2xl border border-border/50 bg-foreground hover:border-primary/40 transition-colors active:scale-[0.99]"
+          >
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.18),transparent_60%)] pointer-events-none" />
+            <div className="relative p-5 flex items-center gap-4">
+              {/* Reload brand mark (matches their minimal black/white identity) */}
+              <div className="shrink-0 flex flex-col items-center justify-center px-3 py-2 border-2 border-background rounded">
+                <span className="text-background text-2xl font-heading font-extrabold uppercase tracking-[0.12em] leading-none">
+                  Reload
+                </span>
+                <span className="text-background/70 text-[8px] font-bold uppercase tracking-[0.3em] leading-none mt-1">
+                  Fitness Studio
+                </span>
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-base font-heading font-extrabold uppercase tracking-tight">Reload Gym</h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{t(contact.address)}</p>
-                <p className="text-[11px] text-primary font-bold mt-1.5">
-                  {lang === 'en' ? 'Membership 150€ / month' : 'Абонемент 150€ / месяц'}
+                <p className="text-background text-sm font-bold leading-snug">
+                  {lang === 'en' ? 'Our training partner in Limassol' : 'Наш зал-партнёр в Лимассоле'}
+                </p>
+                <p className="text-background/70 text-[11px] mt-1 leading-snug">{t(contact.address)}</p>
+                <p className="text-primary text-[11px] font-extrabold uppercase tracking-wider mt-2 flex items-center gap-1">
+                  reload-fitness.com
+                  <ArrowUpRight className="w-3 h-3" />
                 </p>
               </div>
             </div>
-          </div>
+          </a>
         </motion.div>
 
         {/* ── FAQ ── */}
