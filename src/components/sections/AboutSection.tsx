@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Shield, Target, Handshake, Gem, Star, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Award, Shield, Target, Handshake, Gem, Star, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, ChevronLeft, ChevronRight, Sparkles, Dumbbell, Activity, HeartPulse, Languages, Clock, ChevronDown, Calendar, Building2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
@@ -11,6 +11,12 @@ import veronikaBefore from '@/assets/transformation-veronika-before.jpeg';
 import veronikaAfter from '@/assets/transformation-veronika-after.jpeg';
 import pavelBefore from '@/assets/transformation-pavel-before.jpeg';
 import pavelAfter from '@/assets/transformation-pavel-after.jpeg';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 
 const transformationPhotos: Record<number, { before: string; after: string }> = {
   0: { before: nataliaBefore, after: nataliaAfter },
@@ -45,13 +51,114 @@ const reasons = [
   },
 ];
 
+const specializations = [
+  { icon: Dumbbell, label: { en: 'Strength & Hypertrophy', ru: 'Сила и гипертрофия' } },
+  { icon: Activity, label: { en: 'HIIT & Conditioning', ru: 'HIIT и кондиция' } },
+  { icon: HeartPulse, label: { en: 'Posture & Rehab (MFR)', ru: 'Осанка и реабилитация (MFR)' } },
+  { icon: Sparkles, label: { en: 'Fat Loss & Body Recomp', ru: 'Жиросжигание и рекомпозиция' } },
+  { icon: Target, label: { en: 'TRX & Functional', ru: 'TRX и функционал' } },
+  { icon: Award, label: { en: 'Procedos & Animal Flow', ru: 'Procedos и Animal Flow' } },
+];
+
+const philosophy = {
+  title: { en: 'My Philosophy', ru: 'Моя философия' },
+  items: [
+    {
+      n: '01',
+      title: { en: 'Technique first', ru: 'Сначала техника' },
+      desc: {
+        en: 'No heavy weights until movement is clean. Every rep is coached.',
+        ru: 'Никакого веса, пока движение не чистое. Каждое повторение под контролем.',
+      },
+    },
+    {
+      n: '02',
+      title: { en: 'Data-driven progress', ru: 'Прогресс по данным' },
+      desc: {
+        en: 'Measurements, photos, performance — we track what matters and adjust.',
+        ru: 'Замеры, фото, показатели — отслеживаем главное и корректируем план.',
+      },
+    },
+    {
+      n: '03',
+      title: { en: 'Sustainable lifestyle', ru: 'Устойчивый образ жизни' },
+      desc: {
+        en: 'Nutrition, sleep, recovery. The plan fits your life, not the other way around.',
+        ru: 'Питание, сон, восстановление. План подстраивается под вашу жизнь.',
+      },
+    },
+  ],
+};
+
+const faq = [
+  {
+    q: { en: 'Do I need fitness experience to start?', ru: 'Нужен ли опыт, чтобы начать?' },
+    a: {
+      en: 'No. Most clients start from zero. The first session is an assessment — we build the program around your level and goals.',
+      ru: 'Нет. Большинство клиентов начинают с нуля. Первая сессия — это диагностика, программа строится под ваш уровень и цели.',
+    },
+  },
+  {
+    q: { en: 'How long is a session?', ru: 'Сколько длится тренировка?' },
+    a: {
+      en: '55 minutes of training + warm-up and cooldown. Plan for ~1 hour at the gym.',
+      ru: '55 минут тренировки + разминка и заминка. Закладывайте ~1 час в зале.',
+    },
+  },
+  {
+    q: { en: 'How many times a week should I train?', ru: 'Сколько раз в неделю тренироваться?' },
+    a: {
+      en: '2–3 personal sessions per week give the best ratio of results to recovery for most clients.',
+      ru: '2–3 персональные тренировки в неделю — лучший баланс результата и восстановления для большинства.',
+    },
+  },
+  {
+    q: { en: 'Is gym membership included?', ru: 'Входит ли абонемент в зал в цену?' },
+    a: {
+      en: 'No. Reload gym access is paid separately (150€/month). Personal training is a separate service.',
+      ru: 'Нет. Доступ в Reload оплачивается отдельно (150€/мес). Персональные тренировки — отдельная услуга.',
+    },
+  },
+  {
+    q: { en: 'What about cancellation?', ru: 'Что с отменой тренировки?' },
+    a: {
+      en: 'Cancel or reschedule at least 24h before the session at no cost. Later cancellations count as a used session.',
+      ru: 'Отмена или перенос минимум за 24 часа — без потерь. Позже — тренировка списывается.',
+    },
+  },
+  {
+    q: { en: 'Do you offer nutrition guidance?', ru: 'Есть ли сопровождение по питанию?' },
+    a: {
+      en: 'Yes. Built-in nutrition diary, AI photo analysis, calorie targets and weekly check-ins are part of the program.',
+      ru: 'Да. Встроенный дневник питания, AI-анализ фото, цели по калориям и еженедельные чек-ины — часть программы.',
+    },
+  },
+];
+
+const languagesList = [
+  { code: 'RU', label: { en: 'Russian', ru: 'Русский' }, level: { en: 'Native', ru: 'Родной' } },
+  { code: 'EN', label: { en: 'English', ru: 'Английский' }, level: { en: 'Fluent', ru: 'Свободно' } },
+  { code: 'UA', label: { en: 'Ukrainian', ru: 'Украинский' }, level: { en: 'Fluent', ru: 'Свободно' } },
+];
+
+const hours = [
+  { day: { en: 'Mon – Fri', ru: 'Пн – Пт' }, time: '07:00 – 21:00' },
+  { day: { en: 'Saturday', ru: 'Суббота' }, time: '09:00 – 18:00' },
+  { day: { en: 'Sunday', ru: 'Воскресенье' }, time: { en: 'By request', ru: 'По запросу' } },
+];
+
 const fade = (delay = 0) => ({
   initial: { opacity: 0, y: 16 },
   animate: { opacity: 1, y: 0 },
   transition: { delay, duration: 0.45 },
 });
 
-const AboutSection = () => {
+interface AboutSectionProps {
+  onNavigate?: (section: string) => void;
+  onBookClick?: () => void;
+}
+
+const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
   const { t, lang } = useLanguage();
   const { profile } = useAuth();
   const about = translations.about;
@@ -74,8 +181,13 @@ const AboutSection = () => {
   const currentTransform = transformations.items[activeTransformation];
   const currentPhotos = transformationPhotos[activeTransformation];
 
+  const handleBook = () => {
+    if (onBookClick) onBookClick();
+    else if (onNavigate) onNavigate('pricing');
+  };
+
   return (
-    <section className="min-h-screen pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
+    <section className="min-h-screen pb-32" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
 
       {/* ── Hero: Full-width trainer photo with overlay ── */}
       <motion.div {...fade(0)} className="relative">
@@ -112,6 +224,16 @@ const AboutSection = () => {
           ))}
         </motion.div>
 
+        {/* ── Primary CTA: Book ── */}
+        <motion.button
+          {...fade(0.12)}
+          onClick={handleBook}
+          className="w-full mb-6 rounded-2xl gradient-primary text-primary-foreground py-4 px-5 flex items-center justify-center gap-2 font-extrabold uppercase tracking-wider text-sm shadow-lg shadow-primary/30 active:scale-[0.98] transition-transform"
+        >
+          <Calendar className="w-5 h-5" />
+          {lang === 'en' ? 'Book a session' : 'Записаться на тренировку'}
+        </motion.button>
+
         {/* ── Bio ── */}
         <motion.div {...fade(0.15)} className="mb-8">
           <p className="text-sm text-muted-foreground leading-relaxed">
@@ -119,8 +241,46 @@ const AboutSection = () => {
           </p>
         </motion.div>
 
-        {/* ── Why me ── */}
+        {/* ── Philosophy ── */}
+        <motion.div {...fade(0.18)} className="mb-8">
+          <h2 className="text-sm font-extrabold uppercase tracking-wider mb-4">
+            {t(philosophy.title)}
+          </h2>
+          <div className="space-y-2.5">
+            {philosophy.items.map((p, i) => (
+              <div key={i} className="bg-card rounded-2xl border border-border/50 p-4 flex gap-3">
+                <div className="text-2xl font-heading font-extrabold text-primary/70 leading-none shrink-0 w-9">{p.n}</div>
+                <div>
+                  <h3 className="text-sm font-extrabold mb-1">{t(p.title)}</h3>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t(p.desc)}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Specializations ── */}
         <motion.div {...fade(0.2)} className="mb-8">
+          <h2 className="text-sm font-extrabold uppercase tracking-wider mb-4">
+            {lang === 'en' ? 'Specializations' : 'Специализации'}
+          </h2>
+          <div className="grid grid-cols-2 gap-2.5">
+            {specializations.map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div key={i} className="flex items-center gap-2.5 bg-card border border-border/50 rounded-xl p-3">
+                  <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <span className="text-xs font-bold leading-tight">{t(s.label)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </motion.div>
+
+        {/* ── Why me ── */}
+        <motion.div {...fade(0.22)} className="mb-8">
           <h2 className="text-sm font-extrabold uppercase tracking-wider mb-4">
             {lang === 'en' ? 'Why Train With Me' : 'Почему я'}
           </h2>
@@ -268,7 +428,7 @@ const AboutSection = () => {
         </motion.div>
 
         {/* ── Certifications ── */}
-        <motion.div {...fade(0.35)} className="mb-8">
+        <motion.div {...fade(0.32)} className="mb-8">
           <div className="flex items-center gap-2 mb-3">
             <Award className="w-4 h-4 text-primary" />
             <h2 className="text-sm font-extrabold uppercase tracking-wider">{t(about.certifications)}</h2>
@@ -285,8 +445,104 @@ const AboutSection = () => {
           </div>
         </motion.div>
 
+        {/* ── Languages ── */}
+        <motion.div {...fade(0.34)} className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Languages className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-extrabold uppercase tracking-wider">
+              {lang === 'en' ? 'Languages' : 'Языки'}
+            </h2>
+          </div>
+          <div className="grid grid-cols-3 gap-2.5">
+            {languagesList.map((l, i) => (
+              <div key={i} className="bg-card border border-border/50 rounded-xl p-3 text-center">
+                <div className="text-base font-heading font-extrabold text-primary">{l.code}</div>
+                <div className="text-[11px] font-bold mt-0.5">{t(l.label)}</div>
+                <div className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{t(l.level)}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Working Hours ── */}
+        <motion.div {...fade(0.36)} className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Clock className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-extrabold uppercase tracking-wider">
+              {lang === 'en' ? 'Working Hours' : 'Часы работы'}
+            </h2>
+          </div>
+          <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
+            {hours.map((h, i) => (
+              <div
+                key={i}
+                className={`flex items-center justify-between px-4 py-3 ${
+                  i < hours.length - 1 ? 'border-b border-border/40' : ''
+                }`}
+              >
+                <span className="text-xs font-bold">{t(h.day)}</span>
+                <span className="text-xs font-bold text-primary tabular-nums">
+                  {typeof h.time === 'string' ? h.time : t(h.time)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* ── Gym: Reload ── */}
+        <motion.div {...fade(0.38)} className="mb-8">
+          <div className="flex items-center gap-2 mb-3">
+            <Building2 className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-extrabold uppercase tracking-wider">
+              {lang === 'en' ? 'Training Gym' : 'Тренируемся в'}
+            </h2>
+          </div>
+          <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/5 p-5">
+            <div className="absolute -right-6 -top-6 w-32 h-32 rounded-full bg-primary/10 blur-2xl pointer-events-none" />
+            <div className="relative flex items-center gap-4">
+              {/* Stylized Reload logo */}
+              <div className="shrink-0 w-16 h-16 rounded-2xl gradient-primary flex flex-col items-center justify-center text-primary-foreground shadow-lg shadow-primary/30">
+                <span className="text-[9px] font-extrabold uppercase tracking-[0.15em] leading-none opacity-80">RE</span>
+                <span className="text-base font-heading font-extrabold uppercase tracking-tight leading-none -mt-0.5">LOAD</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-heading font-extrabold uppercase tracking-tight">Reload Gym</h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{t(contact.address)}</p>
+                <p className="text-[11px] text-primary font-bold mt-1.5">
+                  {lang === 'en' ? 'Membership 150€ / month' : 'Абонемент 150€ / месяц'}
+                </p>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── FAQ ── */}
+        <motion.div {...fade(0.4)} className="mb-8">
+          <h2 className="text-sm font-extrabold uppercase tracking-wider mb-3">
+            {lang === 'en' ? 'FAQ' : 'Частые вопросы'}
+          </h2>
+          <div className="bg-card border border-border/50 rounded-2xl px-4">
+            <Accordion type="single" collapsible className="w-full">
+              {faq.map((item, i) => (
+                <AccordionItem
+                  key={i}
+                  value={`item-${i}`}
+                  className={`${i === faq.length - 1 ? 'border-b-0' : 'border-border/40'}`}
+                >
+                  <AccordionTrigger className="text-left text-xs font-bold hover:no-underline py-3.5">
+                    {t(item.q)}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-[11px] text-muted-foreground leading-relaxed pb-3.5">
+                    {t(item.a)}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
+        </motion.div>
+
         {/* ── Contact ── */}
-        <motion.div {...fade(0.4)} className="mb-6">
+        <motion.div {...fade(0.42)} className="mb-6">
           <h2 className="text-sm font-extrabold uppercase tracking-wider mb-3">{t(contact.title)}</h2>
 
           <div className="space-y-3 mb-4">
@@ -366,6 +622,16 @@ const AboutSection = () => {
             <ArrowUpRight className="w-3.5 h-3.5" />
           </a>
         </motion.div>
+
+        {/* ── Final CTA: Book ── */}
+        <motion.button
+          {...fade(0.48)}
+          onClick={handleBook}
+          className="w-full mt-8 rounded-2xl gradient-primary text-primary-foreground py-4 px-5 flex items-center justify-center gap-2 font-extrabold uppercase tracking-wider text-sm shadow-lg shadow-primary/30 active:scale-[0.98] transition-transform"
+        >
+          <Calendar className="w-5 h-5" />
+          {lang === 'en' ? 'Book a session' : 'Записаться на тренировку'}
+        </motion.button>
       </div>
     </section>
   );
