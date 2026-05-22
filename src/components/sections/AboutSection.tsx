@@ -498,7 +498,7 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             {lang === 'en' ? 'FAQ' : 'Частые вопросы'}
           </SectionTitle>
           <div className="bg-card border border-border/50 rounded-2xl px-4">
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
               {faq.map((item, i) => (
                 <AccordionItem
                   key={i}
