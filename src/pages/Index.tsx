@@ -155,7 +155,7 @@ const AppContent = () => {
           }} clientPreview={clientPreview} />
         );
       case 'pricing': return <PricingSection />;
-      case 'about': return <AboutSection />;
+      case 'about': return <AboutSection onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} />;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       default: return null;
