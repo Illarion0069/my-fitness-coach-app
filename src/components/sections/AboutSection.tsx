@@ -170,12 +170,6 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
     ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
     : 'https://t.me/LimassolFitness_bot';
 
-  const socials = [
-    { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
-    { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
-    { icon: Send, label: 'Telegram', href: 'https://t.me/Illarion_Ientin' },
-    { icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/35795144819' },
-  ];
 
   const currentTransform = transformations.items[activeTransformation];
   const currentPhotos = transformationPhotos[activeTransformation];
@@ -286,21 +280,23 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
           <SectionTitle eyebrow={lang === 'en' ? 'Value' : 'Ценность'}>
             {lang === 'en' ? 'Why Train With Me' : 'Почему я'}
           </SectionTitle>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2.5">
             {reasons.map((reason, i) => {
               const Icon = reason.icon;
               const colors = [
-                'from-primary/20 to-primary/5 border-primary/20',
-                'from-blue-500/20 to-blue-500/5 border-blue-500/20',
-                'from-emerald-500/20 to-emerald-500/5 border-emerald-500/20',
+                'from-primary/15 to-primary/5 border-primary/20',
+                'from-blue-500/15 to-blue-500/5 border-blue-500/20',
+                'from-emerald-500/15 to-emerald-500/5 border-emerald-500/20',
               ];
               return (
-                <div key={i} className={`rounded-2xl border bg-gradient-to-br ${colors[i]} p-4 text-center`}>
-                  <div className="w-11 h-11 rounded-xl bg-background/50 flex items-center justify-center mx-auto mb-2.5">
+                <div key={i} className={`rounded-2xl border bg-gradient-to-br ${colors[i]} p-4 flex items-start gap-3.5`}>
+                  <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="text-xs font-extrabold mb-1.5 leading-tight">{t(reason.title)}</h3>
-                  <p className="text-[11px] text-muted-foreground leading-snug">{t(reason.desc)}</p>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold mb-1 leading-tight">{t(reason.title)}</h3>
+                    <p className="text-[13px] text-muted-foreground leading-snug">{t(reason.desc)}</p>
+                  </div>
                 </div>
               );
             })}
@@ -367,16 +363,10 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             <SectionTitle eyebrow={lang === 'en' ? 'Voices' : 'Отзывы'} noMargin>
               {t(reviews.title)}
             </SectionTitle>
-            <a
-              href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0"
-            >
+            <div className="flex items-center gap-1.5 bg-card px-3 py-1.5 rounded-xl border border-border/50 text-xs font-bold text-primary shrink-0">
               <Star className="w-3.5 h-3.5 fill-primary text-primary" />
               5.0
-              <ArrowUpRight className="w-3 h-3" />
-            </a>
+            </div>
           </div>
           <p className="text-[12px] text-muted-foreground mb-4">{t(reviews.subtitle)}</p>
           <div className="space-y-3">
@@ -461,18 +451,13 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
           </div>
         </motion.div>
 
-        {/* ── Gym: Reload ── */}
+        {/* ── Gym + Location: combined ── */}
         <motion.div {...fade(0.38)} className="mb-10">
           <SectionTitle eyebrow={lang === 'en' ? 'Location' : 'Место'} icon={Building2}>
-            {lang === 'en' ? 'Training Gym' : 'Тренируемся в'}
+            {lang === 'en' ? 'Where We Train' : 'Где тренируемся'}
           </SectionTitle>
-          <a
-            href="https://reload-fitness.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative block overflow-hidden rounded-2xl border border-border/50 bg-foreground hover:border-primary/40 transition-colors active:scale-[0.99]"
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.18),transparent_60%)] pointer-events-none" />
+          <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-foreground">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.2),transparent_60%)] pointer-events-none" />
             <div className="relative p-5 flex items-center gap-4">
               <div className="shrink-0 flex flex-col items-center justify-center px-3 py-2 border-2 border-background rounded">
                 <span className="text-background text-2xl font-heading font-extrabold uppercase tracking-[0.12em] leading-none">
@@ -484,16 +469,32 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-background text-sm font-bold leading-snug">
-                  {lang === 'en' ? 'Our training partner in Limassol' : 'Наш зал-партнёр в Лимассоле'}
+                  {lang === 'en' ? 'Reload Fitness, Limassol' : 'Reload Fitness, Лимассол'}
                 </p>
                 <p className="text-background/70 text-[12px] mt-1 leading-snug">{t(contact.address)}</p>
-                <p className="text-primary text-[11px] font-extrabold uppercase tracking-wider mt-2 flex items-center gap-1">
-                  reload-fitness.com
-                  <ArrowUpRight className="w-3 h-3" />
-                </p>
               </div>
             </div>
-          </a>
+            <div className="relative grid grid-cols-2 border-t border-background/15">
+              <a
+                href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-3 text-[11px] font-extrabold uppercase tracking-wider text-background hover:bg-background/5 transition-colors"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                {lang === 'en' ? 'Open in Maps' : 'Открыть карту'}
+              </a>
+              <a
+                href="https://reload-fitness.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-3 text-[11px] font-extrabold uppercase tracking-wider text-primary border-l border-background/15 hover:bg-background/5 transition-colors"
+              >
+                reload-fitness.com
+                <ArrowUpRight className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
         </motion.div>
 
         {/* ── FAQ ── */}
@@ -502,7 +503,7 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             {lang === 'en' ? 'FAQ' : 'Частые вопросы'}
           </SectionTitle>
           <div className="bg-card border border-border/50 rounded-2xl px-4">
-            <Accordion type="single" collapsible className="w-full">
+            <Accordion type="single" collapsible defaultValue="item-0" className="w-full">
               {faq.map((item, i) => (
                 <AccordionItem
                   key={i}
@@ -540,6 +541,22 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             </a>
 
             <a
+              href="https://wa.me/35795144819"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#25D366]/15 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-5 h-5 text-[#25D366]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">WhatsApp</p>
+                <p className="text-sm font-bold">{lang === 'en' ? 'Quick message' : 'Быстрое сообщение'}</p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </a>
+
+            <a
               href={botLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -549,16 +566,20 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
                 <Bot className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Telegram</p>
-                <p className="text-sm font-bold">{lang === 'en' ? 'Bot & direct chat' : 'Бот и личный чат'}</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Telegram Bot</p>
+                <p className="text-sm font-bold">{lang === 'en' ? 'Booking & reminders' : 'Бронирование и напоминания'}</p>
               </div>
               <ArrowUpRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </a>
           </div>
 
-          {/* Socials (Telegram removed — consolidated into Contact card above) */}
+          {/* Socials: personal Telegram + Instagram + Facebook */}
           <div className="grid grid-cols-3 gap-2">
-            {socials.filter(s => s.label !== 'Telegram').map((s, i) => (
+            {[
+              { icon: Send, label: lang === 'en' ? 'Telegram' : 'Telegram', href: 'https://t.me/Illarion_Ientin' },
+              { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
+              { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
+            ].map((s, i) => (
               <a
                 key={i}
                 href={s.href}
@@ -572,31 +593,6 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             ))}
           </div>
         </motion.div>
-
-        {/* ── Map: lightweight preview that opens Google Maps ── */}
-        <motion.a
-          {...fade(0.45)}
-          href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/5 p-5 active:scale-[0.99] transition-transform mb-8"
-        >
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-          <div className="absolute -right-2 -top-2 w-24 h-24 rounded-full border-2 border-primary/20 pointer-events-none" />
-          <div className="relative flex items-center gap-4">
-            <div className="shrink-0 w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-              <MapPin className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{lang === 'en' ? 'Location' : 'Адрес'}</p>
-              <p className="text-sm font-bold leading-snug">{t(contact.address)}</p>
-              <p className="text-primary text-[11px] font-extrabold uppercase tracking-wider mt-1.5 flex items-center gap-1">
-                {lang === 'en' ? 'Open in Google Maps' : 'Открыть в Google Картах'}
-                <ArrowUpRight className="w-3 h-3" />
-              </p>
-            </div>
-          </div>
-        </motion.a>
 
         {/* ── Final CTA: Book ── */}
         <motion.button

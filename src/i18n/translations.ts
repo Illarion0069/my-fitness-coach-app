@@ -165,8 +165,8 @@ export const translations = {
     title: { en: 'ABOUT ME', ru: 'ОБО МНЕ' },
     name: { en: 'Illarion Ientin', ru: 'Илларион Ентин' },
     bio: {
-      en: 'Professional fitness trainer with European accreditation EQF Level 3 and EQF Level 4. I provide high-quality, personalized fitness services designed to help you achieve your goals efficiently and safely. My approach combines modern training methods with individual attention to each client.',
-      ru: 'Профессиональный фитнес-тренер с европейской аккредитацией EQF уровня 3 и EQF уровня 4. Я предоставляю высококачественные персонализированные фитнес-услуги, разработанные для эффективного и безопасного достижения ваших целей. Мой подход сочетает современные методы тренировок с индивидуальным вниманием к каждому клиенту.',
+      en: 'Personal trainer in Limassol with 8+ years of hands-on coaching. I build precise, individual programs around your goals, schedule and body — blending strength work, mobility and recovery so progress actually sticks.',
+      ru: 'Персональный тренер в Лимассоле, 8+ лет практики. Строю точные индивидуальные программы под ваши цели, график и тело — сочетаю силовую работу, мобилити и восстановление, чтобы прогресс действительно закреплялся.',
     },
     certifications: {
       en: 'Certifications',
