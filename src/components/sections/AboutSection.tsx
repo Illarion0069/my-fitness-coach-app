@@ -457,18 +457,13 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
           </div>
         </motion.div>
 
-        {/* ── Gym: Reload ── */}
+        {/* ── Gym + Location: combined ── */}
         <motion.div {...fade(0.38)} className="mb-10">
           <SectionTitle eyebrow={lang === 'en' ? 'Location' : 'Место'} icon={Building2}>
-            {lang === 'en' ? 'Training Gym' : 'Тренируемся в'}
+            {lang === 'en' ? 'Where We Train' : 'Где тренируемся'}
           </SectionTitle>
-          <a
-            href="https://reload-fitness.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="relative block overflow-hidden rounded-2xl border border-border/50 bg-foreground hover:border-primary/40 transition-colors active:scale-[0.99]"
-          >
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.18),transparent_60%)] pointer-events-none" />
+          <div className="relative overflow-hidden rounded-2xl border border-border/50 bg-foreground">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,hsl(var(--primary)/0.2),transparent_60%)] pointer-events-none" />
             <div className="relative p-5 flex items-center gap-4">
               <div className="shrink-0 flex flex-col items-center justify-center px-3 py-2 border-2 border-background rounded">
                 <span className="text-background text-2xl font-heading font-extrabold uppercase tracking-[0.12em] leading-none">
@@ -480,16 +475,32 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-background text-sm font-bold leading-snug">
-                  {lang === 'en' ? 'Our training partner in Limassol' : 'Наш зал-партнёр в Лимассоле'}
+                  {lang === 'en' ? 'Reload Fitness, Limassol' : 'Reload Fitness, Лимассол'}
                 </p>
                 <p className="text-background/70 text-[12px] mt-1 leading-snug">{t(contact.address)}</p>
-                <p className="text-primary text-[11px] font-extrabold uppercase tracking-wider mt-2 flex items-center gap-1">
-                  reload-fitness.com
-                  <ArrowUpRight className="w-3 h-3" />
-                </p>
               </div>
             </div>
-          </a>
+            <div className="relative grid grid-cols-2 border-t border-background/15">
+              <a
+                href="https://maps.app.goo.gl/Jh2iDYPA7HyZGLbH7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-3 text-[11px] font-extrabold uppercase tracking-wider text-background hover:bg-background/5 transition-colors"
+              >
+                <MapPin className="w-3.5 h-3.5" />
+                {lang === 'en' ? 'Open in Maps' : 'Открыть карту'}
+              </a>
+              <a
+                href="https://reload-fitness.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-1.5 py-3 text-[11px] font-extrabold uppercase tracking-wider text-primary border-l border-background/15 hover:bg-background/5 transition-colors"
+              >
+                reload-fitness.com
+                <ArrowUpRight className="w-3 h-3" />
+              </a>
+            </div>
+          </div>
         </motion.div>
 
         {/* ── FAQ ── */}
