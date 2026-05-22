@@ -170,12 +170,6 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
     ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
     : 'https://t.me/LimassolFitness_bot';
 
-  const socials = [
-    { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
-    { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
-    { icon: Send, label: 'Telegram', href: 'https://t.me/Illarion_Ientin' },
-    { icon: MessageCircle, label: 'WhatsApp', href: 'https://wa.me/35795144819' },
-  ];
 
   const currentTransform = transformations.items[activeTransformation];
   const currentPhotos = transformationPhotos[activeTransformation];
