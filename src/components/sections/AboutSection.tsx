@@ -547,6 +547,22 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             </a>
 
             <a
+              href="https://wa.me/35795144819"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-colors"
+            >
+              <div className="w-11 h-11 rounded-xl bg-[#25D366]/15 flex items-center justify-center shrink-0">
+                <MessageCircle className="w-5 h-5 text-[#25D366]" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">WhatsApp</p>
+                <p className="text-sm font-bold">{lang === 'en' ? 'Quick message' : 'Быстрое сообщение'}</p>
+              </div>
+              <ArrowUpRight className="w-4 h-4 text-muted-foreground shrink-0" />
+            </a>
+
+            <a
               href={botLink}
               target="_blank"
               rel="noopener noreferrer"
@@ -556,16 +572,20 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
                 <Bot className="w-5 h-5 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Telegram</p>
-                <p className="text-sm font-bold">{lang === 'en' ? 'Bot & direct chat' : 'Бот и личный чат'}</p>
+                <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">Telegram Bot</p>
+                <p className="text-sm font-bold">{lang === 'en' ? 'Booking & reminders' : 'Бронирование и напоминания'}</p>
               </div>
               <ArrowUpRight className="w-4 h-4 text-muted-foreground shrink-0" />
             </a>
           </div>
 
-          {/* Socials (Telegram removed — consolidated into Contact card above) */}
+          {/* Socials: personal Telegram + Instagram + Facebook */}
           <div className="grid grid-cols-3 gap-2">
-            {socials.filter(s => s.label !== 'Telegram').map((s, i) => (
+            {[
+              { icon: Send, label: lang === 'en' ? 'Telegram' : 'Telegram', href: 'https://t.me/Illarion_Ientin' },
+              { icon: Instagram, label: 'Instagram', href: 'https://www.instagram.com/illarion_ientin/' },
+              { icon: Facebook, label: 'Facebook', href: 'https://www.facebook.com/illarion.ientin/' },
+            ].map((s, i) => (
               <a
                 key={i}
                 href={s.href}
@@ -579,31 +599,6 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             ))}
           </div>
         </motion.div>
-
-        {/* ── Map: lightweight preview that opens Google Maps ── */}
-        <motion.a
-          {...fade(0.45)}
-          href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="block relative overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-card via-card to-primary/5 p-5 active:scale-[0.99] transition-transform mb-8"
-        >
-          <div className="absolute -right-8 -bottom-8 w-40 h-40 rounded-full bg-primary/10 blur-3xl pointer-events-none" />
-          <div className="absolute -right-2 -top-2 w-24 h-24 rounded-full border-2 border-primary/20 pointer-events-none" />
-          <div className="relative flex items-center gap-4">
-            <div className="shrink-0 w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center shadow-lg shadow-primary/30">
-              <MapPin className="w-7 h-7 text-primary-foreground" />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">{lang === 'en' ? 'Location' : 'Адрес'}</p>
-              <p className="text-sm font-bold leading-snug">{t(contact.address)}</p>
-              <p className="text-primary text-[11px] font-extrabold uppercase tracking-wider mt-1.5 flex items-center gap-1">
-                {lang === 'en' ? 'Open in Google Maps' : 'Открыть в Google Картах'}
-                <ArrowUpRight className="w-3 h-3" />
-              </p>
-            </div>
-          </div>
-        </motion.a>
 
         {/* ── Final CTA: Book ── */}
         <motion.button
