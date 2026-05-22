@@ -136,15 +136,14 @@ const faq = [
 ];
 
 const languagesList = [
-  { code: 'RU', label: { en: 'Russian', ru: 'Русский' }, level: { en: 'Native', ru: 'Родной' } },
-  { code: 'EN', label: { en: 'English', ru: 'Английский' }, level: { en: 'Fluent', ru: 'Свободно' } },
-  { code: 'UA', label: { en: 'Ukrainian', ru: 'Украинский' }, level: { en: 'Fluent', ru: 'Свободно' } },
+  { code: 'RU', label: { en: 'Russian', ru: 'Русский' } },
+  { code: 'EN', label: { en: 'English', ru: 'Английский' } },
+  { code: 'UA', label: { en: 'Ukrainian', ru: 'Украинский' } },
 ];
 
 const hours = [
-  { day: { en: 'Mon – Fri', ru: 'Пн – Пт' }, time: '07:00 – 21:00' },
-  { day: { en: 'Saturday', ru: 'Суббота' }, time: '09:00 – 18:00' },
-  { day: { en: 'Sunday', ru: 'Воскресенье' }, time: { en: 'By request', ru: 'По запросу' } },
+  { day: { en: 'Mon – Fri', ru: 'Пн – Пт' }, time: '07:00 – 20:00' },
+  { day: { en: 'Sat – Sun', ru: 'Сб – Вс' }, time: { en: 'Closed', ru: 'Выходной' } },
 ];
 
 const fade = (delay = 0) => ({
