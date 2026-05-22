@@ -217,7 +217,7 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
           {[
             { value: '200+', label: lang === 'en' ? 'Clients' : 'Клиентов' },
             { value: '8+', label: lang === 'en' ? 'Years' : 'Лет опыта' },
-            { value: '98%', label: lang === 'en' ? 'Retention' : 'Возвращаются' },
+            { value: 'EQF 4', label: lang === 'en' ? 'Certified' : 'Сертификат' },
           ].map((stat, i) => (
             <div key={i} className="text-center py-4 rounded-2xl bg-card border border-border/50">
               <div className="text-3xl font-extrabold text-primary font-heading leading-none">{stat.value}</div>
