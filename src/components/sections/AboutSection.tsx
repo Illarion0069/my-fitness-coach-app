@@ -213,15 +213,15 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
       <div className="px-5">
 
         {/* ── Stats ── */}
-        <motion.div {...fade(0.1)} className="grid grid-cols-3 gap-3 mt-5 mb-6">
+        <motion.div {...fade(0.1)} className="grid grid-cols-3 gap-3 mt-6 mb-7">
           {[
             { value: '200+', label: lang === 'en' ? 'Clients' : 'Клиентов' },
             { value: '8+', label: lang === 'en' ? 'Years' : 'Лет опыта' },
-            { value: 'EQF 4', label: lang === 'en' ? 'Level' : 'Уровень' },
+            { value: '98%', label: lang === 'en' ? 'Retention' : 'Возвращаются' },
           ].map((stat, i) => (
-            <div key={i} className="text-center py-3 rounded-2xl bg-card border border-border/50">
-              <div className="text-xl font-extrabold text-primary font-heading">{stat.value}</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{stat.label}</div>
+            <div key={i} className="text-center py-4 rounded-2xl bg-card border border-border/50">
+              <div className="text-3xl font-extrabold text-primary font-heading leading-none">{stat.value}</div>
+              <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-1.5">{stat.label}</div>
             </div>
           ))}
         </motion.div>
