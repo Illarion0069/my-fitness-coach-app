@@ -211,7 +211,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               <img
                 src={trainerPhoto}
                 alt={t(hero.trainer)}
-                className="w-full h-full rounded-full object-contain object-center bg-card border-4 border-card"
+                className="w-full h-full rounded-full object-cover object-center bg-card border-4 border-card"
                 style={{ objectPosition: '60% center' }}
               />
             </div>
