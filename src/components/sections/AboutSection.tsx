@@ -188,20 +188,23 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
   return (
     <section className="min-h-screen pb-32" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
 
-      {/* ── Hero: Full-width trainer photo with overlay ── */}
+      {/* ── Hero: Tall trainer photo with overlay ── */}
       <motion.div {...fade(0)} className="relative">
         <img
           src={trainerPhoto}
           alt="Illarion Ientin"
-          className="w-full h-64 object-cover object-top"
+          className="w-full h-[70vh] max-h-[640px] min-h-[420px] object-cover object-top"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-transparent" />
-        <div className="absolute bottom-0 left-0 right-0 px-5 pb-5">
-          <h1 className="text-3xl font-extrabold uppercase tracking-tight font-heading leading-none">
-            {lang === 'en' ? 'ILLARION IENTIN' : 'ИЛЛАРИОН ЕНТИН'}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 px-5 pb-6">
+          <span className="inline-block text-[10px] font-extrabold uppercase tracking-[0.25em] text-primary mb-2">
+            {lang === 'en' ? 'Personal Trainer · Limassol' : 'Персональный тренер · Лимассол'}
+          </span>
+          <h1 className="text-5xl font-extrabold uppercase tracking-tight font-heading leading-[0.9]">
+            {lang === 'en' ? 'ILLARION\nIENTIN' : 'ИЛЛАРИОН\nЕНТИН'}
           </h1>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            <Shield className="w-3.5 h-3.5 text-primary" />
+          <div className="flex items-center gap-1.5 mt-3">
+            <Shield className="w-4 h-4 text-primary" />
             <span className="text-xs text-primary font-bold">{t(about.accreditation)}</span>
           </div>
         </div>
