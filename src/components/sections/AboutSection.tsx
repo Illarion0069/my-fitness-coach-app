@@ -286,21 +286,23 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
           <SectionTitle eyebrow={lang === 'en' ? 'Value' : 'Ценность'}>
             {lang === 'en' ? 'Why Train With Me' : 'Почему я'}
           </SectionTitle>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="space-y-2.5">
             {reasons.map((reason, i) => {
               const Icon = reason.icon;
               const colors = [
-                'from-primary/20 to-primary/5 border-primary/20',
-                'from-blue-500/20 to-blue-500/5 border-blue-500/20',
-                'from-emerald-500/20 to-emerald-500/5 border-emerald-500/20',
+                'from-primary/15 to-primary/5 border-primary/20',
+                'from-blue-500/15 to-blue-500/5 border-blue-500/20',
+                'from-emerald-500/15 to-emerald-500/5 border-emerald-500/20',
               ];
               return (
-                <div key={i} className={`rounded-2xl border bg-gradient-to-br ${colors[i]} p-4 text-center`}>
-                  <div className="w-11 h-11 rounded-xl bg-background/50 flex items-center justify-center mx-auto mb-2.5">
+                <div key={i} className={`rounded-2xl border bg-gradient-to-br ${colors[i]} p-4 flex items-start gap-3.5`}>
+                  <div className="w-11 h-11 rounded-xl bg-background/60 flex items-center justify-center shrink-0">
                     <Icon className="w-5 h-5 text-primary" />
                   </div>
-                  <h3 className="text-xs font-extrabold mb-1.5 leading-tight">{t(reason.title)}</h3>
-                  <p className="text-[11px] text-muted-foreground leading-snug">{t(reason.desc)}</p>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-extrabold mb-1 leading-tight">{t(reason.title)}</h3>
+                    <p className="text-[13px] text-muted-foreground leading-snug">{t(reason.desc)}</p>
+                  </div>
                 </div>
               );
             })}
