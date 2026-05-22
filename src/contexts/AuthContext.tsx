@@ -86,6 +86,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           if (currentFetchId !== profileFetchId) return;
           applyProfileState(profileRes.data, (rolesRes.data as Array<{ role: string }> | null) ?? null);
+
+          // Fire-and-forget: notify trainer about new signup (idempotent server-side)
+          if (!(profileRes.data as any)?.signup_notified_at) {
+            supabase.functions.invoke('notify-signup').catch((err) => {
+              console.warn('[Auth] notify-signup failed:', err);
+            });
+          }
         } finally {
           if (currentFetchId === profileFetchId) setLoading(false);
         }
