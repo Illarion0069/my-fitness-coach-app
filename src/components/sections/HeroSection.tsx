@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, UserRound, MessageCircle } from 'lucide-react';
-import trainerPhoto from '@/assets/trainer-photo.jpg';
+import trainerPhoto from '@/assets/trainer-avatar.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 import { useAuth } from '@/contexts/AuthContext';
@@ -211,7 +211,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               <img
                 src={trainerPhoto}
                 alt={t(hero.trainer)}
-                className="w-full h-full rounded-full object-contain object-center bg-card border-4 border-card"
+                className="w-full h-full rounded-full object-cover object-center bg-card border-4 border-card"
                 style={{ objectPosition: '60% center' }}
               />
             </div>
