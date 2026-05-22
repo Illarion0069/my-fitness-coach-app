@@ -416,6 +416,7 @@ export type Database = {
           id: string
           phone: string
           reactivation_sent_at: string | null
+          signup_notified_at: string | null
           telegram_chat_id: string | null
           telegram_link_code: string | null
           updated_at: string
@@ -432,6 +433,7 @@ export type Database = {
           id?: string
           phone: string
           reactivation_sent_at?: string | null
+          signup_notified_at?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           updated_at?: string
@@ -448,6 +450,7 @@ export type Database = {
           id?: string
           phone?: string
           reactivation_sent_at?: string | null
+          signup_notified_at?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
           updated_at?: string
