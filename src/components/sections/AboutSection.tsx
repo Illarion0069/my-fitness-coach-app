@@ -456,8 +456,7 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
             {languagesList.map((l, i) => (
               <div key={i} className="bg-card border border-border/50 rounded-xl p-3 text-center">
                 <div className="text-base font-heading font-extrabold text-primary">{l.code}</div>
-                <div className="text-[11px] font-bold mt-0.5">{t(l.label)}</div>
-                <div className="text-[9px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{t(l.level)}</div>
+                <div className="text-[11px] font-bold mt-1">{t(l.label)}</div>
               </div>
             ))}
           </div>
