@@ -200,7 +200,7 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
           <span className="inline-block text-[10px] font-extrabold uppercase tracking-[0.25em] text-primary mb-2">
             {lang === 'en' ? 'Personal Trainer · Limassol' : 'Персональный тренер · Лимассол'}
           </span>
-          <h1 className="text-5xl font-extrabold uppercase tracking-tight font-heading leading-[0.9]">
+          <h1 className="text-5xl font-extrabold uppercase tracking-tight font-heading leading-[0.9] whitespace-pre-line">
             {lang === 'en' ? 'ILLARION\nIENTIN' : 'ИЛЛАРИОН\nЕНТИН'}
           </h1>
           <div className="flex items-center gap-1.5 mt-3">
