@@ -162,7 +162,7 @@ const AppContent = () => {
       >
         <AnimatePresence mode="wait" custom={swipeDirection}>
           <motion.div
-            key={`${activeSection}-${remountKey}`}
+            key={activeSection}
             custom={swipeDirection}
             variants={slideVariants}
             initial="enter"
