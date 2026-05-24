@@ -14,9 +14,17 @@ serve(async (req) => {
   try {
     const url = new URL(req.url);
     const body = await req.json().catch(() => ({}));
-    
-    // Setup: register webhook with Telegram
+    const WEBHOOK_SECRET = Deno.env.get("TELEGRAM_WEBHOOK_SECRET");
+
+    // Setup: register webhook with Telegram (requires CRON_SECRET to call)
     if (url.searchParams.get("setup") === "true" || (body as any).setup === true) {
+      const cronSecret = Deno.env.get('CRON_SECRET');
+      if (!cronSecret || req.headers.get('x-cron-secret') !== cronSecret) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
       const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
       const webhookUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/telegram-webhook`;
       const res = await fetch(
@@ -24,7 +32,11 @@ serve(async (req) => {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: webhookUrl }),
+          body: JSON.stringify({
+            url: webhookUrl,
+            secret_token: WEBHOOK_SECRET,
+            allowed_updates: ["message", "edited_message"],
+          }),
         }
       );
       const data = await res.json();
@@ -33,6 +45,16 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Validate Telegram secret token for incoming updates
+    if (!WEBHOOK_SECRET || req.headers.get("X-Telegram-Bot-Api-Secret-Token") !== WEBHOOK_SECRET) {
+      console.warn("Telegram webhook: invalid or missing secret token");
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
 
     console.log("Telegram webhook received:", JSON.stringify(body));
 
