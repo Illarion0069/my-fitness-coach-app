@@ -31,22 +31,11 @@ const AppContent = () => {
   const [showGuide, setShowGuide] = useState(() => {
     return !localStorage.getItem('app_guide_seen') && !localStorage.getItem('user_role_hint');
   });
-  const [remountKey, setRemountKey] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Force remount of animated section when tab returns from background
-  // (iOS Safari drops requestAnimationFrame, leaving framer-motion stuck off-screen → black screen)
-  useEffect(() => {
-    const bump = () => setRemountKey(k => k + 1);
-    const onVisible = () => { if (document.visibilityState === 'visible') bump(); };
-    const onPageshow = (e: PageTransitionEvent) => { if (e.persisted) bump(); };
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('pageshow', onPageshow);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('pageshow', onPageshow);
-    };
-  }, []);
+  // Note: previously force-remounted the active section on visibilitychange/pageshow as a
+  // workaround for an iOS Safari framer-motion black-screen bug. That wiped in-section state
+  // (selected client, calendar day, viewMode) every time the user backgrounded the app.
+  // Removed so navigation state persists when returning from another tab/app.
 
   const optimisticIsTrainer = isTrainer || (loading && roleHint === 'trainer');
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
