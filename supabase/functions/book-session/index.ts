@@ -409,6 +409,39 @@ Deno.serve(async (req) => {
       const requesterIsTrainer = await isTrainer(user.id);
       const maxAllowed = requesterIsTrainer ? MAX_CLIENTS_PER_SLOT : 1;
 
+      // Restrict regular clients to one booking per day (to keep slots open for everyone).
+      // Trainers bypass this via trainerBook action.
+      if (!requesterIsTrainer) {
+        const { data: sameDayOneOff } = await supabase
+          .from('scheduled_sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('session_date', date)
+          .eq('is_recurring', false)
+          .limit(1);
+
+        const { data: sameDayRecurring } = await supabase
+          .from('scheduled_sessions')
+          .select('id, recurring_exceptions')
+          .eq('user_id', user.id)
+          .eq('is_recurring', true)
+          .eq('recurrence_day', dayOfWeek);
+
+        const hasRecurringToday = (sameDayRecurring || []).some(
+          (s: any) => !(s.recurring_exceptions || []).includes(date)
+        );
+
+        if ((sameDayOneOff && sameDayOneOff.length > 0) || hasRecurringToday) {
+          return new Response(JSON.stringify({
+            error: 'one_per_day',
+            message: 'У тебя уже есть запись на этот день 🙌 Мы стараемся сохранить места для всех, поэтому вторая тренировка в один день — только по согласованию с тренером напрямую. Напиши в WhatsApp или Telegram, и мы что-нибудь придумаем.',
+          }), {
+            status: 200,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+
       if (isSlotBlocked(requestedMinutes, DEFAULT_DURATION, trainerBlocks)) {
         return new Response(JSON.stringify({ error: 'Slot is blocked by trainer' }), {
           status: 200,
