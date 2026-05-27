@@ -102,8 +102,8 @@ Your nutrition philosophy follows evidence-based fat-loss principles aligned wit
       "positives": ["positive1"]
     }
   ],
-  "summary_ru": "Краткий итог на русском (2-3 предложения) С ТОЧКИ ЗРЕНИЯ ПОХУДЕНИЯ: что поддерживает дефицит, что мешает, какой 1 конкретный шаг улучшит день.",
-  "summary_en": "Brief summary in English (2-3 sentences) FROM A FAT-LOSS PERSPECTIVE: what supports the deficit, what hurts it, one concrete improvement."
+  "summary_ru": "Краткий итог на русском (2-3 предложения), обращение на ТЫ, начни с имени клиента: что было хорошо, что мешает, какой 1 конкретный шаг улучшит день. Избегай слова 'похудение'.",
+  "summary_en": "Brief summary in English (2-3 sentences), friendly second person, start with client's first name: what supports the goal, what hurts it, one concrete improvement. Avoid the phrase 'weight loss'."
 }
 
 IMPORTANT: For detected_foods, return an array of objects with name, portion_g, calories, protein_g, carbs_g, fat_g for each detected food item — these are used ONLY for qualitative feedback (positives, issues, scoring), NOT for daily totals. The server will recompute total_calories, total_protein_g, total_carbs_g, total_fat_g and per-meal calorie/macro totals strictly from the client's manual_entries (the source of truth). You may still return totals fields, but they will be overridden. Do NOT add extra "phantom" foods to detected_foods that the client did not log via manual_entries — only describe what the client actually entered.`;
