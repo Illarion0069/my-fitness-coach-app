@@ -350,6 +350,14 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
           setSelectedPackage(null);
           setPaymentOpened(false);
           setStep('payment');
+        } else if (data?.error === 'one_per_day') {
+          toast({
+            title: lang === 'en' ? 'Only one session per day' : 'Одна запись в день',
+            description: lang === 'en'
+              ? "You already have a session that day. We try to keep slots open for everyone, so a second training the same day is only possible by arrangement with the trainer. Drop a message on WhatsApp or Telegram and we'll figure something out."
+              : data.message,
+            variant: 'destructive',
+          });
         } else {
           toast({
             title: lang === 'en' ? 'Error' : 'Ошибка',
