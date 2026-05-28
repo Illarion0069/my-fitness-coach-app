@@ -26,7 +26,10 @@ interface Props {
   onClose: () => void;
   measurements: Measurement[];
   lang: string;
+  editable?: boolean;
+  onChanged?: () => void;
 }
+
 
 const METRICS = [
   { key: 'weight_kg', en: 'Weight', ru: 'Вес', unit: 'kg' },
