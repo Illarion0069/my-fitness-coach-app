@@ -51,12 +51,55 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
-const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) => {
+const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged }: Props) => {
+  const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
   const [timeRange, setTimeRange] = useState('all');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const metric = METRICS.find(m => m.key === activeMetric)!;
   const range = TIME_RANGES.find(r => r.key === timeRange)!;
+
+  const startEdit = (m: Measurement) => {
+    const val = m[activeMetric as keyof Measurement] as number | null;
+    setEditingId(m.id);
+    setEditValue(val != null ? String(val) : '');
+  };
+
+  const saveEdit = async (id: string) => {
+    const parsed = editValue.trim() === '' ? null : parseFloat(editValue.replace(',', '.'));
+    if (editValue.trim() !== '' && (parsed == null || isNaN(parsed))) {
+      toast({ title: lang === 'en' ? 'Invalid number' : 'Неверное число', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from('body_measurements')
+      .update({ [activeMetric]: parsed } as any)
+      .eq('id', id);
+    setSaving(false);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: lang === 'en' ? 'Saved' : 'Сохранено' });
+    setEditingId(null);
+    onChanged?.();
+  };
+
+  const deleteEntry = async (id: string) => {
+    if (!confirm(lang === 'en' ? 'Delete this measurement entry?' : 'Удалить эту запись замеров?')) return;
+    const { error } = await supabase.from('body_measurements').delete().eq('id', id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: lang === 'en' ? 'Deleted' : 'Удалено' });
+    onChanged?.();
+  };
+
 
   const filtered = useMemo(() => {
     const cutoff = new Date();
