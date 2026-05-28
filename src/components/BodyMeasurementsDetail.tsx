@@ -1,8 +1,11 @@
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { X, ChevronLeft, TrendingUp, TrendingDown, Minus, Pencil, Trash2, Check } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
 
 interface Measurement {
   id: string;
@@ -23,7 +26,10 @@ interface Props {
   onClose: () => void;
   measurements: Measurement[];
   lang: string;
+  editable?: boolean;
+  onChanged?: () => void;
 }
+
 
 const METRICS = [
   { key: 'weight_kg', en: 'Weight', ru: 'Вес', unit: 'kg' },
@@ -45,12 +51,55 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
-const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) => {
+const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged }: Props) => {
+  const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
   const [timeRange, setTimeRange] = useState('all');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState('');
+  const [saving, setSaving] = useState(false);
 
   const metric = METRICS.find(m => m.key === activeMetric)!;
   const range = TIME_RANGES.find(r => r.key === timeRange)!;
+
+  const startEdit = (m: Measurement) => {
+    const val = m[activeMetric as keyof Measurement] as number | null;
+    setEditingId(m.id);
+    setEditValue(val != null ? String(val) : '');
+  };
+
+  const saveEdit = async (id: string) => {
+    const parsed = editValue.trim() === '' ? null : parseFloat(editValue.replace(',', '.'));
+    if (editValue.trim() !== '' && (parsed == null || isNaN(parsed))) {
+      toast({ title: lang === 'en' ? 'Invalid number' : 'Неверное число', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from('body_measurements')
+      .update({ [activeMetric]: parsed } as any)
+      .eq('id', id);
+    setSaving(false);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: lang === 'en' ? 'Saved' : 'Сохранено' });
+    setEditingId(null);
+    onChanged?.();
+  };
+
+  const deleteEntry = async (id: string) => {
+    if (!confirm(lang === 'en' ? 'Delete this measurement entry?' : 'Удалить эту запись замеров?')) return;
+    const { error } = await supabase.from('body_measurements').delete().eq('id', id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: lang === 'en' ? 'Deleted' : 'Удалено' });
+    onChanged?.();
+  };
+
 
   const filtered = useMemo(() => {
     const cutoff = new Date();
@@ -95,7 +144,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
 
   const grouped = useMemo(() => {
     const sorted = [...measurements]
-      .filter(m => (m[activeMetric as keyof Measurement] as number | null) != null)
+      .filter(m => editable || (m[activeMetric as keyof Measurement] as number | null) != null)
       .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime());
 
     const groups: { label: string; items: Measurement[] }[] = [];
@@ -110,7 +159,8 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
       }
     });
     return groups;
-  }, [measurements, activeMetric, lang]);
+  }, [measurements, activeMetric, lang, editable]);
+
 
   // Min/max for Y axis
   const yDomain = useMemo(() => {
@@ -267,33 +317,91 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang }: Props) =>
                   <p className="text-xs font-bold text-foreground capitalize mb-1.5">{g.label}</p>
                   <div className="space-y-1">
                     {g.items.map((m, i) => {
-                      const val = m[activeMetric as keyof Measurement] as number;
+                      const rawVal = m[activeMetric as keyof Measurement] as number | null;
+                      const val = rawVal;
                       const nextVal = g.items[i + 1]
                         ? (g.items[i + 1][activeMetric as keyof Measurement] as number | null)
                         : null;
+                      const isEditing = editingId === m.id;
                       return (
-                        <div key={m.id} className="flex items-center justify-between py-2 border-b border-border/20">
-                          <span className="text-sm text-muted-foreground">
+                        <div key={m.id} className="flex items-center justify-between gap-2 py-2 border-b border-border/20">
+                          <span className="text-sm text-muted-foreground shrink-0">
                             {new Date(m.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
                             })}
                           </span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-lg font-extrabold">{val}</span>
-                            <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
-                            {nextVal != null && (
-                              <span className={`text-[10px] font-bold ${
-                                val > nextVal ? 'text-red-400' : val < nextVal ? 'text-green-400' : 'text-muted-foreground'
-                              }`}>
-                                {val > nextVal ? '+' : ''}{(val - nextVal).toFixed(1)}
-                              </span>
-                            )}
-                          </div>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step="0.1"
+                                autoFocus
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') saveEdit(m.id); if (e.key === 'Escape') setEditingId(null); }}
+                                placeholder={metric.unit}
+                                className="w-20 bg-background border border-primary/50 rounded-md px-2 py-1 text-sm text-right focus:outline-none"
+                              />
+                              <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
+                              <button
+                                onClick={() => saveEdit(m.id)}
+                                disabled={saving}
+                                className="w-7 h-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="w-7 h-7 rounded-md bg-secondary/60 text-muted-foreground flex items-center justify-center"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              {val != null ? (
+                                <>
+                                  <span className="text-lg font-extrabold">{val}</span>
+                                  <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
+                                  {nextVal != null && (
+                                    <span className={`text-[10px] font-bold ${
+                                      val > nextVal ? 'text-red-400' : val < nextVal ? 'text-green-400' : 'text-muted-foreground'
+                                    }`}>
+                                      {val > nextVal ? '+' : ''}{(val - nextVal).toFixed(1)}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground/50 italic">
+                                  {lang === 'en' ? 'no value' : 'нет данных'}
+                                </span>
+                              )}
+                              {editable && (
+                                <>
+                                  <button
+                                    onClick={() => startEdit(m)}
+                                    className="ml-1 w-7 h-7 rounded-md bg-secondary/60 text-muted-foreground hover:text-primary hover:bg-secondary flex items-center justify-center transition-colors"
+                                    aria-label={lang === 'en' ? 'Edit' : 'Изменить'}
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteEntry(m.id)}
+                                    className="w-7 h-7 rounded-md bg-secondary/60 text-muted-foreground hover:text-red-400 hover:bg-secondary flex items-center justify-center transition-colors"
+                                    aria-label={lang === 'en' ? 'Delete' : 'Удалить'}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
+
                   </div>
                 </div>
               ))}
