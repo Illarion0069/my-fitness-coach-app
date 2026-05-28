@@ -144,7 +144,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
 
   const grouped = useMemo(() => {
     const sorted = [...measurements]
-      .filter(m => (m[activeMetric as keyof Measurement] as number | null) != null)
+      .filter(m => editable || (m[activeMetric as keyof Measurement] as number | null) != null)
       .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime());
 
     const groups: { label: string; items: Measurement[] }[] = [];
@@ -159,7 +159,8 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
       }
     });
     return groups;
-  }, [measurements, activeMetric, lang]);
+  }, [measurements, activeMetric, lang, editable]);
+
 
   // Min/max for Y axis
   const yDomain = useMemo(() => {
