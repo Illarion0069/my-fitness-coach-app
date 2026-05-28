@@ -117,7 +117,10 @@ const BodyMeasurementsView = ({ userId, lang, editable = false }: Props) => {
         onClose={() => setDetailOpen(false)}
         measurements={measurements}
         lang={lang}
+        editable={editable}
+        onChanged={() => setReloadKey(k => k + 1)}
       />
+
     </>
   );
 };
