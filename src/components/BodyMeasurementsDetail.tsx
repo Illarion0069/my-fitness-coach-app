@@ -317,33 +317,91 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
                   <p className="text-xs font-bold text-foreground capitalize mb-1.5">{g.label}</p>
                   <div className="space-y-1">
                     {g.items.map((m, i) => {
-                      const val = m[activeMetric as keyof Measurement] as number;
+                      const rawVal = m[activeMetric as keyof Measurement] as number | null;
+                      const val = rawVal;
                       const nextVal = g.items[i + 1]
                         ? (g.items[i + 1][activeMetric as keyof Measurement] as number | null)
                         : null;
+                      const isEditing = editingId === m.id;
                       return (
-                        <div key={m.id} className="flex items-center justify-between py-2 border-b border-border/20">
-                          <span className="text-sm text-muted-foreground">
+                        <div key={m.id} className="flex items-center justify-between gap-2 py-2 border-b border-border/20">
+                          <span className="text-sm text-muted-foreground shrink-0">
                             {new Date(m.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', {
                               day: 'numeric',
                               month: 'short',
                               year: 'numeric',
                             })}
                           </span>
-                          <div className="flex items-center gap-1.5">
-                            <span className="text-lg font-extrabold">{val}</span>
-                            <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
-                            {nextVal != null && (
-                              <span className={`text-[10px] font-bold ${
-                                val > nextVal ? 'text-red-400' : val < nextVal ? 'text-green-400' : 'text-muted-foreground'
-                              }`}>
-                                {val > nextVal ? '+' : ''}{(val - nextVal).toFixed(1)}
-                              </span>
-                            )}
-                          </div>
+                          {isEditing ? (
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                step="0.1"
+                                autoFocus
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') saveEdit(m.id); if (e.key === 'Escape') setEditingId(null); }}
+                                placeholder={metric.unit}
+                                className="w-20 bg-background border border-primary/50 rounded-md px-2 py-1 text-sm text-right focus:outline-none"
+                              />
+                              <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
+                              <button
+                                onClick={() => saveEdit(m.id)}
+                                disabled={saving}
+                                className="w-7 h-7 rounded-md bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-50"
+                              >
+                                <Check className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setEditingId(null)}
+                                className="w-7 h-7 rounded-md bg-secondary/60 text-muted-foreground flex items-center justify-center"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-1.5">
+                              {val != null ? (
+                                <>
+                                  <span className="text-lg font-extrabold">{val}</span>
+                                  <span className="text-[10px] text-muted-foreground">{metric.unit}</span>
+                                  {nextVal != null && (
+                                    <span className={`text-[10px] font-bold ${
+                                      val > nextVal ? 'text-red-400' : val < nextVal ? 'text-green-400' : 'text-muted-foreground'
+                                    }`}>
+                                      {val > nextVal ? '+' : ''}{(val - nextVal).toFixed(1)}
+                                    </span>
+                                  )}
+                                </>
+                              ) : (
+                                <span className="text-sm text-muted-foreground/50 italic">
+                                  {lang === 'en' ? 'no value' : 'нет данных'}
+                                </span>
+                              )}
+                              {editable && (
+                                <>
+                                  <button
+                                    onClick={() => startEdit(m)}
+                                    className="ml-1 w-7 h-7 rounded-md bg-secondary/60 text-muted-foreground hover:text-primary hover:bg-secondary flex items-center justify-center transition-colors"
+                                    aria-label={lang === 'en' ? 'Edit' : 'Изменить'}
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteEntry(m.id)}
+                                    className="w-7 h-7 rounded-md bg-secondary/60 text-muted-foreground hover:text-red-400 hover:bg-secondary flex items-center justify-center transition-colors"
+                                    aria-label={lang === 'en' ? 'Delete' : 'Удалить'}
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
+
                   </div>
                 </div>
               ))}
