@@ -20,6 +20,7 @@ interface Measurement {
 interface Props {
   userId: string;
   lang: string;
+  editable?: boolean;
 }
 
 const FIELDS = [
