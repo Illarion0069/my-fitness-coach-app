@@ -41,10 +41,11 @@ const TrendIcon = ({ current, previous }: { current: number | null; previous: nu
   return <Minus className="w-3 h-3 text-muted-foreground" />;
 };
 
-const BodyMeasurementsView = ({ userId, lang }: Props) => {
+const BodyMeasurementsView = ({ userId, lang, editable = false }: Props) => {
   const [measurements, setMeasurements] = useState<Measurement[]>([]);
   const [loading, setLoading] = useState(true);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     supabase
@@ -57,7 +58,8 @@ const BodyMeasurementsView = ({ userId, lang }: Props) => {
         setMeasurements((data || []) as Measurement[]);
         setLoading(false);
       });
-  }, [userId]);
+  }, [userId, reloadKey]);
+
 
   if (loading) return null;
   if (measurements.length === 0) {
