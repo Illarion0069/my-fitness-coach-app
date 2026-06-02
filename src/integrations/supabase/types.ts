@@ -191,6 +191,51 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_course_leads: {
+        Row: {
+          created_at: string
+          email: string
+          fitness_level: string | null
+          id: string
+          injuries_limitations: string | null
+          main_goal: string | null
+          name: string
+          preferred_language: string | null
+          referral_source: string | null
+          selected_package: string
+          status: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          fitness_level?: string | null
+          id?: string
+          injuries_limitations?: string | null
+          main_goal?: string | null
+          name: string
+          preferred_language?: string | null
+          referral_source?: string | null
+          selected_package: string
+          status?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          fitness_level?: string | null
+          id?: string
+          injuries_limitations?: string | null
+          main_goal?: string | null
+          name?: string
+          preferred_language?: string | null
+          referral_source?: string | null
+          selected_package?: string
+          status?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
       food_photos: {
         Row: {
           created_at: string
