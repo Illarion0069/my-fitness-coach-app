@@ -2,15 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import {
   Activity,
   ArrowRight,
+  Award,
   Check,
   ChevronDown,
+  Clock,
   Loader2,
+  MapPin,
+  ShieldCheck,
   ShoppingBag,
   Sparkles,
   Target,
+  Users,
   Waves,
+  X,
   Zap,
-  Shield,
   HeartPulse,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,6 +42,10 @@ const leadSchema = z.object({
 
 type PackageId = 'basic' | 'premium';
 
+// Founding cohort capacity — update when spots fill to keep scarcity honest
+const FOUNDING_TOTAL = 30;
+const FOUNDING_TAKEN = 7;
+
 const ShopSection = () => {
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -46,6 +55,7 @@ const ShopSection = () => {
   const [submitted, setSubmitted] = useState(false);
   const [pkg, setPkg] = useState<PackageId>('basic');
   const [openFaq, setOpenFaq] = useState<number | null>(0);
+  const [showStickyCta, setShowStickyCta] = useState(false);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -59,9 +69,16 @@ const ShopSection = () => {
 
   const isRu = lang === 'ru';
 
+  // Sticky CTA appears after the hero scrolls off and hides when form is in view
   useEffect(() => {
-    setOpenFaq(0);
-  }, []);
+    const onScroll = () => {
+      const formTop = formRef.current?.getBoundingClientRect().top ?? Infinity;
+      setShowStickyCta(window.scrollY > 400 && formTop > window.innerHeight - 100 && !submitted);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [submitted]);
 
   const scrollToForm = (selected?: PackageId) => {
     if (selected) setPkg(selected);
@@ -107,6 +124,9 @@ const ShopSection = () => {
     setSubmitted(true);
   };
 
+  const spotsLeft = FOUNDING_TOTAL - FOUNDING_TAKEN;
+  const progressPct = Math.round((FOUNDING_TAKEN / FOUNDING_TOTAL) * 100);
+
   const benefits = [
     { icon: Activity, title: isRu ? 'Мобильность' : 'Mobility', desc: isRu ? 'Активная мобильность бёдер, плеч, позвоночника и голеностопов.' : 'Active mobility in hips, shoulders, spine and ankles.' },
     { icon: Target, title: isRu ? 'Контроль тела' : 'Body control', desc: isRu ? 'Управление телом близко к полу и в низких позициях.' : 'Learn to control your body close to the floor.' },
@@ -121,31 +141,37 @@ const ShopSection = () => {
       n: 1,
       title: isRu ? 'Фундамент: запястья, плечи, бёдра' : 'Foundation, Wrists, Shoulders & Hips',
       desc: isRu ? 'Подготовка тела к работе на полу.' : 'Prepare your body for floor-based movement.',
+      outcome: isRu ? 'К концу недели: безопасный контакт с полом и базовая позиция quadruped.' : 'By end of week: safe floor contact and base quadruped position.',
     },
     {
       n: 2,
       title: isRu ? 'Quadruped: контроль в низкой позиции' : 'Quadruped Control',
       desc: isRu ? 'Сила и контроль в низких опорных позициях.' : 'Build strength and control in low positions.',
+      outcome: isRu ? 'К концу недели: контролируемый crawl вперёд и назад.' : 'By end of week: controlled forward and backward crawl.',
     },
     {
       n: 3,
       title: isRu ? 'Crab: задняя цепь и плечи' : 'Crab / Posterior Chain',
       desc: isRu ? 'Раскрытие плеч, активация ягодиц, обратная опора.' : 'Open shoulders, activate glutes, build reverse support.',
+      outcome: isRu ? 'К концу недели: уверенная позиция crab и переход beast↔crab.' : 'By end of week: confident crab and beast↔crab transition.',
     },
     {
       n: 4,
       title: isRu ? 'Низкий присед и ape-style movement' : 'Low Squat & Ape-style Movement',
       desc: isRu ? 'Бёдра, голеностопы, латеральное движение и координация.' : 'Hips, ankles, lateral movement and coordination.',
+      outcome: isRu ? 'К концу недели: латеральное передвижение из низкого приседа.' : 'By end of week: lateral movement from a deep squat.',
     },
     {
       n: 5,
       title: isRu ? 'Переходы и сборка flow' : 'Transitions & Flow Building',
       desc: isRu ? 'Соединяем движения в короткие последовательности.' : 'Connect movements into short sequences.',
+      outcome: isRu ? 'К концу недели: свой 4-движенческий flow.' : 'By end of week: your own 4-movement flow.',
     },
     {
       n: 6,
       title: isRu ? 'Полный flow и финальный тест' : 'Full Flow Practice',
       desc: isRu ? 'Собираем итоговый flow и оцениваем прогресс.' : 'Build your final flow and test your progress.',
+      outcome: isRu ? 'К концу недели: записанный финальный flow и mobility re-test.' : 'By end of week: recorded final flow and mobility re-test.',
     },
   ];
 
@@ -155,6 +181,12 @@ const ShopSection = () => {
       a: isRu
         ? 'Нет. Это не официальная сертификация Animal Flow и не даёт права официально преподавать Animal Flow. Это независимая авторская программа Иллариона Иентина, направленная на развитие мобильности, координации, контроля тела, ground-based movement и flow training.'
         : 'No. This is not an official Animal Flow certification and does not certify you to teach Animal Flow. This is an independent movement program created by Illarion Ientin, focused on mobility, coordination, body control, ground-based bodyweight movement and flow training.',
+    },
+    {
+      q: isRu ? 'А если программа мне не подойдёт?' : 'What if the program isn\'t right for me?',
+      a: isRu
+        ? 'У тебя есть 7 дней с момента старта потока, чтобы решить. Если программа не подходит — напиши на почту, и мы вернём 100% оплаты без вопросов.'
+        : 'You have 7 days from the cohort start to decide. If the program is not right for you, email me and we refund 100% — no questions asked.',
     },
     {
       q: isRu ? 'Нужен ли опыт?' : 'Do I need experience?',
@@ -190,12 +222,34 @@ const ShopSection = () => {
     },
   ];
 
+  const forYou = isRu
+    ? ['Тебе 25–50, чувствуешь скованность.', 'Ты любишь зал, бег, падел, HYROX и хочешь добавить качества движения.', 'Тебе нужна структура, а не случайные ролики.', 'Хочешь тренироваться дома, без оборудования.', 'Готов уделять 3 сессии в неделю по 15–35 минут.']
+    : ['You are 25–50 and feel stiff.', 'You train in the gym, run, play padel or HYROX and want to add movement quality.', 'You want structure, not random Instagram clips.', 'You want to train at home, no equipment.', 'You can commit to 3 sessions per week, 15–35 min each.'];
+
+  const notForYou = isRu
+    ? ['Ищешь официальную сертификацию Animal Flow.', 'Ждёшь реабилитации или лечения боли.', 'Хочешь похудеть без работы над движением.', 'Не готов выделять 2 часа в неделю на практику.']
+    : ['You need an official Animal Flow certification.', 'You expect rehab or pain treatment.', 'You want weight loss without movement work.', 'You can\'t commit ~2 hours per week.'];
+
+  const transformations = isRu
+    ? [
+        { before: 'Скованные плечи и запястья', after: 'Подготовленные суставы и уверенная опора на пол' },
+        { before: 'Случайные упражнения из Instagram', after: 'Понятная недельная структура с прогрессией' },
+        { before: 'Деревянное движение в низком приседе', after: 'Контролируемые переходы и латеральные шаги' },
+        { before: 'Нет ощущения flow', after: 'Свой записанный 4–6-движенческий flow' },
+      ]
+    : [
+        { before: 'Stiff shoulders and wrists', after: 'Prepared joints and confident floor support' },
+        { before: 'Random Instagram exercises', after: 'Clear weekly structure with progression' },
+        { before: 'Stuck and rigid in a low squat', after: 'Controlled transitions and lateral steps' },
+        { before: 'No sense of flow', after: 'Your own recorded 4–6 movement flow' },
+      ];
+
   return (
-    <section className="min-h-screen bg-background text-foreground pb-28">
+    <section className="min-h-screen bg-background text-foreground pb-28 relative">
       {/* Trainer-only badge */}
       <div className="px-5 pt-5">
         <div className="max-w-2xl mx-auto flex items-center gap-2 text-[10px] uppercase tracking-widest text-muted-foreground">
-          <Shield className="w-3 h-3" />
+          <ShieldCheck className="w-3 h-3" />
           <span>{isRu ? 'Тренерский предпросмотр • виден только тебе' : 'Trainer preview • visible only to you'}</span>
         </div>
       </div>
@@ -214,23 +268,47 @@ const ShopSection = () => {
             <br />
             <span className="text-primary">& FLOW SYSTEM</span>
           </h1>
-          <p className="text-base text-muted-foreground leading-relaxed mb-2">
+          <p className="text-base text-muted-foreground leading-relaxed mb-5">
             {isRu
-              ? '6-недельная онлайн-программа для развития мобильности, координации, контроля тела и свободного движения через работу с собственным весом, ground movement и flow.'
-              : 'A 6-week online program to improve mobility, coordination and body control through ground-based bodyweight movement and flow training.'}
+              ? '6 недель — и ты двигаешься свободнее, владеешь телом на полу и собираешь короткие flow без оборудования.'
+              : 'In 6 weeks you move freer, own your body on the floor, and build short flows — without equipment.'}
           </p>
-          <p className="text-xs text-muted-foreground/70 mb-7">
-            {isRu ? 'Автор: Илларион Иентин • Limassol, Cyprus' : 'By Illarion Ientin • Limassol, Cyprus'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-3">
+
+          {/* Trust strip */}
+          <div className="flex flex-wrap gap-x-4 gap-y-2 text-[11px] text-muted-foreground mb-7">
+            <span className="flex items-center gap-1.5"><Award className="w-3.5 h-3.5 text-primary" /> {isRu ? '10+ лет тренерства' : '10+ years coaching'}</span>
+            <span className="flex items-center gap-1.5"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> {isRu ? 'Certified Animal Flow instructor' : 'Certified Animal Flow instructor'}</span>
+            <span className="flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5 text-primary" /> Limassol & online</span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 mb-6">
             <Button size="lg" onClick={() => scrollToForm()} className="font-display tracking-wider text-base">
-              {isRu ? 'Записаться в первый поток' : 'Join the first group'}
+              {isRu ? 'Занять место в потоке' : 'Claim your spot'}
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
             <Button size="lg" variant="outline" onClick={scrollToProgram} className="font-display tracking-wider text-base">
               {isRu ? 'Программа курса' : 'See the program'}
             </Button>
           </div>
+
+          {/* Scarcity bar */}
+          <div className="p-4 rounded-2xl border border-primary/30 bg-card/60 backdrop-blur">
+            <div className="flex items-center justify-between text-xs mb-2">
+              <span className="flex items-center gap-1.5 text-foreground font-semibold">
+                <Users className="w-3.5 h-3.5 text-primary" />
+                {isRu ? `Founding group · ${FOUNDING_TAKEN} из ${FOUNDING_TOTAL} мест занято` : `Founding group · ${FOUNDING_TAKEN}/${FOUNDING_TOTAL} spots taken`}
+              </span>
+              <span className="text-primary font-bold">{isRu ? `${spotsLeft} мест` : `${spotsLeft} left`}</span>
+            </div>
+            <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+              <div className="h-full bg-primary rounded-full" style={{ width: `${progressPct}%` }} />
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-2 flex items-center gap-1.5">
+              <Clock className="w-3 h-3" />
+              {isRu ? 'Цена first cohort €149 / €299 действует до закрытия группы. Дальше — выше.' : 'First cohort price €149 / €299 holds until the group closes. After that — higher.'}
+            </p>
+          </div>
+
           <div className="aspect-video mt-8 rounded-2xl border border-border/50 bg-gradient-to-br from-muted/40 to-muted/10 flex items-center justify-center text-muted-foreground text-xs uppercase tracking-widest">
             {isRu ? 'Видео-превью • скоро' : 'Video preview • coming soon'}
           </div>
@@ -271,8 +349,29 @@ const ShopSection = () => {
         </div>
       </div>
 
-      {/* SOLUTION */}
+      {/* TRANSFORMATION — Before / After */}
       <div className="px-5 py-12">
+        <div className="max-w-2xl mx-auto">
+          <div className="text-center mb-8">
+            <span className="text-[10px] uppercase tracking-widest text-primary font-semibold">{isRu ? 'Трансформация за 6 недель' : 'Transformation in 6 weeks'}</span>
+            <h2 className="font-display text-3xl sm:text-4xl tracking-tight mt-2">
+              {isRu ? 'ОТ — К' : 'FROM — TO'}
+            </h2>
+          </div>
+          <div className="space-y-3">
+            {transformations.map((t, i) => (
+              <div key={i} className="grid grid-cols-[1fr_auto_1fr] gap-3 items-center p-4 rounded-2xl border border-border/60 bg-card/50">
+                <div className="text-sm text-muted-foreground line-through decoration-destructive/60">{t.before}</div>
+                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+                <div className="text-sm text-foreground font-medium">{t.after}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* SOLUTION */}
+      <div className="px-5 py-12 bg-muted/20">
         <div className="max-w-2xl mx-auto">
           <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-4">
             {isRu ? 'СТРУКТУРНАЯ СИСТЕМА ДВИЖЕНИЯ' : 'A STRUCTURED MOVEMENT SYSTEM'}
@@ -286,7 +385,7 @@ const ShopSection = () => {
       </div>
 
       {/* BENEFITS */}
-      <div className="px-5 py-12 bg-muted/20">
+      <div className="px-5 py-12">
         <div className="max-w-2xl mx-auto">
           <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-6">
             {isRu ? 'ЧТО ТЫ ПОЛУЧИШЬ' : 'WHAT YOU\'LL GAIN'}
@@ -301,6 +400,45 @@ const ShopSection = () => {
                 <p className="text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+
+      {/* FOR WHOM / NOT FOR WHOM */}
+      <div className="px-5 py-12 bg-muted/20">
+        <div className="max-w-2xl mx-auto">
+          <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-6">
+            {isRu ? 'ДЛЯ КОГО ЭТА ПРОГРАММА' : 'WHO THIS IS FOR'}
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="p-5 rounded-2xl border border-primary/30 bg-primary/5">
+              <div className="flex items-center gap-2 mb-3">
+                <Check className="w-4 h-4 text-primary" />
+                <span className="font-display text-sm uppercase tracking-wider text-primary">{isRu ? 'Для тебя, если' : 'For you if'}</span>
+              </div>
+              <ul className="space-y-2 text-sm">
+                {forYou.map((t) => (
+                  <li key={t} className="flex gap-2 items-start">
+                    <Check className="w-4 h-4 text-primary mt-0.5 shrink-0" />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="p-5 rounded-2xl border border-border/60 bg-card/50">
+              <div className="flex items-center gap-2 mb-3">
+                <X className="w-4 h-4 text-muted-foreground" />
+                <span className="font-display text-sm uppercase tracking-wider text-muted-foreground">{isRu ? 'Не для тебя, если' : 'Not for you if'}</span>
+              </div>
+              <ul className="space-y-2 text-sm text-muted-foreground">
+                {notForYou.map((t) => (
+                  <li key={t} className="flex gap-2 items-start">
+                    <X className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
@@ -357,9 +495,10 @@ const ShopSection = () => {
       {/* CURRICULUM */}
       <div ref={programRef} className="px-5 py-12 bg-muted/20">
         <div className="max-w-2xl mx-auto">
-          <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-6">
+          <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-2">
             {isRu ? 'ПРОГРАММА ПО НЕДЕЛЯМ' : 'CURRICULUM'}
           </h2>
+          <p className="text-xs text-muted-foreground mb-6">{isRu ? 'Каждая неделя — конкретный результат, а не просто список упражнений.' : 'Every week ends with a concrete outcome, not just an exercise list.'}</p>
           <div className="space-y-3">
             {weeks.map((w) => (
               <div key={w.n} className="p-5 rounded-2xl border border-border/60 bg-card/50">
@@ -368,7 +507,11 @@ const ShopSection = () => {
                   <span className="text-[10px] uppercase tracking-widest text-muted-foreground">Week</span>
                 </div>
                 <h3 className="font-display text-xl tracking-tight mt-2 mb-1">{w.title}</h3>
-                <p className="text-sm text-muted-foreground">{w.desc}</p>
+                <p className="text-sm text-muted-foreground mb-3">{w.desc}</p>
+                <div className="flex gap-2 items-start text-xs p-2.5 rounded-lg bg-primary/5 border border-primary/20">
+                  <Target className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" />
+                  <span className="text-foreground/90">{w.outcome}</span>
+                </div>
               </div>
             ))}
           </div>
@@ -378,9 +521,12 @@ const ShopSection = () => {
       {/* PRICING */}
       <div className="px-5 py-12">
         <div className="max-w-2xl mx-auto">
-          <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-6">
+          <h2 className="font-display text-3xl sm:text-4xl tracking-tight mb-2">
             {isRu ? 'ТАРИФЫ FOUNDING GROUP' : 'FOUNDING GROUP PRICING'}
           </h2>
+          <p className="text-xs text-muted-foreground mb-6">
+            {isRu ? 'Для сравнения: одна персональная сессия с Илларионом стоит €80. Здесь — 6 недель структуры.' : 'For context: one private session with Illarion is €80. This is 6 weeks of structured training.'}
+          </p>
           <div className="grid grid-cols-1 gap-4">
             {/* Basic */}
             <div className="p-6 rounded-2xl border border-border/60 bg-card/50">
@@ -408,14 +554,14 @@ const ShopSection = () => {
             {/* Premium */}
             <div className="p-6 rounded-2xl border-2 border-primary bg-gradient-to-br from-primary/10 to-card/50 relative">
               <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-primary text-primary-foreground text-[10px] uppercase tracking-widest font-bold">
-                {isRu ? 'С обратной связью' : 'With feedback'}
+                {isRu ? 'Самый популярный' : 'Most popular'}
               </div>
               <div className="flex items-baseline justify-between mb-2 mt-2">
                 <h3 className="font-display text-2xl tracking-tight text-primary">PREMIUM</h3>
                 <div className="font-display text-3xl">€299</div>
               </div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider mb-4">{isRu ? 'С контактом и обратной связью' : 'With coaching contact'}</p>
-              <ul className="space-y-2 text-sm mb-5">
+              <ul className="space-y-2 text-sm mb-4">
                 {(isRu
                   ? ['Всё из Basic', 'Закрытая Telegram/WhatsApp группа', '1 live session в неделю', '1 video feedback от Иллариона', 'Ответы на вопросы', 'Рекомендации по прогрессиям']
                   : ['Everything in Basic', 'Private Telegram/WhatsApp group', '1 live session per week', '1 video feedback from Illarion', 'Q&A support', 'Progression recommendations']
@@ -426,9 +572,31 @@ const ShopSection = () => {
                   </li>
                 ))}
               </ul>
+              {/* Bonus stack */}
+              <div className="p-3 rounded-xl bg-primary/10 border border-primary/30 mb-5 space-y-1.5">
+                <div className="text-[10px] uppercase tracking-widest text-primary font-bold">{isRu ? 'Бонусы founding group' : 'Founding group bonuses'}</div>
+                <div className="text-xs flex gap-2 items-start"><Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /><span>{isRu ? 'Личный mobility-аудит на старте (15 мин Zoom)' : 'Personal mobility audit at the start (15 min Zoom)'}</span></div>
+                <div className="text-xs flex gap-2 items-start"><Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /><span>{isRu ? 'Скидка 30% на Cyprus Flow & Performance Camp' : '30% off Cyprus Flow & Performance Camp'}</span></div>
+                <div className="text-xs flex gap-2 items-start"><Sparkles className="w-3.5 h-3.5 text-primary mt-0.5 shrink-0" /><span>{isRu ? 'Фикс цены навсегда — €299 на любой будущий запуск' : 'Lifetime price lock — €299 for any future cohort'}</span></div>
+              </div>
               <Button className="w-full font-display tracking-wider" onClick={() => scrollToForm('premium')}>
                 {isRu ? 'Выбрать Premium' : 'Choose Premium'}
               </Button>
+            </div>
+          </div>
+
+          {/* Risk reversal */}
+          <div className="mt-6 p-5 rounded-2xl border border-primary/30 bg-card/50 flex gap-4 items-start">
+            <div className="w-12 h-12 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-display text-lg tracking-tight mb-1">{isRu ? '7-ДНЕВНАЯ ГАРАНТИЯ ВОЗВРАТА' : '7-DAY MONEY-BACK GUARANTEE'}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                {isRu
+                  ? 'Попробуй первую неделю. Если программа не подходит — напиши на почту в течение 7 дней с момента старта, и я верну 100% оплаты. Без вопросов.'
+                  : 'Try the first week. If the program is not right for you, email me within 7 days of the cohort start — I refund 100%. No questions asked.'}
+              </p>
             </div>
           </div>
         </div>
@@ -492,8 +660,8 @@ const ShopSection = () => {
           </h2>
           <p className="text-sm text-muted-foreground mb-6">
             {isRu
-              ? 'Запишись в первый founding group. После заявки Илларион свяжется с тобой по следующим шагам.'
-              : 'Join the first founding group. After your application Illarion will reach out with the next steps.'}
+              ? `Запишись в первый founding group. Осталось ${spotsLeft} мест. После заявки Илларион свяжется с тобой по следующим шагам.`
+              : `Join the first founding group. ${spotsLeft} spots left. After your application Illarion will reach out with the next steps.`}
           </p>
 
           {submitted ? (
@@ -581,10 +749,30 @@ const ShopSection = () => {
               <Button type="submit" size="lg" className="w-full font-display tracking-wider text-base" disabled={submitting}>
                 {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (isRu ? 'Отправить заявку' : 'Submit application')}
               </Button>
+              <p className="text-[11px] text-muted-foreground text-center flex items-center justify-center gap-1.5">
+                <ShieldCheck className="w-3 h-3" />
+                {isRu ? '7-дневная гарантия возврата средств' : '7-day money-back guarantee'}
+              </p>
             </form>
           )}
         </div>
       </div>
+
+      {/* Sticky bottom CTA — appears after scroll, hides near form */}
+      {showStickyCta && (
+        <div className="fixed left-0 right-0 bottom-16 z-40 px-3 pointer-events-none animate-in fade-in slide-in-from-bottom-4" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          <div className="max-w-md mx-auto pointer-events-auto rounded-2xl border border-primary/40 bg-card/95 backdrop-blur-xl shadow-2xl shadow-primary/20 p-3 flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <div className="text-[10px] uppercase tracking-widest text-primary font-semibold">{isRu ? `${spotsLeft} мест осталось` : `${spotsLeft} spots left`}</div>
+              <div className="text-xs text-foreground/90 truncate">{isRu ? 'Ground Movement & Flow · от €149' : 'Ground Movement & Flow · from €149'}</div>
+            </div>
+            <Button size="sm" onClick={() => scrollToForm()} className="font-display tracking-wider shrink-0">
+              {isRu ? 'Записаться' : 'Join'}
+              <ArrowRight className="w-3.5 h-3.5 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
