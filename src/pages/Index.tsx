@@ -9,9 +9,11 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
+import { SHOP_PUBLIC } from '@/config/features';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
 const TestSection = lazy(() => import('@/components/sections/TestSection'));
+const ShopSection = lazy(() => import('@/components/sections/ShopSection'));
 
 const getInitialSection = () => {
   const hint = localStorage.getItem('user_role_hint');
@@ -40,8 +42,11 @@ const AppContent = () => {
   const optimisticIsTrainer = isTrainer || (loading && roleHint === 'trainer');
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
-  const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
-  const routableSections = [...sections, 'test'];
+  const canSeeShop = SHOP_PUBLIC || optimisticIsTrainer;
+  const showShopInNav = canSeeShop && !clientPreview;
+
+  const sections = ['home', 'pricing', ...(showShopInNav ? ['shop'] : []), 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
+  const routableSections = [...sections, 'test', ...(canSeeShop && !showShopInNav ? ['shop'] : [])];
 
   const handleNavigate = (section: string) => {
     if (!routableSections.includes(section)) section = 'home';
@@ -145,6 +150,7 @@ const AppContent = () => {
         );
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} />;
+      case 'shop': return canSeeShop ? <ShopSection /> : null;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       default: return null;
@@ -187,7 +193,7 @@ const AppContent = () => {
           </motion.div>
         </AnimatePresence>
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
 
       {optimisticIsTrainer && (
         <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1">
