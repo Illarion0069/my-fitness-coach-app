@@ -32,6 +32,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import trainerPhoto from '@/assets/trainer-photo.jpg';
 import { z } from 'zod';
 
 const leadSchema = z.object({
