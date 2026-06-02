@@ -42,8 +42,11 @@ const AppContent = () => {
   const optimisticIsTrainer = isTrainer || (loading && roleHint === 'trainer');
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
-  const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
-  const routableSections = [...sections, 'test'];
+  const canSeeShop = SHOP_PUBLIC || optimisticIsTrainer;
+  const showShopInNav = canSeeShop && !clientPreview;
+
+  const sections = ['home', 'pricing', ...(showShopInNav ? ['shop'] : []), 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
+  const routableSections = [...sections, 'test', ...(canSeeShop && !showShopInNav ? ['shop'] : [])];
 
   const handleNavigate = (section: string) => {
     if (!routableSections.includes(section)) section = 'home';
@@ -147,6 +150,7 @@ const AppContent = () => {
         );
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} />;
+      case 'shop': return canSeeShop ? <ShopSection /> : null;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       default: return null;
