@@ -193,7 +193,7 @@ const AppContent = () => {
           </motion.div>
         </AnimatePresence>
       </div>
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} />
+      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
 
       {optimisticIsTrainer && (
         <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1">
