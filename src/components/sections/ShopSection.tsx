@@ -726,8 +726,14 @@ const ShopSection = () => {
           </h2>
           <div className="rounded-3xl border border-border/60 bg-card/50 overflow-hidden">
             <div className="grid grid-cols-1 sm:grid-cols-[200px_1fr]">
-              <div className="aspect-square sm:aspect-auto bg-gradient-to-br from-primary/20 via-primary/5 to-muted/40 flex items-center justify-center">
-                <div className="font-display text-7xl text-primary/80">II</div>
+              <div className="relative aspect-square sm:aspect-auto bg-gradient-to-br from-primary/20 via-primary/5 to-muted/40 overflow-hidden">
+                <img
+                  src={trainerPhoto}
+                  alt="Illarion Ientin"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-tr from-background/40 via-transparent to-transparent" />
               </div>
               <div className="p-6 space-y-3 text-sm leading-relaxed">
                 <div>
