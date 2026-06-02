@@ -9,9 +9,11 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
+import { SHOP_PUBLIC } from '@/config/features';
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
 const TestSection = lazy(() => import('@/components/sections/TestSection'));
+const ShopSection = lazy(() => import('@/components/sections/ShopSection'));
 
 const getInitialSection = () => {
   const hint = localStorage.getItem('user_role_hint');

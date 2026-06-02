@@ -1,4 +1,4 @@
-import { Home, CreditCard, User, Shield } from 'lucide-react';
+import { Home, CreditCard, User, Shield, ShoppingBag } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
@@ -6,15 +6,17 @@ interface BottomNavProps {
   active: string;
   onNavigate: (section: string) => void;
   showAdmin?: boolean;
+  showShop?: boolean;
 }
 
-const BottomNav = ({ active, onNavigate, showAdmin = false }: BottomNavProps) => {
+const BottomNav = ({ active, onNavigate, showAdmin = false, showShop = false }: BottomNavProps) => {
   const { t, lang } = useLanguage();
   const nav = translations.nav;
 
   const items = [
     { id: 'home', icon: Home, label: t(nav.home) },
     { id: 'pricing', icon: CreditCard, label: t(nav.pricing) },
+    ...(showShop ? [{ id: 'shop', icon: ShoppingBag, label: lang === 'en' ? 'Shop' : 'Магазин' }] : []),
     { id: 'about', icon: User, label: lang === 'en' ? 'About' : 'Обо мне' },
     ...(showAdmin ? [{ id: 'admin', icon: Shield, label: lang === 'en' ? 'Admin' : 'Админ' }] : []),
   ];
