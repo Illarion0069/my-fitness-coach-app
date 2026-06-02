@@ -33,6 +33,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import trainerPhoto from '@/assets/trainer-photo.jpg';
+import heroVideoAsset from '@/assets/hero-flow.mp4.asset.json';
+import heroPosterAsset from '@/assets/hero-flow-poster.jpg.asset.json';
 import { z } from 'zod';
 
 const leadSchema = z.object({
@@ -347,16 +349,24 @@ const ShopSection = () => {
           </div>
 
           {/* Video preview placeholder — Masterclass cinematic frame */}
-          <div className="relative aspect-video rounded-3xl border border-border/60 bg-gradient-to-br from-card via-muted/30 to-background overflow-hidden group cursor-pointer">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,hsl(var(--primary)/0.15),transparent_70%)]" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center shadow-2xl shadow-primary/40 group-hover:scale-110 transition-transform">
-                <PlayCircle className="w-8 h-8 text-primary-foreground" strokeWidth={1.5} />
-              </div>
-            </div>
-            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[10px] uppercase tracking-widest text-muted-foreground">
-              <span>{isRu ? 'Превью · 90 сек' : 'Trailer · 90 sec'}</span>
-              <span>{isRu ? 'Скоро' : 'Coming soon'}</span>
+          <div className="relative aspect-video rounded-3xl border border-border/60 bg-card overflow-hidden group">
+            <video
+              src={heroVideoAsset.url}
+              poster={heroPosterAsset.url}
+              autoPlay
+              loop
+              muted
+              playsInline
+              preload="metadata"
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-[10px] uppercase tracking-widest text-white/80">
+              <span className="flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                {isRu ? 'Live · Sunset flow' : 'Live · Sunset flow'}
+              </span>
+              <span>Cyprus · 2024</span>
             </div>
           </div>
 
