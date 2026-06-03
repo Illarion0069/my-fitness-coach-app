@@ -90,13 +90,17 @@ const ClientDetailAccordion = ({
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [calorieGoalInput, setCalorieGoalInput] = useState('');
   const [loadingGoal, setLoadingGoal] = useState(true);
+  const [nutritionGoal, setNutritionGoal] = useState<'fat_loss' | 'muscle_gain'>('fat_loss');
+  const [savingNutritionGoal, setSavingNutritionGoal] = useState(false);
 
   useEffect(() => {
-    supabase.from('profiles').select('daily_calorie_goal').eq('user_id', client.user_id).maybeSingle()
+    supabase.from('profiles').select('daily_calorie_goal, nutrition_goal').eq('user_id', client.user_id).maybeSingle()
       .then(({ data }) => {
         const goal = (data as any)?.daily_calorie_goal || null;
         setCalorieGoal(goal);
         setCalorieGoalInput(goal ? String(goal) : '');
+        const ng = (data as any)?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss';
+        setNutritionGoal(ng);
         setLoadingGoal(false);
       });
   }, [client.user_id]);
@@ -106,6 +110,25 @@ const ClientDetailAccordion = ({
     await supabase.from('profiles').update({ daily_calorie_goal: val } as any).eq('user_id', client.user_id);
     setCalorieGoal(val);
     toast({ title: lang === 'en' ? 'Goal saved' : 'Цель сохранена' });
+  };
+
+  const saveNutritionGoal = async (next: 'fat_loss' | 'muscle_gain') => {
+    if (next === nutritionGoal || savingNutritionGoal) return;
+    setSavingNutritionGoal(true);
+    const prev = nutritionGoal;
+    setNutritionGoal(next);
+    const { error } = await supabase.from('profiles').update({ nutrition_goal: next } as any).eq('user_id', client.user_id);
+    setSavingNutritionGoal(false);
+    if (error) {
+      setNutritionGoal(prev);
+      toast({ title: lang === 'en' ? 'Failed to save' : 'Не удалось сохранить', variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: lang === 'en'
+        ? (next === 'muscle_gain' ? 'Plan: Muscle gain' : 'Plan: Fat loss')
+        : (next === 'muscle_gain' ? 'План: Набор мышц' : 'План: Снижение веса'),
+    });
   };
 
   const handleCreatePackage = () => {
