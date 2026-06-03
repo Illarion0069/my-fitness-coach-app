@@ -431,6 +431,39 @@ const ClientDetailAccordion = ({
           <div className="space-y-3">
             <div className="bg-secondary/30 rounded-xl p-3">
               <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                {lang === 'en' ? 'Nutrition plan' : 'План питания'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'fat_loss' as const, ru: 'Снижение веса', en: 'Fat loss', emoji: '🔥' },
+                  { key: 'muscle_gain' as const, ru: 'Набор мышц', en: 'Muscle gain', emoji: '💪' },
+                ]).map(opt => {
+                  const active = nutritionGoal === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => saveNutritionGoal(opt.key)}
+                      disabled={savingNutritionGoal}
+                      className={`rounded-lg px-3 py-2 text-xs font-bold transition-all border ${
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-background text-muted-foreground border-border/50 hover:border-primary/50'
+                      } ${savingNutritionGoal ? 'opacity-60' : ''}`}
+                    >
+                      <span className="mr-1">{opt.emoji}</span>
+                      {lang === 'en' ? opt.en : opt.ru}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {lang === 'en'
+                  ? 'AI nutrition feedback adapts to this plan.'
+                  : 'Рекомендации по питанию ИИ подстраиваются под план.'}
+              </p>
+            </div>
+            <div className="bg-secondary/30 rounded-xl p-3">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                 {lang === 'en' ? 'Daily calorie goal' : 'Дневная норма калорий'}
               </p>
               <div className="flex gap-2 items-center">
