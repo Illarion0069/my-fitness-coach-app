@@ -459,6 +459,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          nutrition_goal: string
           phone: string
           reactivation_sent_at: string | null
           signup_notified_at: string | null
@@ -476,6 +477,7 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          nutrition_goal?: string
           phone: string
           reactivation_sent_at?: string | null
           signup_notified_at?: string | null
@@ -493,6 +495,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          nutrition_goal?: string
           phone?: string
           reactivation_sent_at?: string | null
           signup_notified_at?: string | null
