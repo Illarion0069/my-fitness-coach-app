@@ -600,7 +600,18 @@ const AdminSection = () => {
                            <p className="font-bold text-sm truncate">{client.full_name}</p>
                            <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
                          </div>
-                      <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                         {client.nutrition_goal === 'muscle_gain' ? (
+                           <span title={lang === 'en' ? 'Plan: Muscle gain' : 'План: Набор мышц'}
+                             className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/15 text-primary uppercase tracking-wider">
+                             💪 {lang === 'en' ? 'Gain' : 'Набор'}
+                           </span>
+                         ) : (
+                           <span title={lang === 'en' ? 'Plan: Fat loss' : 'План: Снижение веса'}
+                             className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground uppercase tracking-wider">
+                             🔥 {lang === 'en' ? 'Loss' : 'Сушка'}
+                           </span>
+                         )}
                         {(() => {
                           const count = weeklySessionCounts[client.user_id] || 0;
                           return (
