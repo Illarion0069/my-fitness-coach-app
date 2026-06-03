@@ -90,13 +90,17 @@ const ClientDetailAccordion = ({
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [calorieGoalInput, setCalorieGoalInput] = useState('');
   const [loadingGoal, setLoadingGoal] = useState(true);
+  const [nutritionGoal, setNutritionGoal] = useState<'fat_loss' | 'muscle_gain'>('fat_loss');
+  const [savingNutritionGoal, setSavingNutritionGoal] = useState(false);
 
   useEffect(() => {
-    supabase.from('profiles').select('daily_calorie_goal').eq('user_id', client.user_id).maybeSingle()
+    supabase.from('profiles').select('daily_calorie_goal, nutrition_goal').eq('user_id', client.user_id).maybeSingle()
       .then(({ data }) => {
         const goal = (data as any)?.daily_calorie_goal || null;
         setCalorieGoal(goal);
         setCalorieGoalInput(goal ? String(goal) : '');
+        const ng = (data as any)?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss';
+        setNutritionGoal(ng);
         setLoadingGoal(false);
       });
   }, [client.user_id]);
@@ -106,6 +110,25 @@ const ClientDetailAccordion = ({
     await supabase.from('profiles').update({ daily_calorie_goal: val } as any).eq('user_id', client.user_id);
     setCalorieGoal(val);
     toast({ title: lang === 'en' ? 'Goal saved' : 'Цель сохранена' });
+  };
+
+  const saveNutritionGoal = async (next: 'fat_loss' | 'muscle_gain') => {
+    if (next === nutritionGoal || savingNutritionGoal) return;
+    setSavingNutritionGoal(true);
+    const prev = nutritionGoal;
+    setNutritionGoal(next);
+    const { error } = await supabase.from('profiles').update({ nutrition_goal: next } as any).eq('user_id', client.user_id);
+    setSavingNutritionGoal(false);
+    if (error) {
+      setNutritionGoal(prev);
+      toast({ title: lang === 'en' ? 'Failed to save' : 'Не удалось сохранить', variant: 'destructive' });
+      return;
+    }
+    toast({
+      title: lang === 'en'
+        ? (next === 'muscle_gain' ? 'Plan: Muscle gain' : 'Plan: Fat loss')
+        : (next === 'muscle_gain' ? 'План: Набор мышц' : 'План: Снижение веса'),
+    });
   };
 
   const handleCreatePackage = () => {
@@ -406,6 +429,39 @@ const ClientDetailAccordion = ({
       case 'nutrition':
         return (
           <div className="space-y-3">
+            <div className="bg-secondary/30 rounded-xl p-3">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                {lang === 'en' ? 'Nutrition plan' : 'План питания'}
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { key: 'fat_loss' as const, ru: 'Снижение веса', en: 'Fat loss', emoji: '🔥' },
+                  { key: 'muscle_gain' as const, ru: 'Набор мышц', en: 'Muscle gain', emoji: '💪' },
+                ]).map(opt => {
+                  const active = nutritionGoal === opt.key;
+                  return (
+                    <button
+                      key={opt.key}
+                      onClick={() => saveNutritionGoal(opt.key)}
+                      disabled={savingNutritionGoal}
+                      className={`rounded-lg px-3 py-2 text-xs font-bold transition-all border ${
+                        active
+                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                          : 'bg-background text-muted-foreground border-border/50 hover:border-primary/50'
+                      } ${savingNutritionGoal ? 'opacity-60' : ''}`}
+                    >
+                      <span className="mr-1">{opt.emoji}</span>
+                      {lang === 'en' ? opt.en : opt.ru}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[10px] text-muted-foreground mt-1.5">
+                {lang === 'en'
+                  ? 'AI nutrition feedback adapts to this plan.'
+                  : 'Рекомендации по питанию ИИ подстраиваются под план.'}
+              </p>
+            </div>
             <div className="bg-secondary/30 rounded-xl p-3">
               <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
                 {lang === 'en' ? 'Daily calorie goal' : 'Дневная норма калорий'}
