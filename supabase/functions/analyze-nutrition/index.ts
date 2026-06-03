@@ -345,9 +345,14 @@ serve(async (req) => {
 
     const { data: clientProfile, error: profileErr } = await supabase
       .from("profiles")
-      .select("full_name, email")
+      .select("full_name, email, nutrition_goal")
       .eq("user_id", user_id)
       .maybeSingle();
+
+    const nutritionGoal = ((clientProfile as any)?.nutrition_goal as string) === "muscle_gain"
+      ? "muscle_gain"
+      : "fat_loss";
+    const SYSTEM_PROMPT = nutritionGoal === "muscle_gain" ? SYSTEM_PROMPT_MUSCLE_GAIN : SYSTEM_PROMPT_FAT_LOSS;
 
     let nameSource: "profile_full_name" | "auth_metadata" | "email_prefix" | "fallback" = "fallback";
     let firstName = extractFirst(clientProfile?.full_name as string | undefined);
