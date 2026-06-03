@@ -22,6 +22,7 @@ interface Profile {
   archived_at: string | null;
   archive_reason: string | null;
   reactivation_sent_at: string | null;
+  nutrition_goal?: string | null;
 }
 
 interface ClientPackage {
