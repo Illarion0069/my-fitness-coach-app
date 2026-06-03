@@ -117,11 +117,21 @@ const ClientDetailAccordion = ({
     setSavingNutritionGoal(true);
     const prev = nutritionGoal;
     setNutritionGoal(next);
-    const { error } = await supabase.from('profiles').update({ nutrition_goal: next } as any).eq('user_id', client.user_id);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update({ nutrition_goal: next } as any)
+      .eq('user_id', client.user_id)
+      .select('user_id, nutrition_goal');
     setSavingNutritionGoal(false);
-    if (error) {
+    console.log('[nutrition_goal] save result:', { next, data, error });
+
+    if (error || !data || data.length === 0) {
       setNutritionGoal(prev);
-      toast({ title: lang === 'en' ? 'Failed to save' : 'Не удалось сохранить', variant: 'destructive' });
+      toast({
+        title: lang === 'en' ? 'Failed to save plan' : 'Не удалось сохранить план',
+        description: error?.message || (lang === 'en' ? 'No rows updated (permission issue)' : 'Изменение не применилось (нет прав)'),
+        variant: 'destructive',
+      });
       return;
     }
     toast({
