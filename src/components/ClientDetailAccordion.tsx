@@ -129,6 +129,7 @@ const ClientDetailAccordion = ({
         ? (next === 'muscle_gain' ? 'Plan: Muscle gain' : 'Plan: Fat loss')
         : (next === 'muscle_gain' ? 'План: Набор мышц' : 'План: Снижение веса'),
     });
+    onSessionChange?.();
   };
 
   const handleCreatePackage = () => {
