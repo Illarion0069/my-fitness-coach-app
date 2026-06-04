@@ -195,6 +195,15 @@ const AppContent = () => {
           </motion.div>
         </AnimatePresence>
       </div>
+      {activeSection !== 'home' && (
+        <div
+          className="fixed right-3 z-[90] flex items-center gap-2"
+          style={{ top: 'max(env(safe-area-inset-top, 8px), 8px)' }}
+        >
+          <ThemeToggle />
+          <LanguageSwitch />
+        </div>
+      )}
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
 
       {optimisticIsTrainer && (
