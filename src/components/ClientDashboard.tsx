@@ -248,7 +248,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const fetchPast = async () => {
       const { data } = await supabase
         .from('scheduled_sessions').select('*').eq('user_id', user.id).eq('is_deducted', true)
-        .order('session_date', { ascending: false }).limit(20);
+        .order('session_date', { ascending: false }).limit(500);
       setPastSessions((data as ScheduledSession[]) || []);
     };
 
