@@ -248,7 +248,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const fetchPast = async () => {
       const { data } = await supabase
         .from('scheduled_sessions').select('*').eq('user_id', user.id).eq('is_deducted', true)
-        .order('session_date', { ascending: false }).limit(20);
+        .order('session_date', { ascending: false }).limit(500);
       setPastSessions((data as ScheduledSession[]) || []);
     };
 
@@ -570,15 +570,13 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                             <span className={`text-[10px] ${exhausted ? 'text-destructive/60' : 'text-primary-foreground/60'}`}>✓</span>
                           </div>
                         ))}
-                        {pastSessions.length > 5 && (
-                          <button
-                            type="button"
-                            onClick={(e) => { e.stopPropagation(); setHistoryOpen(true); }}
-                            className={`w-full text-[11px] font-semibold py-1.5 rounded-lg ${exhausted ? 'text-destructive hover:bg-destructive/10' : 'text-primary-foreground/90 hover:bg-white/10'}`}
-                          >
-                            {lang === 'en' ? `View all (${pastSessions.length})` : `Показать все (${pastSessions.length})`}
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); setHistoryOpen(true); }}
+                          className={`w-full text-[11px] font-semibold py-2 mt-1 rounded-lg border ${exhausted ? 'text-destructive border-destructive/30 hover:bg-destructive/10' : 'text-primary-foreground/90 border-white/20 hover:bg-white/10'}`}
+                        >
+                          {lang === 'en' ? `Show all history (${pastSessions.length})` : `Показать всю историю (${pastSessions.length})`}
+                        </button>
                       </div>
                     )}
 
