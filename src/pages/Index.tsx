@@ -4,6 +4,8 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
 import HeroSection from '@/components/sections/HeroSection';
+import ThemeToggle from '@/components/ThemeToggle';
+import LanguageSwitch from '@/components/LanguageSwitch';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
