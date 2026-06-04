@@ -1103,28 +1103,9 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         title={lang === 'en' ? 'Training History' : 'История тренировок'}
         icon={<History className="w-5 h-5 text-primary" />}
       >
-        {pastSessions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Dumbbell className="w-10 h-10 text-muted-foreground/30 mb-3" />
-            <p className="text-sm text-muted-foreground">{lang === 'en' ? 'No completed sessions yet' : 'Пока нет завершённых тренировок'}</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {pastSessions.map(s => (
-              <div key={s.id} className="flex items-center gap-3 bg-card border border-border/30 rounded-xl p-3.5">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                  <CalendarDays className="w-3.5 h-3.5 text-primary/60" />
-                </div>
-                <span className="text-sm text-foreground font-medium flex-1">
-                  {new Date(s.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' })}
-                  {s.session_time ? ` · ${s.session_time.slice(0, 5)}` : ''}
-                </span>
-                <span className="text-xs text-primary/50">✓</span>
-              </div>
-            ))}
-          </div>
-        )}
+        <HistoryByMonth sessions={pastSessions} lang={lang} />
       </FullscreenModule>
+
 
       <FullscreenModule
         open={photosOpen}
