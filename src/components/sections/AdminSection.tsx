@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Clock, Search, X, BarChart3 } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -600,31 +600,18 @@ const AdminSection = () => {
                            <p className="font-bold text-sm truncate">{client.full_name}</p>
                            <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
                          </div>
-                       <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                         {client.nutrition_goal === 'muscle_gain' ? (
-                           <span title={lang === 'en' ? 'Plan: Muscle gain' : 'План: Набор мышц'}
-                             className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-primary/15 text-primary uppercase tracking-wider">
-                             💪 {lang === 'en' ? 'Gain' : 'Набор'}
-                           </span>
-                         ) : (
-                           <span title={lang === 'en' ? 'Plan: Fat loss' : 'План: Снижение веса'}
-                             className="shrink-0 text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-secondary text-muted-foreground uppercase tracking-wider">
-                             🔥 {lang === 'en' ? 'Loss' : 'Сушка'}
-                           </span>
-                         )}
-                        {(() => {
-                          const count = weeklySessionCounts[client.user_id] || 0;
-                          return (
-                            <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold flex items-center gap-0.5 ${
-                              count > 0
-                                ? 'bg-secondary text-muted-foreground'
-                                : 'bg-secondary/40 text-muted-foreground/40'
-                            }`}>
-                              <Clock className="w-2.5 h-2.5" />
-                              {count}/{lang === 'en' ? 'wk' : 'нед'}
+                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                          {client.nutrition_goal === 'muscle_gain' ? (
+                            <span title={lang === 'en' ? 'Plan: Muscle gain' : 'План: Набор мышц'}
+                              className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/15 text-[10px]">
+                              💪
                             </span>
-                          );
-                        })()}
+                          ) : (
+                            <span title={lang === 'en' ? 'Plan: Fat loss' : 'План: Снижение веса'}
+                              className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-secondary text-[10px]">
+                              🔥
+                            </span>
+                          )}
                          {(() => {
                            const activePkg = clientPkgs.find((p) => p.is_active);
                            if (!activePkg) {
