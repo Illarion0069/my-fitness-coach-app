@@ -323,6 +323,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const channel = supabase
       .channel('dashboard-sessions')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => { fetchSessions(); fetchPast(); fetchPkg(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_ledger', filter: `user_id=eq.${user.id}` }, () => { fetchPast(); fetchPkg(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, fetchPkg)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_photos', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
