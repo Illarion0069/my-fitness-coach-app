@@ -246,10 +246,29 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     };
 
     const fetchPast = async () => {
-      const { data } = await supabase
-        .from('scheduled_sessions').select('*').eq('user_id', user.id).eq('is_deducted', true)
-        .order('session_date', { ascending: false }).limit(500);
-      setPastSessions((data as ScheduledSession[]) || []);
+      // Pull from session_ledger so the full history is visible — scheduled_sessions
+      // only stores the latest occurrence for recurring templates.
+      const { data: ledger } = await supabase
+        .from('session_ledger')
+        .select('id, session_id, delta, reason, created_at')
+        .eq('user_id', user.id)
+        .gt('delta', 0)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      const items = (ledger || []).map((row: any) => {
+        // Cron runs just after midnight Cyprus, so the Cyprus date of created_at
+        // is the actual training day.
+        const dateStr = new Date(row.created_at).toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
+        return {
+          id: row.id,
+          session_id: row.session_id,
+          session_date: dateStr,
+          session_time: null,
+          reason: row.reason,
+        } as any;
+      });
+      setPastSessions(items);
     };
 
     const fetchMeasurements = async () => {
@@ -304,6 +323,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const channel = supabase
       .channel('dashboard-sessions')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'scheduled_sessions', filter: `user_id=eq.${user.id}` }, () => { fetchSessions(); fetchPast(); fetchPkg(); })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'session_ledger', filter: `user_id=eq.${user.id}` }, () => { fetchPast(); fetchPkg(); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, fetchPkg)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_photos', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
