@@ -510,25 +510,45 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Send Telegram notification to trainer about client booking
+      // Send Telegram notification to trainer + confirmation to client
       try {
         const telegramToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
         const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
-        if (telegramToken && chatId) {
-          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', user.id).maybeSingle();
+        if (telegramToken) {
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone, telegram_chat_id').eq('user_id', user.id).maybeSingle();
           const clientName = profile?.full_name || 'Unknown';
           const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
           const paymentNote = pendingPayment ? `\n💳 Ожидает оплату: ${selectedPackageSessions || '?'} сессий (${selectedPackagePrice || '?'}€)` : '';
-          const msg = `📋 *Новая запись от клиента*\n\n👤 ${clientName}\n📅 ${dateFormatted}\n🕐 ${time}${paymentNote}`;
-          await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'Markdown' }),
-          });
+
+          // 1) Notify trainer
+          if (chatId) {
+            const trainerMsg = `📋 *Новая запись от клиента*\n\n👤 ${clientName}\n📅 ${dateFormatted}\n🕐 ${time}${paymentNote}`;
+            await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: chatId, text: trainerMsg, parse_mode: 'Markdown' }),
+            });
+          }
+
+          // 2) Confirmation to client (if Telegram linked)
+          if (profile?.telegram_chat_id) {
+            const clientMsg = `✅ *Запись подтверждена!*\n\n📅 ${dateFormatted}\n🕐 ${time}\n📍 Eleftherias 119, Limassol\n\nЖду тебя на тренировке 💪\n\nЕсли нужно отменить — сделай это минимум за 24 часа в личном кабинете.`;
+            const res = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ chat_id: profile.telegram_chat_id, text: clientMsg, parse_mode: 'Markdown' }),
+            });
+            if (!res.ok) {
+              console.error('[book] client TG confirmation failed:', res.status, await res.text());
+            }
+          } else {
+            console.log('[book] client has no telegram_chat_id, skipping client confirmation');
+          }
         }
       } catch (e) {
         console.error('Telegram notification failed:', e);
       }
+
 
       return new Response(JSON.stringify({ success: true, session_id: session.id, pendingPayment: !!pendingPayment }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
