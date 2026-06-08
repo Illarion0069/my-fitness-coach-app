@@ -838,6 +838,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   : m.meal_type === 'lunch' ? (lang === 'en' ? 'Lunch' : 'Обед')
                   : m.meal_type === 'dinner' ? (lang === 'en' ? 'Dinner' : 'Ужин')
                   : (lang === 'en' ? 'Snack' : 'Перекус');
+                const killers = Array.isArray(m.score_killers) ? m.score_killers : [];
                 return (
                   <div key={i} className="text-[10px]">
                     <div className="flex items-center gap-1.5">
@@ -853,11 +854,55 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                     {m.issues?.length > 0 && (
                       <p className="text-red-400/80 ml-2">✗ {(m.issues as string[]).join(', ')}</p>
                     )}
+                    {killers.length > 0 && (
+                      <div className="ml-2 mt-0.5 space-y-0.5">
+                        {killers.map((k: any, ki: number) => (
+                          <div key={ki} className="flex items-start gap-1 text-[10px]">
+                            <span className="text-orange-400 font-bold whitespace-nowrap">−{k.points_lost || 0}</span>
+                            <span className="text-muted-foreground">
+                              <span className="text-foreground/70">{k.food}</span>
+                              {' → '}
+                              <span className="text-green-400/90">{lang === 'en' ? (k.swap_en || k.swap_ru) : (k.swap_ru || k.swap_en)}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
+          {/* Boost potential — motivational card */}
+          {analysis?.boost_potential && Array.isArray((analysis.boost_potential as any).tips) && (analysis.boost_potential as any).tips.length > 0 && (() => {
+            const bp = analysis.boost_potential as any;
+            const current = log?.ai_score ?? 0;
+            const target = Math.max(current, Math.min(95, Number(bp.achievable_today) || current));
+            const delta = target - current;
+            if (delta <= 0) return null;
+            return (
+              <div className="mt-2.5 rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-2.5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                    🎯 {lang === 'en' ? 'How to boost today' : 'Как добрать сегодня'}
+                  </span>
+                  <span className="text-[10px] font-bold">
+                    <span className="text-muted-foreground">{current}</span>
+                    <span className="text-primary"> → {target}%</span>
+                    <span className="text-green-400 ml-1">+{delta}</span>
+                  </span>
+                </div>
+                <div className="space-y-1">
+                  {(bp.tips as any[]).slice(0, 3).map((t: any, ti: number) => (
+                    <div key={ti} className="flex items-start gap-1.5 text-[10px]">
+                      <span className="text-green-400 font-bold whitespace-nowrap">+{t.points_gain || 0}</span>
+                      <span className="text-foreground/85">{lang === 'en' ? (t.action_en || t.action_ru) : (t.action_ru || t.action_en)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           {isOverridden && log?.ai_score != null && (
             <p className="text-[10px] text-muted-foreground/60 mt-1">AI: {log.ai_score}%</p>
           )}
