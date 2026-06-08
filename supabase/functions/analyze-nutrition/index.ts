@@ -210,12 +210,27 @@ Your nutrition philosophy for lean muscle gain:
       "vegetables_present": true,
       "score": 0-100,
       "issues": ["issue1"],
-      "positives": ["positive1"]
+      "positives": ["positive1"],
+      "score_killers": [
+        {"food": "конкретный продукт из этого приёма", "points_lost": 8, "swap_ru": "конкретная замена с акцентом на белок/качество", "swap_en": "concrete swap"}
+      ]
     }
   ],
+  "boost_potential": {
+    "achievable_today": 85,
+    "tips": [
+      {"action_ru": "Конкретный шаг: 'Добавь перекус — творог 200г + орехи' / 'Замени белый рис на гречку — +8'", "action_en": "Concrete step", "points_gain": 10}
+    ]
+  },
   "summary_ru": "Краткий итог на русском (2-3 предложения), обращение на ТЫ, начни с имени клиента: что поддерживает набор мышц, что мешает, 1 конкретный шаг.",
   "summary_en": "Brief summary in English (2-3 sentences), friendly second person, start with client's first name: what supports muscle gain, what hurts it, one concrete improvement."
 }
+
+## CRITICAL — score_killers and boost_potential (motivational coaching):
+- For EACH meal where score < 90, populate "score_killers" with 1–3 SPECIFIC foods from that meal that cost points, with realistic "points_lost" (1–20) and a CONCRETE swap suggestion. Never generic.
+- "boost_potential.achievable_today" = realistic score reachable if tips are followed (overall_score + sum of points_gain, capped at 95). Missing meal = biggest boost.
+- "boost_potential.tips" = 1–3 highest-leverage actions, sorted by points_gain descending. Frame positively: "Добавь...", "Замени...", "Логируй...". NEVER "не ешь / нельзя".
+- Tone: coach showing the path UP, not punishing. Motivate to try.
 
 IMPORTANT: Same totals-recompute rule as in the fat-loss prompt. The server overrides total_* fields from the client's manual_entries (source of truth). Do NOT invent foods the client did not log.`;
 
