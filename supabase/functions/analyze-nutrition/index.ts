@@ -446,6 +446,8 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        max_tokens: 8192,
+        response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT },
           { role: "user", content: userContent },
@@ -475,8 +477,17 @@ serve(async (req) => {
       const jsonStr = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       analysis = JSON.parse(jsonStr);
     } catch {
-      console.error("Failed to parse AI response:", rawContent);
-      analysis = { overall_score: 50, meals: [], summary_ru: "Не удалось обработать ответ AI. Попробуйте ещё раз.", summary_en: "Failed to process AI response. Please try again." };
+      console.error("Failed to parse AI response (len=" + rawContent.length + "):", rawContent.slice(0, 500), "...", rawContent.slice(-300));
+      // Try to salvage top-level score/summary via regex from a truncated response
+      const scoreMatch = rawContent.match(/"overall_score"\s*:\s*(\d+)/);
+      const sumRuMatch = rawContent.match(/"summary_ru"\s*:\s*"([^"]+)"/);
+      const sumEnMatch = rawContent.match(/"summary_en"\s*:\s*"([^"]+)"/);
+      analysis = {
+        overall_score: scoreMatch ? Number(scoreMatch[1]) : 50,
+        meals: [],
+        summary_ru: sumRuMatch?.[1] || "Не удалось обработать ответ AI. Попробуйте ещё раз.",
+        summary_en: sumEnMatch?.[1] || "Failed to process AI response. Please try again.",
+      };
     }
 
     const score = Math.min(100, Math.max(0, Math.round((analysis.overall_score as number) || 0)));
