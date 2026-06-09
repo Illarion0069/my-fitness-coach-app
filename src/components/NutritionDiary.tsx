@@ -1251,17 +1251,28 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
-      {/* Analyze Button — show when photos exist and either no score yet or score was invalidated */}
-      {photos.length > 0 && !analysisAtLimit && (log?.ai_score == null) && (
-        <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing}
-          className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3.5 transition-colors bg-primary/15 hover:bg-primary/25 border-primary/30">
-          {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
-          <span className="text-sm font-bold text-primary">
-             {analyzing ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...') : (lang === 'en' ? 'Get Score' : 'Получить оценку')}
-           </span>
-          {analysisCount > 0 && <span className="text-[10px] text-primary/60">({analysisCount}/{MAX_ANALYSES_PER_DAY})</span>}
-        </motion.button>
-      )}
+      {/* Analyze Button — show when there's food (photos or manual entries) and analysis is missing/failed */}
+      {(() => {
+        const hasFood = photos.length > 0 || manualEntries.length > 0;
+        const fb = (log?.ai_feedback || '') as string;
+        const analysisFailed = /Не удалось обработать|Failed to process/i.test(fb);
+        const needsAnalysis = log?.ai_score == null || analysisFailed;
+        if (!hasFood || analysisAtLimit || !needsAnalysis) return null;
+        return (
+          <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing}
+            className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3.5 transition-colors bg-primary/15 hover:bg-primary/25 border-primary/30">
+            {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
+            <span className="text-sm font-bold text-primary">
+              {analyzing
+                ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...')
+                : analysisFailed
+                  ? (lang === 'en' ? 'Retry analysis' : 'Повторить анализ')
+                  : (lang === 'en' ? 'Get Score' : 'Получить оценку')}
+            </span>
+            {analysisCount > 0 && <span className="text-[10px] text-primary/60">({analysisCount}/{MAX_ANALYSES_PER_DAY})</span>}
+          </motion.button>
+        );
+      })()}
 
       {/* FAB - Add meal */}
       {!isReadOnly && !userId && (
