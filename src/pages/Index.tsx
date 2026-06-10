@@ -135,6 +135,36 @@ const AppContent = () => {
     }
   }, [user]);
 
+  // Capture UTM params (Google Business Profile etc.) into sessionStorage so
+  // downstream bookings/leads can be attributed. Persists for the session only.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const utmKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term'];
+    const captured: Record<string, string> = {};
+    utmKeys.forEach((k) => {
+      const v = params.get(k);
+      if (v) captured[k] = v.slice(0, 64);
+    });
+    if (Object.keys(captured).length > 0) {
+      try {
+        sessionStorage.setItem('attribution', JSON.stringify({ ...captured, ts: Date.now() }));
+      } catch { /* storage may be unavailable */ }
+    }
+  }, []);
+
+  // Deep link: ?book=1 opens the BookingModal immediately. Used for the
+  // "Website" link in Google Business Profile so visitors land on booking.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const bookParam = params.get('book');
+    if (bookParam) {
+      setShowBooking(true);
+      const url = new URL(window.location.href);
+      url.searchParams.delete('book');
+      window.history.replaceState(null, '', url.pathname + url.search + url.hash);
+    }
+  }, []);
+
   const slideVariants = {
     enter: (dir: number) => ({ x: dir > 0 ? '100%' : '-100%', opacity: 0 }),
     center: { x: 0, opacity: 1 },
