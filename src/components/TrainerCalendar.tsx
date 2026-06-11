@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import TrainerBlockModal from './TrainerBlockModal';
 import DayTimeline, { type TimelineEntry } from './trainer-calendar/DayTimeline';
-import { sessionCancelled, sessionMoved, type BiText } from '@/lib/scheduleNotifications';
+import { sessionAdded, sessionCancelled, sessionMoved, type BiText } from '@/lib/scheduleNotifications';
 
 interface Profile {
   id: string;
