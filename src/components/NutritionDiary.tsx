@@ -855,7 +855,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
               <span className="text-sm font-bold text-foreground">
-                {lang === 'en' ? 'AI Recommendations' : 'Рекомендации ИИ'}
+                {lang === 'en' ? 'Recommendations' : 'Рекомендации'}
               </span>
               {showFeedbackHint && (
                 <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full animate-pulse">
