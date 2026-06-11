@@ -752,8 +752,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
             toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
             if (session) {
-              const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-              showNotifyPrompt(session, 'session_moved', `🔄 <b>Время тренировки изменено</b>\n📆 ${dateDisplay}\n🕐 Новое время: ${newTime}${session.is_recurring ? '\n🔄 Для всей серии' : ''}`);
+              showNotifyPrompt(session, 'session_moved', sessionMoved({ date: selectedDateStr, newTime, wholeSeries: session.is_recurring, variant: 'time-changed' }));
             }
           }}
         />
