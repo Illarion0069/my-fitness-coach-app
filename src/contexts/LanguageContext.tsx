@@ -31,13 +31,14 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // On auth, hydrate from profile.preferred_language if present.
   useEffect(() => {
     let cancelled = false;
-    const load = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user || cancelled) return;
+    let lastLoadedUserId: string | null = null;
+    const load = async (userId: string) => {
+      if (cancelled || lastLoadedUserId === userId) return;
+      lastLoadedUserId = userId;
       const { data } = await supabase
         .from('profiles')
         .select('preferred_language')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .maybeSingle();
       if (cancelled) return;
       const pref = (data as any)?.preferred_language;
@@ -47,8 +48,19 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         try { localStorage.setItem(STORAGE_KEY, pref); } catch {}
       }
     };
-    load();
-    const { data: sub } = supabase.auth.onAuthStateChange(() => load());
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) load(session.user.id);
+    });
+    // IMPORTANT: never await/call Supabase synchronously inside onAuthStateChange —
+    // it holds the auth lock and can deadlock other listeners (profile fetch).
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const uid = session.user.id;
+        setTimeout(() => load(uid), 0);
+      } else {
+        lastLoadedUserId = null;
+      }
+    });
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, []);
 

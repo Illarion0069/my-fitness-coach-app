@@ -106,12 +106,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, nextSession) => {
+      (_event, nextSession) => {
         console.log('[Auth] onAuthStateChange:', _event, 'hasSession:', !!nextSession);
         if (_event === 'INITIAL_SESSION') {
           initialHandled = true;
         }
-        handleSession(nextSession);
+        // Defer Supabase calls out of the auth callback to avoid deadlocking
+        // the auth lock (causes intermittent empty profile / missing data).
+        setTimeout(() => handleSession(nextSession), 0);
       }
     );
 
