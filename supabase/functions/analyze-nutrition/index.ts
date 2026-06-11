@@ -545,15 +545,22 @@ serve(async (req) => {
     analysis.totals_source = "manual_entries";
 
     // --- Server-side name enforcement: guarantee summary starts with the client's name ---
+    // Basic Latin->Cyrillic transliteration so we can detect e.g. "Illarion" written as "Илларион"
+    const toCyrillic = (s: string): string => {
+      const map: Record<string, string> = {
+        a: "а", b: "б", v: "в", g: "г", d: "д", e: "е", z: "з", i: "и", y: "й",
+        k: "к", l: "л", m: "м", n: "н", o: "о", p: "п", r: "р", s: "с", t: "т",
+        u: "у", f: "ф", h: "х", c: "ц",
+      };
+      return s.toLowerCase().replace(/[a-z]/g, (ch) => map[ch] ?? ch);
+    };
     const ensureNamePrefix = (text: string, name: string): { text: string; injected: boolean } => {
       if (!text || !name) return { text, injected: false };
       const trimmed = text.trim();
-      // Already starts with the name (any case) followed by punctuation or space?
-      const re = new RegExp(`^${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}[\\s,.:!?—-]`, "i");
-      if (re.test(trimmed)) return { text: trimmed, injected: false };
-      // Also accept if name appears in first 25 chars (e.g. "Привет, Анна! ...")
-      if (trimmed.slice(0, 25).toLowerCase().includes(name.toLowerCase())) {
-        return { text: trimmed, injected: false };
+      const head = trimmed.slice(0, 30).toLowerCase();
+      const variants = Array.from(new Set([name.toLowerCase(), toCyrillic(name)].filter(Boolean)));
+      for (const v of variants) {
+        if (head.includes(v)) return { text: trimmed, injected: false };
       }
       return { text: `${name}, ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`, injected: true };
     };
