@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
@@ -158,6 +158,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddPortion, setQuickAddPortion] = useState('100');
   const [quickAddBase, setQuickAddBase] = useState<{ cal: number; protein: number; carbs: number; fat: number } | null>(null);
   const [showLiquids, setShowLiquids] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showFeedbackHint, setShowFeedbackHint] = useState(false);
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
   const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
   const [editFoodName, setEditFoodName] = useState('');
