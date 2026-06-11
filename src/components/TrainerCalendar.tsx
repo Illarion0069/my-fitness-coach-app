@@ -253,9 +253,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
 
-    const dateDisplay = new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-    const timeDisplay = session.session_time ? ` в ${session.session_time}` : '';
-    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Тренировка отменена</b>\n📆 ${dateDisplay}${timeDisplay}`);
+    showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ date: session.session_date, time: session.session_time }));
   };
 
   const deleteRecurringForDay = async (session: ScheduledSession) => {
