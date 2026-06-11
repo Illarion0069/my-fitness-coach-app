@@ -725,12 +725,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       data[mt].fat += m.fat_g || 0;
     }
     // Manual entries — skip those already counted in AI analysis
+    const aiActive = analysis && !analysis.invalidated;
+    const hasIncludedList = aiActive && Array.isArray(analysis.included_manual_ids);
     for (const e of manualEntries) {
       const mt = (VALID_MEAL_TYPES.includes(e.meal_type as MealType) ? e.meal_type : 'snack') as MealType;
       data[mt].manualItems.push(e);
-      // Don't add calories if already counted by AI
-      if (e.photo_id && analysis && !analysis.invalidated) continue;
+      // Already counted by AI analysis
       if (includedManualIds.has(e.id)) continue;
+      // Legacy analyses without included list: assume photo items were counted
+      if (aiActive && !hasIncludedList && e.photo_id) continue;
       data[mt].calories += e.calories || 0;
       data[mt].protein += e.protein_g || 0;
       data[mt].carbs += e.carbs_g || 0;
