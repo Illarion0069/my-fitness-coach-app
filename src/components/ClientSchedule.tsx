@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CalendarDays, Plus, X, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sessionAdded, sessionCancelled, type BiText } from '@/lib/scheduleNotifications';
 
 interface ScheduledSession {
   id: string;
