@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
@@ -158,6 +158,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddPortion, setQuickAddPortion] = useState('100');
   const [quickAddBase, setQuickAddBase] = useState<{ cal: number; protein: number; carbs: number; fat: number } | null>(null);
   const [showLiquids, setShowLiquids] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [showFeedbackHint, setShowFeedbackHint] = useState(false);
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
   const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
   const [editFoodName, setEditFoodName] = useState('');
@@ -193,6 +195,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   }, [effectiveUserId, date]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  useEffect(() => {
+    const seen = localStorage.getItem('nutrition_feedback_hint_seen');
+    if (!seen) setShowFeedbackHint(true);
+  }, []);
 
   const todayStr = (() => {
     const now = new Date();
@@ -832,102 +839,140 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         </div>
       </motion.div>
 
-      {/* AI Feedback */}
+      {/* AI Feedback — collapsible */}
       {displayScore != null && (
-        <div className={`rounded-2xl p-3.5 border border-border/30 ${
+        <div className={`rounded-2xl border border-border/30 overflow-hidden ${
           displayScore >= 75 ? 'bg-green-500/5' : displayScore >= 50 ? 'bg-yellow-500/5' : 'bg-red-500/5'
         }`}>
-          {isOverridden && log?.trainer_override_note && (
-            <p className="text-[11px] text-foreground/80 leading-relaxed mb-1.5 italic">✏️ {log.trainer_override_note}</p>
-          )}
-          {/* Summary text */}
-          {(() => {
-            const summaryText = (lang === 'en' ? analysis?.summary_en : analysis?.summary_ru) 
-              || analysis?.summary_ru || analysis?.summary_en || '';
-            const cleanSummary = typeof summaryText === 'string' && !summaryText.startsWith('{') && !summaryText.startsWith('```')
-              ? summaryText : '';
-            return cleanSummary ? (
-              <p className="text-[11px] text-muted-foreground leading-relaxed">{cleanSummary}</p>
-            ) : null;
-          })()}
-          {/* Per-meal breakdown */}
-          {analysis?.meals && (analysis.meals as any[]).length > 0 && (
-            <div className="mt-2 space-y-1.5">
-              {(analysis.meals as any[]).map((m: any, i: number) => {
-                const mealScore = m.score as number;
-                const scoreColor = mealScore >= 75 ? 'text-green-400' : mealScore >= 50 ? 'text-yellow-400' : 'text-red-400';
-                const mealLabel = m.meal_type === 'breakfast' ? (lang === 'en' ? 'Breakfast' : 'Завтрак')
-                  : m.meal_type === 'lunch' ? (lang === 'en' ? 'Lunch' : 'Обед')
-                  : m.meal_type === 'dinner' ? (lang === 'en' ? 'Dinner' : 'Ужин')
-                  : (lang === 'en' ? 'Snack' : 'Перекус');
-                const killers = Array.isArray(m.score_killers) ? m.score_killers : [];
-                return (
-                  <div key={i} className="text-[10px]">
-                    <div className="flex items-center gap-1.5">
-                      <span className="font-semibold text-foreground/80">{mealLabel}</span>
-                      <span className={`font-bold ${scoreColor}`}>{mealScore}/100</span>
-                      {m.estimated_calories > 0 && (
-                        <span className="text-muted-foreground/60">· {Math.round(m.estimated_calories)} kcal</span>
-                      )}
-                    </div>
-                    {m.positives?.length > 0 && (
-                      <p className="text-green-400/80 ml-2">✓ {(m.positives as string[]).join(', ')}</p>
-                    )}
-                    {m.issues?.length > 0 && (
-                      <p className="text-red-400/80 ml-2">✗ {(m.issues as string[]).join(', ')}</p>
-                    )}
-                    {killers.length > 0 && (
-                      <div className="ml-2 mt-0.5 space-y-0.5">
-                        {killers.map((k: any, ki: number) => (
-                          <div key={ki} className="flex items-start gap-1 text-[10px]">
-                            <span className="text-orange-400 font-bold whitespace-nowrap">−{k.points_lost || 0}</span>
-                            <span className="text-muted-foreground">
-                              <span className="text-foreground/70">{k.food}</span>
-                              {' → '}
-                              <span className="text-green-400/90">{lang === 'en' ? (k.swap_en || k.swap_ru) : (k.swap_ru || k.swap_en)}</span>
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+          <button
+            onClick={() => {
+              setShowFeedback(!showFeedback);
+              localStorage.setItem('nutrition_feedback_hint_seen', '1');
+              setShowFeedbackHint(false);
+            }}
+            className="w-full flex items-center justify-between p-3.5 text-left active:bg-secondary/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-primary" />
+              <span className="text-sm font-bold text-foreground">
+                {lang === 'en' ? 'AI Recommendations' : 'Рекомендации ИИ'}
+              </span>
+              {showFeedbackHint && (
+                <span className="text-[10px] bg-primary/20 text-primary px-2 py-0.5 rounded-full animate-pulse">
+                  {lang === 'en' ? 'Tap to expand' : 'Нажмите, чтобы развернуть'}
+                </span>
+              )}
             </div>
-          )}
-          {/* Boost potential — motivational card */}
-          {analysis?.boost_potential && Array.isArray((analysis.boost_potential as any).tips) && (analysis.boost_potential as any).tips.length > 0 && (() => {
-            const bp = analysis.boost_potential as any;
-            const current = log?.ai_score ?? 0;
-            const target = Math.max(current, Math.min(95, Number(bp.achievable_today) || current));
-            const delta = target - current;
-            if (delta <= 0) return null;
-            return (
-              <div className="mt-2.5 rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-2.5">
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
-                    🎯 {lang === 'en' ? 'How to boost today' : 'Как добрать сегодня'}
-                  </span>
-                  <span className="text-[10px] font-bold">
-                    <span className="text-muted-foreground">{current}</span>
-                    <span className="text-primary"> → {target}%</span>
-                    <span className="text-green-400 ml-1">+{delta}</span>
-                  </span>
-                </div>
-                <div className="space-y-1">
-                  {(bp.tips as any[]).slice(0, 3).map((t: any, ti: number) => (
-                    <div key={ti} className="flex items-start gap-1.5 text-[10px]">
-                      <span className="text-green-400 font-bold whitespace-nowrap">+{t.points_gain || 0}</span>
-                      <span className="text-foreground/85">{lang === 'en' ? (t.action_en || t.action_ru) : (t.action_ru || t.action_en)}</span>
+            <motion.div animate={{ rotate: showFeedback ? 180 : 0 }} transition={{ duration: 0.2 }}>
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            </motion.div>
+          </button>
+
+          <AnimatePresence>
+            {showFeedback && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25 }}
+                className="overflow-hidden"
+              >
+                <div className="px-3.5 pb-3.5 space-y-2">
+                  {isOverridden && log?.trainer_override_note && (
+                    <p className="text-[11px] text-foreground/80 leading-relaxed italic">✏️ {log.trainer_override_note}</p>
+                  )}
+                  {/* Summary text */}
+                  {(() => {
+                    const summaryText = (lang === 'en' ? analysis?.summary_en : analysis?.summary_ru) 
+                      || analysis?.summary_ru || analysis?.summary_en || '';
+                    const cleanSummary = typeof summaryText === 'string' && !summaryText.startsWith('{') && !summaryText.startsWith('```')
+                      ? summaryText : '';
+                    return cleanSummary ? (
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">{cleanSummary}</p>
+                    ) : null;
+                  })()}
+                  {/* Per-meal breakdown */}
+                  {analysis?.meals && (analysis.meals as any[]).length > 0 && (
+                    <div className="space-y-1.5">
+                      {(analysis.meals as any[]).map((m: any, i: number) => {
+                        const mealScore = m.score as number;
+                        const scoreColor = mealScore >= 75 ? 'text-green-400' : mealScore >= 50 ? 'text-yellow-400' : 'text-red-400';
+                        const mealLabel = m.meal_type === 'breakfast' ? (lang === 'en' ? 'Breakfast' : 'Завтрак')
+                          : m.meal_type === 'lunch' ? (lang === 'en' ? 'Lunch' : 'Обед')
+                          : m.meal_type === 'dinner' ? (lang === 'en' ? 'Dinner' : 'Ужин')
+                          : (lang === 'en' ? 'Snack' : 'Перекус');
+                        const killers = Array.isArray(m.score_killers) ? m.score_killers : [];
+                        return (
+                          <div key={i} className="text-[10px]">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-semibold text-foreground/80">{mealLabel}</span>
+                              <span className={`font-bold ${scoreColor}`}>{mealScore}/100</span>
+                              {m.estimated_calories > 0 && (
+                                <span className="text-muted-foreground/60">· {Math.round(m.estimated_calories)} kcal</span>
+                              )}
+                            </div>
+                            {m.positives?.length > 0 && (
+                              <p className="text-green-400/80 ml-2">✓ {(m.positives as string[]).join(', ')}</p>
+                            )}
+                            {m.issues?.length > 0 && (
+                              <p className="text-red-400/80 ml-2">✗ {(m.issues as string[]).join(', ')}</p>
+                            )}
+                            {killers.length > 0 && (
+                              <div className="ml-2 mt-0.5 space-y-0.5">
+                                {killers.map((k: any, ki: number) => (
+                                  <div key={ki} className="flex items-start gap-1 text-[10px]">
+                                    <span className="text-orange-400 font-bold whitespace-nowrap">−{k.points_lost || 0}</span>
+                                    <span className="text-muted-foreground">
+                                      <span className="text-foreground/70">{k.food}</span>
+                                      {' → '}
+                                      <span className="text-green-400/90">{lang === 'en' ? (k.swap_en || k.swap_ru) : (k.swap_ru || k.swap_en)}</span>
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
+                  )}
+                  {/* Boost potential — motivational card */}
+                  {analysis?.boost_potential && Array.isArray((analysis.boost_potential as any).tips) && (analysis.boost_potential as any).tips.length > 0 && (() => {
+                    const bp = analysis.boost_potential as any;
+                    const current = log?.ai_score ?? 0;
+                    const target = Math.max(current, Math.min(95, Number(bp.achievable_today) || current));
+                    const delta = target - current;
+                    if (delta <= 0) return null;
+                    return (
+                      <div className="rounded-lg border border-primary/30 bg-gradient-to-br from-primary/10 to-primary/5 p-2.5">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <span className="text-[10px] font-bold text-primary uppercase tracking-wider">
+                            🎯 {lang === 'en' ? 'How to boost today' : 'Как добрать сегодня'}
+                          </span>
+                          <span className="text-[10px] font-bold">
+                            <span className="text-muted-foreground">{current}</span>
+                            <span className="text-primary"> → {target}%</span>
+                            <span className="text-green-400 ml-1">+{delta}</span>
+                          </span>
+                        </div>
+                        <div className="space-y-1">
+                          {(bp.tips as any[]).slice(0, 3).map((t: any, ti: number) => (
+                            <div key={ti} className="flex items-start gap-1.5 text-[10px]">
+                              <span className="text-green-400 font-bold whitespace-nowrap">+{t.points_gain || 0}</span>
+                              <span className="text-foreground/85">{lang === 'en' ? (t.action_en || t.action_ru) : (t.action_ru || t.action_en)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
+                  {isOverridden && log?.ai_score != null && (
+                    <p className="text-[10px] text-muted-foreground/60">AI: {log.ai_score}%</p>
+                  )}
                 </div>
-              </div>
-            );
-          })()}
-          {isOverridden && log?.ai_score != null && (
-            <p className="text-[10px] text-muted-foreground/60 mt-1">AI: {log.ai_score}%</p>
-          )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 
