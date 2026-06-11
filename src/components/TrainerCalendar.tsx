@@ -283,7 +283,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
-    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Серия тренировок отменена</b>`);
+    showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ seriesEnded: true }));
   };
 
   const deleteBlockForDay = async (block: TrainerBlock) => {
