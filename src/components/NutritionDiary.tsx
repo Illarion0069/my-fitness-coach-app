@@ -725,12 +725,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       data[mt].fat += m.fat_g || 0;
     }
     // Manual entries — skip those already counted in AI analysis
+    const aiActive = analysis && !analysis.invalidated;
+    const hasIncludedList = aiActive && Array.isArray(analysis.included_manual_ids);
     for (const e of manualEntries) {
       const mt = (VALID_MEAL_TYPES.includes(e.meal_type as MealType) ? e.meal_type : 'snack') as MealType;
       data[mt].manualItems.push(e);
-      // Don't add calories if already counted by AI
-      if (e.photo_id && analysis && !analysis.invalidated) continue;
+      // Already counted by AI analysis
       if (includedManualIds.has(e.id)) continue;
+      // Legacy analyses without included list: assume photo items were counted
+      if (aiActive && !hasIncludedList && e.photo_id) continue;
       data[mt].calories += e.calories || 0;
       data[mt].protein += e.protein_g || 0;
       data[mt].carbs += e.carbs_g || 0;
@@ -777,6 +780,23 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
       {/* Calories Dashboard */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5">
+        <AnimatePresence>
+          {analyzing && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-primary">
+                  {lang === 'en' ? 'Recalculating totals & score…' : 'Пересчитываю калории и оценку…'}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4 flex-1">
             {/* Calorie ring */}

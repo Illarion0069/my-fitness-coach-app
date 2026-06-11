@@ -55,14 +55,16 @@ export function computeNutritionTotals(log: NutritionLogLike | null | undefined)
     }
   }
 
-  const includedIds = new Set<string>(
-    aiActive && Array.isArray(analysis.included_manual_ids) ? analysis.included_manual_ids : []
-  );
+  const hasIncludedList = aiActive && Array.isArray(analysis.included_manual_ids);
+  const includedIds = new Set<string>(hasIncludedList ? analysis.included_manual_ids : []);
   const manual: ManualEntryLike[] = Array.isArray(log?.manual_entries) ? log!.manual_entries : [];
 
   for (const e of manual) {
-    if (aiActive && e?.photo_id) continue;       // photo-detected items already in AI totals
-    if (e?.id && includedIds.has(e.id)) continue; // AI already counted this manual entry
+    // AI already counted this manual entry in its totals
+    if (e?.id && includedIds.has(e.id)) continue;
+    // Legacy analyses without included_manual_ids: assume all photo-detected items were counted
+    if (aiActive && !hasIncludedList && e?.photo_id) continue;
+    // New entries (photo or manual) added AFTER the last analysis are counted immediately
     calories += Number(e?.calories) || 0;
     protein  += Number(e?.protein_g) || 0;
     carbs    += Number(e?.carbs_g)   || 0;
