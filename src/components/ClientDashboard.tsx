@@ -17,6 +17,7 @@ import ClientTestHistory from './ClientTestHistory';
 import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
+import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
