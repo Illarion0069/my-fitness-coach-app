@@ -98,24 +98,12 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
     }
 
     // Notify client about new session
-    const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
-    const clientName = clientProfile?.full_name || '?';
-    let dateDisplay: string;
-    let timeDisplay = '';
-
-    if (mode === 'once') {
-      dateDisplay = new Date(date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-      timeDisplay = time ? ` в ${time}` : '';
-    } else {
-      dateDisplay = `каждый ${dayNames[recurDay]}`;
-      timeDisplay = recurTime ? ` в ${recurTime}` : '';
-    }
-
-    queueNotification(
-      userId,
-      'session_added',
-      `✅ <b>Тренировка добавлена</b>\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}`
+    const details = sessionAdded(
+      mode === 'once'
+        ? { mode: 'once', date, time }
+        : { mode: 'recurring', time: recurTime, recurDayEn: DAY_NAMES_EN[recurDay], recurDayRu: DAY_NAMES_RU[recurDay] }
     );
+    queueNotification(userId, 'session_added', details);
 
     setDate('');
     setTime('');
