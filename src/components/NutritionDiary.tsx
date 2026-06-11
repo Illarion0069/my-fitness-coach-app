@@ -196,6 +196,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  useEffect(() => {
+    const seen = localStorage.getItem('nutrition_feedback_hint_seen');
+    if (!seen) setShowFeedbackHint(true);
+  }, []);
+
   const todayStr = (() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
