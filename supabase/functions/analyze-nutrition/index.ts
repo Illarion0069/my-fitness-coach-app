@@ -574,8 +574,8 @@ serve(async (req) => {
     const nameInjectedRu = ruRes.injected;
     const nameInjectedEn = enRes.injected;
     const nameInjected = nameInjectedRu || nameInjectedEn;
-    // Alert only когда имя отсутствует в RU-саммари (именно её видит клиент/тренер)
-    const nameMissingInClientFacing = !nameFallbackUsed && nameInjectedRu;
+    // Alert only when name is missing in the UI-language summary (the one the client actually sees)
+    const nameMissingInClientFacing = !nameFallbackUsed && (uiLang === "en" ? nameInjectedEn : nameInjectedRu);
     const nameUsedInSummary = !nameFallbackUsed && !nameInjected;
 
     if (nameInjected) {
