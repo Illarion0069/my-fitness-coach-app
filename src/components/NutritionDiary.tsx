@@ -1350,6 +1350,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             </motion.button>
           );
         }
+        if (log?.ai_score != null && !analysisAtLimit) {
+          return (
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleAnalyze()}
+              className="w-full flex items-center justify-center gap-2 border rounded-2xl p-2.5 bg-muted/40 hover:bg-muted/60 border-border/40">
+              <Sparkles className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-[11px] font-semibold text-muted-foreground">
+                {lang === 'en' ? 'Totals & score update automatically · tap to recalculate' : 'Калории и оценка обновляются автоматически · нажмите для пересчёта'}
+              </span>
+            </motion.button>
+          );
+        }
         return null;
       })()}
 
