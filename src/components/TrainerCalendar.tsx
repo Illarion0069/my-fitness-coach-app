@@ -724,8 +724,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
             toast({ title: lang === 'en' ? 'Time updated for this day' : 'Время обновлено на этот день' });
             if (session) {
-              const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-              showNotifyPrompt(session, 'session_moved', `🔄 <b>Тренировка перенесена</b>\n📆 ${dateDisplay}\n🕐 Новое время: ${newTime}`);
+              showNotifyPrompt(session, 'session_moved', sessionMoved({ date: selectedDateStr, newTime, variant: 'rescheduled' }));
             }
           }}
           onMoveEntry={async (entry, newTime) => {
