@@ -383,30 +383,52 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = useCallback(async (opts?: { silent?: boolean }) => {
     if (!effectiveUserId) return;
     if (analysisCount >= MAX_ANALYSES_PER_DAY) {
-      toast({ title: lang === 'en' ? 'Analysis limit reached' : 'Лимит анализов достигнут', variant: 'destructive' });
+      if (!opts?.silent) toast({ title: lang === 'en' ? 'Analysis limit reached' : 'Лимит анализов достигнут', variant: 'destructive' });
       return;
     }
     setAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-nutrition', {
-        body: { user_id: effectiveUserId, log_date: date },
+        body: { user_id: effectiveUserId, log_date: date, lang },
       });
       if (error) throw error;
       if (data?.error) {
-        toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
+        if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
       } else {
-        toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
+        if (!opts?.silent) toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
         setAnalysisCount(prev => prev + 1);
         fetchData();
       }
     } catch (err: any) {
-      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
+      if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
     }
     setAnalyzing(false);
-  };
+  }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
+
+  // Auto-trigger analysis when food is present and analysis is missing (no manual button).
+  const autoAnalyzeKeyRef = useRef<string>('');
+  useEffect(() => {
+    if (isReadOnly || userId) return; // only for the owner's own diary
+    if (analyzing) return;
+    if (analysisCount >= MAX_ANALYSES_PER_DAY) return;
+    const manualLen = ((log?.manual_entries || []) as ManualEntry[]).length;
+    const hasFood = photos.length > 0 || manualLen > 0;
+    if (!hasFood) return;
+    const fb = (log?.ai_feedback || '') as string;
+    const analysisFailed = /Не удалось обработать|Failed to process/i.test(fb);
+    const needsAnalysis = log?.ai_score == null || analysisFailed;
+    if (!needsAnalysis) return;
+    const key = `${date}:${photos.length}:${manualLen}`;
+    if (autoAnalyzeKeyRef.current === key) return;
+    autoAnalyzeKeyRef.current = key;
+    const t = setTimeout(() => { handleAnalyze({ silent: true }); }, 1200);
+    return () => clearTimeout(t);
+  }, [photos.length, log?.manual_entries, log?.ai_score, log?.ai_feedback, analyzing, analysisCount, date, isReadOnly, userId, handleAnalyze]);
+
+
 
   const handleTrainerOverride = async () => {
     if (!log?.id || !isTrainer) return;
@@ -1251,28 +1273,38 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
-      {/* Analyze Button — show when there's food (photos or manual entries) and analysis is missing/failed */}
+      {/* Analysis status — fully automatic, no manual button.
+          Shows a subtle spinner while running, or a retry button only when the previous
+          analysis failed (so the user is never stuck). */}
       {(() => {
         const hasFood = photos.length > 0 || manualEntries.length > 0;
+        if (!hasFood) return null;
         const fb = (log?.ai_feedback || '') as string;
         const analysisFailed = /Не удалось обработать|Failed to process/i.test(fb);
-        const needsAnalysis = log?.ai_score == null || analysisFailed;
-        if (!hasFood || analysisAtLimit || !needsAnalysis) return null;
-        return (
-          <motion.button whileTap={{ scale: 0.97 }} onClick={handleAnalyze} disabled={analyzing}
-            className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3.5 transition-colors bg-primary/15 hover:bg-primary/25 border-primary/30">
-            {analyzing ? <Loader2 className="w-4 h-4 animate-spin text-primary" /> : <Sparkles className="w-4 h-4 text-primary" />}
-            <span className="text-sm font-bold text-primary">
-              {analyzing
-                ? (lang === 'en' ? 'Analyzing...' : 'Анализирую...')
-                : analysisFailed
-                  ? (lang === 'en' ? 'Retry analysis' : 'Повторить анализ')
-                  : (lang === 'en' ? 'Get Score' : 'Получить оценку')}
-            </span>
-            {analysisCount > 0 && <span className="text-[10px] text-primary/60">({analysisCount}/{MAX_ANALYSES_PER_DAY})</span>}
-          </motion.button>
-        );
+        if (analyzing) {
+          return (
+            <div className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3 bg-primary/10 border-primary/20">
+              <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              <span className="text-xs font-semibold text-primary">
+                {lang === 'en' ? 'Analyzing your meals…' : 'Анализирую приёмы пищи…'}
+              </span>
+            </div>
+          );
+        }
+        if (analysisFailed && !analysisAtLimit) {
+          return (
+            <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleAnalyze()}
+              className="w-full flex items-center justify-center gap-2 border rounded-2xl p-3 bg-destructive/10 hover:bg-destructive/20 border-destructive/30">
+              <Sparkles className="w-4 h-4 text-destructive" />
+              <span className="text-sm font-bold text-destructive">
+                {lang === 'en' ? 'Retry analysis' : 'Повторить анализ'}
+              </span>
+            </motion.button>
+          );
+        }
+        return null;
       })()}
+
 
       {/* FAB - Add meal */}
       {!isReadOnly && !userId && (

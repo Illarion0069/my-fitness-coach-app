@@ -17,6 +17,7 @@ import ClientTestHistory from './ClientTestHistory';
 import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
+import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
@@ -204,9 +205,11 @@ const FullscreenModule = ({ open, onClose, title, icon, children }: FullscreenMo
               <ChevronRight className="w-5 h-5 rotate-180" />
             </button>
             {icon}
-            <h2 className="text-base font-bold text-foreground">{title}</h2>
+            <h2 className="text-base font-bold text-foreground flex-1 truncate">{title}</h2>
+            <LanguageSwitch />
           </div>
         </div>
+
         <div className="px-5 py-4 pb-32">
           {children}
         </div>
