@@ -70,25 +70,32 @@ serve(async (req) => {
         continue;
       }
 
-      // Build consolidated message
-      const lines = notifications.map((n) => n.details);
-      const consolidatedMessage = `📋 <b>Обновление расписания</b>\n\n${lines.join("\n\n")}`;
-
-      // Get client's telegram_chat_id
+      // Get client's telegram_chat_id and preferred language
       const { data: profile } = await supabase
         .from("profiles")
-        .select("telegram_chat_id, full_name")
+        .select("telegram_chat_id, full_name, preferred_language")
         .eq("user_id", clientId)
         .single();
+
+      const clientLang = profile?.preferred_language === "en" ? "en" : "ru";
+
+      // Build consolidated message in the client's language
+      const clientLines = notifications.map((n: any) => {
+        if (clientLang === "en") return n.details_en || n.details_ru || n.details;
+        return n.details_ru || n.details_en || n.details;
+      });
+      const clientHeader = clientLang === "en" ? "📋 <b>Schedule update</b>" : "📋 <b>Обновление расписания</b>";
+      const consolidatedMessage = `${clientHeader}\n\n${clientLines.join("\n\n")}`;
 
       // Send to client
       if (profile?.telegram_chat_id) {
         await sendTelegramMessage(TELEGRAM_BOT_TOKEN, profile.telegram_chat_id, consolidatedMessage);
       }
 
-      // Also send summary to trainer
+      // Summary to trainer — always in Russian (trainer UI)
+      const trainerLines = notifications.map((n: any) => n.details_ru || n.details_en || n.details);
       const clientName = escapeHtml(profile?.full_name || "Клиент");
-      const trainerSummary = `📋 <b>Изменения отправлены клиенту ${clientName}</b>\n\n${lines.join("\n\n")}`;
+      const trainerSummary = `📋 <b>Изменения отправлены клиенту ${clientName}</b> (lang: ${clientLang})\n\n${trainerLines.join("\n\n")}`;
       await sendTelegramMessage(TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, trainerSummary);
 
       sentIds.push(...notifications.map((n) => n.id));
