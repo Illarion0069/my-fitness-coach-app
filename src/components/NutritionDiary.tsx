@@ -780,6 +780,23 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
       {/* Calories Dashboard */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5">
+        <AnimatePresence>
+          {analyzing && (
+            <motion.div
+              initial={{ opacity: 0, height: 0, marginBottom: 0 }}
+              animate={{ opacity: 1, height: 'auto', marginBottom: 12 }}
+              exit={{ opacity: 0, height: 0, marginBottom: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 rounded-xl px-3 py-2">
+                <Loader2 className="w-3.5 h-3.5 text-primary animate-spin flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-primary">
+                  {lang === 'en' ? 'Recalculating totals & score…' : 'Пересчитываю калории и оценку…'}
+                </span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4 flex-1">
             {/* Calorie ring */}
