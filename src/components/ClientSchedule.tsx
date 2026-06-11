@@ -135,24 +135,15 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
     // Notify about deletion
     if (session) {
-      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
-      const clientName = clientProfile?.full_name || '?';
-      let dateDisplay: string;
-      let timeDisplay = '';
-
-      if (session.is_recurring) {
-        dateDisplay = `каждый ${dayNames[session.recurrence_day || 0]}`;
-        timeDisplay = session.recurrence_time ? ` в ${session.recurrence_time.slice(0, 5)}` : '';
-      } else {
-        dateDisplay = new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-        timeDisplay = session.session_time ? ` в ${session.session_time.slice(0, 5)}` : '';
-      }
-
-      queueNotification(
-        userId,
-        'session_deleted',
-        `❌ <b>Тренировка отменена</b>\n📅 ${dateDisplay}${timeDisplay}`
-      );
+      const details = session.is_recurring
+        ? sessionCancelled({
+            recurring: true,
+            time: session.recurrence_time,
+            recurDayEn: DAY_NAMES_EN[session.recurrence_day || 0],
+            recurDayRu: DAY_NAMES_RU[session.recurrence_day || 0],
+          })
+        : sessionCancelled({ date: session.session_date, time: session.session_time });
+      queueNotification(userId, 'session_deleted', details);
     }
 
     fetchSessions();
