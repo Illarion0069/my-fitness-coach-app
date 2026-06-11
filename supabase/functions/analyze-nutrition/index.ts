@@ -606,10 +606,11 @@ serve(async (req) => {
         const TG_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
         const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
         if (TG_TOKEN && TG_CHAT) {
+          const clientFacingSummary = uiLang === "en" ? String(analysis.summary_en || "") : summaryRuStr;
           const reason = nameFallbackUsed
             ? `❌ Имя клиента ПУСТОЕ в профиле (full_name="${fullName}")`
-            : `⚠️ AI не обратился по имени "${firstName}" в RU-саммари (сервер вставил имя автоматически)`;
-          const alertMsg = `🚨 <b>Алерт: персонализация питания</b>\n\n${reason}\n\n👤 user_id: <code>${user_id}</code>\n📅 ${log_date}\n\n💬 Саммари: ${summaryRuStr.slice(0, 200)}${summaryRuStr.length > 200 ? "…" : ""}`;
+            : `⚠️ AI не обратился по имени "${firstName}" в ${uiLang.toUpperCase()}-саммари (сервер вставил имя автоматически)`;
+          const alertMsg = `🚨 <b>Алерт: персонализация питания</b>\n\n${reason}\n\n👤 user_id: <code>${user_id}</code>\n📅 ${log_date}\nUI lang: ${uiLang}\n\n💬 Саммари: ${clientFacingSummary.slice(0, 200)}${clientFacingSummary.length > 200 ? "…" : ""}`;
           await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
