@@ -450,7 +450,7 @@ serve(async (req) => {
         max_tokens: 8192,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
+          { role: "system", content: SYSTEM_PROMPT + `\n\n## UI LANGUAGE OVERRIDE (HARD RULE)\nThe client is currently using the app in language: "${uiLang}" (${uiLang === "en" ? "English" : "Russian"}).\nWrite ALL human-readable feedback strings in THIS language ONLY:\n- every string in "positives" arrays\n- every string in "issues" arrays\n- "swap_ru" / "swap_en" — fill the one matching this language with the real swap; the other field may repeat the same value or be empty\n- "action_ru" / "action_en" in boost_potential.tips — same rule\nKeep BOTH "summary_ru" and "summary_en" present, but the one matching this language must be the primary, polished version (the other can be a faithful translation). Food NAMES inside "detected_foods" and "score_killers.food" stay in their natural language (usually as the client typed them or as seen on the photo) — do NOT translate brand/dish names.` },
           { role: "user", content: userContent },
         ],
       }),
