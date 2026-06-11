@@ -383,30 +383,52 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyze = useCallback(async (opts?: { silent?: boolean }) => {
     if (!effectiveUserId) return;
     if (analysisCount >= MAX_ANALYSES_PER_DAY) {
-      toast({ title: lang === 'en' ? 'Analysis limit reached' : 'Лимит анализов достигнут', variant: 'destructive' });
+      if (!opts?.silent) toast({ title: lang === 'en' ? 'Analysis limit reached' : 'Лимит анализов достигнут', variant: 'destructive' });
       return;
     }
     setAnalyzing(true);
     try {
       const { data, error } = await supabase.functions.invoke('analyze-nutrition', {
-        body: { user_id: effectiveUserId, log_date: date },
+        body: { user_id: effectiveUserId, log_date: date, lang },
       });
       if (error) throw error;
       if (data?.error) {
-        toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
+        if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
       } else {
-        toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
+        if (!opts?.silent) toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
         setAnalysisCount(prev => prev + 1);
         fetchData();
       }
     } catch (err: any) {
-      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
+      if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
     }
     setAnalyzing(false);
-  };
+  }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
+
+  // Auto-trigger analysis when food is present and analysis is missing (no manual button).
+  const autoAnalyzeKeyRef = useRef<string>('');
+  useEffect(() => {
+    if (isReadOnly || userId) return; // only for the owner's own diary
+    if (analyzing) return;
+    if (analysisCount >= MAX_ANALYSES_PER_DAY) return;
+    const manualLen = ((log?.manual_entries || []) as ManualEntry[]).length;
+    const hasFood = photos.length > 0 || manualLen > 0;
+    if (!hasFood) return;
+    const fb = (log?.ai_feedback || '') as string;
+    const analysisFailed = /Не удалось обработать|Failed to process/i.test(fb);
+    const needsAnalysis = log?.ai_score == null || analysisFailed;
+    if (!needsAnalysis) return;
+    const key = `${date}:${photos.length}:${manualLen}`;
+    if (autoAnalyzeKeyRef.current === key) return;
+    autoAnalyzeKeyRef.current = key;
+    const t = setTimeout(() => { handleAnalyze({ silent: true }); }, 1200);
+    return () => clearTimeout(t);
+  }, [photos.length, log?.manual_entries, log?.ai_score, log?.ai_feedback, analyzing, analysisCount, date, isReadOnly, userId, handleAnalyze]);
+
+
 
   const handleTrainerOverride = async () => {
     if (!log?.id || !isTrainer) return;
