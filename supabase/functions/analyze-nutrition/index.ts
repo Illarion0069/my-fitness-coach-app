@@ -252,7 +252,8 @@ serve(async (req) => {
       return jsonResponse({ error: "No authorization header" }, 401);
     }
 
-    const { user_id, log_date } = await req.json();
+    const { user_id, log_date, lang: rawLang } = await req.json();
+    const uiLang: "en" | "ru" = rawLang === "en" ? "en" : "ru";
 
     // --- Input validation ---
     if (!user_id || !log_date) {
