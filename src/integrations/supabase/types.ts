@@ -425,6 +425,8 @@ export type Database = {
           client_user_id: string
           created_at: string | null
           details: string
+          details_en: string | null
+          details_ru: string | null
           id: string
           is_sent: boolean | null
           trainer_user_id: string
@@ -434,6 +436,8 @@ export type Database = {
           client_user_id: string
           created_at?: string | null
           details: string
+          details_en?: string | null
+          details_ru?: string | null
           id?: string
           is_sent?: boolean | null
           trainer_user_id: string
@@ -443,6 +447,8 @@ export type Database = {
           client_user_id?: string
           created_at?: string | null
           details?: string
+          details_en?: string | null
+          details_ru?: string | null
           id?: string
           is_sent?: boolean | null
           trainer_user_id?: string
@@ -461,6 +467,7 @@ export type Database = {
           id: string
           nutrition_goal: string
           phone: string
+          preferred_language: string | null
           reactivation_sent_at: string | null
           signup_notified_at: string | null
           telegram_chat_id: string | null
@@ -479,6 +486,7 @@ export type Database = {
           id?: string
           nutrition_goal?: string
           phone: string
+          preferred_language?: string | null
           reactivation_sent_at?: string | null
           signup_notified_at?: string | null
           telegram_chat_id?: string | null
@@ -497,6 +505,7 @@ export type Database = {
           id?: string
           nutrition_goal?: string
           phone?: string
+          preferred_language?: string | null
           reactivation_sent_at?: string | null
           signup_notified_at?: string | null
           telegram_chat_id?: string | null
