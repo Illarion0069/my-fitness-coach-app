@@ -48,7 +48,7 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
   useEffect(() => { fetchSessions(); }, [userId]);
 
-  const queueNotification = async (clientUserId: string, actionType: string, details: string) => {
+  const queueNotification = async (clientUserId: string, actionType: string, details: BiText) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -56,7 +56,9 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         client_user_id: clientUserId,
         trainer_user_id: user.id,
         action_type: actionType,
-        details,
+        details: details.ru, // legacy fallback
+        details_en: details.en,
+        details_ru: details.ru,
       });
     } catch (e) {
       console.error('Queue notification failed', e);
