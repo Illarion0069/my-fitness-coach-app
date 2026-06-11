@@ -71,7 +71,7 @@ interface NotifyPrompt {
   clientUserId: string;
   clientName: string;
   actionType: string;
-  details: string;
+  details: BiText;
 }
 
 const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
@@ -87,7 +87,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [notifyPrompt, setNotifyPrompt] = useState<NotifyPrompt | null>(null);
 
-  const showNotifyPrompt = (session: ScheduledSession, actionType: string, details: string) => {
+  const showNotifyPrompt = (session: ScheduledSession, actionType: string, details: BiText) => {
     const manualMatch = session.notes?.match(/^👤 (.+?) \(manual\)$/);
     if (manualMatch) return; // manual entries have no real client
     const client = clients.find(c => c.user_id === session.user_id);
@@ -104,7 +104,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           client_user_id: notifyPrompt.clientUserId,
           trainer_user_id: user.id,
           action_type: notifyPrompt.actionType,
-          details: notifyPrompt.details,
+          details: notifyPrompt.details.ru, // legacy fallback (trainer UI)
+          details_en: notifyPrompt.details.en,
+          details_ru: notifyPrompt.details.ru,
         });
       }
     } catch (e) {
