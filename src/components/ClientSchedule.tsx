@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CalendarDays, Plus, X, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { sessionAdded, sessionCancelled, type BiText } from '@/lib/scheduleNotifications';
 
 interface ScheduledSession {
   id: string;
@@ -47,7 +48,7 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
   useEffect(() => { fetchSessions(); }, [userId]);
 
-  const queueNotification = async (clientUserId: string, actionType: string, details: string) => {
+  const queueNotification = async (clientUserId: string, actionType: string, details: BiText) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -55,7 +56,9 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
         client_user_id: clientUserId,
         trainer_user_id: user.id,
         action_type: actionType,
-        details,
+        details: details.ru, // legacy fallback
+        details_en: details.en,
+        details_ru: details.ru,
       });
     } catch (e) {
       console.error('Queue notification failed', e);
@@ -95,24 +98,12 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
     }
 
     // Notify client about new session
-    const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
-    const clientName = clientProfile?.full_name || '?';
-    let dateDisplay: string;
-    let timeDisplay = '';
-
-    if (mode === 'once') {
-      dateDisplay = new Date(date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-      timeDisplay = time ? ` в ${time}` : '';
-    } else {
-      dateDisplay = `каждый ${dayNames[recurDay]}`;
-      timeDisplay = recurTime ? ` в ${recurTime}` : '';
-    }
-
-    queueNotification(
-      userId,
-      'session_added',
-      `✅ <b>Тренировка добавлена</b>\n📆 ${dateDisplay}${timeDisplay}\n${mode === 'recurring' ? '🔄 Повторяющаяся' : '☝️ Разовая'}`
+    const details = sessionAdded(
+      mode === 'once'
+        ? { mode: 'once', date, time }
+        : { mode: 'recurring', time: recurTime, recurDayEn: DAY_NAMES_EN[recurDay], recurDayRu: DAY_NAMES_RU[recurDay] }
     );
+    queueNotification(userId, 'session_added', details);
 
     setDate('');
     setTime('');
@@ -144,24 +135,15 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
 
     // Notify about deletion
     if (session) {
-      const { data: clientProfile } = await supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle();
-      const clientName = clientProfile?.full_name || '?';
-      let dateDisplay: string;
-      let timeDisplay = '';
-
-      if (session.is_recurring) {
-        dateDisplay = `каждый ${dayNames[session.recurrence_day || 0]}`;
-        timeDisplay = session.recurrence_time ? ` в ${session.recurrence_time.slice(0, 5)}` : '';
-      } else {
-        dateDisplay = new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-        timeDisplay = session.session_time ? ` в ${session.session_time.slice(0, 5)}` : '';
-      }
-
-      queueNotification(
-        userId,
-        'session_deleted',
-        `❌ <b>Тренировка отменена</b>\n📅 ${dateDisplay}${timeDisplay}`
-      );
+      const details = session.is_recurring
+        ? sessionCancelled({
+            recurring: true,
+            time: session.recurrence_time,
+            recurDayEn: DAY_NAMES_EN[session.recurrence_day || 0],
+            recurDayRu: DAY_NAMES_RU[session.recurrence_day || 0],
+          })
+        : sessionCancelled({ date: session.session_date, time: session.session_time });
+      queueNotification(userId, 'session_deleted', details);
     }
 
     fetchSessions();

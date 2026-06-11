@@ -6,6 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import TrainerBlockModal from './TrainerBlockModal';
 import DayTimeline, { type TimelineEntry } from './trainer-calendar/DayTimeline';
+import { sessionAdded, sessionCancelled, sessionMoved, type BiText } from '@/lib/scheduleNotifications';
 
 interface Profile {
   id: string;
@@ -70,7 +71,7 @@ interface NotifyPrompt {
   clientUserId: string;
   clientName: string;
   actionType: string;
-  details: string;
+  details: BiText;
 }
 
 const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
@@ -86,7 +87,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [notifyPrompt, setNotifyPrompt] = useState<NotifyPrompt | null>(null);
 
-  const showNotifyPrompt = (session: ScheduledSession, actionType: string, details: string) => {
+  const showNotifyPrompt = (session: ScheduledSession, actionType: string, details: BiText) => {
     const manualMatch = session.notes?.match(/^👤 (.+?) \(manual\)$/);
     if (manualMatch) return; // manual entries have no real client
     const client = clients.find(c => c.user_id === session.user_id);
@@ -103,7 +104,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           client_user_id: notifyPrompt.clientUserId,
           trainer_user_id: user.id,
           action_type: notifyPrompt.actionType,
-          details: notifyPrompt.details,
+          details: notifyPrompt.details.ru, // legacy fallback (trainer UI)
+          details_en: notifyPrompt.details.en,
+          details_ru: notifyPrompt.details.ru,
         });
       }
     } catch (e) {
@@ -250,9 +253,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Session removed' : 'Тренировка удалена' });
 
-    const dateDisplay = new Date(session.session_date + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-    const timeDisplay = session.session_time ? ` в ${session.session_time}` : '';
-    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Тренировка отменена</b>\n📆 ${dateDisplay}${timeDisplay}`);
+    showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ date: session.session_date, time: session.session_time }));
   };
 
   const deleteRecurringForDay = async (session: ScheduledSession) => {
@@ -274,9 +275,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Occurrence removed' : 'Тренировка на этот день удалена' });
 
-    const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-    const timeDisplay = session.recurrence_time ? ` в ${session.recurrence_time}` : '';
-    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Тренировка отменена</b>\n📆 ${dateDisplay}${timeDisplay}`);
+    showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ date: selectedDateStr, time: session.recurrence_time }));
   };
 
   const deleteRecurringSeries = async (session: ScheduledSession) => {
@@ -284,7 +283,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
     toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
-    showNotifyPrompt(session, 'session_cancelled', `❌ <b>Серия тренировок отменена</b>`);
+    showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ seriesEnded: true }));
   };
 
   const deleteBlockForDay = async (block: TrainerBlock) => {
@@ -417,13 +416,18 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     if (clientId) {
       const client = clients.find(c => c.user_id === clientId);
       if (client) {
-        const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-        const timeDisplay = time ? ` в ${time}` : '';
+        const recurDayEn = dayNamesEn[recurrenceDay];
+        const recurDayRu = dayNamesRu[recurrenceDay];
+        const details = sessionAdded(
+          isRecurring
+            ? { mode: 'recurring', time, recurDayEn, recurDayRu }
+            : { mode: 'once', date: selectedDateStr, time }
+        );
         setNotifyPrompt({
           clientUserId: clientId,
           clientName: client.full_name,
           actionType: 'session_added',
-          details: `✅ <b>Тренировка добавлена</b>\n📆 ${dateDisplay}${timeDisplay}\n${isRecurring ? '🔄 Повторяющаяся' : '☝️ Разовая'}`,
+          details,
         });
       }
     }
@@ -720,8 +724,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
             toast({ title: lang === 'en' ? 'Time updated for this day' : 'Время обновлено на этот день' });
             if (session) {
-              const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-              showNotifyPrompt(session, 'session_moved', `🔄 <b>Тренировка перенесена</b>\n📆 ${dateDisplay}\n🕐 Новое время: ${newTime}`);
+              showNotifyPrompt(session, 'session_moved', sessionMoved({ date: selectedDateStr, newTime, variant: 'rescheduled' }));
             }
           }}
           onMoveEntry={async (entry, newTime) => {
@@ -749,8 +752,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
             toast({ title: lang === 'en' ? 'Time updated' : 'Время обновлено' });
             if (session) {
-              const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-              showNotifyPrompt(session, 'session_moved', `🔄 <b>Время тренировки изменено</b>\n📆 ${dateDisplay}\n🕐 Новое время: ${newTime}${session.is_recurring ? '\n🔄 Для всей серии' : ''}`);
+              showNotifyPrompt(session, 'session_moved', sessionMoved({ date: selectedDateStr, newTime, wholeSeries: session.is_recurring, variant: 'time-changed' }));
             }
           }}
         />
