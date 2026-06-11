@@ -416,13 +416,18 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     if (clientId) {
       const client = clients.find(c => c.user_id === clientId);
       if (client) {
-        const dateDisplay = new Date(selectedDateStr + 'T00:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'long', weekday: 'short' });
-        const timeDisplay = time ? ` в ${time}` : '';
+        const recurDayEn = dayNamesEn[recurrenceDay];
+        const recurDayRu = dayNamesRu[recurrenceDay];
+        const details = sessionAdded(
+          isRecurring
+            ? { mode: 'recurring', time, recurDayEn, recurDayRu }
+            : { mode: 'once', date: selectedDateStr, time }
+        );
         setNotifyPrompt({
           clientUserId: clientId,
           clientName: client.full_name,
           actionType: 'session_added',
-          details: `✅ <b>Тренировка добавлена</b>\n📆 ${dateDisplay}${timeDisplay}\n${isRecurring ? '🔄 Повторяющаяся' : '☝️ Разовая'}`,
+          details,
         });
       }
     }
