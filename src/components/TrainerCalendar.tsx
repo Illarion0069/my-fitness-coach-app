@@ -282,12 +282,21 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const deleteRecurringSeries = async (session: ScheduledSession) => {
-    await supabase.from('scheduled_sessions').delete().eq('id', session.id);
+    // Preserve history: end the series the day before the selected date.
+    // Today and all future occurrences will no longer appear or be deducted.
+    const sel = new Date(`${selectedDateStr}T12:00:00`);
+    sel.setDate(sel.getDate() - 1);
+    const endDate = sel.toISOString().split('T')[0];
+    await supabase
+      .from('scheduled_sessions')
+      .update({ recurrence_end_date: endDate } as any)
+      .eq('id', session.id);
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
-    toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
+    toast({ title: lang === 'en' ? 'Series ended' : 'Серия завершена' });
     showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ seriesEnded: true }));
   };
+
 
   const deleteBlockForDay = async (block: TrainerBlock) => {
     const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];
