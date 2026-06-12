@@ -74,6 +74,8 @@ function buildRecurringDueDates(
 
   const exceptions = new Set((session.recurring_exceptions || []).map(String));
   if (exceptions.has(todayStr)) return [];
+  if (session.recurrence_end_date && todayStr > session.recurrence_end_date) return [];
+
 
   // Recurring template must have started by today
   if (session.session_date > todayStr) return [];
