@@ -7,7 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const MAX_ANALYSES_PER_DAY = 3;
+const MAX_ANALYSES_PER_DAY = 8;
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -422,10 +422,24 @@ serve(async (req) => {
     }
     const fullName = (clientProfile?.full_name as string) || "";
 
+    // --- Time-aware context (Asia/Nicosia, the trainer's local zone) ---
+    const nowParts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Nicosia",
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit", hour12: false,
+    }).formatToParts(new Date()).reduce((acc: Record<string, string>, p) => {
+      if (p.type !== "literal") acc[p.type] = p.value;
+      return acc;
+    }, {});
+    const localDateStr = `${nowParts.year}-${nowParts.month}-${nowParts.day}`;
+    const localHour = Number(nowParts.hour) || 0;
+    const localTimeStr = `${nowParts.hour}:${nowParts.minute}`;
+    const isToday = localDateStr === log_date;
+
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
@@ -450,7 +464,7 @@ serve(async (req) => {
         max_tokens: 8192,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: SYSTEM_PROMPT + `\n\n## UI LANGUAGE OVERRIDE (HARD RULE)\nThe client is currently using the app in language: "${uiLang}" (${uiLang === "en" ? "English" : "Russian"}).\nWrite ALL human-readable feedback strings in THIS language ONLY:\n- every string in "positives" arrays\n- every string in "issues" arrays\n- "swap_ru" / "swap_en" — fill the one matching this language with the real swap; the other field may repeat the same value or be empty\n- "action_ru" / "action_en" in boost_potential.tips — same rule\nKeep BOTH "summary_ru" and "summary_en" present, but the one matching this language must be the primary, polished version (the other can be a faithful translation). Food NAMES inside "detected_foods" and "score_killers.food" stay in their natural language (usually as the client typed them or as seen on the photo) — do NOT translate brand/dish names.` },
+          { role: "system", content: SYSTEM_PROMPT + `\n\n## UI LANGUAGE OVERRIDE (HARD RULE)\nThe client is currently using the app in language: "${uiLang}" (${uiLang === "en" ? "English" : "Russian"}).\nWrite ALL human-readable feedback strings in THIS language ONLY:\n- every string in "positives" arrays\n- every string in "issues" arrays\n- "swap_ru" / "swap_en" — fill the one matching this language with the real swap; the other field may repeat the same value or be empty\n- "action_ru" / "action_en" in boost_potential.tips — same rule\nKeep BOTH "summary_ru" and "summary_en" present, but the one matching this language must be the primary, polished version (the other can be a faithful translation). Food NAMES inside "detected_foods" and "score_killers.food" stay in their natural language (usually as the client typed them or as seen on the photo) — do NOT translate brand/dish names.\n\n## CRITICAL — TIME-AWARE COACHING (HARD RULE)\nThe analysis is being generated RIGHT NOW, not at end-of-day. Current local time for the client (Cyprus, Asia/Nicosia) will be provided in the user message as CURRENT_LOCAL_TIME and CURRENT_LOCAL_HOUR. The analyzed log_date may be today or a past day — also provided as IS_TODAY (true/false).\n\nUse this to make "boost_potential.tips" actionable for THIS moment:\n- If IS_TODAY=false (past day): tips look back — "in next similar day, add X for breakfast". Use past/conditional framing.\n- If IS_TODAY=true: NEVER suggest "add more at breakfast" if breakfast time is already past. Meal windows in local time: breakfast 06:00–11:00, lunch 11:00–16:00, dinner 16:00–22:00, snack any time.\n  • For meals whose window has PASSED and were missed/light: do NOT say "add to breakfast"; instead phrase it as "compensate now with a high-protein snack" or roll the missing protein/veg into the NEXT upcoming meal ("at lunch — добавь ...").\n  • Only suggest "add/improve breakfast" if current hour is still inside the breakfast window.\n  • The very next upcoming meal is the highest-leverage tip — put it first.\n  • A protein/veg snack is ALWAYS a valid current-moment tip regardless of hour (until ~21:00).\n- summary_ru / summary_en must also reflect "сейчас" — what the client can do in the next few hours to push the score up, not a retrospective end-of-day verdict.` },
           { role: "user", content: userContent },
         ],
       }),
