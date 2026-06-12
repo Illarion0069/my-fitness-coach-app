@@ -148,8 +148,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       const { data: trainers } = await supabase.from('user_roles').select('user_id').eq('role', 'trainer').limit(1);
       const trainerId = trainers?.[0]?.user_id;
       if (trainerId) {
-        const { data: wh } = await supabase.from('trainer_working_hours').select('blocked_dates').eq('trainer_user_id', trainerId).maybeSingle();
-        if (wh?.blocked_dates) setTrainerBlockedDates(wh.blocked_dates);
+        const { data: blocked } = await supabase.rpc('get_trainer_blocked_dates', { _trainer: trainerId });
+        if (blocked) setTrainerBlockedDates(blocked as string[]);
+
       }
     })();
   }, []);
