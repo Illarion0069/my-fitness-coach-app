@@ -12,9 +12,11 @@ type ScheduledSession = {
   is_recurring: boolean;
   recurrence_day: number | null;
   recurring_exceptions: string[] | null;
+  recurrence_end_date: string | null;
   is_deducted: boolean;
   deducted_at: string | null;
 };
+
 
 type ClientPackage = {
   id: string;
