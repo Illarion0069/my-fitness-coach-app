@@ -874,6 +874,10 @@ export type Database = {
     }
     Functions: {
       cleanup_password_reset_data: { Args: never; Returns: undefined }
+      get_trainer_blocked_dates: {
+        Args: { _trainer: string }
+        Returns: string[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
