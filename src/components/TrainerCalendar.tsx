@@ -187,7 +187,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const daySessions = useMemo(() => {
     const items = sessions.filter((session) => {
       if (session.is_recurring && session.recurrence_day === dayOfWeek) {
-        return !session.recurring_exceptions?.includes(selectedDateStr);
+        if (session.recurring_exceptions?.includes(selectedDateStr)) return false;
+        if ((session as any).recurrence_end_date && selectedDateStr > (session as any).recurrence_end_date) return false;
+        return true;
       }
       return !session.is_recurring && session.session_date === selectedDateStr;
     });
@@ -198,6 +200,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       return timeA.localeCompare(timeB);
     });
   }, [sessions, dayOfWeek, selectedDateStr]);
+
 
   const dayBlocks = useMemo(() => {
     const items = blocks.filter((block) => {
