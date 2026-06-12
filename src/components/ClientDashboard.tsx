@@ -20,6 +20,7 @@ import NutritionDiary from './NutritionDiary';
 import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
 
 /* ──────────────────────── Sparkline ──────────────────────── */
@@ -790,8 +791,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           </span>
         </motion.button>
 
-        {/* ═══════════ Achievements ═══════════ */}
-        <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
 
         {/* ═══════════ Test #1 banner (baseline not yet taken) ═══════════ */}
         {(() => {
@@ -1030,6 +1029,21 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             </motion.button>
           </div>
         </motion.div>
+
+        {/* ═══════════ Achievements (collapsible) ═══════════ */}
+        <Collapsible defaultOpen={false}>
+          <CollapsibleTrigger className="w-full">
+            <div className="flex items-center justify-between px-1 py-2">
+              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
+                {lang === 'en' ? 'Achievements' : 'Достижения'}
+              </span>
+              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform data-[state=open]:rotate-180" />
+            </div>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* ═══════════ Contact Trainer ═══════════ */}
         <div className="flex items-center justify-center gap-2 mt-4">
