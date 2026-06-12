@@ -568,6 +568,8 @@ serve(async (req) => {
     analysis.analysis_count = currentCount + 1;
     analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
     analysis.totals_source = "manual_entries";
+    analysis.mode = mode;
+    analysis.generated_at_local = `${localDateStr} ${localTimeStr}`;
 
     // --- Server-side name enforcement: guarantee summary starts with the client's name ---
     // Basic Latin->Cyrillic transliteration so we can detect e.g. "Illarion" written as "Илларион"
