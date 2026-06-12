@@ -1,0 +1,1 @@
+ALTER TABLE public.scheduled_sessions ADD COLUMN IF NOT EXISTS recurrence_end_date date;

@@ -116,22 +116,38 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
   const deleteSession = async (id: string) => {
     const session = sessions.find(s => s.id === id);
 
-    // Call edge function with service_role — guaranteed to bypass RLS and restore balance
-    const { data: { session: authSession } } = await supabase.auth.getSession();
-    const token = authSession?.access_token;
+    if (session?.is_recurring) {
+      // Preserve history: end the series yesterday so past occurrences remain.
+      const y = new Date();
+      y.setDate(y.getDate() - 1);
+      const endDate = y.toISOString().split('T')[0];
+      const { error } = await supabase
+        .from('scheduled_sessions')
+        .update({ recurrence_end_date: endDate } as any)
+        .eq('id', id);
+      if (error) {
+        toast({ title: lang === 'en' ? 'Error removing session' : 'Ошибка при удалении', variant: 'destructive' });
+        return;
+      }
+    } else {
+      // Call edge function with service_role — guaranteed to bypass RLS and restore balance
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      const token = authSession?.access_token;
 
-    const res = await supabase.functions.invoke('restore-session', {
-      body: { sessionId: id, userId },
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    });
+      const res = await supabase.functions.invoke('restore-session', {
+        body: { sessionId: id, userId },
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
 
-    if (res.error) {
-      console.error('[deleteSession] restore-session error:', res.error);
-      toast({ title: lang === 'en' ? 'Error removing session' : 'Ошибка при удалении', variant: 'destructive' });
-      return;
+      if (res.error) {
+        console.error('[deleteSession] restore-session error:', res.error);
+        toast({ title: lang === 'en' ? 'Error removing session' : 'Ошибка при удалении', variant: 'destructive' });
+        return;
+      }
+
+      console.log('[deleteSession] restore-session result:', res.data);
     }
 
-    console.log('[deleteSession] restore-session result:', res.data);
 
     // Notify about deletion
     if (session) {
@@ -152,7 +168,9 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
   };
 
   const oneOff = sessions.filter(s => !s.is_recurring && !s.is_deducted);
-  const recurring = sessions.filter(s => s.is_recurring);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const recurring = sessions.filter(s => s.is_recurring && (!(s as any).recurrence_end_date || (s as any).recurrence_end_date >= todayStr));
+
   const past = sessions.filter(s => !s.is_recurring && s.is_deducted);
 
   return (

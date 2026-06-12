@@ -187,7 +187,9 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const daySessions = useMemo(() => {
     const items = sessions.filter((session) => {
       if (session.is_recurring && session.recurrence_day === dayOfWeek) {
-        return !session.recurring_exceptions?.includes(selectedDateStr);
+        if (session.recurring_exceptions?.includes(selectedDateStr)) return false;
+        if ((session as any).recurrence_end_date && selectedDateStr > (session as any).recurrence_end_date) return false;
+        return true;
       }
       return !session.is_recurring && session.session_date === selectedDateStr;
     });
@@ -198,6 +200,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
       return timeA.localeCompare(timeB);
     });
   }, [sessions, dayOfWeek, selectedDateStr]);
+
 
   const dayBlocks = useMemo(() => {
     const items = blocks.filter((block) => {
@@ -279,12 +282,21 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   };
 
   const deleteRecurringSeries = async (session: ScheduledSession) => {
-    await supabase.from('scheduled_sessions').delete().eq('id', session.id);
+    // Preserve history: end the series the day before the selected date.
+    // Today and all future occurrences will no longer appear or be deducted.
+    const sel = new Date(`${selectedDateStr}T12:00:00`);
+    sel.setDate(sel.getDate() - 1);
+    const endDate = sel.toISOString().split('T')[0];
+    await supabase
+      .from('scheduled_sessions')
+      .update({ recurrence_end_date: endDate } as any)
+      .eq('id', session.id);
     await Promise.all([fetchSessions(), fetchClientPackages()]);
     onSessionChange?.();
-    toast({ title: lang === 'en' ? 'Series removed' : 'Серия удалена' });
+    toast({ title: lang === 'en' ? 'Series ended' : 'Серия завершена' });
     showNotifyPrompt(session, 'session_cancelled', sessionCancelled({ seriesEnded: true }));
   };
+
 
   const deleteBlockForDay = async (block: TrainerBlock) => {
     const exceptions = [...(block.recurring_exceptions || []), selectedDateStr];

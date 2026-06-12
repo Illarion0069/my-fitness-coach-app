@@ -12,9 +12,11 @@ type ScheduledSession = {
   is_recurring: boolean;
   recurrence_day: number | null;
   recurring_exceptions: string[] | null;
+  recurrence_end_date: string | null;
   is_deducted: boolean;
   deducted_at: string | null;
 };
+
 
 type ClientPackage = {
   id: string;
@@ -72,6 +74,8 @@ function buildRecurringDueDates(
 
   const exceptions = new Set((session.recurring_exceptions || []).map(String));
   if (exceptions.has(todayStr)) return [];
+  if (session.recurrence_end_date && todayStr > session.recurrence_end_date) return [];
+
 
   // Recurring template must have started by today
   if (session.session_date > todayStr) return [];
