@@ -168,7 +168,9 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
   };
 
   const oneOff = sessions.filter(s => !s.is_recurring && !s.is_deducted);
-  const recurring = sessions.filter(s => s.is_recurring);
+  const todayStr = new Date().toISOString().split('T')[0];
+  const recurring = sessions.filter(s => s.is_recurring && (!(s as any).recurrence_end_date || (s as any).recurrence_end_date >= todayStr));
+
   const past = sessions.filter(s => !s.is_recurring && s.is_deducted);
 
   return (
