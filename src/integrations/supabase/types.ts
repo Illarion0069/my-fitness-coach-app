@@ -526,6 +526,7 @@ export type Database = {
           notes: string | null
           package_id: string | null
           recurrence_day: number | null
+          recurrence_end_date: string | null
           recurrence_time: string | null
           recurring_exceptions: string[]
           session_date: string
@@ -544,6 +545,7 @@ export type Database = {
           notes?: string | null
           package_id?: string | null
           recurrence_day?: number | null
+          recurrence_end_date?: string | null
           recurrence_time?: string | null
           recurring_exceptions?: string[]
           session_date: string
@@ -562,6 +564,7 @@ export type Database = {
           notes?: string | null
           package_id?: string | null
           recurrence_day?: number | null
+          recurrence_end_date?: string | null
           recurrence_time?: string | null
           recurring_exceptions?: string[]
           session_date?: string
