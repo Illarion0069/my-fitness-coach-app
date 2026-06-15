@@ -153,13 +153,16 @@ Deno.serve(async (req) => {
 
     console.log(`[deduct-sessions] Running for Cyprus date ${todayStr}`);
 
-    // 1) One-off sessions: deduct any pending session up to today (catch-up)
+    // 1) One-off sessions: deduct ONLY today's sessions. No catch-up of past dates —
+    //    if cron didn't run on a past date (or client had no active package then),
+    //    do NOT retroactively deduct when a new package appears later, otherwise
+    //    a fresh package gets drained for old missed sessions.
     const { data: oneOffSessions, error: oneOffError } = await supabase
       .from('scheduled_sessions')
       .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
       .eq('is_recurring', false)
       .eq('is_deducted', false)
-      .lte('session_date', todayStr);
+      .eq('session_date', todayStr);
 
     if (oneOffError) console.error('[deduct-sessions] Error fetching one-off:', oneOffError.message);
 
