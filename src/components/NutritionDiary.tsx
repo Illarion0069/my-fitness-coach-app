@@ -1243,7 +1243,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               <input value={editManualName} onChange={e => setEditManualName(e.target.value)}
                                 className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                 placeholder={lang === 'en' ? 'Food name' : 'Название'} />
-                              <div className="grid grid-cols-4 gap-1.5">
+                              <div className="grid grid-cols-5 gap-1.5">
+                                <div>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
+                                  <input type="number" value={editManualPortion} onChange={e => handleManualPortionChange(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                </div>
                                 <div>
                                   <label className="text-[8px] text-muted-foreground block mb-0.5">kcal</label>
                                   <input type="number" value={editManualCal} onChange={e => setEditManualCal(e.target.value)}
@@ -1265,8 +1270,18 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
                               </div>
+                              <button
+                                onClick={handleRecalcManualMacros}
+                                disabled={editManualRecalcLoading || !editManualName.trim()}
+                                className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                              >
+                                {editManualRecalcLoading
+                                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                                  : <Sparkles className="w-3 h-3" />}
+                                {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                              </button>
                               <div className="flex gap-1.5">
-                                <button onClick={() => setEditingManualId(null)} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
+                                <button onClick={() => { setEditingManualId(null); setEditManualOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
                                   {lang === 'en' ? 'Cancel' : 'Отмена'}
                                 </button>
                                 <button onClick={handleSaveManualEntry} className="flex-1 h-8 rounded-lg bg-primary text-[11px] font-bold text-primary-foreground">
