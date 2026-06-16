@@ -49,6 +49,7 @@ interface ManualEntry {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  portion_g?: number;
   meal_time?: string;
   created_at: string;
   photo_id?: string; // links auto-detected entries to their source photo
