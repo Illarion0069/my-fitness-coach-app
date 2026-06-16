@@ -514,19 +514,78 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const startEditManual = (entry: ManualEntry) => {
     setEditingManualId(entry.id);
     setEditManualName(entry.name || '');
+    setEditManualPortion(entry.portion_g ? String(entry.portion_g) : '');
     setEditManualCal(String(entry.calories || ''));
     setEditManualProtein(String(entry.protein_g || ''));
     setEditManualCarbs(String(entry.carbs_g || ''));
     setEditManualFat(String(entry.fat_g || ''));
+    setEditManualOrig({
+      portion_g: Number(entry.portion_g) || 0,
+      calories: Number(entry.calories) || 0,
+      protein_g: Number(entry.protein_g) || 0,
+      carbs_g: Number(entry.carbs_g) || 0,
+      fat_g: Number(entry.fat_g) || 0,
+    });
+  };
+
+  // Auto-scale manual entry macros when portion changes (uses snapshot at edit-start)
+  const handleManualPortionChange = (value: string) => {
+    setEditManualPortion(value);
+    if (!editManualOrig || !editManualOrig.portion_g) return;
+    const newPortion = parseInt(value);
+    if (!newPortion || newPortion <= 0) return;
+    const ratio = newPortion / editManualOrig.portion_g;
+    setEditManualCal(String(Math.round(editManualOrig.calories * ratio)));
+    setEditManualProtein(String(Math.round(editManualOrig.protein_g * ratio)));
+    setEditManualCarbs(String(Math.round(editManualOrig.carbs_g * ratio)));
+    setEditManualFat(String(Math.round(editManualOrig.fat_g * ratio)));
+  };
+
+  const handleRecalcManualMacros = async () => {
+    const name = editManualName.trim();
+    if (!name) {
+      toast({ title: lang === 'en' ? 'Enter a name first' : 'Сначала введите название', variant: 'destructive' });
+      return;
+    }
+    const portion = parseInt(editManualPortion) || 100;
+    setEditManualRecalcLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('food-suggest', {
+        body: { query: name, lang },
+      });
+      if (error) throw error;
+      const top = data?.suggestions?.[0];
+      if (!top) {
+        toast({ title: lang === 'en' ? 'No match found' : 'Не нашли совпадений', variant: 'destructive' });
+        return;
+      }
+      const k = portion / 100;
+      const cal = Math.round((Number(top.calories) || 0) * k);
+      const p = Math.round((Number(top.protein_g) || 0) * k);
+      const c = Math.round((Number(top.carbs_g) || 0) * k);
+      const f = Math.round((Number(top.fat_g) || 0) * k);
+      setEditManualCal(String(cal));
+      setEditManualProtein(String(p));
+      setEditManualCarbs(String(c));
+      setEditManualFat(String(f));
+      setEditManualOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Recalc failed' : 'Ошибка пересчёта', description: e?.message, variant: 'destructive' });
+    } finally {
+      setEditManualRecalcLoading(false);
+    }
   };
 
   const handleSaveManualEntry = async () => {
     if (!log?.id || !editingManualId) return;
+    const portionVal = parseInt(editManualPortion);
     const entries = ((log.manual_entries || []) as ManualEntry[]).map(e =>
       e.id === editingManualId
         ? {
             ...e,
             name: editManualName.trim() || e.name,
+            portion_g: portionVal > 0 ? portionVal : e.portion_g,
             calories: parseInt(editManualCal) || 0,
             protein_g: parseInt(editManualProtein) || 0,
             carbs_g: parseInt(editManualCarbs) || 0,
@@ -536,6 +595,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     );
     setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
     setEditingManualId(null);
+    setEditManualOrig(null);
     await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
     await fetchData();
   };
