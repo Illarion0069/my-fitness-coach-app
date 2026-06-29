@@ -464,6 +464,7 @@ Deno.serve(async (req) => {
         });
       }
 
+      const nowIso = new Date().toISOString();
       const { data: session, error: insertError } = await supabase
         .from('scheduled_sessions')
         .insert({
@@ -473,6 +474,10 @@ Deno.serve(async (req) => {
           session_time: time,
           is_recurring: false,
           package_id: pkg?.id || null,
+          // Mark as deducted at booking so the daily cron does not re-deduct.
+          // Only when we actually deduct below (i.e. there is a real package, not a pending-payment placeholder).
+          is_deducted: !!pkg,
+          deducted_at: pkg ? nowIso : null,
           notes: pendingPayment ? `⏳ PENDING PAYMENT: ${selectedPackageSessions || '?'} sessions (${selectedPackagePrice || '?'}€)` : null,
         })
         .select('*')
