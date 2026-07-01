@@ -338,7 +338,11 @@ serve(async (req) => {
       });
 
       if (error) {
-        return json({ error: error.message }, 500);
+        const msg = (error.message || "").toLowerCase();
+        let code = "update_failed";
+        if (msg.includes("pwned") || msg.includes("compromised") || msg.includes("breach")) code = "pwned_password";
+        else if (msg.includes("weak") || msg.includes("short") || msg.includes("at least")) code = "weak_password";
+        return json({ error: code, message: error.message }, 400);
       }
 
       return json({ success: true });
