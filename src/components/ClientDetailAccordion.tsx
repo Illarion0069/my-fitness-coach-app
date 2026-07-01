@@ -168,19 +168,31 @@ const ClientDetailAccordion = ({
       const { data, error } = await supabase.functions.invoke('reset-password', {
         body: { action: 'trainer_reset', client_user_id: client.user_id, new_password: resetPw },
       });
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
+      // Extract real body from FunctionsHttpError (else message is just "non-2xx status code")
+      let errCode = '';
+      let errMsg = '';
+      if (error) {
+        try {
+          const ctx: any = (error as any).context;
+          const parsed = ctx && typeof ctx.json === 'function' ? await ctx.json() : null;
+          errCode = parsed?.error || '';
+          errMsg = parsed?.message || '';
+        } catch {}
+        if (!errCode) errCode = (error as any).message || '';
+      }
+      if (data?.error) errCode = data.error;
+      if (errCode) throw new Error(errMsg || errCode);
       toast({ title: lang === 'en' ? 'Password updated' : 'Пароль обновлён' });
       setResetPw('');
       setShowResetPw(false);
     } catch (e: any) {
-      const raw = (e?.message || '').toLowerCase();
+      const raw = ((e?.message || '') + ' ' + (e?.code || '')).toLowerCase();
       const isPwned = raw.includes('pwned') || raw.includes('compromised') || raw.includes('breach');
       const isWeak = raw.includes('weak') || raw.includes('short') || raw.includes('length');
       const friendly = isPwned
         ? (lang === 'en'
             ? 'This password was found in a public breach. Try a unique one (e.g. add numbers/symbols).'
-            : 'Этот пароль найден в утечках. Попробуйте уникальный — добавьте цифры и символы.')
+            : 'Этот пароль найден в утечках. Придумайте уникальный — добавьте цифры и символы.')
         : isWeak
         ? (lang === 'en' ? 'Password is too weak. Use 8+ chars with letters, digits and a symbol.' : 'Пароль слишком слабый. Минимум 8 символов: буквы, цифры и символ.')
         : e?.message || (lang === 'en' ? 'Unknown error' : 'Неизвестная ошибка');
