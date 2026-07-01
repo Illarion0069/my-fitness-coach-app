@@ -137,51 +137,73 @@ serve(async (req) => {
         return arr.join("");
       };
 
+      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+
+      // Try up to 3 times to generate a password that (a) is not in HIBP breach list
+      // and (b) can be delivered to Telegram BEFORE we actually change the auth password.
+      // This guarantees: either the client receives the new password, or nothing changes.
       let newPassword = "";
-      let lastErr: any = null;
+      let deliveredOk = false;
+      let lastErrMsg = "";
+
       for (let attempt = 0; attempt < 3; attempt++) {
         newPassword = genPassword();
+
+        // 1. Send to Telegram FIRST (dry run — password not applied yet)
+        const tgText =
+          `🔐 <b>Новый пароль для входа</b>\n\n` +
+          `Логин: <code>${mode === "phone" ? profile.phone : (profile.email || profile.phone)}</code>\n` +
+          `Пароль: <code>${newPassword}</code>\n\n` +
+          `Войдите и при желании смените пароль в профиле.\n` +
+          `Если вы не запрашивали сброс — сообщите тренеру.`;
+        const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chat_id: profile.telegram_chat_id,
+            text: tgText,
+            parse_mode: "HTML",
+          }),
+        });
+        if (!tgRes.ok) {
+          lastErrMsg = await tgRes.text();
+          console.error("Telegram send failed:", lastErrMsg);
+          continue; // try again with a fresh password (unlikely to help, but cheap)
+        }
+
+        // 2. Telegram delivered — now apply the password to auth
         const { error } = await adminClient.auth.admin.updateUserById(profile.user_id, {
           password: newPassword,
         });
-        if (!error) { lastErr = null; break; }
-        lastErr = error;
-        const msg = (error.message || "").toLowerCase();
-        if (!msg.includes("pwned") && !msg.includes("breach") && !msg.includes("compromised")) break;
-      }
-      if (lastErr) {
-        console.error("updateUserById failed:", lastErr);
-        await logAttempt(identifier, false, "update_failed");
-        return json({ error: "update_failed", message: lastErr.message }, 500);
+        if (!error) {
+          deliveredOk = true;
+          break;
+        }
+        lastErrMsg = error.message || "";
+        const msg = lastErrMsg.toLowerCase();
+        if (!msg.includes("pwned") && !msg.includes("breach") && !msg.includes("compromised")) {
+          // Non-recoverable auth error — do not loop.
+          break;
+        }
+        // Password was pwned — retry with new one. Old auth password still valid,
+        // client just gets a second Telegram message on next iteration.
       }
 
-      // Send via Telegram
-      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
-      const tgText =
-        `🔐 <b>Новый пароль для входа</b>\n\n` +
-        `Логин: <code>${mode === "phone" ? profile.phone : (profile.email || profile.phone)}</code>\n` +
-        `Пароль: <code>${newPassword}</code>\n\n` +
-        `Войдите и при желании смените пароль в профиле.\n` +
-        `Если вы не запрашивали сброс — сообщите тренеру.`;
-      const tgRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: profile.telegram_chat_id,
-          text: tgText,
-          parse_mode: "HTML",
-        }),
-      });
-      if (!tgRes.ok) {
-        const errText = await tgRes.text();
-        console.error("Telegram send failed:", errText);
-        // Best-effort: we cannot restore the old password (we never had the hash),
-        // but we log clearly so the trainer can help. Client sees a friendly error.
-        await logAttempt(identifier, false, "telegram_failed");
+      if (!deliveredOk) {
+        await logAttempt(identifier, false, "delivery_or_update_failed");
         return json({
-          error: "telegram_failed",
-          message: "Не удалось доставить пароль в Telegram. Свяжитесь с тренером — он поможет войти.",
+          error: "delivery_failed",
+          message: "Не удалось сбросить пароль. Свяжитесь с тренером.",
         }, 502);
+      }
+
+      // Fetch the auth email so the client can auto-login with one tap
+      let authEmail: string | null = null;
+      try {
+        const { data: userRes } = await adminClient.auth.admin.getUserById(profile.user_id);
+        authEmail = userRes?.user?.email ?? null;
+      } catch (e) {
+        console.warn("getUserById failed:", e);
       }
 
       // Fetch the auth email so the client can auto-login with one tap
