@@ -175,8 +175,13 @@ serve(async (req) => {
       if (!tgRes.ok) {
         const errText = await tgRes.text();
         console.error("Telegram send failed:", errText);
+        // Best-effort: we cannot restore the old password (we never had the hash),
+        // but we log clearly so the trainer can help. Client sees a friendly error.
         await logAttempt(identifier, false, "telegram_failed");
-        return json({ error: "telegram_failed" }, 500);
+        return json({
+          error: "telegram_failed",
+          message: "Не удалось доставить пароль в Telegram. Свяжитесь с тренером — он поможет войти.",
+        }, 502);
       }
 
       // Fetch the auth email so the client can auto-login with one tap
