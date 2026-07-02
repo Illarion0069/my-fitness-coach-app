@@ -568,56 +568,64 @@ Deno.serve(async (req) => {
       await supabase.from('scheduled_sessions').delete().eq('id', session_id);
 
       const isPendingPayment = session.notes?.includes('PENDING PAYMENT');
-      if (!session.is_recurring && !isPendingPayment) {
-        let target: PackageRow | null = null;
 
-        if (session.package_id) {
-          const { data: linkedPkg } = await supabase
-            .from('client_packages')
-            .select('*')
-            .eq('id', session.package_id)
-            .maybeSingle();
-          if (linkedPkg && linkedPkg.used_sessions > 0) {
-            target = linkedPkg as PackageRow;
-          }
-        }
+      // Refund only if this session was actually deducted (cron ran on training day).
+      // Future / not-yet-deducted sessions must NOT refund — nothing was charged.
+      if (!session.is_recurring && !isPendingPayment && session.is_deducted === true) {
+        const refundKey = `client_cancel_${session_id}`;
 
-        if (!target) {
-          const { data: packages } = await supabase
-            .from('client_packages')
-            .select('*')
-            .eq('user_id', user.id)
+        // Idempotency: skip if a refund for this session was already written.
+        const { data: existingRefund } = await supabase
+          .from('session_ledger')
+          .select('id')
+          .eq('idempotency_key', refundKey)
+          .limit(1);
+
+        if (!existingRefund || existingRefund.length === 0) {
+          // Find the actual deduct ledger row to know which package to credit back.
+          const { data: deductEntry } = await supabase
+            .from('session_ledger')
+            .select('package_id')
+            .eq('session_id', session_id)
+            .eq('reason', 'cron_deduct')
             .order('created_at', { ascending: false })
-            .limit(5);
+            .limit(1)
+            .maybeSingle();
 
-          target = (packages as PackageRow[] | null)?.find((pkg) => pkg.is_active && pkg.used_sessions > 0)
-            || (packages as PackageRow[] | null)?.find((pkg) => pkg.used_sessions > 0)
-            || null;
-        }
+          const packageId = deductEntry?.package_id || session.package_id;
+          if (packageId) {
+            const { data: pkg } = await supabase
+              .from('client_packages')
+              .select('id,used_sessions,total_sessions,is_active')
+              .eq('id', packageId)
+              .maybeSingle();
 
-        if (target) {
-          const newUsed = target.used_sessions - 1;
-          const updates: Record<string, unknown> = { used_sessions: newUsed };
-          if (!target.is_active && newUsed < target.total_sessions) {
-            updates.is_active = true;
+            if (pkg && pkg.used_sessions > 0) {
+              const newUsed = pkg.used_sessions - 1;
+              const updates: Record<string, unknown> = { used_sessions: newUsed };
+              if (!pkg.is_active && newUsed < pkg.total_sessions) updates.is_active = true;
+
+              const { data: locked } = await supabase
+                .from('client_packages')
+                .update(updates)
+                .eq('id', pkg.id)
+                .eq('used_sessions', pkg.used_sessions)
+                .select('id');
+
+              if (locked && locked.length > 0) {
+                await supabase.from('session_ledger').insert({
+                  user_id: user.id,
+                  package_id: pkg.id,
+                  delta: -1,
+                  reason: 'client_cancel',
+                  session_id,
+                  used_before: pkg.used_sessions,
+                  used_after: newUsed,
+                  idempotency_key: refundKey,
+                });
+              }
+            }
           }
-
-          await supabase
-            .from('client_packages')
-            .update(updates)
-            .eq('id', target.id)
-            .eq('used_sessions', target.used_sessions);
-
-          await supabase.from('session_ledger').insert({
-            user_id: user.id,
-            package_id: target.id,
-            delta: -1,
-            reason: 'client_cancel',
-            session_id,
-            used_before: target.used_sessions,
-            used_after: newUsed,
-            idempotency_key: `client_cancel_${session_id}`,
-          });
         }
       }
 
