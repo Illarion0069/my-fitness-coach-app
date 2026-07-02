@@ -464,7 +464,6 @@ Deno.serve(async (req) => {
         });
       }
 
-      const nowIso = new Date().toISOString();
       const { data: session, error: insertError } = await supabase
         .from('scheduled_sessions')
         .insert({
@@ -474,10 +473,10 @@ Deno.serve(async (req) => {
           session_time: time,
           is_recurring: false,
           package_id: pkg?.id || null,
-          // Mark as deducted at booking so the daily cron does not re-deduct.
-          // Only when we actually deduct below (i.e. there is a real package, not a pending-payment placeholder).
-          is_deducted: !!pkg,
-          deducted_at: pkg ? nowIso : null,
+          // Booking only reserves the slot. Package balance is deducted by the
+          // daily Cyprus-time cron on the actual session date, not in advance.
+          is_deducted: false,
+          deducted_at: null,
           notes: pendingPayment ? `⏳ PENDING PAYMENT: ${selectedPackageSessions || '?'} sessions (${selectedPackagePrice || '?'}€)` : null,
         })
         .select('*')
@@ -487,31 +486,6 @@ Deno.serve(async (req) => {
         return new Response(JSON.stringify({ error: insertError.message }), {
           status: 409,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-
-      if (pkg) {
-        const newUsed = pkg.used_sessions + 1;
-        const updates: Record<string, unknown> = { used_sessions: newUsed };
-        if (newUsed >= pkg.total_sessions) {
-          updates.is_active = false;
-        }
-
-        await supabase
-          .from('client_packages')
-          .update(updates)
-          .eq('id', pkg.id)
-          .eq('used_sessions', pkg.used_sessions);
-
-        await supabase.from('session_ledger').insert({
-          user_id: user.id,
-          package_id: pkg.id,
-          delta: 1,
-          reason: 'client_book',
-          session_id: session.id,
-          used_before: pkg.used_sessions,
-          used_after: newUsed,
-          idempotency_key: `client_book_${session.id}`,
         });
       }
 
