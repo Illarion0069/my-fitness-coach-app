@@ -187,6 +187,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const daySessions = useMemo(() => {
     const items = sessions.filter((session) => {
       if (session.is_recurring && session.recurrence_day === dayOfWeek) {
+        // Recurring series only applies from its start date forward
+        if (session.session_date && selectedDateStr < session.session_date) return false;
         if (session.recurring_exceptions?.includes(selectedDateStr)) return false;
         if ((session as any).recurrence_end_date && selectedDateStr > (session as any).recurrence_end_date) return false;
         return true;
