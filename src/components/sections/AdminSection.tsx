@@ -614,7 +614,6 @@ const AdminSection = () => {
                           )}
                           {(() => {
                             const activePkg = clientPkgs.find((p) => p.is_active);
-                            // Debt: check most recent package (any state) for overflow
                             const latestPkg = clientPkgs[0]; // already sorted by created_at desc
                             const debt = latestPkg
                               ? Math.max(0, latestPkg.used_sessions - latestPkg.total_sessions)
@@ -622,13 +621,12 @@ const AdminSection = () => {
 
                             if (debt > 0) {
                               return (
-                                <span className="text-xs bg-destructive/20 text-destructive px-2 py-1 rounded-lg font-bold" title={lang === 'en' ? 'Debt — will be deducted from next package' : 'Задолженность — спишется с нового пакета'}>
-                                  {lang === 'en' ? `Debt: ${debt}` : `Долг: ${debt}`}
+                                <span className="text-xs bg-destructive/20 text-destructive px-2 py-1 rounded-lg font-bold" title={lang === 'en' ? 'Will be deducted from next package' : 'Спишется с нового пакета'}>
+                                  −{debt}
                                 </span>
                               );
                             }
                             if (!activePkg) {
-                              // No active package — check if they ever had one
                               const hadPackage = clientPkgs.length > 0;
                               if (hadPackage) {
                                 return (
@@ -644,7 +642,6 @@ const AdminSection = () => {
                               );
                             }
                             const remaining = activePkg.total_sessions - activePkg.used_sessions;
-                            // Unlimited: total_sessions >= 999
                             if (activePkg.total_sessions >= 999) {
                               return (
                                 <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
@@ -665,6 +662,7 @@ const AdminSection = () => {
                               </span>
                             );
                           })()}
+
 
                       </div>
                     </button>
