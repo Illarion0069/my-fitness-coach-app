@@ -350,10 +350,28 @@ const ClientDetailAccordion = ({
           </div>
         );
 
-      case 'packages':
+      case 'packages': {
+        const sortedPkgs = [...clientPkgs].sort(
+          (a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        );
+        const latestPkg = sortedPkgs[0];
+        const debt = latestPkg ? Math.max(0, latestPkg.used_sessions - latestPkg.total_sessions) : 0;
         return (
           <div className="space-y-3">
+            {debt > 0 && (
+              <div className="bg-destructive/15 border border-destructive/30 rounded-xl p-3">
+                <p className="text-xs font-bold text-destructive">
+                  {lang === 'en' ? `Debt: ${debt} session${debt > 1 ? 's' : ''}` : `Задолженность: ${debt}`}
+                </p>
+                <p className="text-[10px] text-destructive/80 mt-0.5">
+                  {lang === 'en'
+                    ? 'Auto-deducted from the next package on creation'
+                    : 'Автоматически спишется при создании нового пакета'}
+                </p>
+              </div>
+            )}
             {clientPkgs.filter(p => p.is_active).map(pkg => (
+
               <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div>
