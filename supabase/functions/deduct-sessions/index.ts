@@ -129,6 +129,24 @@ async function getLatestValidPackage(supabase: any, userId: string): Promise<Cli
   return null;
 }
 
+/**
+ * Fallback for debt tracking: return the most recent package (any state) for the user,
+ * so we can increment used_sessions past total_sessions when there is no active/valid one.
+ * Debt is auto-transferred to the next package via DB trigger.
+ */
+async function getLatestPackageForDebt(supabase: any, userId: string): Promise<ClientPackage | null> {
+  const { data, error } = await supabase
+    .from('client_packages')
+    .select('id,user_id,is_active,used_sessions,total_sessions,expires_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as ClientPackage) || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
