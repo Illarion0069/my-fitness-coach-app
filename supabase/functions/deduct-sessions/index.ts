@@ -252,19 +252,30 @@ Deno.serve(async (req) => {
       const { session, dueCount, dueDates } = candidate;
 
       try {
-        const pkg = await getLatestValidPackage(supabase, session.user_id);
+        let pkg = await getLatestValidPackage(supabase, session.user_id);
+        let isDebtMode = false;
+
         if (!pkg) {
-          console.log(`  User ${session.user_id} — no valid active package, skip (${dueCount} due)`);
-          skipped += dueCount;
-          continue;
+          // Fallback: no valid active package. Deduct as DEBT against most recent package.
+          // Debt will be auto-transferred to next package by DB trigger.
+          pkg = await getLatestPackageForDebt(supabase, session.user_id);
+          if (!pkg) {
+            console.log(`  User ${session.user_id} — no package at all, skip (${dueCount} due)`);
+            skipped += dueCount;
+            continue;
+          }
+          isDebtMode = true;
+          console.log(`  User ${session.user_id} — DEBT mode on pkg ${pkg.id} (${pkg.used_sessions}/${pkg.total_sessions})`);
         }
 
-        const remaining = Math.max(pkg.total_sessions - pkg.used_sessions, 0);
+        // In debt mode, allow used_sessions to grow past total_sessions.
+        const remaining = isDebtMode ? dueCount : Math.max(pkg.total_sessions - pkg.used_sessions, 0);
         if (remaining <= 0) {
           console.log(`  User ${session.user_id} — package ${pkg.id} fully used (${pkg.used_sessions}/${pkg.total_sessions}), skip`);
           skipped += dueCount;
           continue;
         }
+
 
         const toDeductNow = Math.min(dueCount, remaining);
 
