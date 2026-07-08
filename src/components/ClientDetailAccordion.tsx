@@ -446,6 +446,9 @@ const ClientDetailAccordion = ({
             </div>
           </div>
         );
+      }
+
+
 
       case 'schedule':
         return <ClientSchedule userId={client.user_id} lang={lang} onSessionChange={onSessionChange} />;
