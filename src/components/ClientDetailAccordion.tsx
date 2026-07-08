@@ -361,15 +361,16 @@ const ClientDetailAccordion = ({
             {debt > 0 && (
               <div className="bg-destructive/15 border border-destructive/30 rounded-xl p-3">
                 <p className="text-xs font-bold text-destructive">
-                  {lang === 'en' ? `Debt: ${debt} session${debt > 1 ? 's' : ''}` : `Задолженность: ${debt}`}
+                  −{debt} {lang === 'en' ? `session${debt > 1 ? 's' : ''}` : ''}
                 </p>
                 <p className="text-[10px] text-destructive/80 mt-0.5">
                   {lang === 'en'
                     ? 'Auto-deducted from the next package on creation'
-                    : 'Автоматически спишется при создании нового пакета'}
+                    : 'Спишется автоматически при создании нового пакета'}
                 </p>
               </div>
             )}
+
             {clientPkgs.filter(p => p.is_active).map(pkg => (
 
               <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3">
