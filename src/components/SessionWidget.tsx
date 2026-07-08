@@ -92,10 +92,11 @@ const SessionWidget = () => {
           {inDebt && (
             <p className="text-xs text-destructive font-semibold mt-0.5">
               {lang === 'en'
-                ? `⚠ Debt: ${debtAmount} — will be deducted from next package`
-                : `⚠ Задолженность: ${debtAmount} — спишется с нового пакета`}
+                ? 'Will be deducted from your next package'
+                : 'Спишется с нового пакета'}
             </p>
           )}
+
           {exhausted && (
             <p className="text-xs text-destructive font-semibold mt-0.5">
               {lang === 'en' ? '⚠ Package exhausted — buy more sessions' : '⚠ Пакет исчерпан — докупите тренировки'}
