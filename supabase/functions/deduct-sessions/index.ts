@@ -305,7 +305,8 @@ Deno.serve(async (req) => {
         const actualDeduct = newEntries.length;
         const actualNewUsed = pkg.used_sessions + actualDeduct;
         const packageUpdates: Record<string, unknown> = { used_sessions: actualNewUsed };
-        if (actualNewUsed >= pkg.total_sessions) {
+        // Don't touch is_active in debt mode — it's already false / expired.
+        if (!isDebtMode && actualNewUsed >= pkg.total_sessions) {
           packageUpdates.is_active = false;
         }
 
@@ -324,11 +325,13 @@ Deno.serve(async (req) => {
         if (!updatedRows || updatedRows.length === 0) {
           console.log(`  Session ${session.id} — optimistic lock failed for pkg ${pkg.id} (stale used_sessions=${pkg.used_sessions}), retrying`);
           // Re-fetch and retry once
-          const retryPkg = await getLatestValidPackage(supabase, session.user_id);
+          const retryPkg = isDebtMode
+            ? await getLatestPackageForDebt(supabase, session.user_id)
+            : await getLatestValidPackage(supabase, session.user_id);
           if (!retryPkg) { skipped += dueCount; continue; }
           const retryNewUsed = retryPkg.used_sessions + actualDeduct;
           const retryUpdates: Record<string, unknown> = { used_sessions: retryNewUsed };
-          if (retryNewUsed >= retryPkg.total_sessions) retryUpdates.is_active = false;
+          if (!isDebtMode && retryNewUsed >= retryPkg.total_sessions) retryUpdates.is_active = false;
           const { data: retryRows } = await supabase
             .from('client_packages')
             .update(retryUpdates)
@@ -349,14 +352,15 @@ Deno.serve(async (req) => {
         // Write ledger entries
         const ledgerEntries = newEntries.map((entry, i) => ({
           user_id: session.user_id,
-          package_id: pkg.id,
+          package_id: pkg!.id,
           delta: 1,
-          reason: 'cron_deduct',
+          reason: isDebtMode ? 'debt_deduct' : 'cron_deduct',
           session_id: session.id,
-          used_before: pkg.used_sessions + i,
-          used_after: pkg.used_sessions + i + 1,
+          used_before: pkg!.used_sessions + i,
+          used_after: pkg!.used_sessions + i + 1,
           idempotency_key: entry.key,
         }));
+
 
         const { error: ledgerError } = await supabase
           .from('session_ledger')
