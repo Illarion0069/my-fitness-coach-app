@@ -612,46 +612,60 @@ const AdminSection = () => {
                               🔥
                             </span>
                           )}
-                         {(() => {
-                           const activePkg = clientPkgs.find((p) => p.is_active);
-                           if (!activePkg) {
-                             // No active package — check if they ever had one
-                             const hadPackage = clientPkgs.length > 0;
-                             if (hadPackage) {
-                               return (
-                                 <span className="text-xs bg-destructive/15 text-destructive px-2 py-1 rounded-lg font-semibold">
-                                   0
-                                 </span>
-                               );
-                             }
-                             return (
-                               <span className="text-[10px] bg-secondary text-muted-foreground px-1.5 py-1 rounded-lg font-semibold">
-                                 {lang === 'en' ? 'per session' : 'разовая'}
-                               </span>
-                             );
-                           }
-                           const remaining = activePkg.total_sessions - activePkg.used_sessions;
-                           // Unlimited: total_sessions >= 999
-                           if (activePkg.total_sessions >= 999) {
-                             return (
-                               <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
-                                 ∞
-                               </span>
-                             );
-                           }
-                           if (remaining <= 0) {
-                             return (
-                               <span className="text-xs bg-destructive/15 text-destructive px-2 py-1 rounded-lg font-semibold">
-                                 0
-                               </span>
-                             );
-                           }
-                           return (
-                             <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
-                               {remaining} {lang === 'en' ? 'left' : 'ост.'}
-                             </span>
-                           );
-                         })()}
+                          {(() => {
+                            const activePkg = clientPkgs.find((p) => p.is_active);
+                            // Debt: check most recent package (any state) for overflow
+                            const latestPkg = clientPkgs[0]; // already sorted by created_at desc
+                            const debt = latestPkg
+                              ? Math.max(0, latestPkg.used_sessions - latestPkg.total_sessions)
+                              : 0;
+
+                            if (debt > 0) {
+                              return (
+                                <span className="text-xs bg-destructive/20 text-destructive px-2 py-1 rounded-lg font-bold" title={lang === 'en' ? 'Debt — will be deducted from next package' : 'Задолженность — спишется с нового пакета'}>
+                                  {lang === 'en' ? `Debt: ${debt}` : `Долг: ${debt}`}
+                                </span>
+                              );
+                            }
+                            if (!activePkg) {
+                              // No active package — check if they ever had one
+                              const hadPackage = clientPkgs.length > 0;
+                              if (hadPackage) {
+                                return (
+                                  <span className="text-xs bg-destructive/15 text-destructive px-2 py-1 rounded-lg font-semibold">
+                                    0
+                                  </span>
+                                );
+                              }
+                              return (
+                                <span className="text-[10px] bg-secondary text-muted-foreground px-1.5 py-1 rounded-lg font-semibold">
+                                  {lang === 'en' ? 'per session' : 'разовая'}
+                                </span>
+                              );
+                            }
+                            const remaining = activePkg.total_sessions - activePkg.used_sessions;
+                            // Unlimited: total_sessions >= 999
+                            if (activePkg.total_sessions >= 999) {
+                              return (
+                                <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
+                                  ∞
+                                </span>
+                              );
+                            }
+                            if (remaining <= 0) {
+                              return (
+                                <span className="text-xs bg-destructive/15 text-destructive px-2 py-1 rounded-lg font-semibold">
+                                  0
+                                </span>
+                              );
+                            }
+                            return (
+                              <span className="text-xs bg-primary/20 text-primary px-2 py-1 rounded-lg font-semibold">
+                                {remaining} {lang === 'en' ? 'left' : 'ост.'}
+                              </span>
+                            );
+                          })()}
+
                       </div>
                     </button>
                   </div>
