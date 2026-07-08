@@ -129,6 +129,24 @@ async function getLatestValidPackage(supabase: any, userId: string): Promise<Cli
   return null;
 }
 
+/**
+ * Fallback for debt tracking: return the most recent package (any state) for the user,
+ * so we can increment used_sessions past total_sessions when there is no active/valid one.
+ * Debt is auto-transferred to the next package via DB trigger.
+ */
+async function getLatestPackageForDebt(supabase: any, userId: string): Promise<ClientPackage | null> {
+  const { data, error } = await supabase
+    .from('client_packages')
+    .select('id,user_id,is_active,used_sessions,total_sessions,expires_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) throw error;
+  return (data as ClientPackage) || null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -234,19 +252,30 @@ Deno.serve(async (req) => {
       const { session, dueCount, dueDates } = candidate;
 
       try {
-        const pkg = await getLatestValidPackage(supabase, session.user_id);
+        let pkg = await getLatestValidPackage(supabase, session.user_id);
+        let isDebtMode = false;
+
         if (!pkg) {
-          console.log(`  User ${session.user_id} — no valid active package, skip (${dueCount} due)`);
-          skipped += dueCount;
-          continue;
+          // Fallback: no valid active package. Deduct as DEBT against most recent package.
+          // Debt will be auto-transferred to next package by DB trigger.
+          pkg = await getLatestPackageForDebt(supabase, session.user_id);
+          if (!pkg) {
+            console.log(`  User ${session.user_id} — no package at all, skip (${dueCount} due)`);
+            skipped += dueCount;
+            continue;
+          }
+          isDebtMode = true;
+          console.log(`  User ${session.user_id} — DEBT mode on pkg ${pkg.id} (${pkg.used_sessions}/${pkg.total_sessions})`);
         }
 
-        const remaining = Math.max(pkg.total_sessions - pkg.used_sessions, 0);
+        // In debt mode, allow used_sessions to grow past total_sessions.
+        const remaining = isDebtMode ? dueCount : Math.max(pkg.total_sessions - pkg.used_sessions, 0);
         if (remaining <= 0) {
           console.log(`  User ${session.user_id} — package ${pkg.id} fully used (${pkg.used_sessions}/${pkg.total_sessions}), skip`);
           skipped += dueCount;
           continue;
         }
+
 
         const toDeductNow = Math.min(dueCount, remaining);
 
@@ -276,7 +305,8 @@ Deno.serve(async (req) => {
         const actualDeduct = newEntries.length;
         const actualNewUsed = pkg.used_sessions + actualDeduct;
         const packageUpdates: Record<string, unknown> = { used_sessions: actualNewUsed };
-        if (actualNewUsed >= pkg.total_sessions) {
+        // Don't touch is_active in debt mode — it's already false / expired.
+        if (!isDebtMode && actualNewUsed >= pkg.total_sessions) {
           packageUpdates.is_active = false;
         }
 
@@ -295,11 +325,13 @@ Deno.serve(async (req) => {
         if (!updatedRows || updatedRows.length === 0) {
           console.log(`  Session ${session.id} — optimistic lock failed for pkg ${pkg.id} (stale used_sessions=${pkg.used_sessions}), retrying`);
           // Re-fetch and retry once
-          const retryPkg = await getLatestValidPackage(supabase, session.user_id);
+          const retryPkg = isDebtMode
+            ? await getLatestPackageForDebt(supabase, session.user_id)
+            : await getLatestValidPackage(supabase, session.user_id);
           if (!retryPkg) { skipped += dueCount; continue; }
           const retryNewUsed = retryPkg.used_sessions + actualDeduct;
           const retryUpdates: Record<string, unknown> = { used_sessions: retryNewUsed };
-          if (retryNewUsed >= retryPkg.total_sessions) retryUpdates.is_active = false;
+          if (!isDebtMode && retryNewUsed >= retryPkg.total_sessions) retryUpdates.is_active = false;
           const { data: retryRows } = await supabase
             .from('client_packages')
             .update(retryUpdates)
@@ -320,14 +352,15 @@ Deno.serve(async (req) => {
         // Write ledger entries
         const ledgerEntries = newEntries.map((entry, i) => ({
           user_id: session.user_id,
-          package_id: pkg.id,
+          package_id: pkg!.id,
           delta: 1,
-          reason: 'cron_deduct',
+          reason: isDebtMode ? 'debt_deduct' : 'cron_deduct',
           session_id: session.id,
-          used_before: pkg.used_sessions + i,
-          used_after: pkg.used_sessions + i + 1,
+          used_before: pkg!.used_sessions + i,
+          used_after: pkg!.used_sessions + i + 1,
           idempotency_key: entry.key,
         }));
+
 
         const { error: ledgerError } = await supabase
           .from('session_ledger')

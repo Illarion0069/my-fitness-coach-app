@@ -61,9 +61,11 @@ const SessionWidget = () => {
 
   const remaining = pkg.total_sessions - pkg.used_sessions;
   const pct = Math.round((remaining / pkg.total_sessions) * 100);
-  const low = remaining <= 2;
+  const low = remaining <= 2 && remaining > 0;
 
-  const exhausted = remaining <= 0;
+  const exhausted = remaining === 0;
+  const inDebt = remaining < 0;
+  const debtAmount = Math.abs(remaining);
 
   return (
     <motion.div
@@ -72,14 +74,28 @@ const SessionWidget = () => {
       className="bg-card border border-border/50 rounded-2xl p-4 mb-4"
     >
       <div className="flex items-center gap-3">
-        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${exhausted ? 'bg-destructive/20' : low ? 'bg-destructive/20' : 'gradient-primary'}`}>
-          <Activity className={`w-5 h-5 ${exhausted || low ? 'text-destructive' : 'text-primary-foreground'}`} />
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${exhausted || inDebt ? 'bg-destructive/20' : low ? 'bg-destructive/20' : 'gradient-primary'}`}>
+          <Activity className={`w-5 h-5 ${exhausted || inDebt || low ? 'text-destructive' : 'text-primary-foreground'}`} />
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-xs text-muted-foreground">{pkg.package_name}</p>
           <p className="text-lg font-extrabold font-heading">
-            {remaining} <span className="text-sm font-normal text-muted-foreground">/ {pkg.total_sessions} {lang === 'en' ? 'sessions left' : 'занятий осталось'}</span>
+            {inDebt ? (
+              <span className="text-destructive">−{debtAmount}</span>
+            ) : (
+              remaining
+            )}{' '}
+            <span className="text-sm font-normal text-muted-foreground">
+              / {pkg.total_sessions} {lang === 'en' ? 'sessions left' : 'занятий осталось'}
+            </span>
           </p>
+          {inDebt && (
+            <p className="text-xs text-destructive font-semibold mt-0.5">
+              {lang === 'en'
+                ? `⚠ Debt: ${debtAmount} — will be deducted from next package`
+                : `⚠ Задолженность: ${debtAmount} — спишется с нового пакета`}
+            </p>
+          )}
           {exhausted && (
             <p className="text-xs text-destructive font-semibold mt-0.5">
               {lang === 'en' ? '⚠ Package exhausted — buy more sessions' : '⚠ Пакет исчерпан — докупите тренировки'}
@@ -87,6 +103,7 @@ const SessionWidget = () => {
           )}
         </div>
       </div>
+
       <div className="mt-3 h-2 bg-secondary rounded-full overflow-hidden">
         <motion.div
           initial={{ width: 0 }}

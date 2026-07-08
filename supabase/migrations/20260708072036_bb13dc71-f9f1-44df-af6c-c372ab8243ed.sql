@@ -1,0 +1,1 @@
+REVOKE ALL ON FUNCTION public.apply_previous_package_debt() FROM PUBLIC, anon, authenticated;
