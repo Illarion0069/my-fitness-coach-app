@@ -1145,15 +1145,19 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                       {/* Photos grid */}
                       {meal.photos.length > 0 && (
                         <div className="grid grid-cols-3 gap-1.5">
-                          {meal.photos.map(photo => (
-                            <motion.button key={photo.id} whileTap={{ scale: 0.95 }} onClick={() => setSelectedPhoto(photo)}
-                              className="relative rounded-xl overflow-hidden aspect-square">
-                              <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                              <span className="absolute bottom-0.5 left-0.5 text-[7px] bg-black/50 text-white/80 px-1 py-0.5 rounded">
-                                {photo.meal_time ? photo.meal_time.slice(0, 5) : new Date(photo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </motion.button>
-                          ))}
+                          {meal.photos.map(photo => {
+                            const score = meal.aiMeal?.score ?? displayScore;
+                            return (
+                              <motion.button key={photo.id} whileTap={{ scale: 0.95 }} onClick={() => setSelectedPhoto(photo)}
+                                className="relative rounded-xl overflow-hidden aspect-square">
+                                <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
+                                {score != null && <ScoreBadge score={score} className="absolute top-1.5 right-1.5 z-10" />}
+                                <span className="absolute bottom-0.5 left-0.5 text-[7px] bg-black/50 text-white/80 px-1 py-0.5 rounded">
+                                  {photo.meal_time ? photo.meal_time.slice(0, 5) : new Date(photo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </motion.button>
+                            );
+                          })}
                         </div>
                       )}
 
