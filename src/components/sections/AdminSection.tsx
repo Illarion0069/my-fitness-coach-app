@@ -146,8 +146,29 @@ const AdminSection = () => {
     const allPkgs = Object.values(packages).flat();
     const pkg = allPkgs.find((p) => p.id === pkgId);
     if (!pkg) return;
-    const newUsed = Math.max(0, Math.min(pkg.total_sessions, pkg.used_sessions + delta));
-    await supabase.from('client_packages').update({ used_sessions: newUsed }).eq('id', pkgId);
+    // delta > 0 → grant a session (remaining goes up, used goes down)
+    // delta < 0 → deduct a session (remaining goes down, used goes up, debt allowed)
+    const usedDelta = -delta;
+    const newUsed = Math.max(0, pkg.used_sessions + usedDelta);
+    if (newUsed === pkg.used_sessions) return;
+    const { error } = await supabase
+      .from('client_packages')
+      .update({ used_sessions: newUsed })
+      .eq('id', pkgId);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    const key = `manual_adjust_${pkgId}_${Date.now()}`;
+    await supabase.from('session_ledger').insert({
+      user_id: pkg.user_id,
+      package_id: pkgId,
+      delta: usedDelta,
+      reason: 'manual_adjust',
+      used_before: pkg.used_sessions,
+      used_after: newUsed,
+      idempotency_key: key,
+    });
     fetchData();
   };
 
