@@ -371,48 +371,53 @@ const ClientDetailAccordion = ({
               </div>
             )}
 
-            {clientPkgs.filter(p => p.is_active).map(pkg => (
-
-              <div key={pkg.id} className="bg-secondary/50 rounded-xl p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <p className="text-xs font-semibold">{pkg.package_name}</p>
-                    {pkg.price_paid != null && (
-                      <p className="text-[10px] text-muted-foreground">€{pkg.price_paid}</p>
-                    )}
+            {(() => {
+              const activePkg = sortedPkgs.find(p => p.is_active) || sortedPkgs[0];
+              if (!activePkg) return null;
+              const remaining = activePkg.total_sessions - activePkg.used_sessions;
+              const pct = Math.max(0, Math.min(100, (remaining / activePkg.total_sessions) * 100));
+              return (
+                <div key={activePkg.id} className="bg-secondary/50 rounded-xl p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <p className="text-xs font-semibold">{activePkg.package_name}</p>
+                      {activePkg.price_paid != null && (
+                        <p className="text-[10px] text-muted-foreground">€{activePkg.price_paid}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <p className="text-xs text-muted-foreground">{activePkg.used_sessions}/{activePkg.total_sessions}</p>
+                      <button
+                        onClick={() => onDeletePackage(activePkg.id)}
+                        className="w-6 h-6 rounded-md bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden mb-3">
+                    <div
+                      className="h-full gradient-primary rounded-full transition-all"
+                      style={{ width: `${pct}%` }}
+                    />
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground">{pkg.used_sessions}/{pkg.total_sessions}</p>
                     <button
-                      onClick={() => onDeletePackage(pkg.id)}
-                      className="w-6 h-6 rounded-md bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+                      onClick={() => onAddSession(activePkg.id, 1)}
+                      className="flex-1 bg-primary/20 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Plus className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => onAddSession(activePkg.id, -1)}
+                      className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
+                    >
+                      <Minus className="w-4 h-4" />
                     </button>
                   </div>
                 </div>
-                <div className="h-1.5 bg-secondary rounded-full overflow-hidden mb-3">
-                  <div
-                    className="h-full gradient-primary rounded-full transition-all"
-                    style={{ width: `${((pkg.total_sessions - pkg.used_sessions) / pkg.total_sessions) * 100}%` }}
-                  />
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => onAddSession(pkg.id, 1)}
-                    className="flex-1 bg-primary/20 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => onAddSession(pkg.id, -1)}
-                    className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
-                  >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })()}
             {/* New package */}
             <div className="bg-secondary/30 rounded-lg p-2.5 space-y-2">
               <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
