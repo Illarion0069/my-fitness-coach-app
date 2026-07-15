@@ -77,6 +77,33 @@ const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: stri
 
 const scoreColor = (s: number) => s >= 75 ? 'text-green-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400';
 
+const scoreToGrade = (s: number) => {
+  if (s >= 90) return 'A';
+  if (s >= 75) return 'B';
+  if (s >= 50) return 'C';
+  return 'D';
+};
+
+const gradeStyle = (grade: string) => {
+  switch (grade) {
+    case 'A': return { bg: 'bg-green-500', text: 'text-white', ring: 'ring-green-500/30' };
+    case 'B': return { bg: 'bg-yellow-500', text: 'text-black', ring: 'ring-yellow-500/30' };
+    case 'C': return { bg: 'bg-orange-500', text: 'text-white', ring: 'ring-orange-500/30' };
+    default: return { bg: 'bg-red-500', text: 'text-white', ring: 'ring-red-500/30' };
+  }
+};
+
+const ScoreBadge = ({ score, className }: { score: number; className?: string }) => {
+  const grade = scoreToGrade(score);
+  const style = gradeStyle(grade);
+  return (
+    <div className={`w-7 h-7 rounded-full ${style.bg} ${style.text} ring-2 ring-offset-1 ring-offset-background/60 ${style.ring} flex items-center justify-center text-[11px] font-black ${className || ''}`}>
+      {grade}
+    </div>
+  );
+};
+
+
 // Animated number component with smooth rolling effect
 const AnimatedNumber = ({ value, className, duration = 0.6 }: { value: number; className?: string; duration?: number }) => {
   const [displayed, setDisplayed] = useState(value);
@@ -814,9 +841,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const photosAtLimit = photos.length >= MAX_PHOTOS_PER_DAY;
 
   const macros = [
-    { label: lang === 'en' ? 'Protein' : 'Белки', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)' },
-    { label: lang === 'en' ? 'Carbs' : 'Углеводы', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)' },
-    { label: lang === 'en' ? 'Fat' : 'Жиры', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)' },
+    { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: 'P', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', macroRatio: 0.30 },
+    { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: 'C', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', macroRatio: 0.40 },
+    { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: 'F', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', macroRatio: 0.30 },
   ];
 
   const liquidItems = [
@@ -842,8 +869,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         </button>
       </div>
 
-      {/* Calories Dashboard */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5">
+      {/* Hero Dashboard — Cal AI inspired large ring + macro rings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5 relative overflow-hidden">
         <AnimatePresence>
           {analyzing && (
             <motion.div
@@ -861,68 +888,66 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             </motion.div>
           )}
         </AnimatePresence>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4 flex-1">
-            {/* Calorie ring */}
-            {calorieGoal && calorieGoal > 0 ? (
-              <div className="relative flex-shrink-0">
-                <MacroRing value={totals.calories} max={calorieGoal} color={totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'} size={72} strokeWidth={5} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Flame className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[10px] font-bold text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
-                </div>
-              </div>
-            ) : (
-              <Flame className="w-6 h-6 text-primary flex-shrink-0" />
-            )}
-            <div>
-               {calorieGoal && calorieGoal > 0 ? (
-                <>
-                  <div className="flex items-baseline gap-1.5">
-                    <AnimatedNumber value={Math.max(0, calorieGoal - totals.calories)} className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`} />
-                    <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'left' : 'осталось'}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    <AnimatedNumber value={totals.calories} className="text-[11px] text-muted-foreground" /> / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-1.5">
-                    <AnimatedNumber value={totals.calories} className="text-3xl font-black text-foreground tracking-tight" />
-                    <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'kcal' : 'ккал'}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{lang === 'en' ? 'consumed today' : 'потреблено за день'}</p>
-                </>
-              )}
+
+        {/* AI Score badge */}
+        {displayScore != null && (
+          <button
+            onClick={() => isTrainer && log?.ai_score != null ? (setOverrideScore(String(log?.trainer_override_score ?? log?.ai_score ?? '')), setOverrideNote(log?.trainer_override_note || ''), setShowOverrideModal(true)) : undefined}
+            className={`absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+              displayScore >= 75 ? 'bg-green-500/15 text-green-400' : displayScore >= 50 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="text-sm font-extrabold">{displayScore}</span>
+            {isTrainer && <Edit3 className="w-3 h-3 opacity-50" />}
+          </button>
+        )}
+
+        <div className="flex flex-col items-center pt-2">
+          {/* Large calorie ring */}
+          <div className="relative">
+            <MacroRing
+              value={calorieGoal && calorieGoal > 0 ? Math.min(totals.calories, calorieGoal) : totals.calories}
+              max={calorieGoal && calorieGoal > 0 ? calorieGoal : Math.max(totals.calories, 1)}
+              color={totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'}
+              size={160}
+              strokeWidth={10}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                {calorieGoal && calorieGoal > 0 ? (lang === 'en' ? 'Remaining' : 'Осталось') : ''}
+              </span>
+              <span className={`text-5xl font-black tracking-tight mt-0.5 ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
+                <AnimatedNumber value={calorieGoal && calorieGoal > 0 ? Math.max(0, calorieGoal - totals.calories) : totals.calories} />
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-1">
+                {calorieGoal && calorieGoal > 0
+                  ? `${Math.round(totals.calories)} / ${calorieGoal} ${lang === 'en' ? 'kcal' : 'ккал'}`
+                  : (lang === 'en' ? 'consumed today' : 'потреблено за день')}
+              </span>
             </div>
           </div>
 
-          {/* AI Score badge */}
-          {displayScore != null && (
-            <button
-              onClick={() => isTrainer && log?.ai_score != null ? (setOverrideScore(String(log?.trainer_override_score ?? log?.ai_score ?? '')), setOverrideNote(log?.trainer_override_note || ''), setShowOverrideModal(true)) : undefined}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                displayScore >= 75 ? 'bg-green-500/15 text-green-400' : displayScore >= 50 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="text-sm font-extrabold">{displayScore}</span>
-              {isTrainer && <Edit3 className="w-3 h-3 opacity-50" />}
-            </button>
-          )}
-        </div>
-
-        {/* Macro indicators */}
-        <div className="grid grid-cols-3 gap-3">
-          {macros.map(m => (
-            <div key={m.label} className="text-center">
-              <p className="text-lg font-black" style={{ color: m.color }}>
-                <AnimatedNumber value={m.value} className="text-lg font-black" /><span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span>
-              </p>
-              <p className="text-[10px] text-muted-foreground font-medium">{m.label}</p>
-            </div>
-          ))}
+          {/* Macro rings — Cal AI style thin rings around/below the main ring */}
+          <div className="flex items-center justify-center gap-6 mt-6">
+            {macros.map(m => {
+              const goal = (calorieGoal && calorieGoal > 0) ? Math.round((calorieGoal * m.macroRatio) / (m.key === 'fat' ? 9 : 4)) : null;
+              const ringMax = goal && goal > 0 ? goal : Math.max(m.value, 1);
+              const ringValue = goal && goal > 0 ? Math.min(m.value, goal) : m.value;
+              const centerValue = goal && goal > 0 ? Math.max(0, goal - m.value) : m.value;
+              return (
+                <div key={m.key} className="flex flex-col items-center">
+                  <div className="relative">
+                    <MacroRing value={ringValue} max={ringMax} color={m.color} size={56} strokeWidth={4.5} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-foreground">{Math.round(centerValue)}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">{m.short}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </motion.div>
 
@@ -1120,15 +1145,19 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                       {/* Photos grid */}
                       {meal.photos.length > 0 && (
                         <div className="grid grid-cols-3 gap-1.5">
-                          {meal.photos.map(photo => (
-                            <motion.button key={photo.id} whileTap={{ scale: 0.95 }} onClick={() => setSelectedPhoto(photo)}
-                              className="relative rounded-xl overflow-hidden aspect-square">
-                              <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
-                              <span className="absolute bottom-0.5 left-0.5 text-[7px] bg-black/50 text-white/80 px-1 py-0.5 rounded">
-                                {photo.meal_time ? photo.meal_time.slice(0, 5) : new Date(photo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </motion.button>
-                          ))}
+                          {meal.photos.map(photo => {
+                            const score = meal.aiMeal?.score ?? displayScore;
+                            return (
+                              <motion.button key={photo.id} whileTap={{ scale: 0.95 }} onClick={() => setSelectedPhoto(photo)}
+                                className="relative rounded-xl overflow-hidden aspect-square">
+                                <img src={photo.photo_url} alt="" className="w-full h-full object-cover" />
+                                {score != null && <ScoreBadge score={score} className="absolute top-1.5 right-1.5 z-10" />}
+                                <span className="absolute bottom-0.5 left-0.5 text-[7px] bg-black/50 text-white/80 px-1 py-0.5 rounded">
+                                  {photo.meal_time ? photo.meal_time.slice(0, 5) : new Date(photo.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                              </motion.button>
+                            );
+                          })}
                         </div>
                       )}
 
