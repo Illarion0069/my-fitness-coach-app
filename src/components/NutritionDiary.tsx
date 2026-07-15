@@ -869,8 +869,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         </button>
       </div>
 
-      {/* Calories Dashboard */}
-      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5">
+      {/* Hero Dashboard — Cal AI inspired large ring + macro rings */}
+      <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5 relative overflow-hidden">
         <AnimatePresence>
           {analyzing && (
             <motion.div
@@ -888,68 +888,66 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             </motion.div>
           )}
         </AnimatePresence>
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4 flex-1">
-            {/* Calorie ring */}
-            {calorieGoal && calorieGoal > 0 ? (
-              <div className="relative flex-shrink-0">
-                <MacroRing value={totals.calories} max={calorieGoal} color={totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'} size={72} strokeWidth={5} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <Flame className="w-3.5 h-3.5 text-primary" />
-                  <span className="text-[10px] font-bold text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
-                </div>
-              </div>
-            ) : (
-              <Flame className="w-6 h-6 text-primary flex-shrink-0" />
-            )}
-            <div>
-               {calorieGoal && calorieGoal > 0 ? (
-                <>
-                  <div className="flex items-baseline gap-1.5">
-                    <AnimatedNumber value={Math.max(0, calorieGoal - totals.calories)} className={`text-3xl font-black tracking-tight ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`} />
-                    <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'left' : 'осталось'}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    <AnimatedNumber value={totals.calories} className="text-[11px] text-muted-foreground" /> / {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}
-                  </p>
-                </>
-              ) : (
-                <>
-                  <div className="flex items-baseline gap-1.5">
-                    <AnimatedNumber value={totals.calories} className="text-3xl font-black text-foreground tracking-tight" />
-                    <span className="text-sm text-muted-foreground font-medium">{lang === 'en' ? 'kcal' : 'ккал'}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">{lang === 'en' ? 'consumed today' : 'потреблено за день'}</p>
-                </>
-              )}
+
+        {/* AI Score badge */}
+        {displayScore != null && (
+          <button
+            onClick={() => isTrainer && log?.ai_score != null ? (setOverrideScore(String(log?.trainer_override_score ?? log?.ai_score ?? '')), setOverrideNote(log?.trainer_override_note || ''), setShowOverrideModal(true)) : undefined}
+            className={`absolute top-4 right-4 z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
+              displayScore >= 75 ? 'bg-green-500/15 text-green-400' : displayScore >= 50 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
+            }`}
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span className="text-sm font-extrabold">{displayScore}</span>
+            {isTrainer && <Edit3 className="w-3 h-3 opacity-50" />}
+          </button>
+        )}
+
+        <div className="flex flex-col items-center pt-2">
+          {/* Large calorie ring */}
+          <div className="relative">
+            <MacroRing
+              value={calorieGoal && calorieGoal > 0 ? Math.min(totals.calories, calorieGoal) : totals.calories}
+              max={calorieGoal && calorieGoal > 0 ? calorieGoal : Math.max(totals.calories, 1)}
+              color={totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'}
+              size={160}
+              strokeWidth={10}
+            />
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                {calorieGoal && calorieGoal > 0 ? (lang === 'en' ? 'Remaining' : 'Осталось') : ''}
+              </span>
+              <span className={`text-5xl font-black tracking-tight mt-0.5 ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
+                <AnimatedNumber value={calorieGoal && calorieGoal > 0 ? Math.max(0, calorieGoal - totals.calories) : totals.calories} />
+              </span>
+              <span className="text-[10px] text-muted-foreground mt-1">
+                {calorieGoal && calorieGoal > 0
+                  ? `${Math.round(totals.calories)} / ${calorieGoal} ${lang === 'en' ? 'kcal' : 'ккал'}`
+                  : (lang === 'en' ? 'consumed today' : 'потреблено за день')}
+              </span>
             </div>
           </div>
 
-          {/* AI Score badge */}
-          {displayScore != null && (
-            <button
-              onClick={() => isTrainer && log?.ai_score != null ? (setOverrideScore(String(log?.trainer_override_score ?? log?.ai_score ?? '')), setOverrideNote(log?.trainer_override_note || ''), setShowOverrideModal(true)) : undefined}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${
-                displayScore >= 75 ? 'bg-green-500/15 text-green-400' : displayScore >= 50 ? 'bg-yellow-500/15 text-yellow-400' : 'bg-red-500/15 text-red-400'
-              }`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span className="text-sm font-extrabold">{displayScore}</span>
-              {isTrainer && <Edit3 className="w-3 h-3 opacity-50" />}
-            </button>
-          )}
-        </div>
-
-        {/* Macro indicators */}
-        <div className="grid grid-cols-3 gap-3">
-          {macros.map(m => (
-            <div key={m.label} className="text-center">
-              <p className="text-lg font-black" style={{ color: m.color }}>
-                <AnimatedNumber value={m.value} className="text-lg font-black" /><span className="text-[10px] font-medium text-muted-foreground">{m.unit}</span>
-              </p>
-              <p className="text-[10px] text-muted-foreground font-medium">{m.label}</p>
-            </div>
-          ))}
+          {/* Macro rings — Cal AI style thin rings around/below the main ring */}
+          <div className="flex items-center justify-center gap-6 mt-6">
+            {macros.map(m => {
+              const goal = (calorieGoal && calorieGoal > 0) ? Math.round((calorieGoal * m.macroRatio) / (m.key === 'fat' ? 9 : 4)) : null;
+              const ringMax = goal && goal > 0 ? goal : Math.max(m.value, 1);
+              const ringValue = goal && goal > 0 ? Math.min(m.value, goal) : m.value;
+              const centerValue = goal && goal > 0 ? Math.max(0, goal - m.value) : m.value;
+              return (
+                <div key={m.key} className="flex flex-col items-center">
+                  <div className="relative">
+                    <MacroRing value={ringValue} max={ringMax} color={m.color} size={56} strokeWidth={4.5} />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-[10px] font-bold text-foreground">{Math.round(centerValue)}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">{m.short}</span>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </motion.div>
 
