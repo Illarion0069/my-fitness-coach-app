@@ -77,6 +77,33 @@ const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: stri
 
 const scoreColor = (s: number) => s >= 75 ? 'text-green-400' : s >= 50 ? 'text-yellow-400' : 'text-red-400';
 
+const scoreToGrade = (s: number) => {
+  if (s >= 90) return 'A';
+  if (s >= 75) return 'B';
+  if (s >= 50) return 'C';
+  return 'D';
+};
+
+const gradeStyle = (grade: string) => {
+  switch (grade) {
+    case 'A': return { bg: 'bg-green-500', text: 'text-white', ring: 'ring-green-500/30' };
+    case 'B': return { bg: 'bg-yellow-500', text: 'text-black', ring: 'ring-yellow-500/30' };
+    case 'C': return { bg: 'bg-orange-500', text: 'text-white', ring: 'ring-orange-500/30' };
+    default: return { bg: 'bg-red-500', text: 'text-white', ring: 'ring-red-500/30' };
+  }
+};
+
+const ScoreBadge = ({ score, className }: { score: number; className?: string }) => {
+  const grade = scoreToGrade(score);
+  const style = gradeStyle(grade);
+  return (
+    <div className={`w-7 h-7 rounded-full ${style.bg} ${style.text} ring-2 ring-offset-1 ring-offset-background/60 ${style.ring} flex items-center justify-center text-[11px] font-black ${className || ''}`}>
+      {grade}
+    </div>
+  );
+};
+
+
 // Animated number component with smooth rolling effect
 const AnimatedNumber = ({ value, className, duration = 0.6 }: { value: number; className?: string; duration?: number }) => {
   const [displayed, setDisplayed] = useState(value);
