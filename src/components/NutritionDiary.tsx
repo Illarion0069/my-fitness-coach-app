@@ -841,9 +841,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const photosAtLimit = photos.length >= MAX_PHOTOS_PER_DAY;
 
   const macros = [
-    { label: lang === 'en' ? 'Protein' : 'Белки', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)' },
-    { label: lang === 'en' ? 'Carbs' : 'Углеводы', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)' },
-    { label: lang === 'en' ? 'Fat' : 'Жиры', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)' },
+    { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: 'P', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', macroRatio: 0.30 },
+    { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: 'C', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', macroRatio: 0.40 },
+    { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: 'F', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', macroRatio: 0.30 },
   ];
 
   const liquidItems = [
