@@ -500,38 +500,7 @@ const AdminSection = () => {
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
           <>
-          {/* Active / Archive top tabs */}
-          <div className="flex gap-1 mb-3 p-1 bg-secondary/40 rounded-xl">
-            <button
-              onClick={() => { setArchiveView('active'); setSelectedClient(null); }}
-              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${
-                archiveView === 'active'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {lang === 'en' ? 'Active' : 'Активные'}
-            </button>
-            <button
-              onClick={() => { setArchiveView('archived'); setSelectedClient(null); }}
-              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
-                archiveView === 'archived'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {lang === 'en' ? 'Archive' : 'Архив'}
-              {archivedCount > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
-                  archiveView === 'archived' ? 'bg-primary-foreground/20' : 'bg-secondary'
-                }`}>
-                  {archivedCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Search + filter bar */}
+          {/* Compact search + unified filter chips (archive merged in) */}
           <div className="space-y-2 mb-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -539,8 +508,8 @@ const AdminSection = () => {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={lang === 'en' ? 'Search clients...' : 'Поиск клиентов...'}
-                className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-9 pr-9 py-2.5 text-xs focus:outline-none focus:border-primary/50 transition-colors"
+                placeholder={lang === 'en' ? 'Search name, email or phone…' : 'Поиск: имя, email, телефон…'}
+                className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-9 pr-9 py-2 text-xs focus:outline-none focus:border-primary/50 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -551,33 +520,53 @@ const AdminSection = () => {
                 </button>
               )}
             </div>
-            <div className="flex gap-1">
-              {(['all', 'active', 'inactive'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFilterActive(f)}
-                  className={`flex-1 text-[11px] font-bold py-1.5 rounded-lg transition-colors ${
-                    filterActive === f
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {f === 'all'
-                    ? (lang === 'en' ? 'All' : 'Все')
-                    : f === 'active'
-                    ? (lang === 'en' ? 'Active pkg' : 'С пакетом')
-                    : (lang === 'en' ? 'No pkg' : 'Без пакета')}
-                </button>
-              ))}
+            <div className="flex gap-1 flex-wrap items-center">
+              {([
+                { key: 'all', label: lang === 'en' ? 'All' : 'Все' },
+                { key: 'active', label: lang === 'en' ? 'With pkg' : 'С пакетом' },
+                { key: 'inactive', label: lang === 'en' ? 'No pkg' : 'Без пакета' },
+              ] as const).map(chip => {
+                const isActive = archiveView === 'active' && filterActive === chip.key;
+                return (
+                  <button
+                    key={chip.key}
+                    onClick={() => { setArchiveView('active'); setFilterActive(chip.key); setSelectedClient(null); }}
+                    className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => { setArchiveView('archived'); setSelectedClient(null); }}
+                className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 ml-auto ${
+                  archiveView === 'archived'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {lang === 'en' ? 'Archive' : 'Архив'}
+                {archivedCount > 0 && (
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${
+                    archiveView === 'archived' ? 'bg-primary-foreground/20' : 'bg-secondary'
+                  }`}>
+                    {archivedCount}
+                  </span>
+                )}
+              </button>
             </div>
-            {(searchQuery || filterActive !== 'all') && (
-              <p className="text-[11px] text-muted-foreground text-center">
+            {(searchQuery || filterActive !== 'all' || archiveView === 'archived') && (
+              <p className="text-[10px] text-muted-foreground">
                 {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
               </p>
             )}
           </div>
 
-          <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-3">
+          <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-1.5">
             {filteredClientOrder.map((userId) => {
               const client = clients.find(c => c.user_id === userId);
               if (!client) return null;
@@ -587,29 +576,29 @@ const AdminSection = () => {
               return (
                 <DraggableClientRow key={userId} value={userId} disabled={isOpen}>
                 {(dragHandle) => (
-                <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
-                  <div className="w-full p-4 flex items-center gap-3">
+                <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+                  <div className="w-full px-2.5 py-2 flex items-center gap-2">
                      <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
-                       <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
+                       <GripVertical className="w-3.5 h-3.5 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
                      </div>
                      {(() => {
                        const tier = tiersByUser[client.user_id] || null;
                        return (
-                         <div className="relative w-9 h-9 shrink-0">
+                         <div className="relative w-8 h-8 shrink-0">
                            {client.avatar_url ? (
                              <img
                                src={client.avatar_url}
                                alt={client.full_name}
-                               className="w-9 h-9 rounded-full object-cover"
+                               className="w-8 h-8 rounded-full object-cover"
                              />
                            ) : (
-                             <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
-                               <span className="text-xs font-bold text-primary">
+                             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                               <span className="text-[10px] font-bold text-primary">
                                  {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                </span>
                              </div>
                            )}
-                           <AvatarTierBadge tier={tier} size={16} />
+                           <AvatarTierBadge tier={tier} size={14} />
                          </div>
                        );
                      })()}
@@ -617,11 +606,8 @@ const AdminSection = () => {
                        onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                        className="flex-1 text-left flex items-center justify-between min-w-0"
                      >
-                         <div className="min-w-0">
-                           <p className="font-bold text-sm truncate">{client.full_name}</p>
-                           <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
-                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                         <p className="font-semibold text-sm truncate min-w-0">{client.full_name}</p>
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
                           {client.nutrition_goal === 'muscle_gain' ? (
                             <span title={lang === 'en' ? 'Plan: Muscle gain' : 'План: Набор мышц'}
                               className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/15 text-[10px]">
