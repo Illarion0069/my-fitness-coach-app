@@ -86,6 +86,7 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
   const [showBlockModal, setShowBlockModal] = useState<string | null>(null);
   const [blockedDates, setBlockedDates] = useState<string[]>([]);
   const [notifyPrompt, setNotifyPrompt] = useState<NotifyPrompt | null>(null);
+  const [clientSearch, setClientSearch] = useState('');
 
   const showNotifyPrompt = (session: ScheduledSession, actionType: string, details: BiText) => {
     const manualMatch = session.notes?.match(/^👤 (.+?) \(manual\)$/);
