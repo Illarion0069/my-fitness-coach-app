@@ -248,18 +248,15 @@ export default function OAuthConsent() {
             </div>
 
             {loginMode === "phone" ? (
-              <div className="flex gap-2">
-                <CountryCodeSelect value={countryCode} onChange={setCountryCode} />
-                <input
-                  type="tel"
-                  placeholder="Phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  className={inputClass}
-                  autoComplete="tel"
-                />
-              </div>
+              <CountryCodeSelect
+                value={countryCode}
+                onChange={setCountryCode}
+                phoneNumber={phone}
+                onPhoneChange={setPhone}
+                placeholder="Phone"
+              />
             ) : (
+
               <input
                 type="email"
                 placeholder="Email"
