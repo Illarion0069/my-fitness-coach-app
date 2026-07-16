@@ -12,6 +12,22 @@ import AppGuide from '@/components/AppGuide';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
 import { SHOP_PUBLIC } from '@/config/features';
+
+function restorePendingConsentUrl(userId: string | undefined) {
+  try {
+    const pending = sessionStorage.getItem('mcp_consent_return_url');
+    if (!pending) return;
+    const url = new URL(pending);
+    if (url.origin !== window.location.origin) return;
+    if (!url.pathname.startsWith('/.lovable/oauth/consent')) return;
+    sessionStorage.removeItem('mcp_consent_return_url');
+    if (userId) {
+      window.location.href = pending;
+    }
+  } catch {
+    // ignore malformed URLs
+  }
+}
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
 const TestSection = lazy(() => import('@/components/sections/TestSection'));
@@ -113,6 +129,7 @@ const AppContent = () => {
       setActiveSection('home');
       setClientPreview(false);
     } else {
+      restorePendingConsentUrl(user.id);
       setShowGuide(false);
       if (isTrainer) {
         localStorage.setItem('user_role_hint', 'trainer');

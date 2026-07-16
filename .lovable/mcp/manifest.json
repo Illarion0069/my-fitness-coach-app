@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "sdk_version": "0.22.2",
+  "path": "/functions/v1/mcp",
+  "auth": {
+    "type": "oauth",
+    "issuer": "https://yzzgkjwyhnvlyqldvzxf.supabase.co/auth/v1",
+    "accepted_audiences": [
+      "authenticated"
+    ]
+  },
+  "mcp": {
+    "server": {
+      "name": "limassol-fitness-mcp",
+      "version": "0.1.0",
+      "title": "Limassol Fitness"
+    },
+    "tools": [
+      {
+        "name": "list_clients",
+        "title": "List clients",
+        "description": "List clients accessible to the signed-in user. Trainers see all clients they work with; clients see their own profile.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "limit": {
+              "description": "Maximum number of clients to return (1-100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "search": {
+              "description": "Optional name or email substring to filter clients.",
+              "type": "string",
+              "maxLength": 100
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_sessions",
+        "title": "List scheduled sessions",
+        "description": "List scheduled training sessions for a client. Trainers may query any of their clients; clients may only query themselves.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "client_user_id": {
+              "description": "User ID of the client. Omit to query the signed-in user's own sessions.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "from_date": {
+              "description": "Start date in YYYY-MM-DD format.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "to_date": {
+              "description": "End date in YYYY-MM-DD format.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "limit": {
+              "description": "Maximum sessions to return (1-200).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "get_client_summary",
+        "title": "Get client summary",
+        "description": "Return a summary of a client: profile, active packages, recent sessions, body measurements, nutrition streak/achievements, and latest test result. Trainers may query their clients; clients may only query themselves.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "client_user_id": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+              "description": "User ID of the client to summarize."
+            }
+          },
+          "required": [
+            "client_user_id"
+          ]
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_nutrition_logs",
+        "title": "List nutrition logs",
+        "description": "List nutrition diary entries for a client. Trainers may query their clients; clients may only query themselves.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "client_user_id": {
+              "description": "User ID of the client. Omit to query the signed-in user's own logs.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "from_date": {
+              "description": "Start date in YYYY-MM-DD format.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "to_date": {
+              "description": "End date in YYYY-MM-DD format.",
+              "type": "string",
+              "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+            },
+            "limit": {
+              "description": "Maximum logs to return (1-200).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          }
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "list_body_measurements",
+        "title": "List body measurements",
+        "description": "List body measurements for a client. Trainers may query their clients; clients may only query themselves.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "$schema": "http://json-schema.org/draft-07/schema#",
+          "type": "object",
+          "properties": {
+            "client_user_id": {
+              "description": "User ID of the client. Omit to query the signed-in user's own measurements.",
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            },
+            "limit": {
+              "description": "Maximum measurements to return (1-100).",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
