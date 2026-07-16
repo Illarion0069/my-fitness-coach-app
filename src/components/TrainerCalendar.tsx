@@ -552,6 +552,12 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     return [...sessionEntries, ...blockEntries, ...guestEntries].sort((a, b) => a.time.localeCompare(b.time));
   }, [clientRemaining, dayBlocks, daySessions, dayGuests, lang]);
 
+  const filteredTimelineEntries = useMemo(() => {
+    const q = clientSearch.trim().toLowerCase();
+    if (!q) return timelineEntries;
+    return timelineEntries.filter((e) => e.title.toLowerCase().includes(q));
+  }, [timelineEntries, clientSearch]);
+
 
   return (
     <div className="space-y-4">
