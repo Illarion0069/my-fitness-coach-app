@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User, Archive, ArchiveRestore, Sparkles } from 'lucide-react';
+import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User, Archive, ArchiveRestore, Sparkles, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
@@ -50,17 +50,22 @@ interface Props {
   onSendReactivation?: () => void;
 }
 
-type TabId = 'info' | 'packages' | 'schedule' | 'measurements' | 'whoop' | 'tests' | 'photos' | 'nutrition';
+type TabId = 'overview' | 'nutrition' | 'schedule' | 'body' | 'photos' | 'whoop' | 'tests' | 'info';
 
-const tabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
-  { id: 'info', icon: <User className="w-3.5 h-3.5" />, labelEn: 'Info', labelRu: 'Инфо' },
-  { id: 'packages', icon: <Package className="w-3.5 h-3.5" />, labelEn: 'Pkgs', labelRu: 'Пакеты' },
-  { id: 'schedule', icon: <CalendarDays className="w-3.5 h-3.5" />, labelEn: 'Schedule', labelRu: 'Расписание' },
+// Primary tabs — daily-use for trainer
+const primaryTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
+  { id: 'overview', icon: <Package className="w-3.5 h-3.5" />, labelEn: 'Overview', labelRu: 'Главное' },
   { id: 'nutrition', icon: <UtensilsCrossed className="w-3.5 h-3.5" />, labelEn: 'Food', labelRu: 'Питание' },
-  { id: 'measurements', icon: <Ruler className="w-3.5 h-3.5" />, labelEn: 'Body', labelRu: 'Замеры' },
+  { id: 'body', icon: <Ruler className="w-3.5 h-3.5" />, labelEn: 'Body', labelRu: 'Замеры' },
+];
+
+// Secondary — hidden under "More"
+const moreTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
+  { id: 'schedule', icon: <CalendarDays className="w-3.5 h-3.5" />, labelEn: 'Schedule', labelRu: 'Расписание' },
   { id: 'photos', icon: <Camera className="w-3.5 h-3.5" />, labelEn: 'Photos', labelRu: 'Фото' },
   { id: 'whoop', icon: <Activity className="w-3.5 h-3.5" />, labelEn: 'Whoop', labelRu: 'Whoop' },
   { id: 'tests', icon: <ClipboardCheck className="w-3.5 h-3.5" />, labelEn: 'Tests', labelRu: 'Тесты' },
+  { id: 'info', icon: <User className="w-3.5 h-3.5" />, labelEn: 'Account', labelRu: 'Аккаунт' },
 ];
 
 const ClientDetailAccordion = ({
@@ -80,7 +85,9 @@ const ClientDetailAccordion = ({
   onSendReactivation,
 }: Props) => {
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState<TabId>('info');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
+  const [moreOpen, setMoreOpen] = useState(false);
+  const [quickBodyOpen, setQuickBodyOpen] = useState(false);
   const [newPkgName, setNewPkgName] = useState('');
   const [newPkgPrice, setNewPkgPrice] = useState('');
   const [resetPw, setResetPw] = useState('');
@@ -350,116 +357,160 @@ const ClientDetailAccordion = ({
           </div>
         );
 
-      case 'packages': {
+      case 'overview': {
         const sortedPkgs = [...clientPkgs].sort(
           (a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
         );
         const latestPkg = sortedPkgs[0];
         const debt = latestPkg ? Math.max(0, latestPkg.used_sessions - latestPkg.total_sessions) : 0;
+        const activePkg = sortedPkgs.find(p => p.is_active) || sortedPkgs[0];
         return (
           <div className="space-y-3">
-            {debt > 0 && (
-              <div className="bg-destructive/15 border border-destructive/30 rounded-xl p-3">
-                <p className="text-xs font-bold text-destructive">
-                  −{debt} {lang === 'en' ? `session${debt > 1 ? 's' : ''}` : ''}
-                </p>
-                <p className="text-[10px] text-destructive/80 mt-0.5">
-                  {lang === 'en'
-                    ? 'Auto-deducted from the next package on creation'
-                    : 'Спишется автоматически при создании нового пакета'}
-                </p>
-              </div>
-            )}
+            {/* Contact strip — compact */}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
+              <span className="flex items-center gap-1"><Mail className="w-3 h-3" />{client.email}</span>
+              {client.phone && <span className="flex items-center gap-1"><Phone className="w-3 h-3" />{client.phone}</span>}
+            </div>
 
-            {(() => {
-              const activePkg = sortedPkgs.find(p => p.is_active) || sortedPkgs[0];
-              if (!activePkg) return null;
-              const remaining = activePkg.total_sessions - activePkg.used_sessions;
-              const pct = Math.max(0, Math.min(100, (remaining / activePkg.total_sessions) * 100));
-              return (
-                <div key={activePkg.id} className="bg-secondary/50 rounded-xl p-3">
+            {/* PACKAGE — primary action zone */}
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                {lang === 'en' ? 'Package' : 'Пакет'}
+              </p>
+              {debt > 0 && (
+                <div className="bg-destructive/15 border border-destructive/30 rounded-lg px-3 py-1.5">
+                  <p className="text-[11px] font-bold text-destructive">
+                    −{debt} {lang === 'en' ? `session${debt > 1 ? 's' : ''}` : 'занятий'}
+                    <span className="font-normal text-destructive/70 ml-1">
+                      {lang === 'en' ? '· auto-deducts on next pkg' : '· спишется при новом'}
+                    </span>
+                  </p>
+                </div>
+              )}
+              {activePkg ? (
+                <div className="bg-secondary/50 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="text-xs font-semibold">{activePkg.package_name}</p>
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold truncate">{activePkg.package_name}</p>
                       {activePkg.price_paid != null && (
                         <p className="text-[10px] text-muted-foreground">€{activePkg.price_paid}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-xs text-muted-foreground">{activePkg.used_sessions}/{activePkg.total_sessions}</p>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <p className="text-xs font-bold text-foreground">{activePkg.used_sessions}<span className="text-muted-foreground font-normal">/{activePkg.total_sessions}</span></p>
                       <button
                         onClick={() => onDeletePackage(activePkg.id)}
                         className="w-6 h-6 rounded-md bg-destructive/10 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+                        aria-label={lang === 'en' ? 'Delete package' : 'Удалить пакет'}
                       >
                         <Trash2 className="w-3 h-3" />
                       </button>
                     </div>
                   </div>
-                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden mb-3">
-                    <div
-                      className="h-full gradient-primary rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="h-1.5 bg-secondary rounded-full overflow-hidden mb-2.5">
+                    <div className="h-full gradient-primary rounded-full transition-all"
+                      style={{ width: `${Math.max(0, Math.min(100, ((activePkg.total_sessions - activePkg.used_sessions) / activePkg.total_sessions) * 100))}%` }} />
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onAddSession(activePkg.id, 1)}
-                      className="flex-1 bg-primary/20 text-primary text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors"
-                    >
+                    <button onClick={() => onAddSession(activePkg.id, 1)}
+                      className="flex-1 bg-primary/20 text-primary text-xs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-primary/30 transition-colors">
                       <Plus className="w-4 h-4" />
                     </button>
-                    <button
-                      onClick={() => onAddSession(activePkg.id, -1)}
-                      className="flex-1 bg-secondary text-foreground text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
-                    >
+                    <button onClick={() => onAddSession(activePkg.id, -1)}
+                      className="flex-1 bg-secondary text-foreground text-xs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors">
                       <Minus className="w-4 h-4" />
+                    </button>
+                    <button onClick={onSendRemaining}
+                      className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors">
+                      <Send className="w-3 h-3" /> {lang === 'en' ? 'Send' : 'Отчёт'}
                     </button>
                   </div>
                 </div>
-              );
-            })()}
-            {/* New package */}
-            <div className="bg-secondary/30 rounded-lg p-2.5 space-y-2">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {lang === 'en' ? 'New Package' : 'Новый пакет'}
-              </p>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  min={1}
-                  placeholder={lang === 'en' ? 'Sessions' : 'Занятий'}
-                  value={newPkgName}
-                  onChange={(e) => setNewPkgName(e.target.value)}
-                  className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  step={1}
-                  placeholder="€"
-                  value={newPkgPrice}
-                  onChange={(e) => setNewPkgPrice(e.target.value)}
-                  className="w-20 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs focus:outline-none focus:border-primary/50"
-                />
-                <button
-                  onClick={handleCreatePackage}
-                  disabled={!newPkgName.trim()}
-                  className="gradient-primary text-primary-foreground text-xs font-bold py-2 px-4 rounded-lg disabled:opacity-50"
-                >
-                  {lang === 'en' ? 'Add' : '+'}
+              ) : (
+                <p className="text-[11px] text-muted-foreground italic px-1">
+                  {lang === 'en' ? 'No active package' : 'Активного пакета нет'}
+                </p>
+              )}
+              {/* New package inline */}
+              <div className="flex gap-1.5">
+                <input type="number" min={1} placeholder={lang === 'en' ? 'Sessions' : 'Занятий'}
+                  value={newPkgName} onChange={e => setNewPkgName(e.target.value)}
+                  className="flex-1 bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary/50" />
+                <input type="number" min={0} step={1} placeholder="€"
+                  value={newPkgPrice} onChange={e => setNewPkgPrice(e.target.value)}
+                  className="w-16 bg-background border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50" />
+                <button onClick={handleCreatePackage} disabled={!newPkgName.trim()}
+                  className="gradient-primary text-primary-foreground text-xs font-bold py-1.5 px-3 rounded-lg disabled:opacity-40">
+                  {lang === 'en' ? 'New' : 'Новый'}
                 </button>
               </div>
+              <div className="flex gap-1.5">
+                <button onClick={onSendRenewal}
+                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors">
+                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
+                </button>
+                <button onClick={onSendGymRenewal}
+                  className="flex-1 bg-secondary/50 border border-border/50 text-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors">
+                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
+                </button>
+              </div>
+            </div>
+
+            {/* NUTRITION TARGETS — compact */}
+            <div className="space-y-2">
+              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider">
+                {lang === 'en' ? 'Nutrition goals' : 'Цели по питанию'}
+              </p>
+              <div className="grid grid-cols-2 gap-1.5">
+                {([
+                  { key: 'fat_loss' as const, ru: 'Снижение', en: 'Fat loss', emoji: '🔥' },
+                  { key: 'muscle_gain' as const, ru: 'Набор', en: 'Muscle', emoji: '💪' },
+                ]).map(opt => {
+                  const active = nutritionGoal === opt.key;
+                  return (
+                    <button key={opt.key} onClick={() => saveNutritionGoal(opt.key)} disabled={savingNutritionGoal}
+                      className={`rounded-lg px-2 py-1.5 text-[11px] font-bold transition-all border ${
+                        active ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background text-muted-foreground border-border/50 hover:border-primary/50'
+                      } ${savingNutritionGoal ? 'opacity-60' : ''}`}>
+                      <span className="mr-1">{opt.emoji}</span>{lang === 'en' ? opt.en : opt.ru}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="flex gap-1.5 items-center">
+                <input type="number" min={0} placeholder={lang === 'en' ? 'kcal / day' : 'ккал / день'}
+                  value={calorieGoalInput} onChange={e => setCalorieGoalInput(e.target.value)}
+                  className="flex-1 bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:border-primary/50" />
+                <button onClick={saveCalorieGoal}
+                  className="text-xs font-bold text-primary hover:text-primary/80 px-2">
+                  {lang === 'en' ? 'Save' : 'ОК'}
+                </button>
+              </div>
+            </div>
+
+            {/* BODY QUICK INPUT */}
+            <div className="space-y-2">
+              <button onClick={() => setQuickBodyOpen(v => !v)}
+                className="w-full flex items-center justify-between">
+                <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <Ruler className="w-3 h-3" />
+                  {lang === 'en' ? 'Log measurements' : 'Записать замеры'}
+                </p>
+                <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${quickBodyOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {quickBodyOpen && (
+                <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
+              )}
             </div>
           </div>
         );
       }
 
-
-
       case 'schedule':
         return <ClientSchedule userId={client.user_id} lang={lang} onSessionChange={onSessionChange} />;
 
-      case 'measurements':
+      case 'body':
         return (
           <div className="space-y-3">
             <BodyMeasurementsView key={measurementKey} userId={client.user_id} lang={lang} editable />
@@ -479,64 +530,11 @@ const ClientDetailAccordion = ({
       case 'nutrition':
         return (
           <div className="space-y-3">
-            <div className="bg-secondary/30 rounded-xl p-3">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                {lang === 'en' ? 'Nutrition plan' : 'План питания'}
+            {calorieGoal != null && (
+              <p className="text-[10px] text-muted-foreground px-1">
+                {lang === 'en' ? `Target: ${calorieGoal} kcal/day · ${nutritionGoal === 'muscle_gain' ? 'Muscle gain' : 'Fat loss'}` : `Цель: ${calorieGoal} ккал/день · ${nutritionGoal === 'muscle_gain' ? 'набор мышц' : 'снижение веса'}`}
               </p>
-              <div className="grid grid-cols-2 gap-2">
-                {([
-                  { key: 'fat_loss' as const, ru: 'Снижение веса', en: 'Fat loss', emoji: '🔥' },
-                  { key: 'muscle_gain' as const, ru: 'Набор мышц', en: 'Muscle gain', emoji: '💪' },
-                ]).map(opt => {
-                  const active = nutritionGoal === opt.key;
-                  return (
-                    <button
-                      key={opt.key}
-                      onClick={() => saveNutritionGoal(opt.key)}
-                      disabled={savingNutritionGoal}
-                      className={`rounded-lg px-3 py-2 text-xs font-bold transition-all border ${
-                        active
-                          ? 'bg-primary text-primary-foreground border-primary shadow-sm'
-                          : 'bg-background text-muted-foreground border-border/50 hover:border-primary/50'
-                      } ${savingNutritionGoal ? 'opacity-60' : ''}`}
-                    >
-                      <span className="mr-1">{opt.emoji}</span>
-                      {lang === 'en' ? opt.en : opt.ru}
-                    </button>
-                  );
-                })}
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1.5">
-                {lang === 'en'
-                  ? 'AI nutrition feedback adapts to this plan.'
-                  : 'Рекомендации по питанию ИИ подстраиваются под план.'}
-              </p>
-            </div>
-            <div className="bg-secondary/30 rounded-xl p-3">
-              <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-wider mb-2">
-                {lang === 'en' ? 'Daily calorie goal' : 'Дневная норма калорий'}
-              </p>
-              <div className="flex gap-2 items-center">
-                <input
-                  type="number"
-                  min={0}
-                  placeholder={lang === 'en' ? 'e.g. 2000' : 'напр. 2000'}
-                  value={calorieGoalInput}
-                  onChange={e => setCalorieGoalInput(e.target.value)}
-                  className="flex-1 bg-background border border-border/50 rounded-lg px-3 py-2 text-xs text-foreground focus:outline-none focus:border-primary/50"
-                />
-                <span className="text-[10px] text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
-                <button onClick={saveCalorieGoal}
-                  className="text-xs font-bold text-primary hover:text-primary/80 transition-colors px-2">
-                  {lang === 'en' ? 'Save' : 'ОК'}
-                </button>
-              </div>
-              {calorieGoal && (
-                <p className="text-[10px] text-muted-foreground mt-1.5">
-                  {lang === 'en' ? `Current: ${calorieGoal} kcal/day` : `Текущая: ${calorieGoal} ккал/день`}
-                </p>
-              )}
-            </div>
+            )}
             <TrainerClientAchievements userId={client.user_id} lang={lang} />
             <NutritionDiary userId={client.user_id} lang={lang} isTrainer={true} calorieGoal={calorieGoal} />
           </div>
@@ -553,15 +551,15 @@ const ClientDetailAccordion = ({
       animate={{ height: 'auto', opacity: 1 }}
       className="border-t border-border/30"
     >
-      {/* Horizontal scrollable tabs */}
-      <div className="overflow-x-auto scrollbar-hide border-b border-border/20">
-        <div className="flex gap-0.5 px-3 py-2 min-w-max">
-          {tabs.map(tab => {
+      {/* Primary tabs + More menu */}
+      <div className="border-b border-border/20 relative">
+        <div className="flex items-center gap-0.5 px-3 py-2">
+          {primaryTabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
                 className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
@@ -573,8 +571,42 @@ const ClientDetailAccordion = ({
               </button>
             );
           })}
+          <div className="ml-auto relative">
+            <button
+              onClick={() => setMoreOpen(v => !v)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                moreTabs.some(t => t.id === activeTab)
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+              }`}
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+              {lang === 'en' ? 'More' : 'Ещё'}
+              <ChevronDown className={`w-3 h-3 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {moreOpen && (
+              <div className="absolute right-0 top-full mt-1 z-20 bg-card border border-border/50 rounded-lg shadow-xl overflow-hidden min-w-[160px]">
+                {moreTabs.map(tab => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-[12px] font-semibold text-left transition-colors ${
+                        isActive ? 'bg-primary/15 text-primary' : 'text-foreground hover:bg-secondary/60'
+                      }`}
+                    >
+                      {tab.icon}
+                      {lang === 'en' ? tab.labelEn : tab.labelRu}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
 
       {/* Tab content */}
       <div className="px-4 py-3">
