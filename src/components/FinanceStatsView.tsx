@@ -382,74 +382,53 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         </button>
       </div>
 
-      {/* Key metrics grid */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* Key metrics grid — denser */}
+      <div className="grid grid-cols-2 gap-2">
         <MetricCard
-          icon={<DollarSign className="w-4 h-4" />}
+          icon={<DollarSign className="w-3.5 h-3.5" />}
           label={lang === 'en' ? 'Revenue (sold)' : 'Выручка (продажи)'}
           value={`€${monthlyRevenue.toLocaleString()}`}
           color="text-green-500"
           bgColor="bg-green-500/10"
         />
         <MetricCard
-          icon={<TrendingUp className="w-4 h-4" />}
+          icon={<TrendingUp className="w-3.5 h-3.5" />}
           label={lang === 'en' ? 'Earned (delivered)' : 'Заработано (факт)'}
           value={`€${earnedRevenue.toLocaleString()}`}
           color="text-blue-500"
           bgColor="bg-blue-500/10"
         />
         <MetricCard
-          icon={<Calendar className="w-4 h-4" />}
+          icon={<Calendar className="w-3.5 h-3.5" />}
           label={lang === 'en' ? 'Expected' : 'Ожидаемо'}
           value={`€${expectedMonthlyRevenue.toLocaleString()}`}
           color="text-amber-500"
           bgColor="bg-amber-500/10"
         />
         <MetricCard
-          icon={<Activity className="w-4 h-4" />}
+          icon={<Activity className="w-3.5 h-3.5" />}
           label={lang === 'en' ? 'Sessions' : 'Тренировок'}
           value={String(sessionsDelivered)}
           sub={`${clientFrequency.avg} ${lang === 'en' ? 'avg/client' : 'ср/клиент'}`}
           color="text-purple-500"
           bgColor="bg-purple-500/10"
         />
-        <MetricCard
-          icon={<Users className="w-4 h-4" />}
-          label="Reload (группы)"
-          value={`€${reloadDetails.doneRevenue} / €${reloadRevenue}`}
-          sub={`${reloadDetails.doneHours}/${reloadHours} ${lang === 'en' ? 'hrs' : 'ч.'}`}
-          color="text-teal-500"
-          bgColor="bg-teal-500/10"
-        />
-      </div>
-
-      {/* Reload monthly summary */}
-      <div className="bg-card border border-border/50 rounded-2xl p-4">
-        <h3 className="text-xs font-bold mb-3 flex items-center gap-2">
-          <Users className="w-4 h-4 text-teal-500" />
-          {lang === 'en' ? 'Reload (group classes)' : 'Reload (групповые)'}
-        </h3>
-        {reloadDetails.items.length > 0 ? (
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-2 text-center">
-              <div className="bg-teal-500/5 rounded-xl p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Hours done' : 'Часов проведено'}</p>
-                <p className="text-lg font-extrabold text-teal-500">{reloadDetails.doneHours}<span className="text-muted-foreground font-normal text-xs"> / {reloadHours} {lang === 'en' ? 'h' : 'ч'}</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {reloadDetails.items.reduce((s, i) => s + i.doneCount, 0)} / {reloadDetails.items.reduce((s, i) => s + i.totalCount, 0)} {lang === 'en' ? 'classes' : 'классов'}
-                </p>
-              </div>
-              <div className="bg-teal-500/5 rounded-xl p-3">
-                <p className="text-[10px] text-muted-foreground mb-1">{lang === 'en' ? 'Earned' : 'Заработано'}</p>
-                <p className="text-lg font-extrabold text-teal-500">€{reloadDetails.doneRevenue}<span className="text-muted-foreground font-normal text-xs"> / €{reloadRevenue}</span></p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">€{RELOAD_RATE_PER_CLASS}/{lang === 'en' ? 'class' : 'занятие'}</p>
-              </div>
+        {reloadDetails.items.length > 0 && (
+          <div className="col-span-2 bg-card border border-border/50 rounded-xl p-3 flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center text-teal-500 shrink-0">
+              <Users className="w-4 h-4" />
             </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-muted-foreground">Reload {lang === 'en' ? '(group classes)' : '(групповые)'}</p>
+              <p className="text-sm font-extrabold text-teal-500">
+                €{reloadDetails.doneRevenue}<span className="text-muted-foreground font-normal text-[10px]"> / €{reloadRevenue}</span>
+              </p>
+            </div>
+            <p className="text-[10px] text-muted-foreground shrink-0 text-right">
+              {reloadDetails.doneHours}/{reloadHours} {lang === 'en' ? 'h' : 'ч'}<br/>
+              €{RELOAD_RATE_PER_CLASS}/{lang === 'en' ? 'class' : 'занятие'}
+            </p>
           </div>
-        ) : (
-          <p className="text-xs text-muted-foreground">
-            {lang === 'en' ? 'No Reload classes this month. Add them in the calendar as "Reload" type.' : 'Нет Reload-классов в этом месяце. Добавь их в календаре как тип «Reload».'}
-          </p>
         )}
       </div>
 
