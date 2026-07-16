@@ -134,6 +134,12 @@ export default function OAuthConsent() {
 
   async function handleGoogleSignIn() {
     setLoginSubmitting(true);
+    // Preserve the consent URL so the app can return here after the Google OAuth round-trip.
+    try {
+      sessionStorage.setItem("mcp_consent_return_url", window.location.href);
+    } catch {
+      /* ignore storage errors */
+    }
     const result = await lovable.auth.signInWithOAuth("google", {
       redirect_uri: window.location.origin,
     });
@@ -142,6 +148,7 @@ export default function OAuthConsent() {
       setLoginError(result.error.message);
     }
   }
+
 
   async function decide(approve: boolean) {
     setBusy(true);
