@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { addDays, format, isSameDay, startOfWeek } from 'date-fns';
 import { enUS, ru } from 'date-fns/locale';
-import { CalendarDays, ChevronLeft, ChevronRight, Ban } from 'lucide-react';
+import { CalendarDays, ChevronLeft, ChevronRight, Ban, Search, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import TrainerBlockModal from './TrainerBlockModal';
