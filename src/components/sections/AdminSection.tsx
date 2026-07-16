@@ -566,7 +566,7 @@ const AdminSection = () => {
             )}
           </div>
 
-          <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-3">
+          <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-1.5">
             {filteredClientOrder.map((userId) => {
               const client = clients.find(c => c.user_id === userId);
               if (!client) return null;
@@ -576,29 +576,29 @@ const AdminSection = () => {
               return (
                 <DraggableClientRow key={userId} value={userId} disabled={isOpen}>
                 {(dragHandle) => (
-                <div className="bg-card border border-border/50 rounded-2xl overflow-hidden">
-                  <div className="w-full p-4 flex items-center gap-3">
+                <div className="bg-card border border-border/50 rounded-xl overflow-hidden">
+                  <div className="w-full px-2.5 py-2 flex items-center gap-2">
                      <div onPointerDown={dragHandle.onPointerDown} className="touch-none">
-                       <GripVertical className="w-4 h-4 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
+                       <GripVertical className="w-3.5 h-3.5 text-muted-foreground shrink-0 cursor-grab active:cursor-grabbing" />
                      </div>
                      {(() => {
                        const tier = tiersByUser[client.user_id] || null;
                        return (
-                         <div className="relative w-9 h-9 shrink-0">
+                         <div className="relative w-8 h-8 shrink-0">
                            {client.avatar_url ? (
                              <img
                                src={client.avatar_url}
                                alt={client.full_name}
-                               className="w-9 h-9 rounded-full object-cover"
+                               className="w-8 h-8 rounded-full object-cover"
                              />
                            ) : (
-                             <div className="w-9 h-9 rounded-full bg-primary/15 flex items-center justify-center">
-                               <span className="text-xs font-bold text-primary">
+                             <div className="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center">
+                               <span className="text-[10px] font-bold text-primary">
                                  {client.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                                </span>
                              </div>
                            )}
-                           <AvatarTierBadge tier={tier} size={16} />
+                           <AvatarTierBadge tier={tier} size={14} />
                          </div>
                        );
                      })()}
@@ -606,11 +606,8 @@ const AdminSection = () => {
                        onClick={() => setSelectedClient(isOpen ? null : client.user_id)}
                        className="flex-1 text-left flex items-center justify-between min-w-0"
                      >
-                         <div className="min-w-0">
-                           <p className="font-bold text-sm truncate">{client.full_name}</p>
-                           <p className="text-[11px] text-muted-foreground truncate">{client.email} · {client.phone}</p>
-                         </div>
-                        <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                         <p className="font-semibold text-sm truncate min-w-0">{client.full_name}</p>
+                        <div className="flex items-center gap-1 shrink-0 ml-2">
                           {client.nutrition_goal === 'muscle_gain' ? (
                             <span title={lang === 'en' ? 'Plan: Muscle gain' : 'План: Набор мышц'}
                               className="shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary/15 text-[10px]">
