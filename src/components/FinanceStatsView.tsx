@@ -522,6 +522,16 @@ function MetricCard({ icon, label, value, sub, color, bgColor }: {
   bgColor: string;
 }) {
   return (
+    <div className="bg-card border border-border/50 rounded-xl p-2.5">
+      <div className={`w-7 h-7 rounded-lg ${bgColor} flex items-center justify-center ${color} mb-1.5`}>
+        {icon}
+      </div>
+      <p className="text-[10px] text-muted-foreground mb-0.5 leading-tight">{label}</p>
+      <p className="text-base font-extrabold leading-tight">{value}</p>
+      {sub && <p className="text-[9px] text-muted-foreground mt-0.5">{sub}</p>}
+    </div>
+  );
+}
     <div className="bg-card border border-border/50 rounded-2xl p-4">
       <div className={`w-8 h-8 rounded-xl ${bgColor} flex items-center justify-center ${color} mb-2`}>
         {icon}
