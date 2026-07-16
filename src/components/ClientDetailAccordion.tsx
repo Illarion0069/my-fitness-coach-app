@@ -551,15 +551,15 @@ const ClientDetailAccordion = ({
       animate={{ height: 'auto', opacity: 1 }}
       className="border-t border-border/30"
     >
-      {/* Horizontal scrollable tabs */}
-      <div className="overflow-x-auto scrollbar-hide border-b border-border/20">
-        <div className="flex gap-0.5 px-3 py-2 min-w-max">
-          {tabs.map(tab => {
+      {/* Primary tabs + More menu */}
+      <div className="border-b border-border/20 relative">
+        <div className="flex items-center gap-0.5 px-3 py-2">
+          {primaryTabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
+                onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
                 className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold whitespace-nowrap transition-all ${
                   isActive
                     ? 'bg-primary text-primary-foreground shadow-sm'
@@ -571,8 +571,42 @@ const ClientDetailAccordion = ({
               </button>
             );
           })}
+          <div className="ml-auto relative">
+            <button
+              onClick={() => setMoreOpen(v => !v)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-all ${
+                moreTabs.some(t => t.id === activeTab)
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-secondary/50'
+              }`}
+            >
+              <MoreHorizontal className="w-3.5 h-3.5" />
+              {lang === 'en' ? 'More' : 'Ещё'}
+              <ChevronDown className={`w-3 h-3 transition-transform ${moreOpen ? 'rotate-180' : ''}`} />
+            </button>
+            {moreOpen && (
+              <div className="absolute right-0 top-full mt-1 z-20 bg-card border border-border/50 rounded-lg shadow-xl overflow-hidden min-w-[160px]">
+                {moreTabs.map(tab => {
+                  const isActive = activeTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                      className={`w-full flex items-center gap-2 px-3 py-2 text-[12px] font-semibold text-left transition-colors ${
+                        isActive ? 'bg-primary/15 text-primary' : 'text-foreground hover:bg-secondary/60'
+                      }`}
+                    >
+                      {tab.icon}
+                      {lang === 'en' ? tab.labelEn : tab.labelRu}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
 
       {/* Tab content */}
       <div className="px-4 py-3">
