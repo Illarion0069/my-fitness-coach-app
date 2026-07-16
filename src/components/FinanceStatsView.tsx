@@ -531,5 +531,6 @@ function MetricCard({ icon, label, value, sub, color, bgColor }: {
       {sub && <p className="text-[9px] text-muted-foreground mt-0.5">{sub}</p>}
     </div>
   );
+}
 
 export default FinanceStatsView;
