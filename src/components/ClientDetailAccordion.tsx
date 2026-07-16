@@ -50,17 +50,22 @@ interface Props {
   onSendReactivation?: () => void;
 }
 
-type TabId = 'info' | 'packages' | 'schedule' | 'measurements' | 'whoop' | 'tests' | 'photos' | 'nutrition';
+type TabId = 'overview' | 'nutrition' | 'schedule' | 'body' | 'photos' | 'whoop' | 'tests' | 'info';
 
-const tabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
-  { id: 'info', icon: <User className="w-3.5 h-3.5" />, labelEn: 'Info', labelRu: 'Инфо' },
-  { id: 'packages', icon: <Package className="w-3.5 h-3.5" />, labelEn: 'Pkgs', labelRu: 'Пакеты' },
-  { id: 'schedule', icon: <CalendarDays className="w-3.5 h-3.5" />, labelEn: 'Schedule', labelRu: 'Расписание' },
+// Primary tabs — daily-use for trainer
+const primaryTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
+  { id: 'overview', icon: <Package className="w-3.5 h-3.5" />, labelEn: 'Overview', labelRu: 'Главное' },
   { id: 'nutrition', icon: <UtensilsCrossed className="w-3.5 h-3.5" />, labelEn: 'Food', labelRu: 'Питание' },
-  { id: 'measurements', icon: <Ruler className="w-3.5 h-3.5" />, labelEn: 'Body', labelRu: 'Замеры' },
+  { id: 'body', icon: <Ruler className="w-3.5 h-3.5" />, labelEn: 'Body', labelRu: 'Замеры' },
+];
+
+// Secondary — hidden under "More"
+const moreTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
+  { id: 'schedule', icon: <CalendarDays className="w-3.5 h-3.5" />, labelEn: 'Schedule', labelRu: 'Расписание' },
   { id: 'photos', icon: <Camera className="w-3.5 h-3.5" />, labelEn: 'Photos', labelRu: 'Фото' },
   { id: 'whoop', icon: <Activity className="w-3.5 h-3.5" />, labelEn: 'Whoop', labelRu: 'Whoop' },
   { id: 'tests', icon: <ClipboardCheck className="w-3.5 h-3.5" />, labelEn: 'Tests', labelRu: 'Тесты' },
+  { id: 'info', icon: <User className="w-3.5 h-3.5" />, labelEn: 'Account', labelRu: 'Аккаунт' },
 ];
 
 const ClientDetailAccordion = ({
