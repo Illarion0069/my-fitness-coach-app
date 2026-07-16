@@ -129,6 +129,7 @@ const AppContent = () => {
       setActiveSection('home');
       setClientPreview(false);
     } else {
+      restorePendingConsentUrl(user.id);
       setShowGuide(false);
       if (isTrainer) {
         localStorage.setItem('user_role_hint', 'trainer');
