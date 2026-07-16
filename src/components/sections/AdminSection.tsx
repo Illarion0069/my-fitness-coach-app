@@ -500,38 +500,7 @@ const AdminSection = () => {
           <p className="text-muted-foreground text-sm">{lang === 'en' ? 'No clients yet' : 'Пока нет клиентов'}</p>
         ) : (
           <>
-          {/* Active / Archive top tabs */}
-          <div className="flex gap-1 mb-3 p-1 bg-secondary/40 rounded-xl">
-            <button
-              onClick={() => { setArchiveView('active'); setSelectedClient(null); }}
-              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors ${
-                archiveView === 'active'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {lang === 'en' ? 'Active' : 'Активные'}
-            </button>
-            <button
-              onClick={() => { setArchiveView('archived'); setSelectedClient(null); }}
-              className={`flex-1 text-xs font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5 ${
-                archiveView === 'archived'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {lang === 'en' ? 'Archive' : 'Архив'}
-              {archivedCount > 0 && (
-                <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-bold ${
-                  archiveView === 'archived' ? 'bg-primary-foreground/20' : 'bg-secondary'
-                }`}>
-                  {archivedCount}
-                </span>
-              )}
-            </button>
-          </div>
-
-          {/* Search + filter bar */}
+          {/* Compact search + unified filter chips (archive merged in) */}
           <div className="space-y-2 mb-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
@@ -539,8 +508,8 @@ const AdminSection = () => {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder={lang === 'en' ? 'Search clients...' : 'Поиск клиентов...'}
-                className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-9 pr-9 py-2.5 text-xs focus:outline-none focus:border-primary/50 transition-colors"
+                placeholder={lang === 'en' ? 'Search name, email or phone…' : 'Поиск: имя, email, телефон…'}
+                className="w-full bg-secondary/50 border border-border/50 rounded-xl pl-9 pr-9 py-2 text-xs focus:outline-none focus:border-primary/50 transition-colors"
               />
               {searchQuery && (
                 <button
@@ -551,27 +520,47 @@ const AdminSection = () => {
                 </button>
               )}
             </div>
-            <div className="flex gap-1">
-              {(['all', 'active', 'inactive'] as const).map(f => (
-                <button
-                  key={f}
-                  onClick={() => setFilterActive(f)}
-                  className={`flex-1 text-[11px] font-bold py-1.5 rounded-lg transition-colors ${
-                    filterActive === f
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
-                  }`}
-                >
-                  {f === 'all'
-                    ? (lang === 'en' ? 'All' : 'Все')
-                    : f === 'active'
-                    ? (lang === 'en' ? 'Active pkg' : 'С пакетом')
-                    : (lang === 'en' ? 'No pkg' : 'Без пакета')}
-                </button>
-              ))}
+            <div className="flex gap-1 flex-wrap items-center">
+              {([
+                { key: 'all', label: lang === 'en' ? 'All' : 'Все' },
+                { key: 'active', label: lang === 'en' ? 'With pkg' : 'С пакетом' },
+                { key: 'inactive', label: lang === 'en' ? 'No pkg' : 'Без пакета' },
+              ] as const).map(chip => {
+                const isActive = archiveView === 'active' && filterActive === chip.key;
+                return (
+                  <button
+                    key={chip.key}
+                    onClick={() => { setArchiveView('active'); setFilterActive(chip.key); setSelectedClient(null); }}
+                    className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {chip.label}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => { setArchiveView('archived'); setSelectedClient(null); }}
+                className={`text-[11px] font-bold px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1 ml-auto ${
+                  archiveView === 'archived'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary/50 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {lang === 'en' ? 'Archive' : 'Архив'}
+                {archivedCount > 0 && (
+                  <span className={`text-[10px] px-1 py-0.5 rounded font-bold ${
+                    archiveView === 'archived' ? 'bg-primary-foreground/20' : 'bg-secondary'
+                  }`}>
+                    {archivedCount}
+                  </span>
+                )}
+              </button>
             </div>
-            {(searchQuery || filterActive !== 'all') && (
-              <p className="text-[11px] text-muted-foreground text-center">
+            {(searchQuery || filterActive !== 'all' || archiveView === 'archived') && (
+              <p className="text-[10px] text-muted-foreground">
                 {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
               </p>
             )}
