@@ -702,6 +702,44 @@ Deno.serve(async (req) => {
         });
       }
 
+      // De-duplicate by normalized phone (digits only, last 9 digits)
+      const normalizePhone = (p: string) => p.replace(/\D/g, '').slice(-9);
+      const phoneNorm = normalizePhone(guest_phone);
+      const todayStr = new Date().toISOString().split('T')[0];
+
+      const { data: existingGuest } = await supabase
+        .from('guest_bookings')
+        .select('id, session_date, session_time, guest_name, status')
+        .in('status', ['pending', 'confirmed'])
+        .gte('session_date', todayStr);
+
+      const sameSlot = (existingGuest || []).find((g: any) =>
+        normalizePhone(g.guest_phone || guest_phone) &&
+        g.session_date === date &&
+        g.session_time?.slice(0, 5) === time
+      );
+      // recheck properly by fetching phones too
+      const { data: mine } = await supabase
+        .from('guest_bookings')
+        .select('id, session_date, session_time, guest_phone, status')
+        .in('status', ['pending', 'confirmed'])
+        .gte('session_date', todayStr);
+      const myBookings = (mine || []).filter((g: any) => normalizePhone(g.guest_phone) === phoneNorm);
+      const dup = myBookings.find((g: any) => g.session_date === date && g.session_time?.slice(0, 5) === time);
+      if (dup) {
+        return new Response(JSON.stringify({
+          error: 'duplicate_slot',
+          existing: { date: dup.session_date, time: dup.session_time?.slice(0, 5) },
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      if (myBookings.length > 0) {
+        const other = myBookings[0];
+        return new Response(JSON.stringify({
+          error: 'duplicate_pending',
+          existing: { date: other.session_date, time: other.session_time?.slice(0, 5) },
+        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
       const { error: insertError } = await supabase
         .from('guest_bookings')
         .insert({
@@ -712,6 +750,7 @@ Deno.serve(async (req) => {
           trainer_user_id: trainer.trainerId,
           status: 'pending',
         });
+
 
       if (insertError) {
         return new Response(JSON.stringify({ error: insertError.message }), {
