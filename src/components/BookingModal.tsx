@@ -307,14 +307,32 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
           },
         });
         if (error || data?.error) {
-          toast({
-            title: lang === 'en' ? 'Error' : 'Ошибка',
-            description: data?.error || error?.message || 'Unknown error',
-            variant: 'destructive',
-          });
+          const err = data?.error;
+          if (err === 'duplicate_slot' || err === 'duplicate_pending') {
+            const ex = data?.existing;
+            const dateStr = ex ? new Date(`${ex.date}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
+            toast({
+              title: lang === 'en' ? 'You already have a booking' : 'У вас уже есть запись',
+              description: err === 'duplicate_slot'
+                ? (lang === 'en'
+                    ? `This slot (${dateStr} at ${ex?.time}) is already booked under your phone. Please pick another day or time.`
+                    : `Это время (${dateStr} в ${ex?.time}) уже забронировано на ваш номер. Выберите другой день или время.`)
+                : (lang === 'en'
+                    ? `We already have a pending booking on ${dateStr} at ${ex?.time} for your phone. If you want to add another one, please message us on WhatsApp/Telegram.`
+                    : `У нас уже есть запись на ${dateStr} в ${ex?.time} на ваш номер. Чтобы добавить ещё одну, напишите нам в WhatsApp/Telegram.`),
+              variant: 'destructive',
+            });
+          } else {
+            toast({
+              title: lang === 'en' ? 'Error' : 'Ошибка',
+              description: err || error?.message || 'Unknown error',
+              variant: 'destructive',
+            });
+          }
         } else {
           setStep('done');
         }
+
       } catch (e: any) {
         toast({ title: 'Error', description: e.message, variant: 'destructive' });
       }
