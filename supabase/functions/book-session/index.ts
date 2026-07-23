@@ -184,6 +184,23 @@ Deno.serve(async (req) => {
         }
       });
 
+      // Guest bookings also hold a slot (pending or confirmed)
+      const { data: guests } = await supabase
+        .from('guest_bookings')
+        .select('session_time')
+        .eq('session_date', date)
+        .in('status', ['pending', 'confirmed']);
+      (guests || []).forEach((g: any) => {
+        if (g.session_time) {
+          booked.push({
+            start: timeToMinutes(g.session_time.slice(0, 5)),
+            duration: DEFAULT_DURATION,
+          });
+        }
+      });
+
+
+
       return booked;
     };
 
