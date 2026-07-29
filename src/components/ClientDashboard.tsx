@@ -1203,6 +1203,13 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         icon={<History className="w-5 h-5 text-primary" />}
       >
         <HistoryByMonth sessions={pastSessions} lang={lang} />
+        <div className="mt-6">
+          <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-2">
+            {lang === 'en' ? 'Deductions & refunds' : 'Списания и возвраты'}
+          </p>
+          <SessionLedgerHistory userId={user.id} lang={lang} />
+        </div>
+
       </FullscreenModule>
 
 
