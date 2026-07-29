@@ -11,6 +11,7 @@ import BodyMeasurementsView from './BodyMeasurementsView';
 import ClientProgressPhotos from './ClientProgressPhotos';
 import NutritionDiary from './NutritionDiary';
 import TrainerClientAchievements from './TrainerClientAchievements';
+import SessionLedgerHistory from './SessionLedgerHistory';
 
 interface ClientPackage {
   id: string;
@@ -88,6 +89,7 @@ const ClientDetailAccordion = ({
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [moreOpen, setMoreOpen] = useState(false);
   const [quickBodyOpen, setQuickBodyOpen] = useState(false);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
   const [newPkgName, setNewPkgName] = useState('');
   const [newPkgPrice, setNewPkgPrice] = useState('');
   const [resetPw, setResetPw] = useState('');
@@ -455,6 +457,21 @@ const ClientDetailAccordion = ({
                 </button>
               </div>
             </div>
+
+            {/* SESSION LEDGER — full deduction / refund history */}
+            <div className="space-y-2">
+              <button
+                type="button"
+                onClick={() => setLedgerOpen(o => !o)}
+                className="w-full flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
+              >
+                <span>{lang === 'en' ? 'Session history' : 'История списаний'}</span>
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${ledgerOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {ledgerOpen && <SessionLedgerHistory userId={client.user_id} lang={lang === 'en' ? 'en' : 'ru'} />}
+            </div>
+
+
 
             {/* NUTRITION TARGETS — compact */}
             <div className="space-y-2">
