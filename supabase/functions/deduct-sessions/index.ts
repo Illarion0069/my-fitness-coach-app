@@ -9,8 +9,10 @@ type ScheduledSession = {
   id: string;
   user_id: string;
   session_date: string;
+  session_time: string | null;
   is_recurring: boolean;
   recurrence_day: number | null;
+  recurrence_time: string | null;
   recurring_exceptions: string[] | null;
   recurrence_end_date: string | null;
   is_deducted: boolean;
@@ -177,7 +179,7 @@ Deno.serve(async (req) => {
     //    a fresh package gets drained for old missed sessions.
     const { data: oneOffSessions, error: oneOffError } = await supabase
       .from('scheduled_sessions')
-      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,recurrence_end_date,is_deducted,deducted_at')
+      .select('id,user_id,trainer_user_id,session_date,session_time,is_recurring,recurrence_day,recurrence_time,recurring_exceptions,recurrence_end_date,is_deducted,deducted_at')
       .eq('is_recurring', false)
       .eq('is_deducted', false)
       .eq('session_date', todayStr);
@@ -187,7 +189,7 @@ Deno.serve(async (req) => {
     // 2) Recurring sessions: process all and calculate due occurrences up to today
     const { data: recurringSessions, error: recurringError } = await supabase
       .from('scheduled_sessions')
-      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,recurrence_end_date,is_deducted,deducted_at')
+      .select('id,user_id,trainer_user_id,session_date,session_time,is_recurring,recurrence_day,recurrence_time,recurring_exceptions,recurrence_end_date,is_deducted,deducted_at')
       .eq('is_recurring', true);
 
     if (recurringError) console.error('[deduct-sessions] Error fetching recurring:', recurringError.message);
@@ -247,9 +249,13 @@ Deno.serve(async (req) => {
 
     // In-run guard: never deduct more than once per user per date in a single execution
     const reservedKeys = new Set<string>();
+    // Slot guard: one client can only be charged once for the same date+time,
+    // even if several (duplicated) templates point at the same slot.
+    const reservedSlots = new Set<string>();
 
     for (const candidate of candidates) {
       const { session, dueCount, dueDates } = candidate;
+      const slotTime = (session.is_recurring ? session.recurrence_time : session.session_time) || 'no-time';
 
       try {
         let pkg = await getLatestValidPackage(supabase, session.user_id);
@@ -282,6 +288,7 @@ Deno.serve(async (req) => {
         const dueEntries = dueDates.slice(0, toDeductNow).map((date) => ({
           date,
           key: `cron_session_${session.id}_${date}`,
+          slot: `${session.user_id}_${date}_${slotTime}`,
         }));
 
         const idempotencyKeys = dueEntries.map((entry) => entry.key);
@@ -294,7 +301,10 @@ Deno.serve(async (req) => {
 
         const alreadyDone = new Set((existingEntries || []).map(e => e.idempotency_key));
         const newEntries = dueEntries.filter(
-          (entry) => !alreadyDone.has(entry.key) && !reservedKeys.has(entry.key)
+          (entry) =>
+            !alreadyDone.has(entry.key) &&
+            !reservedKeys.has(entry.key) &&
+            !reservedSlots.has(entry.slot)
         );
 
         if (newEntries.length === 0) {
@@ -347,7 +357,7 @@ Deno.serve(async (req) => {
         }
 
         // Reserve keys in this run right after successful package update
-        for (const entry of newEntries) reservedKeys.add(entry.key);
+        for (const entry of newEntries) { reservedKeys.add(entry.key); reservedSlots.add(entry.slot); }
 
         // Write ledger entries
         const ledgerEntries = newEntries.map((entry, i) => ({
@@ -374,7 +384,7 @@ Deno.serve(async (req) => {
             .eq('id', pkg.id)
             .eq('used_sessions', actualNewUsed);
 
-          for (const entry of newEntries) reservedKeys.delete(entry.key);
+          for (const entry of newEntries) { reservedKeys.delete(entry.key); reservedSlots.delete(entry.slot); }
           errors.push(`session ${session.id}: ledger write failed (${ledgerError.message})`);
           continue;
         }
