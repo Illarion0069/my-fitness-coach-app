@@ -11,6 +11,7 @@ import BodyMeasurementsView from './BodyMeasurementsView';
 import ClientProgressPhotos from './ClientProgressPhotos';
 import NutritionDiary from './NutritionDiary';
 import TrainerClientAchievements from './TrainerClientAchievements';
+import SessionLedgerHistory from './SessionLedgerHistory';
 
 interface ClientPackage {
   id: string;
