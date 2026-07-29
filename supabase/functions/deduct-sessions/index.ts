@@ -288,6 +288,7 @@ Deno.serve(async (req) => {
         const dueEntries = dueDates.slice(0, toDeductNow).map((date) => ({
           date,
           key: `cron_session_${session.id}_${date}`,
+          slot: `${session.user_id}_${date}_${slotTime}`,
         }));
 
         const idempotencyKeys = dueEntries.map((entry) => entry.key);
@@ -300,7 +301,10 @@ Deno.serve(async (req) => {
 
         const alreadyDone = new Set((existingEntries || []).map(e => e.idempotency_key));
         const newEntries = dueEntries.filter(
-          (entry) => !alreadyDone.has(entry.key) && !reservedKeys.has(entry.key)
+          (entry) =>
+            !alreadyDone.has(entry.key) &&
+            !reservedKeys.has(entry.key) &&
+            !reservedSlots.has(entry.slot)
         );
 
         if (newEntries.length === 0) {
