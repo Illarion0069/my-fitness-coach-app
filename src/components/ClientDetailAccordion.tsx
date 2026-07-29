@@ -535,14 +535,13 @@ const ClientDetailAccordion = ({
           </div>
         );
 
-      case 'whoop':
-        return <TrainerWhoopWidget userId={client.user_id} lang={lang} />;
+      case 'ledger':
+        return <SessionLedgerHistory userId={client.user_id} lang={lang === 'en' ? 'en' : 'ru'} />;
 
       case 'tests':
         return <ClientTestHistory userId={client.user_id} lang={lang} trainerView />;
 
-      case 'photos':
-        return <ClientProgressPhotos userId={client.user_id} lang={lang} />;
+
 
       case 'nutrition':
         return (
