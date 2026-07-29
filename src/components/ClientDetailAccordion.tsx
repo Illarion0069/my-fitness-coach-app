@@ -51,7 +51,7 @@ interface Props {
   onSendReactivation?: () => void;
 }
 
-type TabId = 'overview' | 'nutrition' | 'schedule' | 'body' | 'photos' | 'whoop' | 'tests' | 'info';
+type TabId = 'overview' | 'nutrition' | 'schedule' | 'body' | 'ledger' | 'tests' | 'info';
 
 // Primary tabs — daily-use for trainer
 const primaryTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
@@ -63,11 +63,11 @@ const primaryTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu:
 // Secondary — hidden under "More"
 const moreTabs: { id: TabId; icon: React.ReactNode; labelEn: string; labelRu: string }[] = [
   { id: 'schedule', icon: <CalendarDays className="w-3.5 h-3.5" />, labelEn: 'Schedule', labelRu: 'Расписание' },
-  { id: 'photos', icon: <Camera className="w-3.5 h-3.5" />, labelEn: 'Photos', labelRu: 'Фото' },
-  { id: 'whoop', icon: <Activity className="w-3.5 h-3.5" />, labelEn: 'Whoop', labelRu: 'Whoop' },
+  { id: 'ledger', icon: <Activity className="w-3.5 h-3.5" />, labelEn: 'Session history', labelRu: 'История списаний' },
   { id: 'tests', icon: <ClipboardCheck className="w-3.5 h-3.5" />, labelEn: 'Tests', labelRu: 'Тесты' },
   { id: 'info', icon: <User className="w-3.5 h-3.5" />, labelEn: 'Account', labelRu: 'Аккаунт' },
 ];
+
 
 const ClientDetailAccordion = ({
   client,
