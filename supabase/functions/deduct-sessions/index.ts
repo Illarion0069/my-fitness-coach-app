@@ -249,9 +249,13 @@ Deno.serve(async (req) => {
 
     // In-run guard: never deduct more than once per user per date in a single execution
     const reservedKeys = new Set<string>();
+    // Slot guard: one client can only be charged once for the same date+time,
+    // even if several (duplicated) templates point at the same slot.
+    const reservedSlots = new Set<string>();
 
     for (const candidate of candidates) {
       const { session, dueCount, dueDates } = candidate;
+      const slotTime = (session.is_recurring ? session.recurrence_time : session.session_time) || 'no-time';
 
       try {
         let pkg = await getLatestValidPackage(supabase, session.user_id);
