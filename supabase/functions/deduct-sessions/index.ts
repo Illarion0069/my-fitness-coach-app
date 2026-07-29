@@ -384,7 +384,7 @@ Deno.serve(async (req) => {
             .eq('id', pkg.id)
             .eq('used_sessions', actualNewUsed);
 
-          for (const entry of newEntries) reservedKeys.delete(entry.key);
+          for (const entry of newEntries) { reservedKeys.delete(entry.key); reservedSlots.delete(entry.slot); }
           errors.push(`session ${session.id}: ledger write failed (${ledgerError.message})`);
           continue;
         }
