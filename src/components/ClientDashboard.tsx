@@ -401,7 +401,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_photos', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
       .subscribe();
 
-      .subscribe();
+
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
