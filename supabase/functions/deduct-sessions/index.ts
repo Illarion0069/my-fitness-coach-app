@@ -9,8 +9,10 @@ type ScheduledSession = {
   id: string;
   user_id: string;
   session_date: string;
+  session_time: string | null;
   is_recurring: boolean;
   recurrence_day: number | null;
+  recurrence_time: string | null;
   recurring_exceptions: string[] | null;
   recurrence_end_date: string | null;
   is_deducted: boolean;
