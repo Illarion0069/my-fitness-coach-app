@@ -1215,15 +1215,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
 
       <FullscreenModule
-        open={photosOpen}
-        onClose={() => setPhotosOpen(false)}
-        title={lang === 'en' ? 'Progress Photos' : 'Фото прогресса'}
-        icon={<Camera className="w-5 h-5 text-primary" />}
-      >
-        <ClientProgressView userId={user.id} lang={lang} />
-      </FullscreenModule>
-
-      <FullscreenModule
         open={testsOpen}
         onClose={() => { setTestsOpen(false); setTestsInitial(null); }}
         title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
@@ -1237,14 +1228,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         />
       </FullscreenModule>
 
-      <FullscreenModule
-        open={whoopOpen}
-        onClose={() => setWhoopOpen(false)}
-        title="Whoop"
-        icon={<Activity className="w-5 h-5 text-green-400" />}
-      >
-        <WhoopWidget />
-      </FullscreenModule>
 
       <FullscreenModule
         open={nutritionOpen}
