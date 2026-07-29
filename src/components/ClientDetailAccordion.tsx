@@ -89,6 +89,7 @@ const ClientDetailAccordion = ({
   const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [moreOpen, setMoreOpen] = useState(false);
   const [quickBodyOpen, setQuickBodyOpen] = useState(false);
+  const [ledgerOpen, setLedgerOpen] = useState(false);
   const [newPkgName, setNewPkgName] = useState('');
   const [newPkgPrice, setNewPkgPrice] = useState('');
   const [resetPw, setResetPw] = useState('');
