@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
     //    a fresh package gets drained for old missed sessions.
     const { data: oneOffSessions, error: oneOffError } = await supabase
       .from('scheduled_sessions')
-      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
+      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,recurrence_end_date,is_deducted,deducted_at')
       .eq('is_recurring', false)
       .eq('is_deducted', false)
       .eq('session_date', todayStr);
@@ -187,7 +187,7 @@ Deno.serve(async (req) => {
     // 2) Recurring sessions: process all and calculate due occurrences up to today
     const { data: recurringSessions, error: recurringError } = await supabase
       .from('scheduled_sessions')
-      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,is_deducted,deducted_at')
+      .select('id,user_id,trainer_user_id,session_date,is_recurring,recurrence_day,recurring_exceptions,recurrence_end_date,is_deducted,deducted_at')
       .eq('is_recurring', true);
 
     if (recurringError) console.error('[deduct-sessions] Error fetching recurring:', recurringError.message);
