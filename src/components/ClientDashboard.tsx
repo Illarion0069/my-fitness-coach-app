@@ -381,21 +381,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       setTodayKcal(computeNutritionTotals(data).calories);
     };
 
-    const fetchPhotos = async () => {
-      const { count } = await supabase
-        .from('client_progress_photos').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      setPhotosCount(count || 0);
-    };
-
-    const fetchWhoop = async () => {
-      const { data } = await supabase
-        .from('whoop_metrics').select('recovery_score').eq('user_id', user.id)
-        .not('recovery_score', 'is', null)
-        .order('metric_date', { ascending: false }).limit(1).maybeSingle();
-      setWhoopRecovery(data?.recovery_score != null ? Math.round(Number(data.recovery_score)) : null);
-    };
-
     const fetchTier = async () => {
       const { data } = await supabase
         .from('client_achievements').select('achievement_key')
@@ -405,7 +390,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     };
 
     loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
-    fetchTodayKcal(); fetchPhotos(); fetchWhoop(); fetchTier();
+    fetchTodayKcal(); fetchTier();
 
     const channel = supabase
       .channel('dashboard-sessions')
@@ -414,7 +399,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, fetchPkg)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_photos', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_progress_photos', filter: `user_id=eq.${user.id}` }, fetchPhotos)
+      .subscribe();
+
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
