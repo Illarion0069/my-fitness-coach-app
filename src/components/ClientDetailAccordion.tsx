@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, Camera, UtensilsCrossed, Phone, Mail, User, Archive, ArchiveRestore, Sparkles, MoreHorizontal, ChevronDown } from 'lucide-react';
+import { Package, CalendarDays, Ruler, Activity, ClipboardCheck, Send, Plus, Minus, Trash2, Save, KeyRound, Loader2, UtensilsCrossed, Phone, Mail, User, Archive, ArchiveRestore, Sparkles, MoreHorizontal, ChevronDown } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import ClientSchedule from './ClientSchedule';
-import TrainerWhoopWidget from './TrainerWhoopWidget';
 import ClientTestHistory from './ClientTestHistory';
 import BodyMeasurementsInput from './BodyMeasurementsInput';
 import BodyMeasurementsView from './BodyMeasurementsView';
-import ClientProgressPhotos from './ClientProgressPhotos';
 import NutritionDiary from './NutritionDiary';
 import TrainerClientAchievements from './TrainerClientAchievements';
 import SessionLedgerHistory from './SessionLedgerHistory';
