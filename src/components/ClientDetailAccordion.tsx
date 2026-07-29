@@ -468,7 +468,7 @@ const ClientDetailAccordion = ({
                 <span>{lang === 'en' ? 'Session history' : 'История списаний'}</span>
                 <ChevronDown className={`w-3.5 h-3.5 transition-transform ${ledgerOpen ? 'rotate-180' : ''}`} />
               </button>
-              {ledgerOpen && <SessionLedgerHistory userId={client.user_id} lang={lang} />}
+              {ledgerOpen && <SessionLedgerHistory userId={client.user_id} lang={lang === 'en' ? 'en' : 'ru'} />}
             </div>
 
 
