@@ -11,10 +11,8 @@ import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import WhoopWidget from './WhoopWidget';
 import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
-import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import LanguageSwitch from './LanguageSwitch';
@@ -243,18 +241,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
-  const [photosCount, setPhotosCount] = useState<number>(0);
-  const [whoopRecovery, setWhoopRecovery] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
   // Fullscreen module states
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
-  const [whoopOpen, setWhoopOpen] = useState(false);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
