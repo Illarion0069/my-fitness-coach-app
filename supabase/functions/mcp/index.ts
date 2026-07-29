@@ -72,8 +72,7 @@ var list_clients_default = defineTool({
     if (trainer) {
       const tables = [
         { table: "scheduled_sessions", column: "user_id" },
-        { table: "body_measurements", column: "user_id" },
-        { table: "client_progress_photos", column: "user_id" }
+        { table: "body_measurements", column: "user_id" }
       ];
       for (const { table, column } of tables) {
         const { data: data2, error: error2 } = await supabase.from(table).select(column).eq("trainer_user_id", userId);
