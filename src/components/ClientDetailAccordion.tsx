@@ -456,18 +456,6 @@ const ClientDetailAccordion = ({
               </div>
             </div>
 
-            {/* SESSION LEDGER — full deduction / refund history */}
-            <div className="space-y-2">
-              <button
-                type="button"
-                onClick={() => setLedgerOpen(o => !o)}
-                className="w-full flex items-center justify-between text-[9px] font-bold text-muted-foreground uppercase tracking-wider hover:text-foreground transition-colors"
-              >
-                <span>{lang === 'en' ? 'Session history' : 'История списаний'}</span>
-                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${ledgerOpen ? 'rotate-180' : ''}`} />
-              </button>
-              {ledgerOpen && <SessionLedgerHistory userId={client.user_id} lang={lang === 'en' ? 'en' : 'ru'} />}
-            </div>
 
 
 
