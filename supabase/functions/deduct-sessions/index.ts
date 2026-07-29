@@ -357,7 +357,7 @@ Deno.serve(async (req) => {
         }
 
         // Reserve keys in this run right after successful package update
-        for (const entry of newEntries) reservedKeys.add(entry.key);
+        for (const entry of newEntries) { reservedKeys.add(entry.key); reservedSlots.add(entry.slot); }
 
         // Write ledger entries
         const ledgerEntries = newEntries.map((entry, i) => ({
