@@ -11,10 +11,8 @@ import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
-import WhoopWidget from './WhoopWidget';
 import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
-import ClientProgressView from './ClientProgressView';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import LanguageSwitch from './LanguageSwitch';
@@ -243,18 +241,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
-  const [photosCount, setPhotosCount] = useState<number>(0);
-  const [whoopRecovery, setWhoopRecovery] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
   // Fullscreen module states
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [photosOpen, setPhotosOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
-  const [whoopOpen, setWhoopOpen] = useState(false);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
@@ -381,21 +375,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       setTodayKcal(computeNutritionTotals(data).calories);
     };
 
-    const fetchPhotos = async () => {
-      const { count } = await supabase
-        .from('client_progress_photos').select('id', { count: 'exact', head: true })
-        .eq('user_id', user.id);
-      setPhotosCount(count || 0);
-    };
-
-    const fetchWhoop = async () => {
-      const { data } = await supabase
-        .from('whoop_metrics').select('recovery_score').eq('user_id', user.id)
-        .not('recovery_score', 'is', null)
-        .order('metric_date', { ascending: false }).limit(1).maybeSingle();
-      setWhoopRecovery(data?.recovery_score != null ? Math.round(Number(data.recovery_score)) : null);
-    };
-
     const fetchTier = async () => {
       const { data } = await supabase
         .from('client_achievements').select('achievement_key')
@@ -405,7 +384,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     };
 
     loadAvatar(); fetchPkg(); fetchSessions(); fetchPast(); fetchMeasurements(); fetchTests();
-    fetchTodayKcal(); fetchPhotos(); fetchWhoop(); fetchTier();
+    fetchTodayKcal(); fetchTier();
 
     const channel = supabase
       .channel('dashboard-sessions')
@@ -414,8 +393,9 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       .on('postgres_changes', { event: '*', schema: 'public', table: 'client_packages', filter: `user_id=eq.${user.id}` }, fetchPkg)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'nutrition_logs', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'food_photos', filter: `user_id=eq.${user.id}` }, fetchTodayKcal)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'client_progress_photos', filter: `user_id=eq.${user.id}` }, fetchPhotos)
       .subscribe();
+
+
 
     return () => { supabase.removeChannel(channel); };
   }, [user]);
@@ -990,44 +970,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
             {/* Photos and History moved out of modules grid — history lives inside the balance card */}
 
-            {/* ═════ Whoop — wide bento ═════ */}
-            <motion.button
-              onClick={() => setWhoopOpen(true)}
-              whileTap={{ scale: 0.98 }}
-              className="col-span-2 relative overflow-hidden bg-gradient-to-br from-green-500/10 via-card to-card border border-green-500/25 rounded-2xl p-4 text-left hover:border-green-500/50 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
-                  <Activity className="w-5 h-5 text-green-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-green-400/80 uppercase tracking-wider">Whoop</p>
-                  {whoopRecovery != null ? (
-                    <>
-                      <div className="flex items-baseline gap-1.5 mt-0.5">
-                        <span className="text-2xl font-extrabold font-heading text-foreground">{whoopRecovery}</span>
-                        <span className="text-xs text-muted-foreground">% {lang === 'en' ? 'recovery' : 'восстановление'}</span>
-                      </div>
-                      <div className="mt-2 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${whoopRecovery}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className={`h-full rounded-full ${
-                            whoopRecovery >= 67 ? 'bg-green-400' : whoopRecovery >= 34 ? 'bg-yellow-400' : 'bg-red-400'
-                          }`}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-[12px] text-muted-foreground mt-1">
-                      {lang === 'en' ? 'Connect your Whoop band' : 'Подключите Whoop'}
-                    </p>
-                  )}
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-              </div>
-            </motion.button>
           </div>
         </motion.div>
 
@@ -1215,15 +1157,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
 
       <FullscreenModule
-        open={photosOpen}
-        onClose={() => setPhotosOpen(false)}
-        title={lang === 'en' ? 'Progress Photos' : 'Фото прогресса'}
-        icon={<Camera className="w-5 h-5 text-primary" />}
-      >
-        <ClientProgressView userId={user.id} lang={lang} />
-      </FullscreenModule>
-
-      <FullscreenModule
         open={testsOpen}
         onClose={() => { setTestsOpen(false); setTestsInitial(null); }}
         title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
@@ -1237,14 +1170,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         />
       </FullscreenModule>
 
-      <FullscreenModule
-        open={whoopOpen}
-        onClose={() => setWhoopOpen(false)}
-        title="Whoop"
-        icon={<Activity className="w-5 h-5 text-green-400" />}
-      >
-        <WhoopWidget />
-      </FullscreenModule>
 
       <FullscreenModule
         open={nutritionOpen}

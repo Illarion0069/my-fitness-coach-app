@@ -15,15 +15,6 @@ verify_jwt = false
 [functions.deduct-sessions]
 verify_jwt = false
 
-[functions.whoop-auth]
-verify_jwt = false
-
-[functions.whoop-sync]
-verify_jwt = false
-
-[functions.whoop-cron]
-verify_jwt = false
-
 [functions.book-session]
 verify_jwt = false
 
