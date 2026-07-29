@@ -990,44 +990,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
             {/* Photos and History moved out of modules grid — history lives inside the balance card */}
 
-            {/* ═════ Whoop — wide bento ═════ */}
-            <motion.button
-              onClick={() => setWhoopOpen(true)}
-              whileTap={{ scale: 0.98 }}
-              className="col-span-2 relative overflow-hidden bg-gradient-to-br from-green-500/10 via-card to-card border border-green-500/25 rounded-2xl p-4 text-left hover:border-green-500/50 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-11 h-11 rounded-xl bg-green-500/20 flex items-center justify-center shrink-0">
-                  <Activity className="w-5 h-5 text-green-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-green-400/80 uppercase tracking-wider">Whoop</p>
-                  {whoopRecovery != null ? (
-                    <>
-                      <div className="flex items-baseline gap-1.5 mt-0.5">
-                        <span className="text-2xl font-extrabold font-heading text-foreground">{whoopRecovery}</span>
-                        <span className="text-xs text-muted-foreground">% {lang === 'en' ? 'recovery' : 'восстановление'}</span>
-                      </div>
-                      <div className="mt-2 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${whoopRecovery}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className={`h-full rounded-full ${
-                            whoopRecovery >= 67 ? 'bg-green-400' : whoopRecovery >= 34 ? 'bg-yellow-400' : 'bg-red-400'
-                          }`}
-                        />
-                      </div>
-                    </>
-                  ) : (
-                    <p className="text-[12px] text-muted-foreground mt-1">
-                      {lang === 'en' ? 'Connect your Whoop band' : 'Подключите Whoop'}
-                    </p>
-                  )}
-                </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
-              </div>
-            </motion.button>
           </div>
         </motion.div>
 
