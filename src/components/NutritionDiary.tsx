@@ -450,8 +450,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setAnalyzing(false);
   }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
 
-  // Auto-trigger analysis whenever the food set changes — every photo or manual entry retriggers.
+  // Auto-trigger analysis when the day changes MEANINGFULLY.
+  // A tiny addition (e.g. one cucumber) should not rewrite the recommendations —
+  // only a new meal type or a noticeable calorie change triggers a fresh analysis.
   const autoAnalyzeKeyRef = useRef<string>('');
+  const lastAnalyzedRef = useRef<{ kcal: number; meals: string } | null>(null);
   useEffect(() => {
     if (isReadOnly || userId) return; // only for the owner's own diary
     if (analyzing) return;
@@ -467,11 +470,38 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     autoAnalyzeKeyRef.current = key;
     const fb = (log?.ai_feedback || '') as string;
     const analysisFailed = /Не удалось обработать|Failed to process/i.test(fb);
+
+    const currentKcal = computeNutritionTotals({
+      ai_analysis: log?.ai_analysis,
+      manual_entries: manual,
+    }).calories;
+    const mealsKey = Array.from(new Set([
+      ...manual.map((e: any) => String(e.meal_type || 'snack')),
+      ...photos.map((p: any) => String(p.meal_type || 'snack')),
+    ])).sort().join(',');
+
     // On the very first render: skip only if already analyzed successfully and nothing new to do.
-    if (firstRun && log?.ai_score != null && !analysisFailed) return;
-    const t = setTimeout(() => { handleAnalyze({ silent: true }); }, 1200);
+    if (firstRun && log?.ai_score != null && !analysisFailed) {
+      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      return;
+    }
+
+    const prev = lastAnalyzedRef.current;
+    if (prev && !analysisFailed) {
+      const kcalDelta = Math.abs(currentKcal - prev.kcal);
+      const threshold = Math.max(MIN_KCAL_DELTA, prev.kcal * MIN_KCAL_DELTA_RATIO);
+      const sameMeals = prev.meals === mealsKey;
+      // Minor tweak inside an already-analyzed meal → keep existing recommendations.
+      if (sameMeals && kcalDelta < threshold) return;
+    }
+
+    const t = setTimeout(() => {
+      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      handleAnalyze({ silent: true });
+    }, 1200);
     return () => clearTimeout(t);
-  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, analyzing, analysisCount, date, isReadOnly, userId, handleAnalyze]);
+  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, handleAnalyze]);
+
 
 
 
