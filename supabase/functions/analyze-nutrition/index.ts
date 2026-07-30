@@ -318,7 +318,7 @@ serve(async (req) => {
 
     const currentCount = (currentLog?.ai_analysis as Record<string, unknown>)?.analysis_count as number || 0;
     if (currentCount >= MAX_ANALYSES_PER_DAY) {
-      return jsonResponse({ error: "Analysis limit reached (max 3 per day)" }, 429);
+      return jsonResponse({ error: `Analysis limit reached (max ${MAX_ANALYSES_PER_DAY} per day)` }, 429);
     }
 
     // --- Fetch food photos and manual entries ---
