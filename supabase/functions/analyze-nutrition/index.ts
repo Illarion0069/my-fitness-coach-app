@@ -603,6 +603,9 @@ serve(async (req) => {
     analysis.included_manual_ids = manualEntries.map((e) => e.id).filter(Boolean);
     analysis.totals_source = "manual_entries";
     analysis.mode = mode;
+    analysis.next_meal = nextMeal;
+    analysis.upcoming_meals = upcomingMeals;
+    analysis.remaining_kcal = remainingKcal;
     analysis.generated_at_local = `${localDateStr} ${localTimeStr}`;
 
     // --- Server-side name enforcement: guarantee summary starts with the client's name ---
