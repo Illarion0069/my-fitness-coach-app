@@ -65,7 +65,11 @@ interface Props {
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 const MAX_PHOTOS_PER_DAY = 8;
-const MAX_ANALYSES_PER_DAY = 3;
+const MAX_ANALYSES_PER_DAY = 12;
+// A re-analysis is only worth it if the day changed meaningfully:
+// a new meal type appeared, or calories moved by more than these thresholds.
+const MIN_KCAL_DELTA = 80;
+const MIN_KCAL_DELTA_RATIO = 0.12;
 const VALID_MEAL_TYPES: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack'];
 
 const MEAL_TYPES: { key: MealType; labelRu: string; labelEn: string; emoji: string; icon: string }[] = [
