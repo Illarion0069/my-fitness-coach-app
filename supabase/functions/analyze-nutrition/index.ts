@@ -453,12 +453,40 @@ serve(async (req) => {
     const isEndOfDay = !isToday || hasDinner || localHour >= 21;
     const mode = isEndOfDay ? "end_of_day" : "midday";
 
+    // --- Meal-by-meal progress tracking (what was eaten, what is still ahead) ---
+    const MEAL_ORDER = ["breakfast", "lunch", "dinner"] as const;
+    const kcalByMeal: Record<string, number> = {};
+    const proteinByMeal: Record<string, number> = {};
+    for (const e of manualEntries) {
+      const mt = String((e.meal_type as string) || "snack").toLowerCase();
+      kcalByMeal[mt] = (kcalByMeal[mt] || 0) + (Number(e.calories) || 0);
+      proteinByMeal[mt] = (proteinByMeal[mt] || 0) + (Number(e.protein_g) || 0);
+    }
+    const consumedKcal = Object.values(kcalByMeal).reduce((a, b) => a + b, 0);
+    const consumedProtein = Object.values(proteinByMeal).reduce((a, b) => a + b, 0);
+    const calorieGoal = Number((clientProfile as any)?.daily_calorie_goal) || 0;
+    const remainingKcal = calorieGoal > 0 ? Math.round(calorieGoal - consumedKcal) : null;
+
+    // Which main meals are still ahead, based on the local hour (breakfast<11, lunch<16, dinner<22)
+    const mealWindowEnd: Record<string, number> = { breakfast: 11, lunch: 16, dinner: 22 };
+    const upcomingMeals = isToday
+      ? MEAL_ORDER.filter((m) => !mealTypesLogged.has(m) && localHour < mealWindowEnd[m])
+      : [];
+    const nextMeal = upcomingMeals[0] || (isEndOfDay ? "tomorrow_breakfast" : "snack");
+    const mealProgressText = MEAL_ORDER.map((m) => {
+      const logged = mealTypesLogged.has(m);
+      return `- ${m}: ${logged ? `LOGGED (${Math.round(kcalByMeal[m] || 0)} kcal, ${Math.round(proteinByMeal[m] || 0)} g protein)` : (localHour >= mealWindowEnd[m] && isToday ? "MISSED (window closed)" : "NOT YET EATEN")}`;
+    }).join("\n") + `\n- snack: ${mealTypesLogged.has("snack") ? `LOGGED (${Math.round(kcalByMeal["snack"] || 0)} kcal)` : "none"}`;
+
+    const mealContextBlock = `\n\nDAY PROGRESS TRACKING (authoritative — use this, do not guess):\n${mealProgressText}\nCONSUMED_SO_FAR: ${Math.round(consumedKcal)} kcal, ${Math.round(consumedProtein)} g protein\nDAILY_CALORIE_GOAL: ${calorieGoal > 0 ? calorieGoal : "unknown"}\nREMAINING_KCAL_BUDGET: ${remainingKcal !== null ? remainingKcal : "unknown"}\nUPCOMING_MEALS_TODAY: ${upcomingMeals.length ? upcomingMeals.join(", ") : "none"}\nNEXT_MEAL_TO_ADVISE_ON: ${nextMeal}\n\nHARD RULE — recommendations must target NEXT_MEAL_TO_ADVISE_ON:\n- Every tip in boost_potential.tips must be about ${nextMeal === "tomorrow_breakfast" ? "TOMORROW's meals (start with breakfast)" : `the upcoming ${nextMeal} (and later meals today)`}, with concrete foods and grams that fit REMAINING_KCAL_BUDGET (if known) and close the protein/vegetable gap listed above.\n- NEVER advise changing a meal that is already LOGGED or MISSED — those are in the past. Comment on them only retrospectively, in past tense.\n- Explicitly name the meal in the tip ("На ужин — ...", "Tomorrow at breakfast — ...").\n- If REMAINING_KCAL_BUDGET is known and small (<250), advise a light protein+vegetable option; if the client is far below budget, advise a full balanced plate, never "eat less".`;
+
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${mealContextBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
+
 
     if (photos) {
       for (const photo of photos) {
