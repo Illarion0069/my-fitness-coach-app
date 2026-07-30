@@ -382,7 +382,7 @@ serve(async (req) => {
 
     const { data: clientProfile, error: profileErr } = await supabase
       .from("profiles")
-      .select("full_name, email, nutrition_goal")
+      .select("full_name, email, nutrition_goal, daily_calorie_goal")
       .eq("user_id", user_id)
       .maybeSingle();
 
