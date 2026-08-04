@@ -317,6 +317,43 @@ const AdminSection = () => {
     [clients]
   );
 
+  const exportCsv = () => {
+    const rows = filteredClientOrder.map(userId => {
+      const c = clients.find(cl => cl.user_id === userId)!;
+      const pkgs = packages[userId] || [];
+      const active = pkgs.find(p => p.is_active);
+      const remaining = active ? active.total_sessions - active.used_sessions : 0;
+      return {
+        name: c.full_name || '',
+        email: c.email || '',
+        phone: c.phone || '',
+        status: c.archived_at ? 'archived' : 'active',
+        package: active ? active.package_name : '',
+        remaining: active ? String(remaining) : '',
+      };
+    });
+
+    const headers = ['Name', 'Email', 'Phone', 'Status', 'Package', 'Remaining'];
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = '\uFEFF' + [
+      headers.join(','),
+      ...rows.map(r => [r.name, r.email, r.phone, r.status, r.package, r.remaining].map(esc).join(',')),
+    ].join('\n');
+
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clients-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: lang === 'en' ? 'Exported' : 'Выгружено',
+      description: lang === 'en' ? `${rows.length} clients` : `Клиентов: ${rows.length}`,
+    });
+  };
+
+
 
   const sendNotification = async (client: Profile, message: string) => {
     const { data } = await supabase.functions.invoke('send-telegram', {
