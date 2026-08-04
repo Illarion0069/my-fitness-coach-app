@@ -96,10 +96,30 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
     });
   };
 
-  const handleSaveSession = () => {
+  const handleSaveSession = async () => {
+    if (saving) return;
+    let clientId = showNewClient ? '' : selectedClientId;
+    let manualName = '';
+
+    if (showNewClient) {
+      if (newClientMode === 'account' && onCreateClient) {
+        setSaving(true);
+        const created = await onCreateClient({
+          full_name: newName.trim(),
+          phone: newPhone.trim(),
+          email: newEmail.trim(),
+        });
+        setSaving(false);
+        if (!created?.user_id) return;
+        clientId = created.user_id;
+      } else {
+        manualName = newName.trim();
+      }
+    }
+
     onAddSession({
-      clientId: useManualName ? '' : selectedClientId,
-      manualName: useManualName ? manualName.trim() : '',
+      clientId,
+      manualName,
       time: sessionTime,
       travelMinutes,
       isRecurring: sessionRecurring,
@@ -107,7 +127,8 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
     });
   };
 
-  const canSaveSession = useManualName ? manualName.trim().length > 0 : selectedClientId.length > 0;
+  const canSaveSession = showNewClient ? newName.trim().length > 1 : selectedClientId.length > 0;
+
 
   const dayNames = lang === 'en'
     ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
