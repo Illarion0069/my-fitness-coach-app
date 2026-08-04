@@ -32,7 +32,13 @@ interface Props {
     isRecurring: boolean;
     recurrenceDay: number | null;
   }) => void;
+  onCreateClient?: (data: {
+    full_name: string;
+    phone: string;
+    email: string;
+  }) => Promise<{ user_id: string } | null>;
 }
+
 
 const BLOCK_TYPES = [
   { type: 'session', icon: CalIcon, labelRu: 'Тренировка', labelEn: 'Session', color: 'bg-primary/15 text-primary' },
