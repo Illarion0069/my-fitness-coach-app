@@ -816,6 +816,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           onClose={() => setShowBlockModal(null)}
           onSaveBlock={saveBlock}
           onAddSession={onAddSessionFromModal}
+          onCreateClient={createOfflineClient}
+
         />
       )}
 
