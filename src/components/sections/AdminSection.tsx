@@ -596,11 +596,21 @@ const AdminSection = () => {
                 )}
               </button>
             </div>
-            {(searchQuery || filterActive !== 'all' || archiveView === 'archived') && (
-              <p className="text-[10px] text-muted-foreground">
-                {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              {(searchQuery || filterActive !== 'all' || archiveView === 'archived') && (
+                <p className="text-[10px] text-muted-foreground">
+                  {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
+                </p>
+              )}
+              <button
+                onClick={exportCsv}
+                className="ml-auto flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                {lang === 'en' ? 'Export CSV' : 'Выгрузить CSV'}
+              </button>
+            </div>
+
           </div>
 
           <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-1.5">
