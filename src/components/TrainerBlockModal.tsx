@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Ban, Calendar as CalIcon, RotateCcw, Car, UserPlus } from 'lucide-react';
+import { X, Ban, Calendar as CalIcon, RotateCcw, Car, UserPlus, Search } from 'lucide-react';
 
 interface ClientProfile {
   user_id: string;
@@ -32,7 +32,13 @@ interface Props {
     isRecurring: boolean;
     recurrenceDay: number | null;
   }) => void;
+  onCreateClient?: (data: {
+    full_name: string;
+    phone: string;
+    email: string;
+  }) => Promise<{ user_id: string } | null>;
 }
+
 
 const BLOCK_TYPES = [
   { type: 'session', icon: CalIcon, labelRu: 'Тренировка', labelEn: 'Session', color: 'bg-primary/15 text-primary' },
@@ -41,17 +47,27 @@ const BLOCK_TYPES = [
   { type: 'personal', icon: CalIcon, labelRu: 'Личное событие', labelEn: 'Personal event', color: 'bg-blue-500/15 text-blue-600' },
 ];
 
-const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, onClose, onSaveBlock, onAddSession }: Props) => {
+const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, onClose, onSaveBlock, onAddSession, onCreateClient }: Props) => {
   const [step, setStep] = useState<'choose' | 'session' | 'block'>('choose');
   const [blockType, setBlockType] = useState('block');
   const defaultTime = initialTime || `${String(hour).padStart(2, '0')}:00`;
 
   const [selectedClientId, setSelectedClientId] = useState('');
-  const [manualName, setManualName] = useState('');
-  const [useManualName, setUseManualName] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newClientMode, setNewClientMode] = useState<'manual' | 'account'>('manual');
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [saving, setSaving] = useState(false);
   const [sessionTime, setSessionTime] = useState(defaultTime);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [sessionRecurring, setSessionRecurring] = useState(false);
+
+  const filteredClients = clients.filter(c =>
+    c.full_name.toLowerCase().includes(clientSearch.trim().toLowerCase())
+  );
+
 
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState(defaultTime);
@@ -86,10 +102,30 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
     });
   };
 
-  const handleSaveSession = () => {
+  const handleSaveSession = async () => {
+    if (saving) return;
+    let clientId = showNewClient ? '' : selectedClientId;
+    let manualName = '';
+
+    if (showNewClient) {
+      if (newClientMode === 'account' && onCreateClient) {
+        setSaving(true);
+        const created = await onCreateClient({
+          full_name: newName.trim(),
+          phone: newPhone.trim(),
+          email: newEmail.trim(),
+        });
+        setSaving(false);
+        if (!created?.user_id) return;
+        clientId = created.user_id;
+      } else {
+        manualName = newName.trim();
+      }
+    }
+
     onAddSession({
-      clientId: useManualName ? '' : selectedClientId,
-      manualName: useManualName ? manualName.trim() : '',
+      clientId,
+      manualName,
       time: sessionTime,
       travelMinutes,
       isRecurring: sessionRecurring,
@@ -97,7 +133,8 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
     });
   };
 
-  const canSaveSession = useManualName ? manualName.trim().length > 0 : selectedClientId.length > 0;
+  const canSaveSession = showNewClient ? newName.trim().length > 1 : selectedClientId.length > 0;
+
 
   const dayNames = lang === 'en'
     ? ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -147,44 +184,110 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
               <button onClick={onClose} className="text-muted-foreground"><X className="w-4 h-4" /></button>
             </div>
 
-            {!useManualName ? (
-              <div className="space-y-1.5">
-                <select
-                  value={selectedClientId}
-                  onChange={e => setSelectedClientId(e.target.value)}
-                  className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary/50"
-                >
-                  <option value="">{lang === 'en' ? 'Select client' : 'Выберите клиента'}</option>
-                  {clients.map(c => (
-                    <option key={c.user_id} value={c.user_id}>{c.full_name}</option>
+            {!showNewClient ? (
+              <div className="space-y-2">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={clientSearch}
+                    onChange={e => { setClientSearch(e.target.value); setSelectedClientId(''); }}
+                    placeholder={lang === 'en' ? 'Search client…' : 'Поиск клиента…'}
+                    className="w-full bg-secondary/50 border border-border/50 rounded-lg pl-8 pr-3 py-2.5 text-sm focus:outline-none focus:border-primary/50"
+                  />
+                </div>
+                <div className="max-h-40 overflow-y-auto rounded-lg border border-border/40 divide-y divide-border/30" onTouchMove={e => e.stopPropagation()}>
+                  {filteredClients.length === 0 && (
+                    <p className="text-[11px] text-muted-foreground px-3 py-3 text-center">
+                      {lang === 'en' ? 'No clients found' : 'Клиенты не найдены'}
+                    </p>
+                  )}
+                  {filteredClients.map(c => (
+                    <button
+                      key={c.user_id}
+                      onClick={() => setSelectedClientId(c.user_id)}
+                      className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                        selectedClientId === c.user_id ? 'bg-primary/15 text-primary font-semibold' : 'hover:bg-secondary/50'
+                      }`}
+                    >
+                      {c.full_name}
+                    </button>
                   ))}
-                </select>
+                </div>
                 <button
-                  onClick={() => setUseManualName(true)}
-                  className="flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                  onClick={() => setShowNewClient(true)}
+                  className="flex items-center gap-1.5 text-[11px] text-primary font-semibold hover:opacity-80 transition-opacity"
                 >
                   <UserPlus className="w-3.5 h-3.5" />
-                  {lang === 'en' ? 'Enter name manually' : 'Ввести имя вручную'}
+                  {lang === 'en' ? 'New client (not in list)' : 'Новый клиент (нет в списке)'}
                 </button>
               </div>
             ) : (
-              <div className="space-y-1.5">
+              <div className="space-y-2 rounded-xl bg-secondary/30 border border-border/40 p-3">
                 <input
                   type="text"
-                  value={manualName}
-                  onChange={e => setManualName(e.target.value)}
-                  placeholder={lang === 'en' ? 'Client name' : 'Имя клиента'}
+                  value={newName}
+                  onChange={e => setNewName(e.target.value)}
+                  placeholder={lang === 'en' ? 'Client name *' : 'Имя клиента *'}
                   autoFocus
-                  className="w-full bg-secondary/50 border border-border/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary/50"
+                  className="w-full bg-background/60 border border-border/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary/50"
                 />
+                <div className="flex gap-1.5">
+                  {(['manual', 'account'] as const).map(m => (
+                    <button
+                      key={m}
+                      onClick={() => setNewClientMode(m)}
+                      className={`flex-1 text-[11px] font-semibold py-2 rounded-lg border transition-colors ${
+                        newClientMode === m
+                          ? 'bg-primary/15 text-primary border-primary/30'
+                          : 'bg-secondary/50 text-muted-foreground border-transparent'
+                      }`}
+                    >
+                      {m === 'manual'
+                        ? (lang === 'en' ? 'Name only' : 'Только имя')
+                        : (lang === 'en' ? 'Create account' : 'Создать аккаунт')}
+                    </button>
+                  ))}
+                </div>
+                {newClientMode === 'account' && (
+                  <>
+                    <input
+                      type="tel"
+                      value={newPhone}
+                      onChange={e => setNewPhone(e.target.value)}
+                      placeholder={lang === 'en' ? 'Phone (optional)' : 'Телефон (необязательно)'}
+                      className="w-full bg-background/60 border border-border/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary/50"
+                    />
+                    <input
+                      type="email"
+                      value={newEmail}
+                      onChange={e => setNewEmail(e.target.value)}
+                      placeholder={lang === 'en' ? 'Email (optional)' : 'Email (необязательно)'}
+                      className="w-full bg-background/60 border border-border/50 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-primary/50"
+                    />
+                    <p className="text-[10px] text-muted-foreground leading-snug">
+                      {lang === 'en'
+                        ? 'A trackable client card is created. No package and no sessions are added — add a package later if needed.'
+                        : 'Создастся карточка клиента для учёта. Пакет и занятия не начисляются — абонемент добавите позже при необходимости.'}
+                    </p>
+                  </>
+                )}
+                {newClientMode === 'manual' && (
+                  <p className="text-[10px] text-muted-foreground leading-snug">
+                    {lang === 'en'
+                      ? 'Just a name in the calendar — no account, no package, no deductions.'
+                      : 'Просто имя в календаре — без аккаунта, без пакета и без списаний.'}
+                  </p>
+                )}
                 <button
-                  onClick={() => { setUseManualName(false); setManualName(''); }}
+                  onClick={() => { setShowNewClient(false); setNewName(''); setNewPhone(''); setNewEmail(''); }}
                   className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
                 >
                   ← {lang === 'en' ? 'Pick from list' : 'Выбрать из списка'}
                 </button>
               </div>
             )}
+
 
             <div className="space-y-1">
               <label className="text-[10px] text-muted-foreground font-medium">
@@ -248,11 +351,14 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
 
             <button
               onClick={handleSaveSession}
-              disabled={!canSaveSession}
+              disabled={!canSaveSession || saving}
               className="w-full gradient-primary text-primary-foreground text-sm font-bold py-3 rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
-              {lang === 'en' ? 'Add session' : 'Добавить тренировку'}
+              {saving
+                ? (lang === 'en' ? 'Creating…' : 'Создаём…')
+                : (lang === 'en' ? 'Add session' : 'Добавить тренировку')}
             </button>
+
           </div>
         )}
 

@@ -6,6 +6,11 @@ verify_jwt = false
 [functions.invite-client]
 verify_jwt = false
 
+[functions.create-offline-client]
+verify_jwt = false
+
+
+
 [functions.telegram-webhook]
 verify_jwt = false
 

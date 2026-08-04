@@ -340,7 +340,46 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
     toast({ title: lang === 'en' ? 'Block added' : 'Блок добавлен' });
   };
 
+  const createOfflineClient = async ({
+    full_name,
+    phone,
+    email,
+  }: {
+    full_name: string;
+    phone: string;
+    email: string;
+  }): Promise<{ user_id: string } | null> => {
+    const res = await supabase.functions.invoke('create-offline-client', {
+      body: { full_name, phone, email, preferred_language: lang },
+    });
+
+    let errorMsg = (res.data as any)?.error || '';
+    if (!errorMsg && res.error) {
+      try {
+        const ctx = (res.error as any).context;
+        if (ctx && typeof ctx.json === 'function') {
+          const body = await ctx.json();
+          errorMsg = body?.error || '';
+        }
+      } catch {}
+      if (!errorMsg) errorMsg = res.error.message;
+    }
+
+    if (errorMsg || !(res.data as any)?.user_id) {
+      toast({
+        title: errorMsg || (lang === 'en' ? 'Failed to create client' : 'Не удалось создать клиента'),
+        variant: 'destructive',
+      });
+      return null;
+    }
+
+    onSessionChange?.();
+    toast({ title: lang === 'en' ? 'Client created' : 'Клиент создан' });
+    return { user_id: (res.data as any).user_id };
+  };
+
   const onAddSessionFromModal = async ({
+
     clientId,
     manualName,
     time,
@@ -816,6 +855,8 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
           onClose={() => setShowBlockModal(null)}
           onSaveBlock={saveBlock}
           onAddSession={onAddSessionFromModal}
+          onCreateClient={createOfflineClient}
+
         />
       )}
 
