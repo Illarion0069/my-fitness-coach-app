@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3 } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
