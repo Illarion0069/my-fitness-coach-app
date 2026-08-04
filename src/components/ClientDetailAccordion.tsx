@@ -98,6 +98,41 @@ const ClientDetailAccordion = ({
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [nutritionGoal, setNutritionGoal] = useState<'fat_loss' | 'muscle_gain'>('fat_loss');
   const [savingNutritionGoal, setSavingNutritionGoal] = useState(false);
+  const [editName, setEditName] = useState(client.full_name || '');
+  const [editPhone, setEditPhone] = useState(client.phone || '');
+  const [editEmail, setEditEmail] = useState(client.email || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    setEditName(client.full_name || '');
+    setEditPhone(client.phone || '');
+    setEditEmail(client.email || '');
+  }, [client.user_id, client.full_name, client.phone, client.email]);
+
+  const profileDirty =
+    editName.trim() !== (client.full_name || '') ||
+    editPhone.trim() !== (client.phone || '') ||
+    editEmail.trim() !== (client.email || '');
+
+  const saveProfile = async () => {
+    if (!editName.trim()) {
+      toast({ title: lang === 'en' ? 'Name is required' : 'Укажите имя', variant: 'destructive' });
+      return;
+    }
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: editName.trim(), phone: editPhone.trim(), email: editEmail.trim() } as any)
+      .eq('user_id', client.user_id);
+    setSavingProfile(false);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Save failed' : 'Не удалось сохранить', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onSessionChange();
+    toast({ title: lang === 'en' ? 'Profile saved' : 'Анкета сохранена' });
+  };
+
 
   useEffect(() => {
     supabase.from('profiles').select('daily_calorie_goal, nutrition_goal').eq('user_id', client.user_id).maybeSingle()
@@ -212,37 +247,47 @@ const ClientDetailAccordion = ({
       case 'info':
         return (
           <div className="space-y-3">
-            {/* Contact info */}
+            {/* Editable contact info */}
             <div className="space-y-2">
-              <div className="flex items-center gap-2 text-xs text-foreground">
-                <Mail className="w-3.5 h-3.5 text-muted-foreground" />
-                {client.email}
+              <div className="flex gap-2 items-center">
+                <User className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder={lang === 'en' ? 'Full name' : 'Имя и фамилия'}
+                  className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
+                />
               </div>
-              {client.phone ? (
-                <div className="flex items-center gap-2 text-xs text-foreground">
-                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                  {client.phone}
-                </div>
-              ) : (
-                <div className="flex gap-2 items-center">
-                  <Phone className="w-3.5 h-3.5 text-muted-foreground" />
-                  <input
-                    type="tel"
-                    placeholder={lang === 'en' ? 'Enter phone' : 'Введите телефон'}
-                    className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
-                    onKeyDown={async (e) => {
-                      if (e.key === 'Enter') {
-                        const val = (e.target as HTMLInputElement).value.trim();
-                        if (!val) return;
-                        await supabase.from('profiles').update({ phone: val }).eq('user_id', client.user_id);
-                        onSessionChange();
-                        toast({ title: lang === 'en' ? 'Phone saved' : 'Телефон сохранён' });
-                      }
-                    }}
-                  />
-                </div>
-              )}
+              <div className="flex gap-2 items-center">
+                <Phone className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <input
+                  type="tel"
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder={lang === 'en' ? 'Phone' : 'Телефон'}
+                  className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
+                />
+              </div>
+              <div className="flex gap-2 items-center">
+                <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                <input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  placeholder="email"
+                  className="flex-1 bg-secondary/50 border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
+                />
+              </div>
+              <button
+                onClick={saveProfile}
+                disabled={!profileDirty || savingProfile}
+                className="w-full flex items-center justify-center gap-1.5 bg-primary text-primary-foreground text-xs font-bold py-2 rounded-lg disabled:opacity-40 transition-opacity"
+              >
+                {savingProfile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                {lang === 'en' ? 'Save' : 'Сохранить'}
+              </button>
             </div>
+
 
             {/* Reset password */}
             {!showResetPw ? (
