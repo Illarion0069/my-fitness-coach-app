@@ -351,11 +351,14 @@ const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, 
 
             <button
               onClick={handleSaveSession}
-              disabled={!canSaveSession}
+              disabled={!canSaveSession || saving}
               className="w-full gradient-primary text-primary-foreground text-sm font-bold py-3 rounded-xl disabled:opacity-50 active:scale-[0.98] transition-transform"
             >
-              {lang === 'en' ? 'Add session' : 'Добавить тренировку'}
+              {saving
+                ? (lang === 'en' ? 'Creating…' : 'Создаём…')
+                : (lang === 'en' ? 'Add session' : 'Добавить тренировку')}
             </button>
+
           </div>
         )}
 
