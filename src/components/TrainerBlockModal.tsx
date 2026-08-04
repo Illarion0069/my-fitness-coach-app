@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Ban, Calendar as CalIcon, RotateCcw, Car, UserPlus } from 'lucide-react';
+import { X, Ban, Calendar as CalIcon, RotateCcw, Car, UserPlus, Search } from 'lucide-react';
 
 interface ClientProfile {
   user_id: string;
