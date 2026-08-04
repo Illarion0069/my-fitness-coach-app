@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3 } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -317,6 +317,43 @@ const AdminSection = () => {
     [clients]
   );
 
+  const exportCsv = () => {
+    const rows = filteredClientOrder.map(userId => {
+      const c = clients.find(cl => cl.user_id === userId)!;
+      const pkgs = packages[userId] || [];
+      const active = pkgs.find(p => p.is_active);
+      const remaining = active ? active.total_sessions - active.used_sessions : 0;
+      return {
+        name: c.full_name || '',
+        email: c.email || '',
+        phone: c.phone || '',
+        status: c.archived_at ? 'archived' : 'active',
+        package: active ? active.package_name : '',
+        remaining: active ? String(remaining) : '',
+      };
+    });
+
+    const headers = ['Name', 'Email', 'Phone', 'Status', 'Package', 'Remaining'];
+    const esc = (v: string) => `"${v.replace(/"/g, '""')}"`;
+    const csv = '\uFEFF' + [
+      headers.join(','),
+      ...rows.map(r => [r.name, r.email, r.phone, r.status, r.package, r.remaining].map(esc).join(',')),
+    ].join('\n');
+
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clients-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: lang === 'en' ? 'Exported' : 'Выгружено',
+      description: lang === 'en' ? `${rows.length} clients` : `Клиентов: ${rows.length}`,
+    });
+  };
+
+
 
   const sendNotification = async (client: Profile, message: string) => {
     const { data } = await supabase.functions.invoke('send-telegram', {
@@ -559,11 +596,21 @@ const AdminSection = () => {
                 )}
               </button>
             </div>
-            {(searchQuery || filterActive !== 'all' || archiveView === 'archived') && (
-              <p className="text-[10px] text-muted-foreground">
-                {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
-              </p>
-            )}
+            <div className="flex items-center gap-2">
+              {(searchQuery || filterActive !== 'all' || archiveView === 'archived') && (
+                <p className="text-[10px] text-muted-foreground">
+                  {lang === 'en' ? `${filteredClientOrder.length} found` : `Найдено: ${filteredClientOrder.length}`}
+                </p>
+              )}
+              <button
+                onClick={exportCsv}
+                className="ml-auto flex items-center gap-1 text-[11px] font-bold px-2.5 py-1.5 rounded-lg bg-secondary/50 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <Download className="w-3 h-3" />
+                {lang === 'en' ? 'Export CSV' : 'Выгрузить CSV'}
+              </button>
+            </div>
+
           </div>
 
           <Reorder.Group axis="y" values={clientOrder} onReorder={handleReorder} className="space-y-1.5">
