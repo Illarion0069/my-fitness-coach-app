@@ -41,17 +41,27 @@ const BLOCK_TYPES = [
   { type: 'personal', icon: CalIcon, labelRu: 'Личное событие', labelEn: 'Personal event', color: 'bg-blue-500/15 text-blue-600' },
 ];
 
-const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, onClose, onSaveBlock, onAddSession }: Props) => {
+const TrainerBlockModal = ({ lang, hour, initialTime, date, dayOfWeek, clients, onClose, onSaveBlock, onAddSession, onCreateClient }: Props) => {
   const [step, setStep] = useState<'choose' | 'session' | 'block'>('choose');
   const [blockType, setBlockType] = useState('block');
   const defaultTime = initialTime || `${String(hour).padStart(2, '0')}:00`;
 
   const [selectedClientId, setSelectedClientId] = useState('');
-  const [manualName, setManualName] = useState('');
-  const [useManualName, setUseManualName] = useState(false);
+  const [clientSearch, setClientSearch] = useState('');
+  const [showNewClient, setShowNewClient] = useState(false);
+  const [newClientMode, setNewClientMode] = useState<'manual' | 'account'>('manual');
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [saving, setSaving] = useState(false);
   const [sessionTime, setSessionTime] = useState(defaultTime);
   const [travelMinutes, setTravelMinutes] = useState(0);
   const [sessionRecurring, setSessionRecurring] = useState(false);
+
+  const filteredClients = clients.filter(c =>
+    c.full_name.toLowerCase().includes(clientSearch.trim().toLowerCase())
+  );
+
 
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState(defaultTime);
