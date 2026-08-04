@@ -98,6 +98,41 @@ const ClientDetailAccordion = ({
   const [loadingGoal, setLoadingGoal] = useState(true);
   const [nutritionGoal, setNutritionGoal] = useState<'fat_loss' | 'muscle_gain'>('fat_loss');
   const [savingNutritionGoal, setSavingNutritionGoal] = useState(false);
+  const [editName, setEditName] = useState(client.full_name || '');
+  const [editPhone, setEditPhone] = useState(client.phone || '');
+  const [editEmail, setEditEmail] = useState(client.email || '');
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  useEffect(() => {
+    setEditName(client.full_name || '');
+    setEditPhone(client.phone || '');
+    setEditEmail(client.email || '');
+  }, [client.user_id, client.full_name, client.phone, client.email]);
+
+  const profileDirty =
+    editName.trim() !== (client.full_name || '') ||
+    editPhone.trim() !== (client.phone || '') ||
+    editEmail.trim() !== (client.email || '');
+
+  const saveProfile = async () => {
+    if (!editName.trim()) {
+      toast({ title: lang === 'en' ? 'Name is required' : 'Укажите имя', variant: 'destructive' });
+      return;
+    }
+    setSavingProfile(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ full_name: editName.trim(), phone: editPhone.trim(), email: editEmail.trim() } as any)
+      .eq('user_id', client.user_id);
+    setSavingProfile(false);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Save failed' : 'Не удалось сохранить', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onSessionChange();
+    toast({ title: lang === 'en' ? 'Profile saved' : 'Анкета сохранена' });
+  };
+
 
   useEffect(() => {
     supabase.from('profiles').select('daily_calorie_goal, nutrition_goal').eq('user_id', client.user_id).maybeSingle()
