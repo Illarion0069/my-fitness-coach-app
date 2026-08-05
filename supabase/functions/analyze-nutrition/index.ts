@@ -483,7 +483,7 @@ serve(async (req) => {
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${mealContextBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${mealContextBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
@@ -609,35 +609,47 @@ serve(async (req) => {
     analysis.generated_at_local = `${localDateStr} ${localTimeStr}`;
 
     // --- Server-side name enforcement: guarantee summary starts with the client's name ---
-    // Basic Latin->Cyrillic transliteration so we can detect e.g. "Illarion" written as "Илларион"
-    const toCyrillic = (s: string): string => {
-      const map: Record<string, string> = {
-        a: "а", b: "б", v: "в", g: "г", d: "д", e: "е", z: "з", i: "и", y: "й",
-        k: "к", l: "л", m: "м", n: "н", o: "о", p: "п", r: "р", s: "с", t: "т",
-        u: "у", f: "ф", h: "х", c: "ц",
-      };
-      return s.toLowerCase().replace(/[a-z]/g, (ch) => map[ch] ?? ch);
+    // Script-agnostic comparison: transliterate BOTH the name and the text to a latin skeleton,
+    // so "Родион" matches "Rodion" and vice versa.
+    const CYR_TO_LAT: Record<string, string> = {
+      а: "a", б: "b", в: "v", г: "g", д: "d", е: "e", ё: "e", ж: "zh", з: "z", и: "i",
+      й: "i", к: "k", л: "l", м: "m", н: "n", о: "o", п: "p", р: "r", с: "s", т: "t",
+      у: "u", ф: "f", х: "h", ц: "c", ч: "ch", ш: "sh", щ: "sh", ъ: "", ы: "i", ь: "",
+      э: "e", ю: "yu", я: "ya", і: "i", ї: "i", є: "e", ґ: "g",
     };
-    const ensureNamePrefix = (text: string, name: string): { text: string; injected: boolean } => {
+    const latinSkeleton = (s: string): string =>
+      s.toLowerCase()
+        .replace(/[\u0400-\u04FF\u0450-\u045F]/g, (ch) => CYR_TO_LAT[ch] ?? ch)
+        .replace(/kh/g, "h")
+        .replace(/y/g, "i")
+        .replace(/[^a-z]/g, "");
+
+    // Latin spelling of the name, used when injecting into an English summary
+    const toLatinName = (s: string): string => {
+      const t = s.toLowerCase().replace(/[\u0400-\u04FF]/g, (ch) => CYR_TO_LAT[ch] ?? ch);
+      return t ? t.charAt(0).toUpperCase() + t.slice(1) : t;
+    };
+
+    const ensureNamePrefix = (text: string, name: string, lang: "ru" | "en"): { text: string; injected: boolean } => {
       if (!text || !name) return { text, injected: false };
       const trimmed = text.trim();
-      const head = trimmed.slice(0, 30).toLowerCase();
-      const variants = Array.from(new Set([name.toLowerCase(), toCyrillic(name)].filter(Boolean)));
-      for (const v of variants) {
-        if (head.includes(v)) return { text: trimmed, injected: false };
-      }
-      return { text: `${name}, ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`, injected: true };
+      const headSkeleton = latinSkeleton(trimmed.slice(0, 30));
+      const nameSkeleton = latinSkeleton(name);
+      if (nameSkeleton && headSkeleton.includes(nameSkeleton)) return { text: trimmed, injected: false };
+      const displayName = lang === "en" ? toLatinName(name) : name;
+      return { text: `${displayName}, ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`, injected: true };
     };
 
     const summaryRuOrig = String(analysis.summary_ru || "");
     const summaryEnOrig = String(analysis.summary_en || "");
-    const ruRes = ensureNamePrefix(summaryRuOrig, firstName);
-    const enRes = ensureNamePrefix(summaryEnOrig, firstName);
+    const ruRes = ensureNamePrefix(summaryRuOrig, firstName, "ru");
+    const enRes = ensureNamePrefix(summaryEnOrig, firstName, "en");
     analysis.summary_ru = ruRes.text;
     analysis.summary_en = enRes.text;
     const nameInjectedRu = ruRes.injected;
     const nameInjectedEn = enRes.injected;
     const nameInjected = nameInjectedRu || nameInjectedEn;
+
     // Alert only when name is missing in the UI-language summary (the one the client actually sees)
     const nameMissingInClientFacing = !nameFallbackUsed && (uiLang === "en" ? nameInjectedEn : nameInjectedRu);
     const nameUsedInSummary = !nameFallbackUsed && !nameInjected;
