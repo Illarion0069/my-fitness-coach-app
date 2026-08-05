@@ -640,17 +640,68 @@ serve(async (req) => {
       return { text: `${displayName}, ${trimmed.charAt(0).toLowerCase()}${trimmed.slice(1)}`, injected: true };
     };
 
+    const hasName = (text: string, name: string): boolean => {
+      const nameSkeleton = latinSkeleton(name);
+      if (!nameSkeleton || !text) return false;
+      return latinSkeleton(text.trim().slice(0, 30)).includes(nameSkeleton);
+    };
+
+    // Ask the AI to rewrite a summary so it addresses the client by name (script-correct)
+    const regenerateSummary = async (text: string, name: string, lang: "ru" | "en"): Promise<string | null> => {
+      try {
+        const displayName = lang === "en" ? toLatinName(name) : name;
+        const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            max_tokens: 800,
+            messages: [
+              {
+                role: "system",
+                content: `Rewrite the nutrition coach summary so it starts by addressing the client by name "${displayName}". Keep the SAME language (${lang === "en" ? "English, Latin script" : "Русский, кириллица"}), the same meaning, facts, numbers and tone. Do not add new advice. Return ONLY the rewritten text, no quotes, no markdown.`,
+              },
+              { role: "user", content: text },
+            ],
+          }),
+        });
+        if (!res.ok) return null;
+        const j = await res.json();
+        const out = String(j?.choices?.[0]?.message?.content || "").trim().replace(/^["'`]+|["'`]+$/g, "");
+        if (!out) return null;
+        return hasName(out, name) ? out : null;
+      } catch (e) {
+        console.error("[analyze-nutrition][NAME] regeneration failed:", e);
+        return null;
+      }
+    };
+
     const summaryRuOrig = String(analysis.summary_ru || "");
     const summaryEnOrig = String(analysis.summary_en || "");
-    const ruRes = ensureNamePrefix(summaryRuOrig, firstName, "ru");
-    const enRes = ensureNamePrefix(summaryEnOrig, firstName, "en");
+
+    let regenerated = false;
+    // Client-facing summary first: try regeneration before falling back to raw injection
+    const clientLang: "ru" | "en" = uiLang === "en" ? "en" : "ru";
+    const clientOrig = clientLang === "en" ? summaryEnOrig : summaryRuOrig;
+    if (!nameFallbackUsed && clientOrig && !hasName(clientOrig, firstName)) {
+      const fixed = await regenerateSummary(clientOrig, firstName, clientLang);
+      if (fixed) {
+        regenerated = true;
+        if (clientLang === "en") analysis.summary_en = fixed;
+        else analysis.summary_ru = fixed;
+        console.log(`[analyze-nutrition][NAME] ${clientLang.toUpperCase()} summary regenerated with name "${firstName}"`);
+      }
+    }
+
+    const ruRes = ensureNamePrefix(String(analysis.summary_ru || summaryRuOrig), firstName, "ru");
+    const enRes = ensureNamePrefix(String(analysis.summary_en || summaryEnOrig), firstName, "en");
     analysis.summary_ru = ruRes.text;
     analysis.summary_en = enRes.text;
     const nameInjectedRu = ruRes.injected;
     const nameInjectedEn = enRes.injected;
     const nameInjected = nameInjectedRu || nameInjectedEn;
 
-    // Alert only when name is missing in the UI-language summary (the one the client actually sees)
+    // Alert only when the client-facing summary STILL lacks the name after regeneration
     const nameMissingInClientFacing = !nameFallbackUsed && (uiLang === "en" ? nameInjectedEn : nameInjectedRu);
     const nameUsedInSummary = !nameFallbackUsed && !nameInjected;
 
@@ -663,8 +714,10 @@ serve(async (req) => {
       fallback_used: nameFallbackUsed,
       ai_used_name: nameUsedInSummary,
       server_injected: nameInjected,
+      regenerated,
       full_name: fullName,
     };
+
     const summaryRuStr = String(analysis.summary_ru || "");
 
     // --- Save to DB ---
