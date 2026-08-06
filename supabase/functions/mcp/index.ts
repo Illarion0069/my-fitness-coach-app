@@ -306,15 +306,101 @@ var list_body_measurements_default = defineTool5({
   }
 });
 
-// src/lib/mcp/index.ts
+// src/lib/mcp/tools/get-available-slots.ts
+import { defineTool as defineTool6 } from "npm:@lovable.dev/mcp-js@0.22.2";
+import { z as z6 } from "npm:zod@^4.4.3";
 var projectRef = "yzzgkjwyhnvlyqldvzxf";
+var get_available_slots_default = defineTool6({
+  name: "get_available_slots",
+  title: "Get available training slots",
+  description: "Get available training time slots for a given date.",
+  inputSchema: {
+    date: z6.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Date in YYYY-MM-DD format.")
+  },
+  annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
+  handler: async ({ date }, ctx) => {
+    if (!requireAuth(ctx)) return notAuthenticatedResponse();
+    const res = await fetch(`https://${projectRef}.supabase.co/functions/v1/book-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${ctx.getToken()}` },
+      body: JSON.stringify({ action: "getSlots", date })
+    });
+    const data = await res.json();
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: data
+    };
+  }
+});
+
+// src/lib/mcp/tools/book-client-session.ts
+import { defineTool as defineTool7 } from "npm:@lovable.dev/mcp-js@0.22.2";
+import { z as z7 } from "npm:zod@^4.4.3";
+var projectRef2 = "yzzgkjwyhnvlyqldvzxf";
+var book_client_session_default = defineTool7({
+  name: "book_client_session",
+  title: "Book a session for a client",
+  description: "Book a training session for a specific client. Trainer only.",
+  inputSchema: {
+    client_user_id: z7.string().uuid().describe("User ID of the client to book for."),
+    date: z7.string().regex(/^\d{4}-\d{2}-\d{2}$/).describe("Date in YYYY-MM-DD format."),
+    time: z7.string().regex(/^\d{2}:\d{2}$/).optional().describe("Time in HH:MM format.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: false, openWorldHint: false },
+  handler: async ({ client_user_id, date, time }, ctx) => {
+    if (!requireAuth(ctx)) return notAuthenticatedResponse();
+    if (!await isTrainer(ctx)) return forbiddenResponse();
+    const res = await fetch(`https://${projectRef2}.supabase.co/functions/v1/book-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${ctx.getToken()}` },
+      body: JSON.stringify({ action: "trainerBook", client_user_id, date, time })
+    });
+    const data = await res.json();
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: data,
+      isError: !!data.error
+    };
+  }
+});
+
+// src/lib/mcp/tools/cancel-session.ts
+import { defineTool as defineTool8 } from "npm:@lovable.dev/mcp-js@0.22.2";
+import { z as z8 } from "npm:zod@^4.4.3";
+var projectRef3 = "yzzgkjwyhnvlyqldvzxf";
+var cancel_session_default = defineTool8({
+  name: "cancel_session",
+  title: "Cancel a session",
+  description: "Cancel a scheduled session by id. Trainers may cancel any of their clients' sessions; clients may cancel only their own (enforced server-side by the book-session function).",
+  inputSchema: {
+    session_id: z8.string().uuid().describe("ID of the session to cancel.")
+  },
+  annotations: { readOnlyHint: false, idempotentHint: true, openWorldHint: false },
+  handler: async ({ session_id }, ctx) => {
+    if (!requireAuth(ctx)) return notAuthenticatedResponse();
+    const res = await fetch(`https://${projectRef3}.supabase.co/functions/v1/book-session`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${ctx.getToken()}` },
+      body: JSON.stringify({ action: "cancel", session_id })
+    });
+    const data = await res.json();
+    return {
+      content: [{ type: "text", text: JSON.stringify(data) }],
+      structuredContent: data,
+      isError: !!data.error
+    };
+  }
+});
+
+// src/lib/mcp/index.ts
+var projectRef4 = "yzzgkjwyhnvlyqldvzxf";
 var mcp_default = defineMcp({
   name: "limassol-fitness-mcp",
   title: "Limassol Fitness",
-  version: "0.1.0",
-  instructions: "Read-only access to the Limassol Fitness trainer dashboard. Trainers can list their clients, view scheduled sessions, and read client summaries including packages, nutrition, body measurements, and achievements. Clients can read only their own data. All access is scoped by Supabase RLS and user roles.",
+  version: "0.2.0",
+  instructions: "Access to the Limassol Fitness trainer dashboard. Trainers can list their clients, view scheduled sessions, read client summaries (packages, nutrition, body measurements, achievements), check available slots, book sessions for clients, and cancel sessions. Clients can read and manage only their own data. All access is scoped by Supabase RLS and user roles.",
   auth: auth.oauth.issuer({
-    issuer: `https://${projectRef}.supabase.co/auth/v1`,
+    issuer: `https://${projectRef4}.supabase.co/auth/v1`,
     acceptedAudiences: "authenticated"
   }),
   tools: [
@@ -322,7 +408,10 @@ var mcp_default = defineMcp({
     list_sessions_default,
     get_client_summary_default,
     list_nutrition_logs_default,
-    list_body_measurements_default
+    list_body_measurements_default,
+    get_available_slots_default,
+    book_client_session_default,
+    cancel_session_default
   ]
 });
 
