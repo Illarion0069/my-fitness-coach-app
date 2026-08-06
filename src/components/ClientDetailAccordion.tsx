@@ -323,32 +323,8 @@ const ClientDetailAccordion = ({
               </div>
             )}
 
-            {/* Notifications */}
-            <div className="pt-2 space-y-2">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {lang === 'en' ? 'Notifications' : 'Уведомления'}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={onSendRemaining}
-                  className="flex-1 bg-primary/10 border border-primary/30 text-primary text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1 hover:bg-primary/20 transition-colors"
-                >
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Remaining' : 'Остаток'}
-                </button>
-                <button
-                  onClick={onSendRenewal}
-                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
-                >
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
-                </button>
-              </div>
-              <button
-                onClick={onSendGymRenewal}
-                className="w-full bg-secondary/50 border border-border/50 text-foreground text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
-              >
-                <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
-              </button>
-            </div>
+            {/* Notifications moved to the "Package" tab to avoid accidental sends */}
+
 
             {/* Archive status banner (when archived) */}
             {client.archived_at && (
@@ -464,10 +440,14 @@ const ClientDetailAccordion = ({
                       className="flex-1 bg-secondary text-foreground text-xs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors">
                       <Minus className="w-4 h-4" />
                     </button>
-                    <button onClick={onSendRemaining}
-                      className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors">
-                      <Send className="w-3 h-3" /> {lang === 'en' ? 'Send' : 'Отчёт'}
-                    </button>
+                    <ConfirmSendButton
+                      onSend={onSendRemaining}
+                      lang={lang}
+                      label={lang === 'en' ? 'Send' : 'Отчёт'}
+                      confirmLabel={lang === 'en' ? 'Send "remaining sessions"?' : 'Отправить «остаток занятий»?'}
+                      className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors"
+                    />
+
                   </div>
                 </div>
               ) : (
@@ -489,15 +469,22 @@ const ClientDetailAccordion = ({
                 </button>
               </div>
               <div className="flex gap-1.5">
-                <button onClick={onSendRenewal}
-                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors">
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
-                </button>
-                <button onClick={onSendGymRenewal}
-                  className="flex-1 bg-secondary/50 border border-border/50 text-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors">
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
-                </button>
+                <ConfirmSendButton
+                  onSend={onSendRenewal}
+                  lang={lang}
+                  label={lang === 'en' ? 'Renewal' : 'Продление'}
+                  confirmLabel={lang === 'en' ? 'Send package renewal offer?' : 'Отправить продление абонемента?'}
+                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
+                />
+                <ConfirmSendButton
+                  onSend={onSendGymRenewal}
+                  lang={lang}
+                  label={lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
+                  confirmLabel={lang === 'en' ? 'Send gym renewal 150€?' : 'Отправить продление зала 150€?'}
+                  className="flex-1 bg-secondary/50 border border-border/50 text-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
+                />
               </div>
+
             </div>
 
 
@@ -672,7 +659,63 @@ const ClientDetailAccordion = ({
   );
 };
 
+const ConfirmSendButton = ({
+  onSend,
+  lang,
+  label,
+  confirmLabel,
+  className,
+}: {
+  onSend: () => void | Promise<void>;
+  lang: string;
+  label: string;
+  confirmLabel: string;
+  className: string;
+}) => {
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="flex-1 space-y-1">
+        <p className="text-[10px] text-center text-muted-foreground font-semibold">{confirmLabel}</p>
+        <div className="flex gap-1.5">
+          <button
+            disabled={sending}
+            onClick={async () => {
+              setSending(true);
+              try {
+                await onSend();
+              } finally {
+                setSending(false);
+                setConfirming(false);
+              }
+            }}
+            className="flex-1 gradient-primary text-primary-foreground text-[10px] font-bold py-1.5 rounded-lg disabled:opacity-50"
+          >
+            {sending ? (lang === 'en' ? 'Sending…' : 'Отправка…') : lang === 'en' ? 'Send' : 'Отправить'}
+          </button>
+          <button
+            disabled={sending}
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-[10px] font-bold py-1.5 rounded-lg disabled:opacity-50"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setConfirming(true)} className={className}>
+      <Send className="w-3 h-3" /> {label}
+    </button>
+  );
+};
+
 const DeleteClientButton = ({ onDeleteClient, lang }: { onDeleteClient: () => void; lang: string }) => {
+
   const [confirming, setConfirming] = useState(false);
 
   if (confirming) {
