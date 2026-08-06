@@ -659,7 +659,63 @@ const ClientDetailAccordion = ({
   );
 };
 
+const ConfirmSendButton = ({
+  onSend,
+  lang,
+  label,
+  confirmLabel,
+  className,
+}: {
+  onSend: () => void | Promise<void>;
+  lang: string;
+  label: string;
+  confirmLabel: string;
+  className: string;
+}) => {
+  const [confirming, setConfirming] = useState(false);
+  const [sending, setSending] = useState(false);
+
+  if (confirming) {
+    return (
+      <div className="flex-1 space-y-1">
+        <p className="text-[10px] text-center text-muted-foreground font-semibold">{confirmLabel}</p>
+        <div className="flex gap-1.5">
+          <button
+            disabled={sending}
+            onClick={async () => {
+              setSending(true);
+              try {
+                await onSend();
+              } finally {
+                setSending(false);
+                setConfirming(false);
+              }
+            }}
+            className="flex-1 gradient-primary text-primary-foreground text-[10px] font-bold py-1.5 rounded-lg disabled:opacity-50"
+          >
+            {sending ? (lang === 'en' ? 'Sending…' : 'Отправка…') : lang === 'en' ? 'Send' : 'Отправить'}
+          </button>
+          <button
+            disabled={sending}
+            onClick={() => setConfirming(false)}
+            className="flex-1 bg-secondary text-foreground text-[10px] font-bold py-1.5 rounded-lg disabled:opacity-50"
+          >
+            {lang === 'en' ? 'Cancel' : 'Отмена'}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <button onClick={() => setConfirming(true)} className={className}>
+      <Send className="w-3 h-3" /> {label}
+    </button>
+  );
+};
+
 const DeleteClientButton = ({ onDeleteClient, lang }: { onDeleteClient: () => void; lang: string }) => {
+
   const [confirming, setConfirming] = useState(false);
 
   if (confirming) {
