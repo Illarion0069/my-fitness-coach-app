@@ -469,15 +469,22 @@ const ClientDetailAccordion = ({
                 </button>
               </div>
               <div className="flex gap-1.5">
-                <button onClick={onSendRenewal}
-                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors">
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
-                </button>
-                <button onClick={onSendGymRenewal}
-                  className="flex-1 bg-secondary/50 border border-border/50 text-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors">
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
-                </button>
+                <ConfirmSendButton
+                  onSend={onSendRenewal}
+                  lang={lang}
+                  label={lang === 'en' ? 'Renewal' : 'Продление'}
+                  confirmLabel={lang === 'en' ? 'Send package renewal offer?' : 'Отправить продление абонемента?'}
+                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
+                />
+                <ConfirmSendButton
+                  onSend={onSendGymRenewal}
+                  lang={lang}
+                  label={lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
+                  confirmLabel={lang === 'en' ? 'Send gym renewal 150€?' : 'Отправить продление зала 150€?'}
+                  className="flex-1 bg-secondary/50 border border-border/50 text-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
+                />
               </div>
+
             </div>
 
 
