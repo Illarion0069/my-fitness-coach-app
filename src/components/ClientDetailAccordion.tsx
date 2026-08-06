@@ -440,10 +440,14 @@ const ClientDetailAccordion = ({
                       className="flex-1 bg-secondary text-foreground text-xs font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors">
                       <Minus className="w-4 h-4" />
                     </button>
-                    <button onClick={onSendRemaining}
-                      className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors">
-                      <Send className="w-3 h-3" /> {lang === 'en' ? 'Send' : 'Отчёт'}
-                    </button>
+                    <ConfirmSendButton
+                      onSend={onSendRemaining}
+                      lang={lang}
+                      label={lang === 'en' ? 'Send' : 'Отчёт'}
+                      confirmLabel={lang === 'en' ? 'Send "remaining sessions"?' : 'Отправить «остаток занятий»?'}
+                      className="bg-primary/10 border border-primary/30 text-primary text-[10px] font-bold px-2.5 py-1.5 rounded-lg flex items-center gap-1 hover:bg-primary/20 transition-colors"
+                    />
+
                   </div>
                 </div>
               ) : (
