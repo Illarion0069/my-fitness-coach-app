@@ -254,7 +254,7 @@ const AppContent = () => {
         </div>
       )}
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
-      {activeSection !== 'admin' && <ChatAssistant />}
+      {/* {activeSection !== 'admin' && <ChatAssistant />} */}
 
 
       {optimisticIsTrainer && (
