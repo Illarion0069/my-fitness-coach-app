@@ -5,7 +5,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')!;
+const ANTHROPIC_API_KEY = (Deno.env.get('ANTHROPIC_API_KEY') ?? '').replace(/[^\x21-\x7e]/g, '');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 
 const SYSTEM_PROMPT = `You are the booking assistant for Limassol Fitness, a personal training studio in Limassol, Cyprus run by trainer Illarion Ientin (certified EQF 3 & 4). Reply in the same language the user writes in (English or Russian).
