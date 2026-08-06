@@ -323,32 +323,8 @@ const ClientDetailAccordion = ({
               </div>
             )}
 
-            {/* Notifications */}
-            <div className="pt-2 space-y-2">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                {lang === 'en' ? 'Notifications' : 'Уведомления'}
-              </p>
-              <div className="flex gap-2">
-                <button
-                  onClick={onSendRemaining}
-                  className="flex-1 bg-primary/10 border border-primary/30 text-primary text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1 hover:bg-primary/20 transition-colors"
-                >
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Remaining' : 'Остаток'}
-                </button>
-                <button
-                  onClick={onSendRenewal}
-                  className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
-                >
-                  <Send className="w-3 h-3" /> {lang === 'en' ? 'Renewal' : 'Продление'}
-                </button>
-              </div>
-              <button
-                onClick={onSendGymRenewal}
-                className="w-full bg-secondary/50 border border-border/50 text-foreground text-[11px] font-bold py-2 rounded-xl flex items-center justify-center gap-1.5 hover:bg-secondary/80 transition-colors"
-              >
-                <Send className="w-3 h-3" /> {lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
-              </button>
-            </div>
+            {/* Notifications moved to the "Package" tab to avoid accidental sends */}
+
 
             {/* Archive status banner (when archived) */}
             {client.archived_at && (
