@@ -376,11 +376,11 @@ const AdminSection = () => {
   };
 
   const sendRenewalNotification = (client: Profile) => {
-    return sendNotification(client, `🔄 <b>Limassol Fitness</b>\n\n${client.full_name}, пора продлить абонемент!\n\n📦 Пакеты:\n• 8 занятий — 750€\n• 12 занятий — 1030€\n• 20 занятий — 1599€\n\nОплата: <a href="https://revolut.me/illarion">Revolut</a>\nНапишите тренеру для продления! 💪`);
-  };
-
-  const sendGymRenewalNotification = (client: Profile) => {
-    return sendNotification(client, `🏋️ <b>Limassol Fitness</b>\n\n${client.full_name}, напоминаем о продлении абонемента в зал!\n\n💳 Стоимость: <b>150€/мес</b>\n\nОплата: <a href="https://revolut.me/illarion">Revolut</a>`);
+    const clientLang = ((client as any).preferred_language === 'en' ? 'en' : 'ru') as 'en' | 'ru';
+    const message = clientLang === 'en'
+      ? `🔄 <b>Limassol Fitness</b>\n\n${client.full_name}, time to renew:\n\n📦 Training: 8 — 750€ · 12 — 1030€ · 20 — 1599€\n🏋️ Gym membership: 150€/month\n\n💳 <a href="https://revolut.me/illarion">Pay via Revolut</a>`
+      : `🔄 <b>Limassol Fitness</b>\n\n${client.full_name}, пора продлить:\n\n📦 Тренировки: 8 — 750€ · 12 — 1030€ · 20 — 1599€\n🏋️ Абонемент в зал: 150€/мес\n\n💳 <a href="https://revolut.me/illarion">Оплатить в Revolut</a>`;
+    return sendNotification(client, message);
   };
 
   const inviteClient = async () => {
