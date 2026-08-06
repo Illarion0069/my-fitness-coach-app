@@ -42,7 +42,6 @@ interface Props {
   onCreatePackage: (userId: string, sessions: number, pricePaid: number | null) => void;
   onSendRemaining: () => void;
   onSendRenewal: () => void;
-  onSendGymRenewal: () => void;
   onDeleteClient?: () => void;
   onArchiveClient?: () => void;
   onUnarchiveClient?: () => void;
@@ -77,7 +76,6 @@ const ClientDetailAccordion = ({
   onCreatePackage,
   onSendRemaining,
   onSendRenewal,
-  onSendGymRenewal,
   onDeleteClient,
   onArchiveClient,
   onUnarchiveClient,
@@ -473,15 +471,8 @@ const ClientDetailAccordion = ({
                   onSend={onSendRenewal}
                   lang={lang}
                   label={lang === 'en' ? 'Renewal' : 'Продление'}
-                  confirmLabel={lang === 'en' ? 'Send package renewal offer?' : 'Отправить продление абонемента?'}
+                  confirmLabel={lang === 'en' ? 'Send renewal (training + gym)?' : 'Отправить продление (тренировки + зал)?'}
                   className="flex-1 bg-accent/10 border border-accent/30 text-accent-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-accent/20 transition-colors"
-                />
-                <ConfirmSendButton
-                  onSend={onSendGymRenewal}
-                  lang={lang}
-                  label={lang === 'en' ? 'Gym 150€' : 'Зал 150€'}
-                  confirmLabel={lang === 'en' ? 'Send gym renewal 150€?' : 'Отправить продление зала 150€?'}
-                  className="flex-1 bg-secondary/50 border border-border/50 text-foreground text-[10px] font-bold py-1.5 rounded-lg flex items-center justify-center gap-1 hover:bg-secondary/80 transition-colors"
                 />
               </div>
 
