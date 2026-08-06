@@ -3,6 +3,8 @@ import BookingModal from '@/components/BookingModal';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
+import ChatAssistant from '@/components/ChatAssistant';
+
 import HeroSection from '@/components/sections/HeroSection';
 import ThemeToggle from '@/components/ThemeToggle';
 import LanguageSwitch from '@/components/LanguageSwitch';
@@ -252,6 +254,8 @@ const AppContent = () => {
         </div>
       )}
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
+      {activeSection !== 'admin' && <ChatAssistant />}
+
 
       {optimisticIsTrainer && (
         <div className="fixed right-0 top-1/2 -translate-y-1/2 z-[100] flex flex-col gap-1">
