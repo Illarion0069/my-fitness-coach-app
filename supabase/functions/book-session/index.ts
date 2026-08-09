@@ -720,13 +720,7 @@ Deno.serve(async (req) => {
           existing: { date: dup.session_date, time: dup.session_time?.slice(0, 5) },
         }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
-      if (myBookings.length > 0) {
-        const other = myBookings[0];
-        return new Response(JSON.stringify({
-          error: 'duplicate_pending',
-          existing: { date: other.session_date, time: other.session_time?.slice(0, 5) },
-        }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+      // Bookings on other dates/times are always allowed (flexible booking).
 
 
 
