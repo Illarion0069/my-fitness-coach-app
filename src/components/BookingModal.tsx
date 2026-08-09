@@ -312,17 +312,14 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             const ex = data?.existing;
             const dateStr = ex ? new Date(`${ex.date}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
             toast({
-              title: lang === 'en' ? 'You already have a booking' : 'У вас уже есть запись',
-              description: err === 'duplicate_slot'
-                ? (lang === 'en'
-                    ? `This slot (${dateStr} at ${ex?.time}) is already booked under your phone. Please pick another day or time.`
-                    : `Это время (${dateStr} в ${ex?.time}) уже забронировано на ваш номер. Выберите другой день или время.`)
-                : (lang === 'en'
-                    ? `We already have a pending booking on ${dateStr} at ${ex?.time} for your phone. If you want to add another one, please message us on WhatsApp/Telegram.`
-                    : `У нас уже есть запись на ${dateStr} в ${ex?.time} на ваш номер. Чтобы добавить ещё одну, напишите нам в WhatsApp/Telegram.`),
+              title: lang === 'en' ? 'You already have this booking' : 'Вы уже записаны на это время',
+              description: lang === 'en'
+                ? `You are already booked for ${dateStr} at ${ex?.time}. Pick another day or time to add a new session.`
+                : `Вы уже записаны на ${dateStr} в ${ex?.time}. Выберите другой день или время, чтобы добавить ещё одну тренировку.`,
               variant: 'destructive',
             });
           } else {
+
             toast({
               title: lang === 'en' ? 'Error' : 'Ошибка',
               description: err || error?.message || 'Unknown error',
