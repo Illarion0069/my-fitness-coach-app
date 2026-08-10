@@ -246,16 +246,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setAnalysisCount(analysisData?.analysis_count || (logData?.ai_score != null ? 1 : 0));
   }, []);
 
-  const fetchData = useCallback(async (opts?: { force?: boolean }) => {
+  const fetchData = useCallback(async () => {
     if (!effectiveUserId) return;
     const ck = cacheKey(effectiveUserId, date);
     const cached = diaryCache.get(ck);
     // Instant paint from cache — avoids the "numbers jump" effect on remount,
     // then always revalidate in the background (stale-while-revalidate).
-    if (cached) applyLogData(cached.log, cached.photos);
-
-
-
+    if (cached && Date.now() - cached.ts < DIARY_CACHE_TTL) applyLogData(cached.log, cached.photos);
 
     const [logRes, photosRes] = await Promise.all([
       supabase.from('nutrition_logs').select('*').eq('user_id', effectiveUserId).eq('log_date', date).maybeSingle(),
@@ -265,7 +262,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     applyLogData(logRes.data, (photosRes.data as any[]) || []);
   }, [effectiveUserId, date, applyLogData]);
 
-  useEffect(() => { fetchData({ force: true }); }, [fetchData]);
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Keep the cache in sync with optimistic local updates
+  useEffect(() => {
+    if (!effectiveUserId) return;
+    diaryCache.set(cacheKey(effectiveUserId, date), { log, photos, ts: Date.now() });
+  }, [effectiveUserId, date, log, photos]);
+
 
 
   useEffect(() => {
