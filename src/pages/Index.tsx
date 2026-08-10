@@ -11,6 +11,8 @@ import LanguageSwitch from '@/components/LanguageSwitch';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
+import SwipeHint from '@/components/SwipeHint';
+
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
 import { SHOP_PUBLIC } from '@/config/features';
@@ -254,6 +256,8 @@ const AppContent = () => {
         </div>
       )}
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
+      {!showGuide && !effectiveIsTrainer && <SwipeHint />}
+
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
 
 
