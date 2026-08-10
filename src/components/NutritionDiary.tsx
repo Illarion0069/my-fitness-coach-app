@@ -1918,6 +1918,82 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
+      {/* Calculation Info Modal */}
+      <AnimatePresence>
+        {showCalcInfo && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => setShowCalcInfo(false)}
+            className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center p-4">
+            <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
+              onClick={e => e.stopPropagation()}
+              className="w-full max-w-md bg-card rounded-3xl p-5 space-y-4 border border-border/40 max-h-[80vh] overflow-y-auto">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-bold text-foreground">
+                  {lang === 'en' ? 'How we calculate' : 'Как мы считаем'}
+                </p>
+                <button onClick={() => setShowCalcInfo(false)} className="p-1 rounded-full hover:bg-secondary/60 transition-colors">
+                  <X className="w-4 h-4 text-muted-foreground" />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs text-muted-foreground">
+                <div className="p-3 rounded-2xl bg-secondary/30 space-y-1.5">
+                  <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+                    {lang === 'en' ? '1. Food recognition' : '1. Распознавание еды'}
+                  </h4>
+                  <p>{lang === 'en'
+                    ? 'We estimate calories, protein, carbs and fat from your food photos using AI vision. You can also add items manually — both sources are combined.'
+                    : 'Калории, белки, жиры и углеводы оцениваются по фото еды с помощью компьютерного зрения. Также можно добавлять блюда вручную — оба источника объединяются.'}</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-secondary/30 space-y-1.5">
+                  <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+                    {lang === 'en' ? '2. No double-counting' : '2. Без двойного счета'}
+                  </h4>
+                  <p>{lang === 'en'
+                    ? 'Items detected in a photo and any manual entry linked to that same photo are counted only once. New entries added after the last analysis are counted immediately.'
+                    : 'Продукты, распознанные на фото, и связанные с ним ручные записи учитываются один раз. Новые записи, добавленные после последнего анализа, считаются сразу.'}</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-secondary/30 space-y-1.5">
+                  <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+                    {lang === 'en' ? '3. Your calorie target' : '3. Ваша цель по калориям'}
+                  </h4>
+                  <p>{lang === 'en'
+                    ? 'We use the Mifflin-St Jeor formula with your height, weight, age and gender, then multiply by an activity factor of 1.5 (training 2–3 times per week).'
+                    : 'Используем формулу Миффлина-Сан Жеора с вашим ростом, весом, возрастом и полом, затем умножаем на коэффициент активности 1.5 (тренировки 2–3 раза в неделю).'}</p>
+                  <p>{lang === 'en'
+                    ? 'Fat loss: TDEE × 0.85. Muscle gain: TDEE × 1.1.'
+                    : 'Похудение: СДП × 0.85. Набор мышц: СДП × 1.1.'}</p>
+                </div>
+
+                <div className="p-3 rounded-2xl bg-secondary/30 space-y-1.5">
+                  <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wide">
+                    {lang === 'en' ? '4. Macros & water' : '4. БЖУ и вода'}
+                  </h4>
+                  <p>{lang === 'en'
+                    ? 'Macros are split from your target calories: 30% protein, 40% carbs, 30% fat. Protein target is 1.6–1.8 g per kg of body weight. Water target is 33 ml per kg.'
+                    : 'БЖУ берется от целевых калорий: 30% белков, 40% углеводов, 30% жиров. Норма белка — 1.6–1.8 г на кг веса. Норма воды — 33 мл на кг веса.'}</p>
+                </div>
+
+                <p className="text-[10px] italic opacity-80">
+                  {lang === 'en'
+                    ? 'All numbers are estimates to guide you, not medical prescriptions.'
+                    : 'Все цифры — оценки для ориентира, а не медицинские предписания.'}
+                </p>
+              </div>
+
+              <button
+                onClick={() => setShowCalcInfo(false)}
+                className="w-full h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
+              >
+                {lang === 'en' ? 'Got it' : 'Понятно'}
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Photo Lightbox */}
       <AnimatePresence>
         {selectedPhoto && (
