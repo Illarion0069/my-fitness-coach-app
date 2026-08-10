@@ -1061,7 +1061,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             <MacroRing
               value={calorieGoal && calorieGoal > 0 ? Math.min(totals.calories, calorieGoal) : totals.calories}
               max={calorieGoal && calorieGoal > 0 ? calorieGoal : Math.max(totals.calories, 1)}
-              color={totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'}
+              color={calorieGoal > 0 && totals.calories > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))'}
               size={160}
               strokeWidth={10}
             />
@@ -1069,7 +1069,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
                 {calorieGoal && calorieGoal > 0 ? (lang === 'en' ? 'Remaining' : 'Осталось') : ''}
               </span>
-              <span className={`text-5xl font-black tracking-tight mt-0.5 ${totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
+              <span className={`text-5xl font-black tracking-tight mt-0.5 ${calorieGoal > 0 && totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
                 <AnimatedNumber value={calorieGoal && calorieGoal > 0 ? Math.max(0, calorieGoal - totals.calories) : totals.calories} />
               </span>
               <span className="text-[10px] text-muted-foreground mt-1">
@@ -1665,7 +1665,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
       {/* FAB - Add meal */}
       {!isReadOnly && !userId && (
-        <div className="fixed z-[60] right-4" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
+        <div className="fixed z-[90] right-4" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowAddMenu(true)}

@@ -31,7 +31,7 @@ const SwipeHint = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 12 }}
           transition={{ type: 'spring', damping: 24, stiffness: 300 }}
-          className="fixed left-1/2 -translate-x-1/2 z-[80] w-[calc(100%-2rem)] max-w-sm"
+          className="fixed left-4 z-[80] w-[calc(100%-6rem)] max-w-[280px]"
           style={{ bottom: 'calc(4.75rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <div className="flex items-center gap-2 rounded-full bg-card/95 backdrop-blur-md border border-border/50 shadow-xl px-3 py-2">
