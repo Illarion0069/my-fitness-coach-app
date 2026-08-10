@@ -590,11 +590,20 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 <div className="absolute -bottom-4 -left-4 w-16 h-16 rounded-full bg-white/5 pointer-events-none" />
               </>
             )}
+            <HintDot
+              id="balance_history"
+              en="Tap to see history & top up"
+              ru="Нажмите — история и продление"
+              className="top-4 right-12"
+              side="left"
+              delay={1400}
+            />
             <button
               type="button"
-              onClick={() => setBalanceExpanded(v => !v)}
+              onClick={() => { markHintSeen('balance_history'); setBalanceExpanded(v => !v); }}
               className="relative z-10 w-full text-left p-5 active:scale-[0.99] transition-transform"
             >
+
               <div className="flex items-center justify-between mb-3">
                 <p className={`text-xs font-medium ${exhausted ? 'text-destructive' : 'text-primary-foreground/80'}`}>
                   {pkg.package_name}
@@ -946,10 +955,12 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <ModuleCard
               icon={<Ruler className="w-4.5 h-4.5 text-primary" />}
               title={lang === 'en' ? 'Body' : 'Замеры'}
+              hint={{ id: 'body_measurements', en: 'Track weight & measurements', ru: 'Вес и замеры — здесь' }}
               subtitle={measurements.length === 0
                 ? (lang === 'en' ? 'Add first record' : 'Добавьте замер')
                 : `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`}
               onClick={() => setMeasurementsOpen(true)}
+
               preview={weightSparkData.length >= 2 ? (
                 <div className="space-y-1.5">
                   <div className="flex items-center gap-1.5">
@@ -1017,17 +1028,26 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.25 }}
-            className="mt-5"
+            className="relative mt-5"
           >
+            <HintDot
+              id="buy_sessions"
+              en="Top up your package here"
+              ru="Здесь можно докупить занятия"
+              className="-top-1 right-1"
+              side="left"
+              delay={2000}
+            />
             <button
               type="button"
-              onClick={() => onNavigate('pricing')}
+              onClick={() => { markHintSeen('buy_sessions'); onNavigate('pricing'); }}
               className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.99] transition-transform"
             >
               <ShoppingCart className="w-5 h-5" />
               {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
             </button>
           </motion.div>
+
         )}
 
         {/* ═══════════ Account ═══════════ */}
