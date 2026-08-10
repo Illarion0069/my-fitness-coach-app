@@ -250,9 +250,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     if (!effectiveUserId) return;
     const ck = cacheKey(effectiveUserId, date);
     const cached = diaryCache.get(ck);
-    // Instant paint from cache — avoids the "numbers jump" effect on remount
+    // Instant paint from cache — avoids the "numbers jump" effect on remount,
+    // then always revalidate in the background (stale-while-revalidate).
     if (cached) applyLogData(cached.log, cached.photos);
-    if (!opts?.force && cached && Date.now() - cached.ts < DIARY_CACHE_TTL) return;
+
+
 
 
     const [logRes, photosRes] = await Promise.all([
