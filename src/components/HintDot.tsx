@@ -48,9 +48,14 @@ const HintDot = ({ id, en, ru, className = '', side = 'left', delay = 900, durat
   useEffect(() => {
     if (!visible) return;
     const t1 = setTimeout(() => setExpanded(true), delay);
-    const t2 = setTimeout(() => setExpanded(false), delay + duration);
+    // Once the hint has been displayed, it is considered seen — it never shows again,
+    // even if the user doesn't tap it. New features get a new `id` to show once more.
+    const t2 = setTimeout(() => {
+      setExpanded(false);
+      markHintSeen(id);
+    }, delay + duration);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [visible, delay, duration]);
+  }, [visible, delay, duration, id]);
 
   if (!visible) return null;
 
@@ -60,11 +65,16 @@ const HintDot = ({ id, en, ru, className = '', side = 'left', delay = 900, durat
         <button
           type="button"
           aria-label={lang === 'en' ? en : ru}
-          onClick={(e) => { e.stopPropagation(); setExpanded((v) => !v); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            markHintSeen(id);
+            setExpanded((v) => !v);
+          }}
           className="relative block w-2.5 h-2.5 rounded-full bg-primary"
         >
           <span className="absolute inset-0 rounded-full bg-primary animate-ping" />
         </button>
+
 
         <AnimatePresence>
           {expanded && (
