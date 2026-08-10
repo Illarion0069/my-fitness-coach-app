@@ -570,14 +570,71 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     await fetchData();
   };
 
+  // ---- Two-way sync between the AI "detected" list and the editable entries ----
+  const normName = (s: string) => (s || '').trim().toLowerCase();
+
+  const recalcAnalysisTotals = (a: any) => {
+    const meals = (a.meals || []).map((m: any) => {
+      const foods = m.detected_foods || [];
+      return {
+        ...m,
+        estimated_calories: foods.reduce((s: number, f: any) => s + (f.calories || 0), 0),
+        protein_g: foods.reduce((s: number, f: any) => s + (f.protein_g || 0), 0),
+        carbs_g: foods.reduce((s: number, f: any) => s + (f.carbs_g || 0), 0),
+        fat_g: foods.reduce((s: number, f: any) => s + (f.fat_g || 0), 0),
+      };
+    });
+    return {
+      ...a,
+      meals,
+      total_calories: meals.reduce((s: number, m: any) => s + (m.estimated_calories || 0), 0),
+      total_protein_g: meals.reduce((s: number, m: any) => s + (m.protein_g || 0), 0),
+      total_carbs_g: meals.reduce((s: number, m: any) => s + (m.carbs_g || 0), 0),
+      total_fat_g: meals.reduce((s: number, m: any) => s + (m.fat_g || 0), 0),
+    };
+  };
+
+  // patch === null -> delete the matching detected food
+  const applyToAiFood = (mealType: string, oldName: string, patch: Partial<DetectedFood> | null) => {
+    const a = analysis as any;
+    if (!a || a.invalidated || !Array.isArray(a.meals)) return null;
+    const meals = a.meals.map((m: any) => ({ ...m, detected_foods: [...(m.detected_foods || [])] }));
+    const meal = meals.find((m: any) => m.meal_type === mealType);
+    if (!meal) return null;
+    const idx = meal.detected_foods.findIndex((f: any) => normName(f.name) === normName(oldName));
+    if (idx === -1) return null;
+    if (patch === null) meal.detected_foods.splice(idx, 1);
+    else meal.detected_foods[idx] = { ...meal.detected_foods[idx], ...patch };
+    return recalcAnalysisTotals({ ...a, meals });
+  };
+
+  // patch === null -> delete the matching editable entry
+  const applyToManualEntry = (mealType: string, oldName: string, patch: Partial<ManualEntry> | null) => {
+    const entries = (log?.manual_entries || []) as ManualEntry[];
+    const idx = entries.findIndex(e => e.meal_type === mealType && normName(e.name) === normName(oldName));
+    if (idx === -1) return null;
+    if (patch === null) return entries.filter((_, i) => i !== idx);
+    return entries.map((e, i) => (i === idx ? { ...e, ...patch } : e));
+  };
+
   const handleDeleteManualEntry = async (entryId: string) => {
+
     if (!log?.id) return;
+    const target = ((log.manual_entries || []) as ManualEntry[]).find(e => e.id === entryId);
     const entries = ((log.manual_entries || []) as ManualEntry[]).filter(e => e.id !== entryId);
+    // Keep the AI "detected" list in sync with the editable list
+    const syncedAnalysis = target
+      ? applyToAiFood(target.meal_type, target.name, null)
+      : null;
     // Optimistic update
-    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
-    await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
+    setLog(prev => prev ? { ...prev, manual_entries: entries, ...(syncedAnalysis ? { ai_analysis: syncedAnalysis } : {}) } as any : prev);
+    await supabase.from('nutrition_logs').update({
+      manual_entries: entries as any,
+      ...(syncedAnalysis ? { ai_analysis: syncedAnalysis as any } : {}),
+    }).eq('id', log.id);
     await fetchData();
   };
+
 
   const startEditManual = (entry: ManualEntry) => {
     setEditingManualId(entry.id);
@@ -648,86 +705,83 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const handleSaveManualEntry = async () => {
     if (!log?.id || !editingManualId) return;
     const portionVal = parseInt(editManualPortion);
+    const original = ((log.manual_entries || []) as ManualEntry[]).find(e => e.id === editingManualId);
+    const patch = {
+      name: editManualName.trim() || original?.name || '',
+      portion_g: portionVal > 0 ? portionVal : original?.portion_g,
+      calories: parseInt(editManualCal) || 0,
+      protein_g: parseInt(editManualProtein) || 0,
+      carbs_g: parseInt(editManualCarbs) || 0,
+      fat_g: parseInt(editManualFat) || 0,
+    };
     const entries = ((log.manual_entries || []) as ManualEntry[]).map(e =>
-      e.id === editingManualId
-        ? {
-            ...e,
-            name: editManualName.trim() || e.name,
-            portion_g: portionVal > 0 ? portionVal : e.portion_g,
-            calories: parseInt(editManualCal) || 0,
-            protein_g: parseInt(editManualProtein) || 0,
-            carbs_g: parseInt(editManualCarbs) || 0,
-            fat_g: parseInt(editManualFat) || 0,
-          }
-        : e
+      e.id === editingManualId ? { ...e, ...patch } : e
     );
-    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
+    // Mirror the change onto the AI "detected" list so both cards show the same numbers
+    const syncedAnalysis = original
+      ? applyToAiFood(original.meal_type, original.name, patch as Partial<DetectedFood>)
+      : null;
+    setLog(prev => prev ? { ...prev, manual_entries: entries, ...(syncedAnalysis ? { ai_analysis: syncedAnalysis } : {}) } as any : prev);
     setEditingManualId(null);
     setEditManualOrig(null);
-    await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
+    await supabase.from('nutrition_logs').update({
+      manual_entries: entries as any,
+      ...(syncedAnalysis ? { ai_analysis: syncedAnalysis as any } : {}),
+    }).eq('id', log.id);
     await fetchData();
+
   };
 
 
   const handleDeleteAiFood = async (mealType: MealType, foodIndex: number) => {
     if (!log?.id || !analysis || analysis.invalidated) return;
-    const updatedAnalysis = { ...analysis };
-    const meals = [...(updatedAnalysis.meals || [])];
-    const mealIdx = meals.findIndex((m: any) => m.meal_type === mealType);
-    if (mealIdx === -1) return;
-    const meal = { ...meals[mealIdx] };
-    const foods = [...(meal.detected_foods || [])];
-    const removed = foods[foodIndex];
-    foods.splice(foodIndex, 1);
-    meal.detected_foods = foods;
-    // Recalculate meal totals
-    meal.estimated_calories = foods.reduce((s: number, f: any) => s + (f.calories || 0), 0);
-    meal.protein_g = foods.reduce((s: number, f: any) => s + (f.protein_g || 0), 0);
-    meal.carbs_g = foods.reduce((s: number, f: any) => s + (f.carbs_g || 0), 0);
-    meal.fat_g = foods.reduce((s: number, f: any) => s + (f.fat_g || 0), 0);
-    meals[mealIdx] = meal;
-    updatedAnalysis.meals = meals;
-    // Recalculate totals
-    updatedAnalysis.total_calories = meals.reduce((s: number, m: any) => s + (m.estimated_calories || 0), 0);
-    updatedAnalysis.total_protein_g = meals.reduce((s: number, m: any) => s + (m.protein_g || 0), 0);
-    updatedAnalysis.total_carbs_g = meals.reduce((s: number, m: any) => s + (m.carbs_g || 0), 0);
-    updatedAnalysis.total_fat_g = meals.reduce((s: number, m: any) => s + (m.fat_g || 0), 0);
-    await supabase.from('nutrition_logs').update({ ai_analysis: updatedAnalysis }).eq('id', log.id);
+    const a = analysis as any;
+    const meals = (a.meals || []).map((m: any) => ({ ...m, detected_foods: [...(m.detected_foods || [])] }));
+    const meal = meals.find((m: any) => m.meal_type === mealType);
+    if (!meal) return;
+    const removed = meal.detected_foods[foodIndex];
+    meal.detected_foods.splice(foodIndex, 1);
+    const updatedAnalysis = recalcAnalysisTotals({ ...a, meals });
+    // Mirror onto the editable entries list
+    const syncedEntries = removed ? applyToManualEntry(mealType, removed.name, null) : null;
+    setLog(prev => prev ? { ...prev, ai_analysis: updatedAnalysis, ...(syncedEntries ? { manual_entries: syncedEntries } : {}) } as any : prev);
+    await supabase.from('nutrition_logs').update({
+      ai_analysis: updatedAnalysis,
+      ...(syncedEntries ? { manual_entries: syncedEntries as any } : {}),
+    }).eq('id', log.id);
     fetchData();
   };
 
   const handleEditAiFood = async () => {
     if (!log?.id || !analysis || !editingFood) return;
-    const updatedAnalysis = { ...analysis };
-    const meals = [...(updatedAnalysis.meals || [])];
-    const mealIdx = meals.findIndex((m: any) => m.meal_type === editingFood.mealType);
-    if (mealIdx === -1) return;
-    const meal = { ...meals[mealIdx] };
-    const foods = [...(meal.detected_foods || [])];
-    foods[editingFood.index] = {
-      name: editFoodName.trim() || foods[editingFood.index].name,
-      portion_g: parseInt(editFoodPortion) || foods[editingFood.index].portion_g,
+    const a = analysis as any;
+    const meals = (a.meals || []).map((m: any) => ({ ...m, detected_foods: [...(m.detected_foods || [])] }));
+    const meal = meals.find((m: any) => m.meal_type === editingFood.mealType);
+    if (!meal) return;
+    const prevFood = meal.detected_foods[editingFood.index];
+    const patch = {
+      name: editFoodName.trim() || prevFood?.name,
+      portion_g: parseInt(editFoodPortion) || prevFood?.portion_g,
       calories: parseInt(editFoodCal) || 0,
       protein_g: parseInt(editFoodProtein) || 0,
       carbs_g: parseInt(editFoodCarbs) || 0,
       fat_g: parseInt(editFoodFat) || 0,
     };
-    meal.detected_foods = foods;
-    meal.estimated_calories = foods.reduce((s: number, f: any) => s + (f.calories || 0), 0);
-    meal.protein_g = foods.reduce((s: number, f: any) => s + (f.protein_g || 0), 0);
-    meal.carbs_g = foods.reduce((s: number, f: any) => s + (f.carbs_g || 0), 0);
-    meal.fat_g = foods.reduce((s: number, f: any) => s + (f.fat_g || 0), 0);
-    meals[mealIdx] = meal;
-    updatedAnalysis.meals = meals;
-    updatedAnalysis.total_calories = meals.reduce((s: number, m: any) => s + (m.estimated_calories || 0), 0);
-    updatedAnalysis.total_protein_g = meals.reduce((s: number, m: any) => s + (m.protein_g || 0), 0);
-    updatedAnalysis.total_carbs_g = meals.reduce((s: number, m: any) => s + (m.carbs_g || 0), 0);
-    updatedAnalysis.total_fat_g = meals.reduce((s: number, m: any) => s + (m.fat_g || 0), 0);
-    await supabase.from('nutrition_logs').update({ ai_analysis: updatedAnalysis }).eq('id', log.id);
+    meal.detected_foods[editingFood.index] = { ...prevFood, ...patch };
+    const updatedAnalysis = recalcAnalysisTotals({ ...a, meals });
+    const syncedEntries = prevFood
+      ? applyToManualEntry(editingFood.mealType, prevFood.name, patch as Partial<ManualEntry>)
+      : null;
+    setLog(prev => prev ? { ...prev, ai_analysis: updatedAnalysis, ...(syncedEntries ? { manual_entries: syncedEntries } : {}) } as any : prev);
+    await supabase.from('nutrition_logs').update({
+      ai_analysis: updatedAnalysis,
+      ...(syncedEntries ? { manual_entries: syncedEntries as any } : {}),
+    }).eq('id', log.id);
     setEditingFood(null);
     fetchData();
     toast({ title: lang === 'en' ? 'Updated' : 'Обновлено' });
   };
+
 
   const startEditFood = (mealType: MealType, index: number, food: any) => {
     setEditingFood({ mealType, index });
