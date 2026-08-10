@@ -239,20 +239,31 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
-  const fetchData = useCallback(async () => {
+  const applyLogData = useCallback((logData: any, photosData: any[]) => {
+    setLog(logData || null);
+    setPhotos((photosData as FoodPhoto[]) || []);
+    const analysisData = logData?.ai_analysis as Record<string, any> | null;
+    setAnalysisCount(analysisData?.analysis_count || (logData?.ai_score != null ? 1 : 0));
+  }, []);
+
+  const fetchData = useCallback(async (opts?: { force?: boolean }) => {
     if (!effectiveUserId) return;
+    const ck = cacheKey(effectiveUserId, date);
+    const cached = diaryCache.get(ck);
+    // Instant paint from cache — avoids the "numbers jump" effect on remount
+    if (cached) applyLogData(cached.log, cached.photos);
+    if (!opts?.force && cached && Date.now() - cached.ts < DIARY_CACHE_TTL) return;
+
     const [logRes, photosRes] = await Promise.all([
       supabase.from('nutrition_logs').select('*').eq('user_id', effectiveUserId).eq('log_date', date).maybeSingle(),
       supabase.from('food_photos').select('*').eq('user_id', effectiveUserId).eq('log_date', date).order('created_at', { ascending: true }),
     ]);
-    setLog((logRes.data as any) || null);
-    setPhotos((photosRes.data as FoodPhoto[]) || []);
-    const analysis = logRes.data?.ai_analysis;
-    const analysisData = analysis as Record<string, any> | null;
-    setAnalysisCount(analysisData?.analysis_count || (logRes.data?.ai_score != null ? 1 : 0));
-  }, [effectiveUserId, date]);
+    diaryCache.set(ck, { log: logRes.data || null, photos: photosRes.data || [], ts: Date.now() });
+    applyLogData(logRes.data, (photosRes.data as any[]) || []);
+  }, [effectiveUserId, date, applyLogData]);
 
-  useEffect(() => { fetchData(); }, [fetchData]);
+  useEffect(() => { fetchData({ force: true }); }, [fetchData]);
+
 
   useEffect(() => {
     const seen = localStorage.getItem('nutrition_feedback_hint_seen');
