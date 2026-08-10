@@ -333,9 +333,15 @@ const AppContent = () => {
 };
 
 import { ThemeProvider } from '@/contexts/ThemeContext';
+import PageHead from '@/components/PageHead';
 
 const Index = () => (
   <ThemeProvider>
+    <PageHead
+      title="Personal Trainer & Gym in Limassol — Limassol Fitness"
+      description="Personal trainer and private gym in Limassol, Cyprus. HIIT, TRX, strength & stretching with certified coach Illarion Ientin (EQF 3 & 4). Book online."
+      path="/"
+    />
     <LanguageProvider>
       <AuthProvider>
         <AppContent />
@@ -343,5 +349,6 @@ const Index = () => (
     </LanguageProvider>
   </ThemeProvider>
 );
+
 
 export default Index;
