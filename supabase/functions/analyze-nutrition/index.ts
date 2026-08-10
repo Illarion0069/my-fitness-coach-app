@@ -382,7 +382,7 @@ serve(async (req) => {
 
     const { data: clientProfile, error: profileErr } = await supabase
       .from("profiles")
-      .select("full_name, email, nutrition_goal, daily_calorie_goal")
+      .select("full_name, email, nutrition_goal, daily_calorie_goal, height_cm, birth_date, gender")
       .eq("user_id", user_id)
       .maybeSingle();
 
@@ -390,6 +390,60 @@ serve(async (req) => {
       ? "muscle_gain"
       : "fat_loss";
     const SYSTEM_PROMPT = nutritionGoal === "muscle_gain" ? SYSTEM_PROMPT_MUSCLE_GAIN : SYSTEM_PROMPT_FAT_LOSS;
+
+    // --- Anthropometry: height/age/gender from profile + latest weight from measurements ---
+    const { data: latestMeasurement } = await supabase
+      .from("body_measurements")
+      .select("weight_kg, waist_cm, hips_cm, measured_at")
+      .eq("user_id", user_id)
+      .not("weight_kg", "is", null)
+      .order("measured_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    const heightCm = Number((clientProfile as any)?.height_cm) || 0;
+    const weightKg = Number((latestMeasurement as any)?.weight_kg) || 0;
+    const genderRaw = String((clientProfile as any)?.gender || "").toLowerCase();
+    const gender = genderRaw === "male" || genderRaw === "female" ? genderRaw : "";
+    const birthDate = (clientProfile as any)?.birth_date as string | null;
+    let age = 0;
+    if (birthDate) {
+      const bd = new Date(birthDate + "T12:00:00");
+      if (!isNaN(bd.getTime())) {
+        const now = new Date();
+        age = now.getFullYear() - bd.getFullYear();
+        const m = now.getMonth() - bd.getMonth();
+        if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) age--;
+        if (age < 10 || age > 100) age = 0;
+      }
+    }
+
+    const bmi = heightCm > 0 && weightKg > 0
+      ? Math.round((weightKg / Math.pow(heightCm / 100, 2)) * 10) / 10
+      : 0;
+    const bmiCategory = bmi === 0 ? "" :
+      bmi < 18.5 ? "underweight" : bmi < 25 ? "normal" : bmi < 30 ? "overweight" : "obese";
+    // Mifflin–St Jeor (falls back to gender-neutral average when gender unknown)
+    let bmr = 0;
+    if (heightCm > 0 && weightKg > 0 && age > 0) {
+      const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
+      bmr = Math.round(gender === "male" ? base + 5 : gender === "female" ? base - 161 : base - 78);
+    }
+    // Activity factor ~1.5 (personal training 2-3x/week + daily activity)
+    const tdee = bmr > 0 ? Math.round(bmr * 1.5) : 0;
+    const targetKcal = tdee > 0
+      ? Math.round((nutritionGoal === "muscle_gain" ? tdee * 1.1 : tdee * 0.85) / 10) * 10
+      : 0;
+    const proteinTarget = weightKg > 0
+      ? Math.round(weightKg * (nutritionGoal === "muscle_gain" ? 1.8 : 1.6))
+      : 0;
+    const waterTargetMl = weightKg > 0 ? Math.round((weightKg * 33) / 50) * 50 : 0;
+
+    const anthroKnown = heightCm > 0 || weightKg > 0 || age > 0;
+    const anthroBlock = anthroKnown
+      ? `\n\nCLIENT ANTHROPOMETRY (authoritative, from the client's profile — use it to personalise every number you give):\n- height: ${heightCm > 0 ? heightCm + " cm" : "unknown"}\n- weight: ${weightKg > 0 ? weightKg + " kg" + ((latestMeasurement as any)?.measured_at ? ` (measured ${(latestMeasurement as any).measured_at})` : "") : "unknown"}\n- age: ${age > 0 ? age : "unknown"}\n- gender: ${gender || "unknown"}\n- BMI: ${bmi > 0 ? `${bmi} (${bmiCategory})` : "unknown"}\n- estimated BMR: ${bmr > 0 ? bmr + " kcal" : "unknown"}\n- estimated TDEE (training 2-3x/week): ${tdee > 0 ? tdee + " kcal" : "unknown"}\n- personalised calorie target for goal "${nutritionGoal}": ${calorieGoalOverrideNote(targetKcal)}\n- protein target: ${proteinTarget > 0 ? `~${proteinTarget} g/day` : "unknown"}\n- water target: ${waterTargetMl > 0 ? `~${waterTargetMl} ml/day` : "unknown"}\n\nHOW TO USE THIS (mandatory):\n- Portion advice must be sized for THIS body (e.g. "${weightKg > 0 ? Math.round(weightKg * 0.5) : 100} g of chicken breast"), never generic.\n- Judge protein/calorie sufficiency against the targets above, not against a generic 2000 kcal day.\n- Keep the Tolstikova principles intact (whole foods, protein at every meal, vegetables, no snacking chaos, no demonising food) — but express them in numbers tuned to this client's height, weight, age and gender.\n- Never state the BMI/BMR formulas or call them "calculations"; just speak in concrete food amounts and reassuring, expert language.\n- If a value above is "unknown", do NOT invent it and do NOT ask for it more than once in the whole response.`
+      : "";
+
 
     let nameSource: "profile_full_name" | "auth_metadata" | "email_prefix" | "fallback" = "fallback";
     let firstName = extractFirst(clientProfile?.full_name as string | undefined);
