@@ -66,6 +66,27 @@ type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 const MAX_PHOTOS_PER_DAY = 8;
 const MAX_ANALYSES_PER_DAY = 12;
+
+// ---- Client-side cache -------------------------------------------------
+// Keeps the diary stable when the user leaves the module and comes back:
+// data renders instantly from cache (no flicker / no "jumping" numbers)
+// and the auto-analysis fingerprint survives unmount so we never re-run
+// the AI for a day that was already analysed.
+const diaryCache = new Map<string, { log: any; photos: any[]; ts: number }>();
+const DIARY_CACHE_TTL = 5 * 60 * 1000;
+const cacheKey = (uid: string, d: string) => `${uid}::${d}`;
+
+const fingerprintKey = (uid: string, d: string) => `nutri_fp_${uid}_${d}`;
+const readFingerprint = (uid: string, d: string): { kcal: number; meals: string; key: string } | null => {
+  try {
+    const raw = localStorage.getItem(fingerprintKey(uid, d));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+const writeFingerprint = (uid: string, d: string, fp: { kcal: number; meals: string; key: string }) => {
+  try { localStorage.setItem(fingerprintKey(uid, d), JSON.stringify(fp)); } catch { /* ignore */ }
+};
+
 // A re-analysis is only worth it if the day changed meaningfully:
 // a new meal type appeared, or calories moved by more than these thresholds.
 const MIN_KCAL_DELTA = 80;
@@ -218,20 +239,38 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
+  const applyLogData = useCallback((logData: any, photosData: any[]) => {
+    setLog(logData || null);
+    setPhotos((photosData as FoodPhoto[]) || []);
+    const analysisData = logData?.ai_analysis as Record<string, any> | null;
+    setAnalysisCount(analysisData?.analysis_count || (logData?.ai_score != null ? 1 : 0));
+  }, []);
+
   const fetchData = useCallback(async () => {
     if (!effectiveUserId) return;
+    const ck = cacheKey(effectiveUserId, date);
+    const cached = diaryCache.get(ck);
+    // Instant paint from cache — avoids the "numbers jump" effect on remount,
+    // then always revalidate in the background (stale-while-revalidate).
+    if (cached && Date.now() - cached.ts < DIARY_CACHE_TTL) applyLogData(cached.log, cached.photos);
+
     const [logRes, photosRes] = await Promise.all([
       supabase.from('nutrition_logs').select('*').eq('user_id', effectiveUserId).eq('log_date', date).maybeSingle(),
       supabase.from('food_photos').select('*').eq('user_id', effectiveUserId).eq('log_date', date).order('created_at', { ascending: true }),
     ]);
-    setLog((logRes.data as any) || null);
-    setPhotos((photosRes.data as FoodPhoto[]) || []);
-    const analysis = logRes.data?.ai_analysis;
-    const analysisData = analysis as Record<string, any> | null;
-    setAnalysisCount(analysisData?.analysis_count || (logRes.data?.ai_score != null ? 1 : 0));
-  }, [effectiveUserId, date]);
+    diaryCache.set(ck, { log: logRes.data || null, photos: photosRes.data || [], ts: Date.now() });
+    applyLogData(logRes.data, (photosRes.data as any[]) || []);
+  }, [effectiveUserId, date, applyLogData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Keep the cache in sync with optimistic local updates
+  useEffect(() => {
+    if (!effectiveUserId) return;
+    diaryCache.set(cacheKey(effectiveUserId, date), { log, photos, ts: Date.now() });
+  }, [effectiveUserId, date, log, photos]);
+
+
 
   useEffect(() => {
     const seen = localStorage.getItem('nutrition_feedback_hint_seen');
@@ -462,6 +501,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   // only a new meal type or a noticeable calorie change triggers a fresh analysis.
   const autoAnalyzeKeyRef = useRef<string>('');
   const lastAnalyzedRef = useRef<{ kcal: number; meals: string } | null>(null);
+  // Rehydrate the fingerprint from localStorage whenever user/date changes,
+  // so leaving and re-entering the module never re-triggers the AI.
+  useEffect(() => {
+    if (!effectiveUserId) return;
+    const fp = readFingerprint(effectiveUserId, date);
+    autoAnalyzeKeyRef.current = fp?.key || '';
+    lastAnalyzedRef.current = fp ? { kcal: fp.kcal, meals: fp.meals } : null;
+  }, [effectiveUserId, date]);
   useEffect(() => {
     if (isReadOnly || userId) return; // only for the owner's own diary
     if (analyzing) return;
@@ -487,9 +534,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       ...photos.map((p: any) => String(p.meal_type || 'snack')),
     ])).sort().join(',');
 
+    const remember = () => {
+      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      if (effectiveUserId) writeFingerprint(effectiveUserId, date, { kcal: currentKcal, meals: mealsKey, key });
+    };
+
     // On the very first render: skip only if already analyzed successfully and nothing new to do.
     if (firstRun && log?.ai_score != null && !analysisFailed) {
-      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      remember();
+
       return;
     }
 
@@ -503,11 +556,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
 
     const t = setTimeout(() => {
-      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      remember();
       handleAnalyze({ silent: true });
     }, 1200);
     return () => clearTimeout(t);
-  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, handleAnalyze]);
+  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, effectiveUserId, handleAnalyze]);
+
 
 
 
