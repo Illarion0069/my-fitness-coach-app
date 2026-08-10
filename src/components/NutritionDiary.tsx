@@ -495,6 +495,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   // only a new meal type or a noticeable calorie change triggers a fresh analysis.
   const autoAnalyzeKeyRef = useRef<string>('');
   const lastAnalyzedRef = useRef<{ kcal: number; meals: string } | null>(null);
+  // Rehydrate the fingerprint from localStorage whenever user/date changes,
+  // so leaving and re-entering the module never re-triggers the AI.
+  useEffect(() => {
+    if (!effectiveUserId) return;
+    const fp = readFingerprint(effectiveUserId, date);
+    autoAnalyzeKeyRef.current = fp?.key || '';
+    lastAnalyzedRef.current = fp ? { kcal: fp.kcal, meals: fp.meals } : null;
+  }, [effectiveUserId, date]);
   useEffect(() => {
     if (isReadOnly || userId) return; // only for the owner's own diary
     if (analyzing) return;
@@ -520,9 +528,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       ...photos.map((p: any) => String(p.meal_type || 'snack')),
     ])).sort().join(',');
 
+    const remember = () => {
+      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      if (effectiveUserId) writeFingerprint(effectiveUserId, date, { kcal: currentKcal, meals: mealsKey, key });
+    };
+
     // On the very first render: skip only if already analyzed successfully and nothing new to do.
     if (firstRun && log?.ai_score != null && !analysisFailed) {
-      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      remember();
+
       return;
     }
 
