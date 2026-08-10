@@ -311,6 +311,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     }
   };
 
+  // Two-way sync: re-read profile data after the measurements module closes
+  useEffect(() => {
+    if (!measurementsOpen) loadMyData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measurementsOpen]);
+
+
+
   const handleChangePassword = async () => {
     if (newPwd.length < 8) {
       toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
