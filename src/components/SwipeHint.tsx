@@ -14,10 +14,12 @@ const SwipeHint = () => {
 
   useEffect(() => {
     if (!visible) return;
-    const t1 = setTimeout(() => setShow(true), 2500);
+    // Shown once per user: mark as seen as soon as it appears.
+    const t1 = setTimeout(() => { setShow(true); markHintSeen('swipe_sections'); }, 2500);
     const t2 = setTimeout(() => { setShow(false); dismiss(); }, 11000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [visible, dismiss]);
+
 
   if (!visible) return null;
 
