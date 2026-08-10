@@ -66,6 +66,27 @@ type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
 const MAX_PHOTOS_PER_DAY = 8;
 const MAX_ANALYSES_PER_DAY = 12;
+
+// ---- Client-side cache -------------------------------------------------
+// Keeps the diary stable when the user leaves the module and comes back:
+// data renders instantly from cache (no flicker / no "jumping" numbers)
+// and the auto-analysis fingerprint survives unmount so we never re-run
+// the AI for a day that was already analysed.
+const diaryCache = new Map<string, { log: any; photos: any[]; ts: number }>();
+const DIARY_CACHE_TTL = 5 * 60 * 1000;
+const cacheKey = (uid: string, d: string) => `${uid}::${d}`;
+
+const fingerprintKey = (uid: string, d: string) => `nutri_fp_${uid}_${d}`;
+const readFingerprint = (uid: string, d: string): { kcal: number; meals: string; key: string } | null => {
+  try {
+    const raw = localStorage.getItem(fingerprintKey(uid, d));
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+const writeFingerprint = (uid: string, d: string, fp: { kcal: number; meals: string; key: string }) => {
+  try { localStorage.setItem(fingerprintKey(uid, d), JSON.stringify(fp)); } catch { /* ignore */ }
+};
+
 // A re-analysis is only worth it if the day changed meaningfully:
 // a new meal type appeared, or calories moved by more than these thresholds.
 const MIN_KCAL_DELTA = 80;
