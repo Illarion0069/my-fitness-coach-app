@@ -264,9 +264,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // Keep the cache in sync with optimistic local updates
+  // Keep the cache in sync with optimistic local updates.
+  // Never overwrite a warm cache with the empty initial state on remount —
+  // that would bring back the "numbers jump" flicker before the fetch lands.
   useEffect(() => {
     if (!effectiveUserId) return;
+    if (!log && photos.length === 0 && diaryCache.has(cacheKey(effectiveUserId, date))) return;
     diaryCache.set(cacheKey(effectiveUserId, date), { log, photos, ts: Date.now() });
   }, [effectiveUserId, date, log, photos]);
 
