@@ -340,6 +340,13 @@ export default function OAuthConsent() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-5">
+      <PageHead
+        title="Connect your account — Limassol Fitness"
+        description="Authorize a third-party app to access your Limassol Fitness account data securely."
+        path="/.lovable/oauth/consent"
+        noIndex
+      />
+
       <div className="bg-card border border-border/50 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl p-6 space-y-5">
         <div className="text-center space-y-2">
           <img src={trainerLogo} alt="Limassol Fitness" className="w-12 h-12 rounded-2xl mx-auto" />
