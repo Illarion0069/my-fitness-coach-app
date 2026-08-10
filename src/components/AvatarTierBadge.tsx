@@ -60,7 +60,7 @@ const AvatarTierBadge = ({ tier, size = 22, className = '', onClick, hint = fals
         alt={`${tier} tier`}
         className="w-full h-full object-contain drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]"
       />
-    </div>
+    </Tag>
   );
 };
 
