@@ -572,12 +572,21 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
   const handleDeleteManualEntry = async (entryId: string) => {
     if (!log?.id) return;
+    const target = ((log.manual_entries || []) as ManualEntry[]).find(e => e.id === entryId);
     const entries = ((log.manual_entries || []) as ManualEntry[]).filter(e => e.id !== entryId);
+    // Keep the AI "detected" list in sync with the editable list
+    const syncedAnalysis = target
+      ? applyToAiFood(target.meal_type, target.name, null)
+      : null;
     // Optimistic update
-    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
-    await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
+    setLog(prev => prev ? { ...prev, manual_entries: entries, ...(syncedAnalysis ? { ai_analysis: syncedAnalysis } : {}) } as any : prev);
+    await supabase.from('nutrition_logs').update({
+      manual_entries: entries as any,
+      ...(syncedAnalysis ? { ai_analysis: syncedAnalysis as any } : {}),
+    }).eq('id', log.id);
     await fetchData();
   };
+
 
   const startEditManual = (entry: ManualEntry) => {
     setEditingManualId(entry.id);
