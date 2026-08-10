@@ -64,7 +64,7 @@ interface Props {
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 
-const MAX_PHOTOS_PER_DAY = 8;
+const MAX_PHOTOS_PER_DAY = 15;
 const MAX_ANALYSES_PER_DAY = 12;
 
 // ---- Client-side cache -------------------------------------------------
@@ -1712,7 +1712,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </div>
                 <div className="text-left">
                   <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Take photo' : 'Сфотографировать еду'}</p>
-                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'AI will detect food and macros' : 'ИИ определит еду и КБЖУ'}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {photosAtLimit
+                      ? (lang === 'en' ? `Daily photo limit reached (${MAX_PHOTOS_PER_DAY}) — use Quick add` : `Лимит фото на сегодня (${MAX_PHOTOS_PER_DAY}) — используйте быстрый ввод`)
+                      : (lang === 'en' ? 'AI will detect food and macros' : 'ИИ определит еду и КБЖУ')}
+                  </p>
                 </div>
               </button>
 
