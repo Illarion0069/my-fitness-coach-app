@@ -460,10 +460,13 @@ export type Database = {
           archive_reason: string | null
           archived_at: string | null
           avatar_url: string | null
+          birth_date: string | null
           created_at: string
           daily_calorie_goal: number | null
           email: string
           full_name: string
+          gender: string | null
+          height_cm: number | null
           id: string
           nutrition_goal: string
           phone: string
@@ -479,10 +482,13 @@ export type Database = {
           archive_reason?: string | null
           archived_at?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           daily_calorie_goal?: number | null
           email: string
           full_name: string
+          gender?: string | null
+          height_cm?: number | null
           id?: string
           nutrition_goal?: string
           phone: string
@@ -498,10 +504,13 @@ export type Database = {
           archive_reason?: string | null
           archived_at?: string | null
           avatar_url?: string | null
+          birth_date?: string | null
           created_at?: string
           daily_calorie_goal?: number | null
           email?: string
           full_name?: string
+          gender?: string | null
+          height_cm?: number | null
           id?: string
           nutrition_goal?: string
           phone?: string
