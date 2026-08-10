@@ -325,7 +325,7 @@ const AppContent = () => {
       {showGuide && (
         <AppGuide onComplete={() => {
           setShowGuide(false);
-          localStorage.setItem('app_guide_seen', '1');
+          localStorage.setItem('app_guide_v2_seen', '1');
         }} />
       )}
     </div>
