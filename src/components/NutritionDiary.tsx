@@ -989,6 +989,24 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               );
             })}
           </div>
+
+          {/* How we calculate info */}
+          <button
+            onClick={() => {
+              setShowCalcInfo(true);
+              localStorage.setItem('nutrition_calc_info_hint_seen', '1');
+              setShowCalcInfoHint(false);
+            }}
+            className="mt-4 flex items-center gap-1.5 text-[10px] font-semibold text-muted-foreground hover:text-foreground transition-colors"
+          >
+            <span className="relative flex items-center justify-center">
+              <HelpCircle className="w-4 h-4" />
+              {showCalcInfoHint && (
+                <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-ping" />
+              )}
+            </span>
+            {lang === 'en' ? 'How we calculate' : 'Как мы считаем'}
+          </button>
         </div>
       </motion.div>
 
