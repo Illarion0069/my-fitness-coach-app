@@ -261,6 +261,56 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [pwdSaving, setPwdSaving] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
+  // Personal data (synced with body measurements form — same profiles fields)
+  const [showMyData, setShowMyData] = useState(false);
+  const [myHeight, setMyHeight] = useState('');
+  const [myBirth, setMyBirth] = useState('');
+  const [myGender, setMyGender] = useState('');
+  const [myDataSaving, setMyDataSaving] = useState(false);
+
+  const loadMyData = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('profiles').select('height_cm, birth_date, gender').eq('user_id', user.id).maybeSingle();
+    setMyHeight((data as any)?.height_cm ? String((data as any).height_cm) : '');
+    setMyBirth((data as any)?.birth_date || '');
+    setMyGender((data as any)?.gender || '');
+  };
+
+  const myAge = useMemo(() => {
+    if (!myBirth) return null;
+    const b = new Date(`${myBirth}T12:00:00`);
+    if (isNaN(b.getTime())) return null;
+    const now = new Date();
+    let a = now.getFullYear() - b.getFullYear();
+    const m = now.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) a--;
+    return a >= 0 && a < 120 ? a : null;
+  }, [myBirth]);
+
+  const handleSaveMyData = async () => {
+    if (!user) return;
+    const h = myHeight ? Math.round(parseFloat(myHeight)) : null;
+    if (h != null && (isNaN(h) || h < 100 || h > 250)) {
+      toast({ title: lang === 'en' ? 'Height must be 100–250 cm' : 'Рост должен быть 100–250 см', variant: 'destructive' });
+      return;
+    }
+    setMyDataSaving(true);
+    try {
+      const { error } = await supabase.from('profiles')
+        .update({ height_cm: h, birth_date: myBirth || null, gender: myGender || null })
+        .eq('user_id', user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: lang === 'en' ? 'Saved' : 'Сохранено' });
+      setShowMyData(false);
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Failed to save' : 'Не удалось сохранить', description: e?.message, variant: 'destructive' });
+    } finally {
+      setMyDataSaving(false);
+    }
+  };
+
   const handleChangePassword = async () => {
     if (newPwd.length < 8) {
       toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
