@@ -34,18 +34,26 @@ interface Props {
   size?: number;
   /** Additional positioning classes */
   className?: string;
+  /** When provided the badge becomes tappable (e.g. opens achievements) */
+  onClick?: () => void;
+  /** Subtle pulse to hint the badge is tappable */
+  hint?: boolean;
 }
 
 /**
  * Renders a small medal overlay (top-right) for a given tier.
  * Place inside a `relative` parent (typically the avatar wrapper).
  */
-const AvatarTierBadge = ({ tier, size = 22, className = '' }: Props) => {
+const AvatarTierBadge = ({ tier, size = 22, className = '', onClick, hint = false }: Props) => {
   if (!tier) return null;
+  const Tag = onClick ? 'button' : 'div';
   return (
-    <div
+    <Tag
+      onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : undefined}
       style={{ width: size, height: size }}
-      className={`absolute -top-1 -right-1 rounded-full bg-background ring-2 ring-background flex items-center justify-center pointer-events-none z-10 ${className}`}
+      className={`absolute -top-1 -right-1 rounded-full bg-background ring-2 ring-background flex items-center justify-center z-20 ${
+        onClick ? 'cursor-pointer active:scale-90 transition-transform' : 'pointer-events-none'
+      } ${hint ? 'animate-pulse' : ''} ${className}`}
     >
       <img
         src={TIER_IMG[tier]}
