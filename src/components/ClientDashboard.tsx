@@ -233,6 +233,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [tier, setTier] = useState<Tier>(null);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [badgeHint, setBadgeHint] = useState(() => {
+    try { return !localStorage.getItem('tier_badge_seen'); } catch { return true; }
+  });
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
