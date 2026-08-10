@@ -1006,6 +1006,25 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           </a>
         </div>
 
+        {/* ═══════════ Buy more sessions ═══════════ */}
+        {onNavigate && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-5"
+          >
+            <button
+              type="button"
+              onClick={() => onNavigate('pricing')}
+              className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.99] transition-transform"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
+            </button>
+          </motion.div>
+        )}
+
         {/* ═══════════ Account ═══════════ */}
         <div className="mt-4 border-t border-border/30 pt-4 space-y-2">
 
@@ -1212,22 +1231,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
       </FullscreenModule>
 
-      {/* Sticky "buy more sessions" button */}
-      {onNavigate && (
-        <div
-          className="fixed left-0 right-0 z-40 px-5 pointer-events-none"
-          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
-        >
-          <button
-            type="button"
-            onClick={() => onNavigate('pricing')}
-            className="pointer-events-auto w-full flex items-center justify-center gap-2 rounded-full py-3 text-xs font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.98] transition-transform"
-          >
-            <ShoppingCart className="w-4 h-4" />
-            {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
-          </button>
-        </div>
-      )}
     </div>
   );
 };
