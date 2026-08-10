@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useHint } from './HintDot';
+import { useHint, markHintSeen } from './HintDot';
 
 /**
  * One-time bar above the bottom nav explaining that sections can be swiped.
