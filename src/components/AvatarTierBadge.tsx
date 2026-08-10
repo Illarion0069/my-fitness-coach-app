@@ -46,7 +46,7 @@ interface Props {
  */
 const AvatarTierBadge = ({ tier, size = 22, className = '', onClick, hint = false }: Props) => {
   if (!tier) return null;
-  const Tag = onClick ? 'button' : 'div';
+  const Tag: any = onClick ? 'button' : 'div';
   return (
     <Tag
       onClick={onClick ? (e: React.MouseEvent) => { e.stopPropagation(); onClick(); } : undefined}
