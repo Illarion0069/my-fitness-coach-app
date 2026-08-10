@@ -21,6 +21,8 @@ import AchievementsWidget from './AchievementsWidget';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
 import SessionLedgerHistory from './SessionLedgerHistory';
+import HintDot, { markHintSeen } from './HintDot';
+
 
 /* ──────────────────────── Sparkline ──────────────────────── */
 const Sparkline = ({ data, color = 'hsl(var(--primary))', height = 28, width = 80 }: { data: number[]; color?: string; height?: number; width?: number }) => {
@@ -155,14 +157,16 @@ interface ModuleCardProps {
   onClick: () => void;
   accentColor?: string;
   badge?: string | number;
+  hint?: { id: string; en: string; ru: string };
 }
 
-const ModuleCard = ({ icon, title, subtitle, preview, onClick, accentColor, badge }: ModuleCardProps) => (
+const ModuleCard = ({ icon, title, subtitle, preview, onClick, accentColor, badge, hint }: ModuleCardProps) => (
   <motion.button
-    onClick={onClick}
+    onClick={() => { if (hint) markHintSeen(hint.id); onClick(); }}
     whileTap={{ scale: 0.97 }}
-    className="w-full bg-card border border-border/40 rounded-2xl p-4 text-left hover:border-primary/30 transition-all group"
+    className="relative w-full bg-card border border-border/40 rounded-2xl p-4 text-left hover:border-primary/30 transition-all group"
   >
+    {hint && <HintDot id={hint.id} en={hint.en} ru={hint.ru} className="top-2 right-2" side="left" />}
     <div className="flex items-start justify-between mb-2">
       <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${accentColor || 'bg-primary/15'}`}>
         {icon}
@@ -179,6 +183,7 @@ const ModuleCard = ({ icon, title, subtitle, preview, onClick, accentColor, badg
     </div>
   </motion.button>
 );
+
 
 /* ──────────────────────── Fullscreen Module ──────────────────────── */
 interface FullscreenModuleProps {
