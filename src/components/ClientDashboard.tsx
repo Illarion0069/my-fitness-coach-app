@@ -592,7 +592,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 </div>
               )}
             </div>
-            <AvatarTierBadge tier={tier} size={26} />
+            <AvatarTierBadge
+              tier={tier}
+              size={26}
+              onClick={() => {
+                setShowAchievements(true);
+                try { localStorage.setItem('tier_badge_seen', '1'); } catch {}
+                setBadgeHint(false);
+              }}
+              hint={badgeHint}
+            />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
