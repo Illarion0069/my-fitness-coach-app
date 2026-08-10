@@ -1065,7 +1065,106 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
         {/* ═══════════ Account ═══════════ */}
         <div className="mt-4 border-t border-border/30 pt-4 space-y-2">
+          {/* ── My data (synced with measurements) ── */}
+          <button
+            onClick={() => setShowMyData(v => !v)}
+            className="w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl border border-border/50 hover:bg-secondary/40 transition-colors"
+          >
+            <span className="flex items-center gap-2 text-xs font-bold">
+              <Ruler className="w-3.5 h-3.5 text-primary" />
+              {lang === 'en' ? 'My data' : 'Мои данные'}
+            </span>
+            <span className="flex items-center gap-2 text-[11px] text-muted-foreground">
+              {myHeight ? `${myHeight} ${lang === 'en' ? 'cm' : 'см'}` : '—'}
+              {myAge != null && ` · ${myAge} ${lang === 'en' ? 'y.o.' : 'лет'}`}
+              <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showMyData ? 'rotate-180' : ''}`} />
+            </span>
+          </button>
+
           <AnimatePresence initial={false}>
+            {showMyData && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="p-3 space-y-2.5 bg-secondary/20 rounded-xl border border-border/30">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">
+                        {lang === 'en' ? 'Height, cm' : 'Рост, см'}
+                      </label>
+                      <input
+                        type="number" inputMode="numeric" value={myHeight}
+                        onChange={(e) => setMyHeight(e.target.value)}
+                        placeholder="175"
+                        className="mt-1 w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">
+                        {lang === 'en' ? 'Birth date' : 'Дата рождения'}
+                      </label>
+                      <input
+                        type="date" value={myBirth}
+                        onChange={(e) => setMyBirth(e.target.value)}
+                        className="mt-1 w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="text-[10px] uppercase tracking-wide text-muted-foreground font-bold">
+                      {lang === 'en' ? 'Gender' : 'Пол'}
+                    </label>
+                    <div className="mt-1 grid grid-cols-2 gap-2">
+                      {[
+                        { v: 'male', en: 'Male', ru: 'Мужской' },
+                        { v: 'female', en: 'Female', ru: 'Женский' },
+                      ].map(g => (
+                        <button
+                          key={g.v}
+                          onClick={() => setMyGender(myGender === g.v ? '' : g.v)}
+                          className={`text-xs font-semibold py-2 rounded-lg border transition-colors ${
+                            myGender === g.v
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'border-border/50 hover:bg-secondary/40'
+                          }`}
+                        >
+                          {lang === 'en' ? g.en : g.ru}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {myAge != null && (
+                    <p className="text-[11px] text-muted-foreground">
+                      {lang === 'en' ? `Age: ${myAge}` : `Возраст: ${myAge}`}
+                    </p>
+                  )}
+                  <p className="text-[10px] text-muted-foreground/80">
+                    {lang === 'en'
+                      ? 'Synced with your measurements — used for personal calorie, protein and water targets.'
+                      : 'Синхронизировано с замерами — используется для персональных норм калорий, белка и воды.'}
+                  </p>
+
+                  <button
+                    onClick={handleSaveMyData}
+                    disabled={myDataSaving}
+                    className="w-full text-xs font-bold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
+                  >
+                    {myDataSaving && <Loader2 className="w-3 h-3 animate-spin" />}
+                    {lang === 'en' ? 'Save' : 'Сохранить'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <AnimatePresence initial={false}>
+
             {showChangePwd && (
               <motion.div
                 initial={{ height: 0, opacity: 0 }}
