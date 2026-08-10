@@ -5,6 +5,7 @@ import { lovable } from "@/integrations/lovable/index";
 import { Loader2, Shield, Check, X, Eye, EyeOff } from "lucide-react";
 import CountryCodeSelect from "@/components/CountryCodeSelect";
 import trainerLogo from "@/assets/trainer-logo.png";
+import PageHead from "@/components/PageHead";
 
 // Tiny typed wrapper for the beta auth.oauth namespace.
 interface OAuthAuthorizationDetails {
