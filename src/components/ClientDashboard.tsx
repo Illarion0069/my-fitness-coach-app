@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  KeyRound, Eye, EyeOff, ShoppingCart,
+  KeyRound, Eye, EyeOff, ShoppingCart, Trophy,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -233,6 +233,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [tier, setTier] = useState<Tier>(null);
+  const [showAchievements, setShowAchievements] = useState(false);
+  const [badgeHint, setBadgeHint] = useState(() => {
+    try { return !localStorage.getItem('tier_badge_seen'); } catch { return true; }
+  });
   const [pkg, setPkg] = useState<ClientPackage | null>(null);
   const [sessions, setSessions] = useState<ScheduledSession[]>([]);
   const [pastSessions, setPastSessions] = useState<ScheduledSession[]>([]);
@@ -592,7 +596,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 </div>
               )}
             </div>
-            <AvatarTierBadge tier={tier} size={26} />
+            <AvatarTierBadge
+              tier={tier}
+              size={26}
+              onClick={() => {
+                setShowAchievements(true);
+                try { localStorage.setItem('tier_badge_seen', '1'); } catch {}
+                setBadgeHint(false);
+              }}
+              hint={badgeHint}
+            />
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
@@ -1034,20 +1047,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           </div>
         </motion.div>
 
-        {/* ═══════════ Achievements (collapsible) ═══════════ */}
-        <Collapsible defaultOpen={false}>
-          <CollapsibleTrigger className="w-full">
-            <div className="flex items-center justify-between px-1 py-2">
-              <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">
-                {lang === 'en' ? 'Achievements' : 'Достижения'}
-              </span>
-              <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform data-[state=open]:rotate-180" />
-            </div>
-          </CollapsibleTrigger>
-          <CollapsibleContent>
-            <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
-          </CollapsibleContent>
-        </Collapsible>
+        {/* Achievements moved to the avatar badge (tap the medal) */}
+
 
         {/* ═══════════ Contact Trainer ═══════════ */}
         <div className="flex items-center justify-center gap-2 mt-4">
@@ -1355,6 +1356,33 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         forceClientView={forceClientView}
         restorePendingPayment
       />
+
+      {/* Achievements popup (opened from the avatar medal) */}
+      <FullscreenModule
+        open={showAchievements}
+        onClose={() => setShowAchievements(false)}
+        title={lang === 'en' ? 'Achievements' : 'Достижения'}
+        icon={<Trophy className="w-5 h-5 text-yellow-400" />}
+      >
+        <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
+      </FullscreenModule>
+
+      {/* Sticky "buy more sessions" button */}
+      {onNavigate && (
+        <div
+          className="fixed left-0 right-0 z-40 px-5 pointer-events-none"
+          style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 76px)' }}
+        >
+          <button
+            type="button"
+            onClick={() => onNavigate('pricing')}
+            className="pointer-events-auto w-full flex items-center justify-center gap-2 rounded-full py-3 text-xs font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.98] transition-transform"
+          >
+            <ShoppingCart className="w-4 h-4" />
+            {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
+          </button>
+        </div>
+      )}
     </div>
   );
 };
