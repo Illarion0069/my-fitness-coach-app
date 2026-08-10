@@ -550,11 +550,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
 
     const t = setTimeout(() => {
-      lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
+      remember();
       handleAnalyze({ silent: true });
     }, 1200);
     return () => clearTimeout(t);
-  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, handleAnalyze]);
+  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, effectiveUserId, handleAnalyze]);
+
 
 
 
