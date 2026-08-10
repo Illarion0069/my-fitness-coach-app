@@ -1665,7 +1665,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
       {/* FAB - Add meal */}
       {!isReadOnly && !userId && (
-        <div className="fixed z-[60] right-4" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
+        <div className="fixed z-[90] right-4" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
           <motion.button
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowAddMenu(true)}
