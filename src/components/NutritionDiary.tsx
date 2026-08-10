@@ -1923,10 +1923,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         {showCalcInfo && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setShowCalcInfo(false)}
-            className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center p-4">
+            className="fixed inset-0 z-[200] bg-black/50 flex items-end justify-center p-4 pb-8">
             <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card rounded-3xl p-5 space-y-4 border border-border/40 max-h-[80vh] overflow-y-auto">
+              className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl p-5 pt-4 space-y-3 border border-border/40 max-h-[70vh] overflow-y-auto pb-6">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-bold text-foreground">
                   {lang === 'en' ? 'How we calculate' : 'Как мы считаем'}
@@ -1936,7 +1936,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </button>
               </div>
 
-              <div className="space-y-3 text-xs text-muted-foreground">
+              <div className="space-y-2.5 text-xs text-muted-foreground">
                 <div className="p-3 rounded-2xl bg-secondary/30 space-y-1.5">
                   <h4 className="text-[11px] font-bold text-foreground uppercase tracking-wide">
                     {lang === 'en' ? '1. Food recognition' : '1. Распознавание еды'}
