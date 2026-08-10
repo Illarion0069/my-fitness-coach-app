@@ -570,7 +570,55 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     await fetchData();
   };
 
+  // ---- Two-way sync between the AI "detected" list and the editable entries ----
+  const normName = (s: string) => (s || '').trim().toLowerCase();
+
+  const recalcAnalysisTotals = (a: any) => {
+    const meals = (a.meals || []).map((m: any) => {
+      const foods = m.detected_foods || [];
+      return {
+        ...m,
+        estimated_calories: foods.reduce((s: number, f: any) => s + (f.calories || 0), 0),
+        protein_g: foods.reduce((s: number, f: any) => s + (f.protein_g || 0), 0),
+        carbs_g: foods.reduce((s: number, f: any) => s + (f.carbs_g || 0), 0),
+        fat_g: foods.reduce((s: number, f: any) => s + (f.fat_g || 0), 0),
+      };
+    });
+    return {
+      ...a,
+      meals,
+      total_calories: meals.reduce((s: number, m: any) => s + (m.estimated_calories || 0), 0),
+      total_protein_g: meals.reduce((s: number, m: any) => s + (m.protein_g || 0), 0),
+      total_carbs_g: meals.reduce((s: number, m: any) => s + (m.carbs_g || 0), 0),
+      total_fat_g: meals.reduce((s: number, m: any) => s + (m.fat_g || 0), 0),
+    };
+  };
+
+  // patch === null -> delete the matching detected food
+  const applyToAiFood = (mealType: string, oldName: string, patch: Partial<DetectedFood> | null) => {
+    const a = analysis as any;
+    if (!a || a.invalidated || !Array.isArray(a.meals)) return null;
+    const meals = a.meals.map((m: any) => ({ ...m, detected_foods: [...(m.detected_foods || [])] }));
+    const meal = meals.find((m: any) => m.meal_type === mealType);
+    if (!meal) return null;
+    const idx = meal.detected_foods.findIndex((f: any) => normName(f.name) === normName(oldName));
+    if (idx === -1) return null;
+    if (patch === null) meal.detected_foods.splice(idx, 1);
+    else meal.detected_foods[idx] = { ...meal.detected_foods[idx], ...patch };
+    return recalcAnalysisTotals({ ...a, meals });
+  };
+
+  // patch === null -> delete the matching editable entry
+  const applyToManualEntry = (mealType: string, oldName: string, patch: Partial<ManualEntry> | null) => {
+    const entries = (log?.manual_entries || []) as ManualEntry[];
+    const idx = entries.findIndex(e => e.meal_type === mealType && normName(e.name) === normName(oldName));
+    if (idx === -1) return null;
+    if (patch === null) return entries.filter((_, i) => i !== idx);
+    return entries.map((e, i) => (i === idx ? { ...e, ...patch } : e));
+  };
+
   const handleDeleteManualEntry = async (entryId: string) => {
+
     if (!log?.id) return;
     const target = ((log.manual_entries || []) as ManualEntry[]).find(e => e.id === entryId);
     const entries = ((log.manual_entries || []) as ManualEntry[]).filter(e => e.id !== entryId);
