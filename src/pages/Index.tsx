@@ -53,7 +53,7 @@ const AppContent = () => {
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
-    return !localStorage.getItem('app_guide_seen') && !localStorage.getItem('user_role_hint');
+    return !localStorage.getItem('app_guide_v2_seen') && !localStorage.getItem('user_role_hint');
   });
   const containerRef = useRef<HTMLDivElement>(null);
   // Note: previously force-remounted the active section on visibilitychange/pageshow as a
@@ -325,7 +325,7 @@ const AppContent = () => {
       {showGuide && (
         <AppGuide onComplete={() => {
           setShowGuide(false);
-          localStorage.setItem('app_guide_seen', '1');
+          localStorage.setItem('app_guide_v2_seen', '1');
         }} />
       )}
     </div>
