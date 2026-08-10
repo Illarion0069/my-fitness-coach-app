@@ -705,24 +705,31 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const handleSaveManualEntry = async () => {
     if (!log?.id || !editingManualId) return;
     const portionVal = parseInt(editManualPortion);
+    const original = ((log.manual_entries || []) as ManualEntry[]).find(e => e.id === editingManualId);
+    const patch = {
+      name: editManualName.trim() || original?.name || '',
+      portion_g: portionVal > 0 ? portionVal : original?.portion_g,
+      calories: parseInt(editManualCal) || 0,
+      protein_g: parseInt(editManualProtein) || 0,
+      carbs_g: parseInt(editManualCarbs) || 0,
+      fat_g: parseInt(editManualFat) || 0,
+    };
     const entries = ((log.manual_entries || []) as ManualEntry[]).map(e =>
-      e.id === editingManualId
-        ? {
-            ...e,
-            name: editManualName.trim() || e.name,
-            portion_g: portionVal > 0 ? portionVal : e.portion_g,
-            calories: parseInt(editManualCal) || 0,
-            protein_g: parseInt(editManualProtein) || 0,
-            carbs_g: parseInt(editManualCarbs) || 0,
-            fat_g: parseInt(editManualFat) || 0,
-          }
-        : e
+      e.id === editingManualId ? { ...e, ...patch } : e
     );
-    setLog(prev => prev ? { ...prev, manual_entries: entries } as any : prev);
+    // Mirror the change onto the AI "detected" list so both cards show the same numbers
+    const syncedAnalysis = original
+      ? applyToAiFood(original.meal_type, original.name, patch as Partial<DetectedFood>)
+      : null;
+    setLog(prev => prev ? { ...prev, manual_entries: entries, ...(syncedAnalysis ? { ai_analysis: syncedAnalysis } : {}) } as any : prev);
     setEditingManualId(null);
     setEditManualOrig(null);
-    await supabase.from('nutrition_logs').update({ manual_entries: entries as any }).eq('id', log.id);
+    await supabase.from('nutrition_logs').update({
+      manual_entries: entries as any,
+      ...(syncedAnalysis ? { ai_analysis: syncedAnalysis as any } : {}),
+    }).eq('id', log.id);
     await fetchData();
+
   };
 
 
