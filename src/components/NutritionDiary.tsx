@@ -254,6 +254,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     if (cached) applyLogData(cached.log, cached.photos);
     if (!opts?.force && cached && Date.now() - cached.ts < DIARY_CACHE_TTL) return;
 
+
     const [logRes, photosRes] = await Promise.all([
       supabase.from('nutrition_logs').select('*').eq('user_id', effectiveUserId).eq('log_date', date).maybeSingle(),
       supabase.from('food_photos').select('*').eq('user_id', effectiveUserId).eq('log_date', date).order('created_at', { ascending: true }),
