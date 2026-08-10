@@ -351,9 +351,12 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     if (!user) return;
 
     const loadAvatar = async () => {
-      const { data } = await supabase.from('profiles').select('avatar_url, daily_calorie_goal').eq('user_id', user.id).maybeSingle();
+      const { data } = await supabase.from('profiles').select('avatar_url, daily_calorie_goal, height_cm, birth_date, gender').eq('user_id', user.id).maybeSingle();
       setAvatarUrl(data?.avatar_url || null);
       setCalorieGoal((data as any)?.daily_calorie_goal || null);
+      setMyHeight((data as any)?.height_cm ? String((data as any).height_cm) : '');
+      setMyBirth((data as any)?.birth_date || '');
+      setMyGender((data as any)?.gender || '');
     };
 
     const fetchPkg = async () => {
