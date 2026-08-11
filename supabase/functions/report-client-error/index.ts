@@ -25,6 +25,24 @@ Deno.serve(async (req) => {
     const stack = String(body?.stack || "").slice(0, 900);
     const userId = String(body?.user_id || "").slice(0, 64);
     const userName = String(body?.user_name || "").slice(0, 80);
+    const userAgent = String(body?.user_agent || "").slice(0, 200);
+
+    // Сетевой шум (обрыв связи, закрытая вкладка, блокировщики) — не алертим
+    const NOISE = [
+      "Failed to fetch",
+      "Load failed",
+      "NetworkError",
+      "AbortError",
+      "The operation was aborted",
+      "network connection was lost",
+      "Importing a module script failed",
+      "ResizeObserver loop",
+    ];
+    if (NOISE.some((n) => message.toLowerCase().includes(n.toLowerCase()))) {
+      return new Response(JSON.stringify({ ok: true, ignored: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const key = `${source}|${message}`;
     const now = Date.now();
@@ -42,9 +60,10 @@ Deno.serve(async (req) => {
     if (TG_TOKEN && TG_CHAT) {
       const text =
         `🐞 <b>Ошибка в приложении у клиента</b>\n\n` +
-        `👤 ${esc(userName || "гость")}${userId ? ` (<code>${esc(userId)}</code>)` : ""}\n` +
+        `👤 ${esc(userName || "гость (не залогинен)")}${userId ? ` (<code>${esc(userId)}</code>)` : ""}\n` +
         `📍 ${esc(source)}\n` +
         (url ? `🔗 ${esc(url)}\n` : "") +
+        (userAgent ? `📱 ${esc(userAgent)}\n` : "") +
         `\n❌ ${esc(message)}` +
         (stack ? `\n\n<pre>${esc(stack)}</pre>` : "");
 

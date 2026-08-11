@@ -3,11 +3,19 @@ import { supabase } from "@/integrations/supabase/client";
 const sentRecently = new Map<string, number>();
 const DEDUP_MS = 5 * 60 * 1000;
 
+// Сетевой шум: обрыв связи, закрытая вкладка, блокировщики — не баги приложения
 const IGNORE = [
   "ResizeObserver loop",
   "Failed to fetch dynamically imported module",
+  "Failed to fetch",
   "Load failed",
   "NetworkError when attempting to fetch resource",
+  "The operation was aborted",
+  "AbortError",
+  "The network connection was lost",
+  "cancelled",
+  "Отменено",
+  "Importing a module script failed",
 ];
 
 export async function reportClientError(input: {
@@ -47,6 +55,7 @@ export async function reportClientError(input: {
         url: window.location.href,
         user_id,
         user_name,
+        user_agent: navigator.userAgent.slice(0, 200),
       },
     });
   } catch {
