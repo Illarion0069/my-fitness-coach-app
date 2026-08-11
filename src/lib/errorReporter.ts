@@ -55,6 +55,7 @@ export async function reportClientError(input: {
         url: window.location.href,
         user_id,
         user_name,
+        user_agent: navigator.userAgent.slice(0, 200),
       },
     });
   } catch {
