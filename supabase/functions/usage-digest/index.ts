@@ -86,6 +86,8 @@ serve(async (req) => {
     const perClient = new Map<string, number>();
     const firstSeen = new Map<string, string>();
     const lastSeen = new Map<string, string>();
+    const funnelReach = new Map<string, Set<string>>();
+
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
@@ -101,6 +103,9 @@ serve(async (req) => {
 
       if (e.event_type === "screen") {
         bump(screensAll, e.label || e.path || "/");
+      } else if (e.event_type === "funnel") {
+        if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
+        funnelReach.get(e.label)!.add(vid);
       } else {
         if (!e.user_id) bump(clicksGuests, e.label);
         else if (isNew) bump(clicksNew, e.label);
@@ -108,6 +113,46 @@ serve(async (req) => {
       }
       if (e.user_id) bump(perClient, e.user_id);
     }
+
+    // --- Воронка: визит → запись ---
+    const reach = (k: string) => funnelReach.get(k)?.size || 0;
+    const funnelSteps: [string, number][] = [
+      ["Зашли в приложение", visitorsAll.size],
+      ["Открыли запись", reach("booking_open")],
+      ["Выбрали дату", reach("booking_date")],
+      ["Выбрали время", reach("booking_time")],
+      ["Дошли до оплаты/данных", reach("booking_payment")],
+      ["✅ Записались", reach("booking_done")],
+    ];
+
+    let worstDrop = { from: "", to: "", lost: 0, pct: 0 };
+    const funnelLines = funnelSteps.map(([name, val], i) => {
+      const base = funnelSteps[0][1] || 1;
+      const prev = i > 0 ? funnelSteps[i - 1][1] : val;
+      const conv = Math.round((val / base) * 100);
+      let dropTxt = "";
+      if (i > 0) {
+        const lost = Math.max(0, prev - val);
+        const pct = prev ? Math.round((lost / prev) * 100) : 0;
+        dropTxt = lost ? `  (−${lost}, отвал ${pct}%)` : "  (без потерь)";
+        if (lost > worstDrop.lost) {
+          worstDrop = { from: funnelSteps[i - 1][0], to: name, lost, pct };
+        }
+      }
+      return `${i + 1}. ${name}: <b>${val}</b> · ${conv}%${dropTxt}`;
+    });
+
+    const signupLines =
+      `• Начали регистрацию: <b>${reach("signup_submit")}</b>\n` +
+      `• Зарегистрировались: <b>${reach("signup_done")}</b>` +
+      (reach("signup_submit") > reach("signup_done")
+        ? `  (не дошли: ${reach("signup_submit") - reach("signup_done")})`
+        : "");
+
+    const bottleneck = worstDrop.lost
+      ? `\n\n🔻 Основной отвал: <b>${esc(worstDrop.from)} → ${esc(worstDrop.to)}</b> — потеряли ${worstDrop.lost} чел. (${worstDrop.pct}%)`
+      : "";
+
 
     const fmtTop = (m: Map<string, number>, n = 8) =>
       top(m, n).map(([l, c], i) => `${i + 1}. ${esc(String(l))} — ${c}`).join("\n") || "—";
@@ -140,7 +185,10 @@ serve(async (req) => {
         `👥 Уникальных: <b>${visitorsAll.size}</b> ` +
         `(клиенты: ${visitorsClients.size}, из них новые: ${visitorsNew.size}; гости: ${visitorsGuests.size})\n` +
         `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}\n\n` +
+        `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}\n\n` +
+        `<b>Регистрация</b>\n${signupLines}\n\n` +
         `<b>Куда заходят (экраны)</b>\n${fmtTop(screensAll)}\n\n` +
+
         `<b>Что нажимают действующие клиенты</b>\n${fmtTop(clicksClients)}\n\n` +
         `<b>Что нажимают новые клиенты (до 7 дней)</b>\n${fmtTop(clicksNew, 6)}\n\n` +
         `<b>Что нажимают гости (без входа)</b>\n${fmtTop(clicksGuests, 6)}` +

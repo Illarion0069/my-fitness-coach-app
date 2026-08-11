@@ -8,6 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, isToday, isBefore, startOfDay, isSameMonth, getDay } from 'date-fns';
 import { ru, enUS } from 'date-fns/locale';
 import PhoneInput from '@/components/PhoneInput';
+import { trackFunnel } from '@/lib/analytics';
 
 interface BookingModalProps {
   open: boolean;
@@ -166,6 +167,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     }
     if (open) {
       const startStep = initialStep || 'date';
+      if (startStep !== 'my-sessions') trackFunnel('booking_open');
       setStep(startStep);
       setCurrentMonth(new Date());
       setSelectedDate(null);
@@ -257,9 +259,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   }, [user]);
 
   const handleTimeSelect = async (time: string) => {
+    trackFunnel('booking_time');
     setSelectedTime(time);
     if (!user) {
       // Guest flow: collect name + phone
+      trackFunnel('booking_payment');
       setStep('guest-info');
       return;
     }
@@ -271,12 +275,14 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     } else {
       setSelectedPackage(null);
       setPaymentOpened(false);
+      trackFunnel('booking_payment');
       setStep('payment');
     }
   };
 
   const handleDateSelect = (day: Date) => {
     if (isBefore(day, startOfDay(new Date()))) return;
+    trackFunnel('booking_date');
     setSelectedDate(day);
     setSelectedTime(null);
     fetchSlots(day);
@@ -327,6 +333,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             });
           }
         } else {
+          trackFunnel('booking_done');
           setStep('done');
         }
 
@@ -385,7 +392,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         if (options?.goToPaymentDoneAfter) {
           setCompletedPendingPayment(true);
         }
-        setStep('done');
+        trackFunnel('booking_done');
+          setStep('done');
       }
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
