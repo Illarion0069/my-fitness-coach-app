@@ -86,6 +86,8 @@ serve(async (req) => {
     const perClient = new Map<string, number>();
     const firstSeen = new Map<string, string>();
     const lastSeen = new Map<string, string>();
+    const funnelReach = new Map<string, Set<string>>();
+
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
