@@ -25,6 +25,7 @@ Deno.serve(async (req) => {
     const stack = String(body?.stack || "").slice(0, 900);
     const userId = String(body?.user_id || "").slice(0, 64);
     const userName = String(body?.user_name || "").slice(0, 80);
+    const userAgent = String(body?.user_agent || "").slice(0, 200);
 
     const key = `${source}|${message}`;
     const now = Date.now();
