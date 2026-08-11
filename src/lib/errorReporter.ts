@@ -4,19 +4,21 @@ const sentRecently = new Map<string, number>();
 const DEDUP_MS = 5 * 60 * 1000;
 
 // Сетевой шум: обрыв связи, закрытая вкладка, блокировщики — не баги приложения
-const IGNORE = [
-  "ResizeObserver loop",
-  "Failed to fetch dynamically imported module",
-  "Failed to fetch",
-  "Load failed",
-  "NetworkError when attempting to fetch resource",
-  "The operation was aborted",
-  "AbortError",
-  "The network connection was lost",
+const NETWORK_NOISE = [
+  "failed to fetch",
+  "load failed",
+  "networkerror",
+  "network request failed",
+  "the operation was aborted",
+  "aborterror",
+  "the network connection was lost",
+  "importing a module script failed",
+  "failed to fetch dynamically imported module",
   "cancelled",
-  "Отменено",
-  "Importing a module script failed",
+  "отменено",
 ];
+
+const IGNORE = ["resizeobserver loop", ...NETWORK_NOISE];
 
 export async function reportClientError(input: {
   message: string;
@@ -26,7 +28,10 @@ export async function reportClientError(input: {
   try {
     const message = (input.message || "").slice(0, 500);
     if (!message) return;
-    if (IGNORE.some((p) => message.includes(p))) return;
+    const lower = message.toLowerCase();
+    if (IGNORE.some((p) => lower.includes(p))) return;
+    // Оффлайн — любая ошибка почти наверняка следствие потери связи
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
 
     const key = `${input.source || "app"}|${message}`;
     const now = Date.now();
@@ -53,9 +58,12 @@ export async function reportClientError(input: {
         stack: input.stack?.slice(0, 900),
         source: input.source || "app",
         url: window.location.href,
+        route: window.location.pathname,
         user_id,
         user_name,
         user_agent: navigator.userAgent.slice(0, 200),
+        online: navigator.onLine,
+        occurred_at: new Date().toISOString(),
       },
     });
   } catch {
