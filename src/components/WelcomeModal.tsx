@@ -8,6 +8,7 @@ import { lovable } from '@/integrations/lovable/index';
 import { useToast } from '@/hooks/use-toast';
 import CountryCodeSelect from './CountryCodeSelect';
 import trainerLogo from '@/assets/trainer-logo.png';
+import { trackFunnel } from '@/lib/analytics';
 
 type Step = 'welcome' | 'register' | 'login' | 'telegram' | 'forgot' | 'forgot-done';
 
@@ -186,6 +187,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
   };
 
   const handleRegister = async () => {
+    trackFunnel('signup_submit');
     setFormError(null);
     const validationError = getRegisterErrors();
     if (validationError) { setFormError(validationError); return; }
@@ -216,6 +218,7 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
         if (signInErr) throw signInErr;
       }
       await refreshProfile();
+      trackFunnel('signup_done');
       toast({ title: t('Registration successful!', 'Регистрация успешна!') });
 
       // Non-blocking trainer notification
