@@ -44,7 +44,7 @@ const lastSent = new Map<string, number>();
 const DEDUP_MS = 1500;
 
 export async function trackEvent(
-  eventType: "screen" | "click",
+  eventType: "screen" | "click" | "funnel",
   label: string,
   props: Record<string, unknown> = {},
 ) {
@@ -70,6 +70,10 @@ export async function trackEvent(
   } catch {
     // аналитика никогда не должна ломать приложение
   }
+}
+
+export function trackFunnel(step: string, props: Record<string, unknown> = {}) {
+  void trackEvent("funnel", step, props);
 }
 
 export function trackScreen(name: string) {
