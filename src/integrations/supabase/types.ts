@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_events: {
+        Row: {
+          anon_id: string
+          created_at: string
+          device: string | null
+          event_type: string
+          id: string
+          label: string
+          path: string | null
+          props: Json
+          user_id: string | null
+        }
+        Insert: {
+          anon_id: string
+          created_at?: string
+          device?: string | null
+          event_type: string
+          id?: string
+          label: string
+          path?: string | null
+          props?: Json
+          user_id?: string | null
+        }
+        Update: {
+          anon_id?: string
+          created_at?: string
+          device?: string | null
+          event_type?: string
+          id?: string
+          label?: string
+          path?: string | null
+          props?: Json
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       body_measurements: {
         Row: {
           chest_cm: number | null
