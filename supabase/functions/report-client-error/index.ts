@@ -7,6 +7,87 @@ const DEDUP_MS = 5 * 60 * 1000;
 const esc = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
+// Сетевой шум — никогда не считается критичным и не шлётся в чат
+const NETWORK_NOISE = [
+  "failed to fetch",
+  "load failed",
+  "networkerror",
+  "network request failed",
+  "the operation was aborted",
+  "aborterror",
+  "the network connection was lost",
+  "importing a module script failed",
+  "failed to fetch dynamically imported module",
+  "resizeobserver loop",
+  "cancelled",
+  "отменено",
+];
+
+type Verdict = {
+  level: "ignore" | "warning" | "critical";
+  reason: string; // понятными словами: что произошло
+  fix: string; // что делать
+};
+
+function classify(message: string, source: string, online: boolean): Verdict {
+  const m = message.toLowerCase();
+
+  if (!online || NETWORK_NOISE.some((n) => m.includes(n))) {
+    return {
+      level: "ignore",
+      reason: "Обрыв сети у посетителя (закрыл вкладку, потерял связь, блокировщик).",
+      fix: "Ничего делать не нужно — это не баг приложения.",
+    };
+  }
+
+  if (m.includes("chunkloaderror") || m.includes("dynamically imported module")) {
+    return {
+      level: "warning",
+      reason: "У человека открыта старая версия приложения после нашего обновления.",
+      fix: "Попросить перезагрузить страницу. Повторяется часто — добавить авто-обновление при новой сборке.",
+    };
+  }
+
+  if (m.includes("jwt") || m.includes("401") || m.includes("not authenticated") || m.includes("invalid refresh token")) {
+    return {
+      level: "warning",
+      reason: "Сессия входа истекла или недействительна.",
+      fix: "Клиенту — выйти и войти заново. Если массово — проверить обновление токенов в авторизации.",
+    };
+  }
+
+  if (m.includes("row-level security") || m.includes("permission denied") || m.includes("403")) {
+    return {
+      level: "critical",
+      reason: "Приложение не имеет прав на чтение/запись данных — не хватает политики доступа в базе.",
+      fix: "Проверить RLS-политики и права для таблицы из стека ошибки.",
+    };
+  }
+
+  if (m.includes("is not a function") || m.includes("undefined is not an object") ||
+      m.includes("cannot read properties") || m.includes("is not defined")) {
+    return {
+      level: "critical",
+      reason: "Сломался код экрана: ожидались данные, а их не оказалось — экран мог не отрисоваться.",
+      fix: "Открыть файл из стека, добавить защиту от пустых данных и проверить загрузку экрана.",
+    };
+  }
+
+  if (source === "react-error-boundary") {
+    return {
+      level: "critical",
+      reason: "Экран упал целиком — пользователь увидел заглушку с ошибкой.",
+      fix: "Воспроизвести маршрут из ссылки и починить компонент из стека.",
+    };
+  }
+
+  return {
+    level: "warning",
+    reason: "Неожиданная ошибка в приложении, требует ручной проверки.",
+    fix: "Открыть указанную страницу и повторить действия пользователя.",
+  };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -22,24 +103,17 @@ Deno.serve(async (req) => {
 
     const source = String(body?.source || "unknown").slice(0, 60);
     const url = String(body?.url || "").slice(0, 200);
+    const route = String(body?.route || "").slice(0, 100);
     const stack = String(body?.stack || "").slice(0, 900);
     const userId = String(body?.user_id || "").slice(0, 64);
     const userName = String(body?.user_name || "").slice(0, 80);
     const userAgent = String(body?.user_agent || "").slice(0, 200);
+    const online = body?.online !== false;
+    const occurredAt = String(body?.occurred_at || new Date().toISOString());
 
-    // Сетевой шум (обрыв связи, закрытая вкладка, блокировщики) — не алертим
-    const NOISE = [
-      "Failed to fetch",
-      "Load failed",
-      "NetworkError",
-      "AbortError",
-      "The operation was aborted",
-      "network connection was lost",
-      "Importing a module script failed",
-      "ResizeObserver loop",
-    ];
-    if (NOISE.some((n) => message.toLowerCase().includes(n.toLowerCase()))) {
-      return new Response(JSON.stringify({ ok: true, ignored: true }), {
+    const verdict = classify(message, source, online);
+    if (verdict.level === "ignore") {
+      return new Response(JSON.stringify({ ok: true, ignored: true, reason: verdict.reason }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -55,16 +129,34 @@ Deno.serve(async (req) => {
     recent.set(key, now);
     for (const [k, t] of recent) if (now - t > DEDUP_MS) recent.delete(k);
 
+    const when = new Date(occurredAt).toLocaleString("ru-RU", {
+      timeZone: "Asia/Nicosia",
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const who = userId
+      ? `${userName || "клиент"} (<code>${esc(userId)}</code>)`
+      : "гость — не залогинен, личность неизвестна";
+
+    const title = verdict.level === "critical"
+      ? "🚨 <b>Критичная ошибка в приложении</b>"
+      : "⚠️ <b>Предупреждение в приложении</b>";
+
     const TG_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
     if (TG_TOKEN && TG_CHAT) {
       const text =
-        `🐞 <b>Ошибка в приложении у клиента</b>\n\n` +
-        `👤 ${esc(userName || "гость (не залогинен)")}${userId ? ` (<code>${esc(userId)}</code>)` : ""}\n` +
-        `📍 ${esc(source)}\n` +
-        (url ? `🔗 ${esc(url)}\n` : "") +
-        (userAgent ? `📱 ${esc(userAgent)}\n` : "") +
-        `\n❌ ${esc(message)}` +
+        `${title}\n\n` +
+        `👤 Кто: ${who}\n` +
+        `🕐 Когда: ${esc(when)} (Кипр)\n` +
+        `📄 Где: ${esc(route || url || "неизвестно")}\n` +
+        (userAgent ? `📱 Устройство: ${esc(userAgent)}\n` : "") +
+        `\n💬 Почему: ${esc(verdict.reason)}\n` +
+        `🛠 Что делать: ${esc(verdict.fix)}\n` +
+        `\n❌ Техтекст: ${esc(message)} (${esc(source)})` +
         (stack ? `\n\n<pre>${esc(stack)}</pre>` : "");
 
       const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
@@ -80,7 +172,7 @@ Deno.serve(async (req) => {
       if (!res.ok) console.error("telegram error:", await res.text());
     }
 
-    return new Response(JSON.stringify({ ok: true }), {
+    return new Response(JSON.stringify({ ok: true, level: verdict.level }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
