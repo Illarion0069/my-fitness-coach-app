@@ -263,6 +263,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setSelectedTime(time);
     if (!user) {
       // Guest flow: collect name + phone
+      trackFunnel('booking_payment');
       setStep('guest-info');
       return;
     }
