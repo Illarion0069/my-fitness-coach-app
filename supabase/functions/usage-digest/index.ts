@@ -185,7 +185,10 @@ serve(async (req) => {
         `👥 Уникальных: <b>${visitorsAll.size}</b> ` +
         `(клиенты: ${visitorsClients.size}, из них новые: ${visitorsNew.size}; гости: ${visitorsGuests.size})\n` +
         `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}\n\n` +
+        `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}\n\n` +
+        `<b>Регистрация</b>\n${signupLines}\n\n` +
         `<b>Куда заходят (экраны)</b>\n${fmtTop(screensAll)}\n\n` +
+
         `<b>Что нажимают действующие клиенты</b>\n${fmtTop(clicksClients)}\n\n` +
         `<b>Что нажимают новые клиенты (до 7 дней)</b>\n${fmtTop(clicksNew, 6)}\n\n` +
         `<b>Что нажимают гости (без входа)</b>\n${fmtTop(clicksGuests, 6)}` +
