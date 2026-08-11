@@ -51,3 +51,6 @@ verify_jwt = false
 verify_jwt = false
 
 
+
+[functions.usage-digest]
+verify_jwt = false
