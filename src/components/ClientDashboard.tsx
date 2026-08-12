@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  ShoppingCart, Trophy, Settings,
+  ShoppingCart, Trophy, Settings, Plus,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
