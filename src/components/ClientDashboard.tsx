@@ -1180,8 +1180,22 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
       {/* ═══════════ Fullscreen Modules ═══════════ */}
       {measurementsOpen && (
-        <BodyMeasurementsDetail open={measurementsOpen} measurements={measurements} lang={lang} onClose={() => setMeasurementsOpen(false)} />
+        <BodyMeasurementsDetail
+          open={measurementsOpen}
+          measurements={measurements}
+          lang={lang}
+          userId={user.id}
+          editable
+          onChanged={async () => {
+            const { data } = await supabase
+              .from('body_measurements').select('*').eq('user_id', user.id)
+              .order('measured_at', { ascending: false }).limit(50);
+            setMeasurements(data || []);
+          }}
+          onClose={() => setMeasurementsOpen(false)}
+        />
       )}
+
 
       <FullscreenModule
         open={historyOpen}
