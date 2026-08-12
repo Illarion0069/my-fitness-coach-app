@@ -628,9 +628,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`relative overflow-hidden rounded-2xl ${
+            className={`relative overflow-hidden rounded-3xl ${
               exhausted ? 'bg-destructive/10 border border-destructive/30' : 'gradient-primary'
             }`}
+
           >
             {/* Decorative circles */}
             {!exhausted && (
