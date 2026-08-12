@@ -16,6 +16,7 @@ interface ClientSettingsProps {
   testsCount: number;
   lastTestPct: number | null;
   onOpenTests: () => void;
+  onOpenNutrition: () => void;
   onSignOut: () => void;
 }
 
@@ -53,7 +54,7 @@ const ClientSettings = ({
   userId, avatarUrl, onAvatarChange, testsCount, lastTestPct, onOpenTests, onSignOut,
 }: ClientSettingsProps) => {
   const { profile, refreshProfile } = useAuth();
-  const { lang, setLang } = useLanguage() as any;
+  const { lang, setLang } = useLanguage();
   const { toast } = useToast();
   const en = lang === 'en';
 
@@ -150,11 +151,6 @@ const ClientSettings = ({
       title: en ? 'Saved' : 'Сохранено',
       description: en ? 'Used for calorie & macro targets' : 'Используется для расчёта калорий и БЖУ',
     });
-  };
-
-  const changeLanguage = async (next: 'en' | 'ru') => {
-    setLang(next);
-    await supabase.from('profiles').update({ preferred_language: next }).eq('user_id', userId);
   };
 
   const handleAvatar = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -405,7 +401,7 @@ const ClientSettings = ({
             {(['en', 'ru'] as const).map(l => (
               <button
                 key={l}
-                onClick={() => changeLanguage(l)}
+                onClick={() => setLang(l)}
                 className={`text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-colors ${lang === l ? 'border-primary bg-primary/10 text-primary' : 'border-border/50 text-muted-foreground'}`}
               >
                 {l.toUpperCase()}
@@ -429,7 +425,7 @@ const ClientSettings = ({
         <Row
           icon={<HeartPulse className="w-4 h-4" />}
           label={en ? 'How we calculate calories' : 'Как мы считаем калории'}
-          onClick={() => window.dispatchEvent(new CustomEvent('open-calorie-info'))}
+          onClick={onOpenNutrition}
         />
       </Section>
 
