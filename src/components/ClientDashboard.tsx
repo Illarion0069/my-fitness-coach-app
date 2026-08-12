@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  ShoppingCart, Trophy, Settings,
+  ShoppingCart, Trophy, Settings, Plus,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -480,6 +480,28 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const diff = last - first;
     return { current: last, diff: Math.round(diff * 10) / 10 };
   }, [weightSparkData]);
+
+  // 30-day weight delta + per-metric series for the body panel
+  const bodyPanel = useMemo(() => {
+    const sorted = [...measurements].sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
+    const series = (key: string) => sorted.map(m => Number(m[key])).filter(v => Number.isFinite(v) && v > 0);
+    const cutoff = Date.now() - 30 * 86400000;
+    const w30 = sorted.filter(m => m.weight_kg && new Date(m.measured_at).getTime() >= cutoff).map(m => Number(m.weight_kg));
+    const weight30 = w30.length >= 2 ? Math.round((w30[w30.length - 1] - w30[0]) * 10) / 10 : null;
+    const metrics = [
+      { key: 'waist_cm', en: 'Waist', ru: 'Талия', good: 'down' as const },
+      { key: 'chest_cm', en: 'Chest', ru: 'Грудь', good: 'up' as const },
+      { key: 'left_arm_cm', en: 'Arm', ru: 'Рука', good: 'up' as const },
+      { key: 'hips_cm', en: 'Hips', ru: 'Бёдра', good: 'down' as const },
+    ].map(m => {
+      const s = series(m.key);
+      const last = s.length ? s[s.length - 1] : null;
+      const diff = s.length >= 2 ? Math.round((s[s.length - 1] - s[0]) * 10) / 10 : 0;
+      return { ...m, last, diff, series: s };
+    });
+    return { weight30, metrics };
+  }, [measurements]);
+
 
   // Test sparkline data
   const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
@@ -1050,30 +1072,87 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             </motion.button>
 
 
-            {/* ═════ Body Measurements ═════ */}
-            <ModuleCard
-              icon={<Ruler className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Body' : 'Замеры'}
-              hint={{ id: 'body_measurements', en: 'Track weight & measurements', ru: 'Вес и замеры — здесь' }}
-              subtitle={measurements.length === 0
-                ? (lang === 'en' ? 'Add first record' : 'Добавьте замер')
-                : `${measurements.length} ${lang === 'en' ? 'records' : 'записей'}`}
+            {/* ═════ Body Measurements — HERO (ring + metrics grid) ═════ */}
+            <motion.div
               onClick={() => setMeasurementsOpen(true)}
+              whileTap={{ scale: 0.98 }}
+              className="col-span-2 relative overflow-hidden bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/40 transition-all cursor-pointer"
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <Ruler className="w-4 h-4 text-primary" />
+                <span className="font-heading text-base tracking-wide text-foreground">
+                  {lang === 'en' ? 'Body Measurements' : 'Замеры тела'}
+                </span>
+              </div>
 
-              preview={weightSparkData.length >= 2 ? (
-                <div className="space-y-1.5">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-lg font-extrabold font-heading text-foreground">{weightTrend!.current}</span>
-                    <span className="text-[10px] text-muted-foreground">kg</span>
-                    <span className={`text-[10px] font-bold flex items-center gap-0.5 ml-auto ${weightTrend!.diff < 0 ? 'text-green-400' : weightTrend!.diff > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
-                      {weightTrend!.diff > 0 ? <TrendingUp className="w-3 h-3" /> : weightTrend!.diff < 0 ? <TrendingDown className="w-3 h-3" /> : <Minus className="w-3 h-3" />}
-                      {weightTrend!.diff > 0 ? '+' : ''}{weightTrend!.diff}
+              <div className="flex items-center gap-4">
+                {/* Weight ring */}
+                <div className="relative w-[92px] h-[92px] shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-secondary" />
+                    <motion.circle
+                      cx="50" cy="50" r="42" fill="none" strokeWidth="10" strokeLinecap="round"
+                      className="stroke-primary"
+                      initial={{ strokeDasharray: '0 264' }}
+                      animate={{ strokeDasharray: `${Math.min(Math.abs(bodyPanel.weight30 ?? 0) / 4, 1) * 264 || 26} 264` }}
+                      transition={{ duration: 0.9, ease: 'easeOut' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="font-heading leading-none text-[22px] text-foreground">
+                      {weightTrend ? weightTrend.current : (weightSparkData[0] ?? '—')}
                     </span>
+                    <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
+                      {lang === 'en' ? 'kg' : 'кг'}
+                    </span>
+                    {bodyPanel.weight30 != null && (
+                      <span className={`text-[8px] font-bold mt-0.5 ${bodyPanel.weight30 < 0 ? 'text-green-400' : bodyPanel.weight30 > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                        {bodyPanel.weight30 > 0 ? '+' : ''}{bodyPanel.weight30} / 30d
+                      </span>
+                    )}
                   </div>
-                  <Sparkline data={weightSparkData} />
                 </div>
-              ) : undefined}
-            />
+
+                {/* Metrics grid */}
+                <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
+                  {bodyPanel.metrics.map((m, i) => {
+                    const positive = m.diff === 0 ? null : (m.good === 'down' ? m.diff < 0 : m.diff > 0);
+                    const color = positive == null ? 'text-muted-foreground' : positive ? 'text-green-400' : 'text-orange-400';
+                    return (
+                      <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">
+                            {lang === 'en' ? m.en : m.ru}
+                          </span>
+                          {m.diff !== 0 && (
+                            m.diff > 0
+                              ? <TrendingUp className={`w-3 h-3 ml-auto ${color}`} />
+                              : <TrendingDown className={`w-3 h-3 ml-auto ${color}`} />
+                          )}
+                        </div>
+                        <div className="text-[12px] font-extrabold truncate text-foreground">
+                          {m.last != null ? `${m.last} ${lang === 'en' ? 'cm' : 'см'}` : '—'}
+                        </div>
+                        <div className="mt-1 h-[14px] flex items-center">
+                          {m.series.length >= 2
+                            ? <Sparkline data={m.series} color={positive === false ? 'hsl(25 90% 55%)' : 'hsl(142 70% 45%)'} height={14} width={72} />
+                            : <div className="h-[1px] w-full bg-background/70 rounded-full" />}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); setMeasurementsOpen(true); }}
+                className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors"
+              >
+                <Plus className="w-4 h-4" />
+                {lang === 'en' ? 'Add measurement' : 'Добавить замер'}
+              </button>
+            </motion.div>
+
 
 
             {/* Photos and History moved out of modules grid — history lives inside the balance card */}
