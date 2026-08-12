@@ -105,9 +105,87 @@
         }
       })();
     </script>
+
+    <style>
+      #splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #0d0d0d;
+        color: #fafafa;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.35s ease;
+      }
+      #splash.show { opacity: 1; pointer-events: auto; }
+      .splash-inner { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+      .splash-logo { width: 64px; height: 64px; border-radius: 50%; animation: splash-spin 1.4s linear infinite; }
+      .splash-text { font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 14px; color: #a3a3a3; margin: 0; text-align: center; max-width: 260px; line-height: 1.4; }
+      @keyframes splash-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
   </head>
 
   <body>
+    <div id="splash" class="splash">
+      <div class="splash-inner">
+        <img src="data:image/png;base64,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" alt="Limassol Fitness" class="splash-logo">
+        <p id="splash-text" class="splash-text">Loading…</p>
+      </div>
+    </div>
+    <script>
+      (function () {
+        var splash = document.getElementById('splash');
+        var textEl = document.getElementById('splash-text');
+        if (!splash || !textEl) return;
+
+        var lang = 'en';
+        try {
+          var stored = localStorage.getItem('app_lang');
+          if (stored === 'ru' || stored === 'en') lang = stored;
+          else if (navigator.language && navigator.language.indexOf('ru') === 0) lang = 'ru';
+        } catch (e) {}
+
+        var i18n = {
+          en: { loading: 'Loading…', bad: 'Bad connection. Trying to connect…', slow: 'Loading is taking longer than usual.' },
+          ru: { loading: 'Загрузка…', bad: 'Плохое соединение. Пытаемся подключиться…', slow: 'Загрузка занимает больше времени, чем обычно.' }
+        };
+        var t = i18n[lang];
+        textEl.textContent = t.loading;
+
+        function show(key) {
+          splash.classList.add('show');
+          textEl.textContent = t[key] || t.loading;
+        }
+        function hide() {
+          splash.classList.remove('show');
+        }
+
+        window.__showSplash = show;
+        window.__hideSplash = hide;
+        window.__appReady = false;
+
+        var showTimer = setTimeout(function () {
+          if (!window.__appReady) show('loading');
+        }, 700);
+
+        var slowTimer = setTimeout(function () {
+          if (!window.__appReady) show('slow');
+        }, 5000);
+
+        function onOffline() { show('bad'); }
+        function onOnline() {
+          if (window.__appReady) hide();
+          else textEl.textContent = t.loading;
+        }
+
+        window.addEventListener('offline', onOffline);
+        window.addEventListener('online', onOnline);
+        if (!navigator.onLine) onOffline();
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
