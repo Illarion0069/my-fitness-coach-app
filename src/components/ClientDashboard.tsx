@@ -261,6 +261,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [testsOpen, setTestsOpen] = useState(false);
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
   const [nutritionOpen, setNutritionOpen] = useState(false);
+  const [nutritionRefresh, setNutritionRefresh] = useState(0);
+
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
 
