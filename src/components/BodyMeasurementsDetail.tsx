@@ -55,13 +55,52 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
-const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged }: Props) => {
+const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId }: Props) => {
   const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
   const [timeRange, setTimeRange] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
+  const [allOpen, setAllOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newValues, setNewValues] = useState<Record<string, string>>({});
+
+  const latest = useMemo(() => {
+    const sorted = [...measurements].sort(
+      (a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
+    );
+    return { current: sorted[0], previous: sorted[1] };
+  }, [measurements]);
+
+  const addMeasurement = async () => {
+    if (!userId) return;
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    const row: Record<string, any> = { user_id: userId, trainer_user_id: user.id, measured_at: newDate };
+    let has = false;
+    METRICS.forEach(m => {
+      const v = parseFloat((newValues[m.key] || '').replace(',', '.'));
+      if (!isNaN(v)) { row[m.key] = v; has = true; }
+    });
+    if (!has) {
+      toast({ title: lang === 'en' ? 'Enter at least one value' : 'Введите хотя бы одно значение', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase.from('body_measurements').insert(row as any);
+    setSaving(false);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: lang === 'en' ? 'Measurements saved' : 'Замеры сохранены' });
+    setNewValues({});
+    setAddOpen(false);
+    onChanged?.();
+  };
+
 
   const metric = METRICS.find(m => m.key === activeMetric)!;
   const range = TIME_RANGES.find(r => r.key === timeRange)!;
