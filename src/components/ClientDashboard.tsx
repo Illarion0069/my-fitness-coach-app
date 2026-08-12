@@ -411,6 +411,36 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // ─── Today's nutrition totals (refetch on modal close / realtime / tab focus) ───
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
+      const { data } = await supabase
+        .from('nutrition_logs').select('ai_analysis, manual_entries, ai_score, trainer_override_score')
+        .eq('user_id', user.id).eq('log_date', today).maybeSingle();
+      if (cancelled) return;
+      const totals = computeNutritionTotals(data);
+      setTodayKcal(totals.calories);
+      setTodayMacros({ protein: Math.round(totals.protein), carbs: Math.round(totals.carbs), fat: Math.round(totals.fat) });
+      const sc = (data as any)?.trainer_override_score ?? (data as any)?.ai_score ?? null;
+      setTodayScore(sc == null ? null : Number(sc));
+    })();
+    return () => { cancelled = true; };
+  }, [user, nutritionRefresh, nutritionOpen]);
+
+  // Refresh when app returns to foreground
+  useEffect(() => {
+    const onFocus = () => setNutritionRefresh((n) => n + 1);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+    };
+  }, []);
+
   // ─── Avatar upload ───
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
