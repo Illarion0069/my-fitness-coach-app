@@ -655,7 +655,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             >
 
               <div className="flex items-center justify-between mb-3">
-                <p className={`text-xs font-medium ${exhausted ? 'text-destructive' : 'text-primary-foreground/80'}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${exhausted ? 'text-destructive' : 'text-primary-foreground/75'}`}>
                   {pkg.package_name}
                 </p>
                 <div className="flex items-center gap-2">
@@ -665,14 +665,23 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                   </motion.div>
                 </div>
               </div>
-              <div className="flex items-baseline gap-1.5 mb-3">
-                <span className={`text-3xl font-extrabold font-heading ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
-                  {remaining}
-                </span>
-                <span className={`text-sm ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`}>
-                  / {total} {lang === 'en' ? 'sessions' : 'занятий'}
-                </span>
+              <div className="flex items-end justify-between gap-3 mb-3">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className={`font-heading leading-none text-[44px] ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
+                    {remaining}
+                  </span>
+                  <span className={`text-sm ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`}>
+                    / {total} {lang === 'en' ? 'sessions' : 'занятий'}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className={`font-heading text-xl leading-none ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>{monthSessionsCount}</div>
+                  <div className={`text-[8px] uppercase tracking-[0.12em] mt-1 ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/60'}`}>
+                    {lang === 'en' ? 'this month' : 'за месяц'}
+                  </div>
+                </div>
               </div>
+
               {exhausted && (
                 <p className="text-xs text-destructive font-semibold mb-2">
                   ⚠ {lang === 'en' ? 'Package exhausted' : 'Пакет исчерпан'}
