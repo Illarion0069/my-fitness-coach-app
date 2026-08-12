@@ -250,6 +250,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
+  const [todayMacros, setTodayMacros] = useState<{ protein: number; carbs: number; fat: number }>({ protein: 0, carbs: 0, fat: 0 });
+  const [todayScore, setTodayScore] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
@@ -382,9 +384,13 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const fetchTodayKcal = async () => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
       const { data } = await supabase
-        .from('nutrition_logs').select('ai_analysis, manual_entries')
+        .from('nutrition_logs').select('ai_analysis, manual_entries, ai_score, trainer_override_score')
         .eq('user_id', user.id).eq('log_date', today).maybeSingle();
-      setTodayKcal(computeNutritionTotals(data).calories);
+      const totals = computeNutritionTotals(data);
+      setTodayKcal(totals.calories);
+      setTodayMacros({ protein: Math.round(totals.protein), carbs: Math.round(totals.carbs), fat: Math.round(totals.fat) });
+      const sc = (data as any)?.trainer_override_score ?? (data as any)?.ai_score ?? null;
+      setTodayScore(sc == null ? null : Number(sc));
     };
 
     const fetchTier = async () => {
