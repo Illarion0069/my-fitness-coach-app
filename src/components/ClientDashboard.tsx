@@ -481,6 +481,28 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     return { current: last, diff: Math.round(diff * 10) / 10 };
   }, [weightSparkData]);
 
+  // 30-day weight delta + per-metric series for the body panel
+  const bodyPanel = useMemo(() => {
+    const sorted = [...measurements].sort((a, b) => new Date(a.measured_at).getTime() - new Date(b.measured_at).getTime());
+    const series = (key: string) => sorted.map(m => Number(m[key])).filter(v => Number.isFinite(v) && v > 0);
+    const cutoff = Date.now() - 30 * 86400000;
+    const w30 = sorted.filter(m => m.weight_kg && new Date(m.measured_at).getTime() >= cutoff).map(m => Number(m.weight_kg));
+    const weight30 = w30.length >= 2 ? Math.round((w30[w30.length - 1] - w30[0]) * 10) / 10 : null;
+    const metrics = [
+      { key: 'waist_cm', en: 'Waist', ru: 'Талия', good: 'down' as const },
+      { key: 'chest_cm', en: 'Chest', ru: 'Грудь', good: 'up' as const },
+      { key: 'left_arm_cm', en: 'Arm', ru: 'Рука', good: 'up' as const },
+      { key: 'hips_cm', en: 'Hips', ru: 'Бёдра', good: 'down' as const },
+    ].map(m => {
+      const s = series(m.key);
+      const last = s.length ? s[s.length - 1] : null;
+      const diff = s.length >= 2 ? Math.round((s[s.length - 1] - s[0]) * 10) / 10 : 0;
+      return { ...m, last, diff, series: s };
+    });
+    return { weight30, metrics };
+  }, [measurements]);
+
+
   // Test sparkline data
   const testSparkData = useMemo(() => testResults.map(t => t.overall_percentage), [testResults]);
   const lastTestPct = testSparkData.length > 0 ? testSparkData[testSparkData.length - 1] : null;
