@@ -576,8 +576,8 @@ serve(async (req) => {
       if (aiResponse.status === 429) {
         return jsonResponse({ error: "Rate limit exceeded. Please try again in a minute." }, 429);
       }
-      if (aiResponse.status === 402) {
-        return jsonResponse({ error: "AI credits exhausted. Please top up." }, 402);
+      if (aiResponse.status === 402 || aiResponse.status === 403) {
+        return jsonResponse({ error: "AI credits exhausted. Please top up.", code: "credits" }, 402);
       }
       throw new Error(`AI gateway error: ${aiResponse.status}`);
     }

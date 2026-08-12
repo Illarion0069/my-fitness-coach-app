@@ -485,6 +485,19 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const { data, error } = await supabase.functions.invoke('analyze-nutrition', {
         body: { user_id: effectiveUserId, log_date: date, lang },
       });
+      const errMsg = (data?.error || (error as any)?.message || '') as string;
+      const isCredits = data?.code === 'credits' || /credit|402|403/i.test(errMsg);
+      if (isCredits) {
+        toast({
+          title: lang === 'en' ? 'Analysis temporarily unavailable' : 'Анализ временно недоступен',
+          description: lang === 'en'
+            ? 'The photo was saved. Recognition will resume shortly — please try again a bit later.'
+            : 'Фото сохранено. Распознавание скоро возобновится — попробуйте чуть позже.',
+          variant: 'destructive',
+        });
+        setAnalyzing(false);
+        return;
+      }
       if (error) throw error;
       if (data?.error) {
         if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
