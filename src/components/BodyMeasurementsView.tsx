@@ -118,8 +118,10 @@ const BodyMeasurementsView = ({ userId, lang, editable = false }: Props) => {
         measurements={measurements}
         lang={lang}
         editable={editable}
+        userId={userId}
         onChanged={() => setReloadKey(k => k + 1)}
       />
+
 
     </>
   );
