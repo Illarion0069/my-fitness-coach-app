@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  KeyRound, Eye, EyeOff, ShoppingCart, Trophy,
+  ShoppingCart, Trophy, Settings,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -22,6 +22,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
 import SessionLedgerHistory from './SessionLedgerHistory';
 import HintDot, { markHintSeen } from './HintDot';
+import ClientSettings from './ClientSettings';
 
 
 /* ──────────────────────── Sparkline ──────────────────────── */
@@ -262,52 +263,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
 
   // Account actions
-  const [showChangePwd, setShowChangePwd] = useState(false);
-  const [newPwd, setNewPwd] = useState('');
-  const [newPwd2, setNewPwd2] = useState('');
-  const [pwdVisible, setPwdVisible] = useState(false);
-  const [pwdSaving, setPwdSaving] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
 
 
-
-  const handleChangePassword = async () => {
-    if (newPwd.length < 8) {
-      toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
-      return;
-    }
-    if (newPwd !== newPwd2) {
-      toast({ title: lang === 'en' ? 'Passwords do not match' : 'Пароли не совпадают', variant: 'destructive' });
-      return;
-    }
-    setPwdSaving(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { action: 'change_password', new_password: newPwd },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).message || (data as any).error);
-      toast({ title: lang === 'en' ? 'Password updated' : 'Пароль обновлён' });
-      setNewPwd(''); setNewPwd2(''); setShowChangePwd(false);
-    } catch (e: any) {
-      const msg = String(e?.message || '');
-      toast({
-        title: lang === 'en' ? 'Failed to update password' : 'Не удалось обновить пароль',
-        description: msg.toLowerCase().includes('pwned') || msg.toLowerCase().includes('breach')
-          ? (lang === 'en' ? 'This password was found in a breach. Choose another.' : 'Этот пароль скомпрометирован. Выберите другой.')
-          : msg,
-        variant: 'destructive',
-      });
-    } finally {
-      setPwdSaving(false);
-    }
-  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
@@ -620,6 +585,25 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.18em] mt-1 truncate">
               {pkg?.package_name || (lang === 'en' ? 'Member' : 'Участник')}
             </p>
+          </div>
+          {/* Settings */}
+          <div className="relative shrink-0">
+            <HintDot
+              id="client_settings"
+              en="Settings, tests & password live here"
+              ru="Настройки, тесты и пароль — здесь"
+              className="-top-1 -right-1"
+              side="left"
+              delay={1200}
+            />
+            <button
+              type="button"
+              onClick={() => { markHintSeen('client_settings'); setSettingsOpen(true); }}
+              aria-label={lang === 'en' ? 'Settings' : 'Настройки'}
+              className="w-10 h-10 rounded-xl border border-border/50 bg-card flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -1091,29 +1075,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               ) : undefined}
             />
 
-            {/* ═════ Health Tests ═════ */}
-            <ModuleCard
-              icon={<ClipboardCheck className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Tests' : 'Тесты'}
-              subtitle={lastTestPct == null
-                ? (lang === 'en' ? 'Take first test' : 'Пройдите тест')
-                : `${testResults.length} ${lang === 'en' ? 'taken' : 'пройдено'}`}
-              onClick={() => { setTestsInitial(null); setTestsOpen(true); }}
-              preview={testSparkData.length >= 1 ? (
-                <div className="space-y-1.5">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-extrabold font-heading text-foreground">{lastTestPct}</span>
-                    <span className="text-[10px] text-muted-foreground">%</span>
-                    {testSparkData.length >= 2 && (
-                      <span className={`text-[10px] font-bold ml-auto ${testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? 'text-green-400' : 'text-orange-400'}`}>
-                        {testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />}
-                      </span>
-                    )}
-                  </div>
-                  {testSparkData.length >= 2 && <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />}
-                </div>
-              ) : undefined}
-            />
 
             {/* Photos and History moved out of modules grid — history lives inside the balance card */}
 
@@ -1165,88 +1126,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
         )}
 
-        {/* ═══════════ Account ═══════════ */}
-        <div className="mt-4 border-t border-border/30 pt-4 space-y-2">
-
-          <AnimatePresence initial={false}>
-
-            {showChangePwd && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="p-3 space-y-2 bg-secondary/20 rounded-xl border border-border/30">
-                  <p className="text-xs font-bold flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-primary" />
-                    {lang === 'en' ? 'New password' : 'Новый пароль'}
-                  </p>
-                  <div className="relative">
-                    <input
-                      type={pwdVisible ? 'text' : 'password'}
-                      value={newPwd}
-                      onChange={(e) => setNewPwd(e.target.value)}
-                      placeholder={lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов'}
-                      className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:border-primary"
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPwdVisible(v => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {pwdVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <input
-                    type={pwdVisible ? 'text' : 'password'}
-                    value={newPwd2}
-                    onChange={(e) => setNewPwd2(e.target.value)}
-                    placeholder={lang === 'en' ? 'Repeat password' : 'Повторите пароль'}
-                    className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    autoComplete="new-password"
-                  />
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => { setShowChangePwd(false); setNewPwd(''); setNewPwd2(''); }}
-                      disabled={pwdSaving}
-                      className="flex-1 text-xs font-semibold py-2 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors disabled:opacity-50"
-                    >
-                      {lang === 'en' ? 'Cancel' : 'Отмена'}
-                    </button>
-                    <button
-                      onClick={handleChangePassword}
-                      disabled={pwdSaving || newPwd.length < 8 || newPwd !== newPwd2}
-                      className="flex-1 text-xs font-bold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-                    >
-                      {pwdSaving && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {lang === 'en' ? 'Save' : 'Сохранить'}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setShowChangePwd(v => !v)}
-              className="flex items-center justify-center gap-1.5 text-xs font-bold py-3 rounded-xl border border-border/50 hover:bg-secondary/40 transition-colors"
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              {lang === 'en' ? 'Password' : 'Пароль'}
-            </button>
-            <button
-              onClick={() => setConfirmSignOut(true)}
-              className="flex items-center justify-center gap-1.5 text-xs font-bold text-destructive py-3 rounded-xl border border-destructive/30 hover:bg-destructive/10 transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              {lang === 'en' ? 'Sign out' : 'Выйти'}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* ═══════════ Sign-out confirmation ═══════════ */}
@@ -1360,6 +1239,25 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         forceClientView={forceClientView}
         restorePendingPayment
       />
+
+      {/* Settings */}
+      <FullscreenModule
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        title={lang === 'en' ? 'Settings' : 'Настройки'}
+        icon={<Settings className="w-5 h-5 text-primary" />}
+      >
+        <ClientSettings
+          userId={user.id}
+          avatarUrl={avatarUrl}
+          onAvatarChange={(url) => setAvatarUrl(url)}
+          testsCount={testResults.length}
+          lastTestPct={lastTestPct}
+          onOpenTests={() => { setSettingsOpen(false); setTestsInitial(null); setTestsOpen(true); }}
+          onOpenNutrition={() => { setSettingsOpen(false); setNutritionOpen(true); }}
+          onSignOut={() => setConfirmSignOut(true)}
+        />
+      </FullscreenModule>
 
       {/* Achievements popup (opened from the avatar medal) */}
       <FullscreenModule
