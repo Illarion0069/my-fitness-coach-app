@@ -73,7 +73,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
       <section className="relative bg-background">
         {/* Top bar */}
         <div className="flex items-center justify-between px-5 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top, 12px), 12px)' }}>
-          <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
+          <span className="font-heading uppercase text-base tracking-[0.18em] text-foreground">Limassol Fitness</span>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <LanguageSwitch />
@@ -88,7 +88,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
     <section className="relative min-h-screen flex flex-col bg-background">
       {/* Top bar */}
       <div className="flex items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
-        <span className="text-sm font-bold text-foreground tracking-tight">Limassol Fitness</span>
+        <span className="font-heading uppercase text-base tracking-[0.18em] text-foreground">Limassol Fitness</span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
           <button
@@ -284,7 +284,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 transition={{ delay: 0.7 + i * 0.05 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
                 whileHover={{ y: -3 }}
-                className={`workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 bg-gradient-to-br from-card to-primary/5' : ''}`}
+                className={`workout-card-expanded bg-card rounded-3xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 bg-gradient-to-br from-card to-primary/5' : ''}`}
               >
                 <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>{item.icon}</div>
                 <h3 className={`font-bold text-foreground mb-1 ${i === 0 ? 'text-base' : 'text-[13px]'}`}>{t(item.name)}</h3>
@@ -335,7 +335,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
               onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
-              className="workout-card-expanded bg-card rounded-2xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
+              className="workout-card-expanded bg-card rounded-3xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{workouts.items[4].icon}</span>

@@ -498,6 +498,26 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     return pastSessions.filter(s => s.session_date?.startsWith(monthStr)).length;
   }, [pastSessions]);
 
+  // Current week strip (Mon → Sun, Cyprus time) with completed-session marks
+  const weekStrip = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
+    const base = new Date(todayStr + 'T12:00:00');
+    const dow = (base.getDay() + 6) % 7; // 0 = Monday
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - dow);
+    const done = new Set(pastSessions.map(s => s.session_date));
+    const letters = lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = d.toLocaleDateString('en-CA');
+      return { key, letter: letters[i], isToday: key === todayStr, done: done.has(key) };
+    });
+  }, [pastSessions, lang]);
+
+  const weekSessionsCount = useMemo(() => weekStrip.filter(d => d.done).length, [weekStrip]);
+
+
   // Nutrition progress
   const kcalPct = calorieGoal && calorieGoal > 0 ? Math.min(Math.round((todayKcal / calorieGoal) * 100), 100) : 0;
   const kcalOver = calorieGoal != null && todayKcal > calorieGoal;
@@ -522,8 +542,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* ═══════════ Profile Header ═══════════ */}
-      <div className="px-5 pt-4 pb-2">
-        <div className="flex items-center gap-4">
+      <div className="px-4 sm:px-5 pt-3 pb-1">
+        <div className="flex items-center gap-3.5">
           {/* Compact avatar */}
           <div className="relative shrink-0">
             {!avatarUrl && (
@@ -531,21 +551,21 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             )}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className={`relative w-16 h-16 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
-                avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
+              className={`relative w-14 h-14 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 border-2 ${
+                avatarUrl ? 'border-primary/60' : 'border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
               }`}
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full gradient-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-extrabold text-lg">{getInitials()}</span>
+                  <span className="text-primary-foreground font-extrabold text-base">{getInitials()}</span>
                 </div>
               )}
             </div>
             <AvatarTierBadge
               tier={tier}
-              size={26}
+              size={24}
               onClick={() => {
                 setShowAchievements(true);
                 try { localStorage.setItem('tier_badge_seen', '1'); } catch {}
@@ -556,32 +576,62 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-md"
+              aria-label={lang === 'en' ? 'Change photo' : 'Сменить фото'}
+              className="absolute -bottom-0.5 -right-0.5 w-[26px] h-[26px] rounded-full bg-primary flex items-center justify-center shadow-md"
             >
-              {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Camera className="w-3.5 h-3.5 text-primary-foreground" />}
+              {uploadingAvatar ? <Loader2 className="w-3 h-3 text-primary-foreground animate-spin" /> : <Camera className="w-3 h-3 text-primary-foreground" />}
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           </div>
           {/* Name + greeting */}
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground">
-              {lang === 'en' ? 'Welcome back' : 'С возвращением'} 👋
+            <h2 className="font-heading uppercase tracking-wide text-foreground text-[22px] leading-none truncate">
+              {lang === 'en' ? 'Hello' : 'Привет'}, {profile?.full_name?.split(' ')[0] || ''}
+            </h2>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.18em] mt-1 truncate">
+              {pkg?.package_name || (lang === 'en' ? 'Member' : 'Участник')}
             </p>
-            <h2 className="text-lg font-extrabold font-heading text-foreground truncate">{profile?.full_name}</h2>
           </div>
         </div>
       </div>
 
+      <div className="px-4 sm:px-5 space-y-4 mt-4">
+        {/* ═══════════ Weekly streak strip ═══════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between gap-1 bg-card border border-border/40 rounded-2xl px-3 py-2.5"
+        >
+          {weekStrip.map((d, i) => (
+            <div key={d.key} className={`flex flex-col items-center gap-1.5 flex-1 min-w-0 ${d.done || d.isToday ? '' : 'opacity-40'}`}>
+              <span className={`text-[10px] font-bold ${d.isToday ? 'text-primary' : 'text-muted-foreground'}`}>{d.letter}</span>
+              {d.done ? (
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-[0_0_10px_hsl(var(--primary)/0.5)]">✓</div>
+              ) : d.isToday ? (
+                <div className="w-5 h-5 rounded-full border-2 border-primary animate-pulse" />
+              ) : (
+                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/70 my-[7px]" />
+              )}
+            </div>
+          ))}
+          <div className="ml-1 pl-2.5 border-l border-border/50 shrink-0 text-right">
+            <div className="text-[11px] font-bold text-foreground leading-none">{weekSessionsCount}</div>
+            <div className="text-[8px] text-muted-foreground uppercase tracking-tight mt-1">
+              {lang === 'en' ? 'this week' : 'на неделе'}
+            </div>
+          </div>
+        </motion.div>
 
-      <div className="px-5 space-y-4 mt-3">
+
         {/* ═══════════ Session Balance Card ═══════════ */}
         {pkg && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className={`relative overflow-hidden rounded-2xl ${
+            className={`relative overflow-hidden rounded-3xl ${
               exhausted ? 'bg-destructive/10 border border-destructive/30' : 'gradient-primary'
             }`}
+
           >
             {/* Decorative circles */}
             {!exhausted && (
@@ -605,7 +655,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             >
 
               <div className="flex items-center justify-between mb-3">
-                <p className={`text-xs font-medium ${exhausted ? 'text-destructive' : 'text-primary-foreground/80'}`}>
+                <p className={`text-[10px] font-bold uppercase tracking-[0.18em] ${exhausted ? 'text-destructive' : 'text-primary-foreground/75'}`}>
                   {pkg.package_name}
                 </p>
                 <div className="flex items-center gap-2">
@@ -615,14 +665,23 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                   </motion.div>
                 </div>
               </div>
-              <div className="flex items-baseline gap-1.5 mb-3">
-                <span className={`text-3xl font-extrabold font-heading ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
-                  {remaining}
-                </span>
-                <span className={`text-sm ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`}>
-                  / {total} {lang === 'en' ? 'sessions' : 'занятий'}
-                </span>
+              <div className="flex items-end justify-between gap-3 mb-3">
+                <div className="flex items-baseline gap-1.5 min-w-0">
+                  <span className={`font-heading leading-none text-[44px] ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>
+                    {remaining}
+                  </span>
+                  <span className={`text-sm ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/70'}`}>
+                    / {total} {lang === 'en' ? 'sessions' : 'занятий'}
+                  </span>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className={`font-heading text-xl leading-none ${exhausted ? 'text-destructive' : 'text-primary-foreground'}`}>{monthSessionsCount}</div>
+                  <div className={`text-[8px] uppercase tracking-[0.12em] mt-1 ${exhausted ? 'text-destructive/70' : 'text-primary-foreground/60'}`}>
+                    {lang === 'en' ? 'this month' : 'за месяц'}
+                  </div>
+                </div>
               </div>
+
               {exhausted && (
                 <p className="text-xs text-destructive font-semibold mb-2">
                   ⚠ {lang === 'en' ? 'Package exhausted' : 'Пакет исчерпан'}
@@ -724,10 +783,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="space-y-2"
+            className="bg-card border border-border/40 rounded-3xl p-4 space-y-2.5"
           >
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-              {lang === 'en' ? 'Upcoming' : 'Ближайшие'}
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em]">
+              {lang === 'en' ? 'Next scheduled' : 'Ближайшие'}
             </p>
             {sessions.slice(0, showAllSessions ? sessions.length : 3).map((s, i) => (
               <motion.div
@@ -735,15 +794,24 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 + i * 0.05 }}
-                className="flex items-center gap-3 bg-card/60 border border-border/30 rounded-xl px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl bg-secondary/40 border border-border/30 px-3 py-2.5"
               >
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  {s.is_recurring
-                    ? <RotateCw className="w-3.5 h-3.5 text-primary" />
-                    : <Dumbbell className="w-3.5 h-3.5 text-primary" />
-                  }
+                <div className="w-11 h-11 rounded-2xl bg-background/70 border border-border/40 flex flex-col items-center justify-center shrink-0">
+                  {s.is_recurring ? (
+                    <RotateCw className="w-4 h-4 text-primary" />
+                  ) : (
+                    <>
+                      <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none">
+                        {new Date(s.session_date + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { month: 'short' })}
+                      </span>
+                      <span className="font-heading text-base leading-none text-foreground mt-0.5">
+                        {new Date(s.session_date + 'T12:00:00').getDate()}
+                      </span>
+                    </>
+                  )}
                 </div>
-                <span className="text-[13px] font-medium flex-1">{formatSessionDate(s)}</span>
+                <span className="text-[13px] font-medium flex-1 min-w-0 break-words">{formatSessionDate(s)}</span>
+
                 {canCancel(s) ? (
                   confirmCancelId === s.id ? (
                     <div className="flex items-center gap-1 flex-shrink-0">
