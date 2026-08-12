@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  KeyRound, Eye, EyeOff, ShoppingCart, Trophy, Settings,
+  ShoppingCart, Trophy, Settings,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -269,47 +269,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [balanceExpanded, setBalanceExpanded] = useState(false);
 
   // Account actions
-  const [showChangePwd, setShowChangePwd] = useState(false);
-  const [newPwd, setNewPwd] = useState('');
-  const [newPwd2, setNewPwd2] = useState('');
-  const [pwdVisible, setPwdVisible] = useState(false);
-  const [pwdSaving, setPwdSaving] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
 
 
 
-
-  const handleChangePassword = async () => {
-    if (newPwd.length < 8) {
-      toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
-      return;
-    }
-    if (newPwd !== newPwd2) {
-      toast({ title: lang === 'en' ? 'Passwords do not match' : 'Пароли не совпадают', variant: 'destructive' });
-      return;
-    }
-    setPwdSaving(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('reset-password', {
-        body: { action: 'change_password', new_password: newPwd },
-      });
-      if (error) throw error;
-      if ((data as any)?.error) throw new Error((data as any).message || (data as any).error);
-      toast({ title: lang === 'en' ? 'Password updated' : 'Пароль обновлён' });
-      setNewPwd(''); setNewPwd2(''); setShowChangePwd(false);
-    } catch (e: any) {
-      const msg = String(e?.message || '');
-      toast({
-        title: lang === 'en' ? 'Failed to update password' : 'Не удалось обновить пароль',
-        description: msg.toLowerCase().includes('pwned') || msg.toLowerCase().includes('breach')
-          ? (lang === 'en' ? 'This password was found in a breach. Choose another.' : 'Этот пароль скомпрометирован. Выберите другой.')
-          : msg,
-        variant: 'destructive',
-      });
-    } finally {
-      setPwdSaving(false);
-    }
-  };
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dayNames = lang === 'en' ? DAY_NAMES_EN : DAY_NAMES_RU;
@@ -1276,6 +1239,25 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         forceClientView={forceClientView}
         restorePendingPayment
       />
+
+      {/* Settings */}
+      <FullscreenModule
+        open={settingsOpen}
+        onClose={() => setSettingsOpen(false)}
+        title={lang === 'en' ? 'Settings' : 'Настройки'}
+        icon={<Settings className="w-5 h-5 text-primary" />}
+      >
+        <ClientSettings
+          userId={user.id}
+          avatarUrl={avatarUrl}
+          onAvatarChange={(url) => setAvatarUrl(url)}
+          testsCount={testResults.length}
+          lastTestPct={lastTestPct}
+          onOpenTests={() => { setSettingsOpen(false); setTestsInitial(null); setTestsOpen(true); }}
+          onOpenNutrition={() => { setSettingsOpen(false); setNutritionOpen(true); }}
+          onSignOut={() => setConfirmSignOut(true)}
+        />
+      </FullscreenModule>
 
       {/* Achievements popup (opened from the avatar medal) */}
       <FullscreenModule
