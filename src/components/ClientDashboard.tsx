@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  KeyRound, Eye, EyeOff, ShoppingCart, Trophy,
+  KeyRound, Eye, EyeOff, ShoppingCart, Trophy, Settings,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -22,6 +22,7 @@ import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/component
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from './AvatarTierBadge';
 import SessionLedgerHistory from './SessionLedgerHistory';
 import HintDot, { markHintSeen } from './HintDot';
+import ClientSettings from './ClientSettings';
 
 
 /* ──────────────────────── Sparkline ──────────────────────── */
@@ -262,6 +263,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
   const [nutritionOpen, setNutritionOpen] = useState(false);
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
@@ -620,6 +622,25 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.18em] mt-1 truncate">
               {pkg?.package_name || (lang === 'en' ? 'Member' : 'Участник')}
             </p>
+          </div>
+          {/* Settings */}
+          <div className="relative shrink-0">
+            <HintDot
+              id="client_settings"
+              en="Settings, tests & password live here"
+              ru="Настройки, тесты и пароль — здесь"
+              className="-top-1 -right-1"
+              side="left"
+              delay={1200}
+            />
+            <button
+              type="button"
+              onClick={() => { markHintSeen('client_settings'); setSettingsOpen(true); }}
+              aria-label={lang === 'en' ? 'Settings' : 'Настройки'}
+              className="w-10 h-10 rounded-xl border border-border/50 bg-card flex items-center justify-center text-muted-foreground hover:text-foreground active:scale-95 transition"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
