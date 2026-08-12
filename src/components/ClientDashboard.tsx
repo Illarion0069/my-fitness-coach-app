@@ -164,7 +164,7 @@ const ModuleCard = ({ icon, title, subtitle, preview, onClick, accentColor, badg
   <motion.button
     onClick={() => { if (hint) markHintSeen(hint.id); onClick(); }}
     whileTap={{ scale: 0.97 }}
-    className="relative w-full bg-card border border-border/40 rounded-2xl p-4 text-left hover:border-primary/30 transition-all group"
+    className="relative w-full bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/30 transition-all group"
   >
     {hint && <HintDot id={hint.id} en={hint.en} ru={hint.ru} className="top-2 right-2" side="left" />}
     <div className="flex items-start justify-between mb-2">
@@ -250,6 +250,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
+  const [todayMacros, setTodayMacros] = useState<{ protein: number; carbs: number; fat: number }>({ protein: 0, carbs: 0, fat: 0 });
+  const [todayScore, setTodayScore] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
 
@@ -382,9 +384,13 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const fetchTodayKcal = async () => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
       const { data } = await supabase
-        .from('nutrition_logs').select('ai_analysis, manual_entries')
+        .from('nutrition_logs').select('ai_analysis, manual_entries, ai_score, trainer_override_score')
         .eq('user_id', user.id).eq('log_date', today).maybeSingle();
-      setTodayKcal(computeNutritionTotals(data).calories);
+      const totals = computeNutritionTotals(data);
+      setTodayKcal(totals.calories);
+      setTodayMacros({ protein: Math.round(totals.protein), carbs: Math.round(totals.carbs), fat: Math.round(totals.fat) });
+      const sc = (data as any)?.trainer_override_score ?? (data as any)?.ai_score ?? null;
+      setTodayScore(sc == null ? null : Number(sc));
     };
 
     const fetchTier = async () => {
@@ -862,7 +868,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           transition={{ delay: 0.2 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { setBookingStep('date'); setBookingOpen(true); }}
-          className="w-full gradient-primary rounded-2xl py-4 px-6 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
+          className="w-full gradient-primary rounded-3xl py-4 px-6 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
         >
           <CalendarDays className="w-5 h-5 text-primary-foreground" />
           <span className="text-base font-bold text-primary-foreground">
@@ -971,53 +977,71 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-3">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em] px-1 mb-3">
             {lang === 'en' ? 'My Progress' : 'Мой прогресс'}
           </p>
           <div className="grid grid-cols-2 gap-3">
-            {/* ═════ Nutrition — HERO BENTO (full width) ═════ */}
+            {/* ═════ Nutrition — HERO (ring + macros grid) ═════ */}
             <motion.button
               onClick={() => setNutritionOpen(true)}
               whileTap={{ scale: 0.98 }}
-              className="col-span-2 relative overflow-hidden bg-gradient-to-br from-orange-500/15 via-card to-card border border-orange-500/25 rounded-2xl p-4 text-left hover:border-orange-500/50 transition-all group"
+              className="col-span-2 relative overflow-hidden bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/40 transition-all"
             >
-              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-orange-500/10 blur-2xl" />
-              <div className="relative flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-orange-500/20 flex items-center justify-center shrink-0">
-                  <UtensilsCrossed className="w-5 h-5 text-orange-400" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] font-bold text-orange-400/80 uppercase tracking-wider">
-                    {lang === 'en' ? 'Today' : 'Сегодня'}
-                  </p>
-                  <div className="flex items-baseline gap-1.5 mt-0.5">
-                    <span className={`text-2xl font-extrabold font-heading ${kcalOver ? 'text-destructive' : 'text-foreground'}`}>
-                      {todayKcal}
+              <div className="flex items-center gap-4">
+                {/* Calorie ring */}
+                <div className="relative w-[92px] h-[92px] shrink-0">
+                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-secondary" />
+                    <motion.circle
+                      cx="50" cy="50" r="42" fill="none" strokeWidth="10" strokeLinecap="round"
+                      className={kcalOver ? 'stroke-destructive' : 'stroke-primary'}
+                      initial={{ strokeDasharray: '0 264' }}
+                      animate={{ strokeDasharray: `${(calorieGoal ? kcalPct : 0) * 2.64} 264` }}
+                      transition={{ duration: 0.9, ease: 'easeOut' }}
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className={`font-heading leading-none text-[22px] ${kcalOver ? 'text-destructive' : 'text-foreground'}`}>{todayKcal}</span>
+                    <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
+                      {calorieGoal ? `/${calorieGoal} ${lang === 'en' ? 'kcal' : 'ккал'}` : (lang === 'en' ? 'kcal' : 'ккал')}
                     </span>
-                    {calorieGoal ? (
-                      <span className="text-xs text-muted-foreground">/ {calorieGoal} {lang === 'en' ? 'kcal' : 'ккал'}</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{lang === 'en' ? 'kcal' : 'ккал'}</span>
-                    )}
                   </div>
-                  {calorieGoal ? (
-                    <div className="mt-2 h-1.5 rounded-full bg-secondary/60 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${kcalPct}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${kcalOver ? 'bg-destructive' : 'bg-orange-400'}`}
-                      />
-                    </div>
-                  ) : (
-                    <p className="text-[11px] text-muted-foreground mt-1">
-                      {lang === 'en' ? 'Tap to log meal' : 'Откройте, чтобы добавить'}
-                    </p>
-                  )}
                 </div>
-                <ChevronRight className="w-4 h-4 text-muted-foreground/50 shrink-0" />
+                {/* Macro grid */}
+                <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
+                  {[
+                    { l: lang === 'en' ? 'Protein' : 'Белки', v: `${todayMacros.protein} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.protein * 4 / todayKcal) * 100 : 0 },
+                    { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: `${todayMacros.carbs} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.carbs * 4 / todayKcal) * 100 : 0 },
+                    { l: lang === 'en' ? 'Fat' : 'Жиры', v: `${todayMacros.fat} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.fat * 9 / todayKcal) * 100 : 0 },
+                    {
+                      l: lang === 'en' ? 'Score' : 'Оценка',
+                      v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,
+                      pct: todayScore ?? 0,
+                      accent: true,
+                    },
+                  ].map((m, i) => (
+                    <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
+                      <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
+                      <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : 'text-foreground'}`}>{m.v}</div>
+                      <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
+                        <motion.div
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
+                          transition={{ duration: 0.8, ease: 'easeOut' }}
+                          className="h-full rounded-full bg-primary"
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
+              {todayKcal === 0 && (
+                <p className="text-[11px] text-muted-foreground mt-3 text-center">
+                  {lang === 'en' ? 'Tap to log your first meal today' : 'Нажмите, чтобы добавить первый приём пищи'}
+                </p>
+              )}
             </motion.button>
+
 
             {/* ═════ Body Measurements ═════ */}
             <ModuleCard
@@ -1109,7 +1133,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <button
               type="button"
               onClick={() => { markHintSeen('buy_sessions'); onNavigate('pricing'); }}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.99] transition-transform"
+              className="w-full flex items-center justify-center gap-2 rounded-3xl py-4 text-sm font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.99] transition-transform"
             >
               <ShoppingCart className="w-5 h-5" />
               {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
