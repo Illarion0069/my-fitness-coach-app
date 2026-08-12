@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, TrendingUp, TrendingDown, Minus, Pencil, Trash2, Check } from 'lucide-react';
+import { X, ChevronLeft, ChevronDown, Plus, TrendingUp, TrendingDown, Minus, Pencil, Trash2, Check, Ruler } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+
 
 
 interface Measurement {
