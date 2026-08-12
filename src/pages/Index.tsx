@@ -344,6 +344,7 @@ const Index = () => (
       path="/"
     />
     <LanguageProvider>
+      <ConnectionSplash />
       <AuthProvider>
         <AppContent />
       </AuthProvider>
