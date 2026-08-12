@@ -3,6 +3,7 @@ import BookingModal from '@/components/BookingModal';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
+import ConnectionSplash from '@/components/ConnectionSplash';
 // import ChatAssistant from '@/components/ChatAssistant'; // frozen: chat assistant is disabled for now
 
 import HeroSection from '@/components/sections/HeroSection';
