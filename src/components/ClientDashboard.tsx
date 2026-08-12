@@ -542,8 +542,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   return (
     <div className="min-h-screen bg-background pb-32">
       {/* ═══════════ Profile Header ═══════════ */}
-      <div className="px-5 pt-4 pb-2">
-        <div className="flex items-center gap-4">
+      <div className="px-4 sm:px-5 pt-3 pb-1">
+        <div className="flex items-center gap-3.5">
           {/* Compact avatar */}
           <div className="relative shrink-0">
             {!avatarUrl && (
@@ -551,21 +551,21 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             )}
             <div
               onClick={() => fileInputRef.current?.click()}
-              className={`relative w-16 h-16 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 ${
-                avatarUrl ? 'border-3 border-primary/30' : 'border-3 border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
+              className={`relative w-14 h-14 rounded-full overflow-hidden cursor-pointer transition-transform hover:scale-105 active:scale-95 border-2 ${
+                avatarUrl ? 'border-primary/60' : 'border-primary shadow-[0_0_0_3px_hsl(var(--primary)/0.2)]'
               }`}
             >
               {avatarUrl ? (
                 <img src={avatarUrl} alt="avatar" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full gradient-primary flex items-center justify-center">
-                  <span className="text-primary-foreground font-extrabold text-lg">{getInitials()}</span>
+                  <span className="text-primary-foreground font-extrabold text-base">{getInitials()}</span>
                 </div>
               )}
             </div>
             <AvatarTierBadge
               tier={tier}
-              size={26}
+              size={24}
               onClick={() => {
                 setShowAchievements(true);
                 try { localStorage.setItem('tier_badge_seen', '1'); } catch {}
@@ -576,24 +576,53 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingAvatar}
-              className="absolute -bottom-0.5 -right-0.5 w-7 h-7 rounded-full bg-primary flex items-center justify-center shadow-md"
+              aria-label={lang === 'en' ? 'Change photo' : 'Сменить фото'}
+              className="absolute -bottom-0.5 -right-0.5 w-6.5 h-6.5 min-w-[26px] min-h-[26px] rounded-full bg-primary flex items-center justify-center shadow-md"
             >
-              {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 text-primary-foreground animate-spin" /> : <Camera className="w-3.5 h-3.5 text-primary-foreground" />}
+              {uploadingAvatar ? <Loader2 className="w-3 h-3 text-primary-foreground animate-spin" /> : <Camera className="w-3 h-3 text-primary-foreground" />}
             </button>
             <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
           </div>
           {/* Name + greeting */}
           <div className="flex-1 min-w-0">
-            <p className="text-xs text-muted-foreground">
-              {lang === 'en' ? 'Welcome back' : 'С возвращением'} 👋
+            <h2 className="font-heading uppercase tracking-wide text-foreground text-[22px] leading-none truncate">
+              {lang === 'en' ? 'Hello' : 'Привет'}, {profile?.full_name?.split(' ')[0] || ''}
+            </h2>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-[0.18em] mt-1 truncate">
+              {pkg?.package_name || (lang === 'en' ? 'Member' : 'Участник')}
             </p>
-            <h2 className="text-lg font-extrabold font-heading text-foreground truncate">{profile?.full_name}</h2>
           </div>
         </div>
       </div>
 
+      <div className="px-4 sm:px-5 space-y-4 mt-4">
+        {/* ═══════════ Weekly streak strip ═══════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between gap-1 bg-card border border-border/40 rounded-2xl px-3 py-2.5"
+        >
+          {weekStrip.map((d, i) => (
+            <div key={d.key} className={`flex flex-col items-center gap-1.5 flex-1 min-w-0 ${d.done || d.isToday ? '' : 'opacity-40'}`}>
+              <span className={`text-[10px] font-bold ${d.isToday ? 'text-primary' : 'text-muted-foreground'}`}>{d.letter}</span>
+              {d.done ? (
+                <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center text-[10px] font-bold text-primary-foreground shadow-[0_0_10px_hsl(var(--primary)/0.5)]">✓</div>
+              ) : d.isToday ? (
+                <div className="w-5 h-5 rounded-full border-2 border-primary animate-pulse" />
+              ) : (
+                <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/70 my-[7px]" />
+              )}
+            </div>
+          ))}
+          <div className="ml-1 pl-2.5 border-l border-border/50 shrink-0 text-right">
+            <div className="text-[11px] font-bold text-foreground leading-none">{weekSessionsCount}</div>
+            <div className="text-[8px] text-muted-foreground uppercase tracking-tight mt-1">
+              {lang === 'en' ? 'this week' : 'на неделе'}
+            </div>
+          </div>
+        </motion.div>
 
-      <div className="px-5 space-y-4 mt-3">
+
         {/* ═══════════ Session Balance Card ═══════════ */}
         {pkg && (
           <motion.div
