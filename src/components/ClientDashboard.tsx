@@ -773,10 +773,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="space-y-2"
+            className="bg-card border border-border/40 rounded-3xl p-4 space-y-2.5"
           >
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-              {lang === 'en' ? 'Upcoming' : 'Ближайшие'}
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em]">
+              {lang === 'en' ? 'Next scheduled' : 'Ближайшие'}
             </p>
             {sessions.slice(0, showAllSessions ? sessions.length : 3).map((s, i) => (
               <motion.div
@@ -784,15 +784,24 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.15 + i * 0.05 }}
-                className="flex items-center gap-3 bg-card/60 border border-border/30 rounded-xl px-4 py-3"
+                className="flex items-center gap-3 rounded-2xl bg-secondary/40 border border-border/30 px-3 py-2.5"
               >
-                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                  {s.is_recurring
-                    ? <RotateCw className="w-3.5 h-3.5 text-primary" />
-                    : <Dumbbell className="w-3.5 h-3.5 text-primary" />
-                  }
+                <div className="w-11 h-11 rounded-2xl bg-background/70 border border-border/40 flex flex-col items-center justify-center shrink-0">
+                  {s.is_recurring ? (
+                    <RotateCw className="w-4 h-4 text-primary" />
+                  ) : (
+                    <>
+                      <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none">
+                        {new Date(s.session_date + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { month: 'short' })}
+                      </span>
+                      <span className="font-heading text-base leading-none text-foreground mt-0.5">
+                        {new Date(s.session_date + 'T12:00:00').getDate()}
+                      </span>
+                    </>
+                  )}
                 </div>
-                <span className="text-[13px] font-medium flex-1">{formatSessionDate(s)}</span>
+                <span className="text-[13px] font-medium flex-1 min-w-0 break-words">{formatSessionDate(s)}</span>
+
                 {canCancel(s) ? (
                   confirmCancelId === s.id ? (
                     <div className="flex items-center gap-1 flex-shrink-0">
