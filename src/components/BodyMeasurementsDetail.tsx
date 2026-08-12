@@ -29,7 +29,10 @@ interface Props {
   lang: string;
   editable?: boolean;
   onChanged?: () => void;
+  /** Target user whose measurements are recorded — enables the "Add measurement" form */
+  userId?: string;
 }
+
 
 
 const METRICS = [
