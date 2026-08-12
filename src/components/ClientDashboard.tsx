@@ -498,6 +498,26 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     return pastSessions.filter(s => s.session_date?.startsWith(monthStr)).length;
   }, [pastSessions]);
 
+  // Current week strip (Mon → Sun, Cyprus time) with completed-session marks
+  const weekStrip = useMemo(() => {
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
+    const base = new Date(todayStr + 'T12:00:00');
+    const dow = (base.getDay() + 6) % 7; // 0 = Monday
+    const monday = new Date(base);
+    monday.setDate(base.getDate() - dow);
+    const done = new Set(pastSessions.map(s => s.session_date));
+    const letters = lang === 'en' ? ['M', 'T', 'W', 'T', 'F', 'S', 'S'] : ['П', 'В', 'С', 'Ч', 'П', 'С', 'В'];
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(monday);
+      d.setDate(monday.getDate() + i);
+      const key = d.toLocaleDateString('en-CA');
+      return { key, letter: letters[i], isToday: key === todayStr, done: done.has(key) };
+    });
+  }, [pastSessions, lang]);
+
+  const weekSessionsCount = useMemo(() => weekStrip.filter(d => d.done).length, [weekStrip]);
+
+
   // Nutrition progress
   const kcalPct = calorieGoal && calorieGoal > 0 ? Math.min(Math.round((todayKcal / calorieGoal) * 100), 100) : 0;
   const kcalOver = calorieGoal != null && todayKcal > calorieGoal;
