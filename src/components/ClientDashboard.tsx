@@ -1112,29 +1112,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               ) : undefined}
             />
 
-            {/* ═════ Health Tests ═════ */}
-            <ModuleCard
-              icon={<ClipboardCheck className="w-4.5 h-4.5 text-primary" />}
-              title={lang === 'en' ? 'Tests' : 'Тесты'}
-              subtitle={lastTestPct == null
-                ? (lang === 'en' ? 'Take first test' : 'Пройдите тест')
-                : `${testResults.length} ${lang === 'en' ? 'taken' : 'пройдено'}`}
-              onClick={() => { setTestsInitial(null); setTestsOpen(true); }}
-              preview={testSparkData.length >= 1 ? (
-                <div className="space-y-1.5">
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-lg font-extrabold font-heading text-foreground">{lastTestPct}</span>
-                    <span className="text-[10px] text-muted-foreground">%</span>
-                    {testSparkData.length >= 2 && (
-                      <span className={`text-[10px] font-bold ml-auto ${testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? 'text-green-400' : 'text-orange-400'}`}>
-                        {testSparkData[testSparkData.length - 1] >= testSparkData[testSparkData.length - 2] ? <TrendingUp className="w-3 h-3 inline" /> : <TrendingDown className="w-3 h-3 inline" />}
-                      </span>
-                    )}
-                  </div>
-                  {testSparkData.length >= 2 && <Sparkline data={testSparkData} color="hsl(142, 71%, 45%)" />}
-                </div>
-              ) : undefined}
-            />
 
             {/* Photos and History moved out of modules grid — history lives inside the balance card */}
 
@@ -1186,88 +1163,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
         )}
 
-        {/* ═══════════ Account ═══════════ */}
-        <div className="mt-4 border-t border-border/30 pt-4 space-y-2">
-
-          <AnimatePresence initial={false}>
-
-            {showChangePwd && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="p-3 space-y-2 bg-secondary/20 rounded-xl border border-border/30">
-                  <p className="text-xs font-bold flex items-center gap-1.5">
-                    <KeyRound className="w-3.5 h-3.5 text-primary" />
-                    {lang === 'en' ? 'New password' : 'Новый пароль'}
-                  </p>
-                  <div className="relative">
-                    <input
-                      type={pwdVisible ? 'text' : 'password'}
-                      value={newPwd}
-                      onChange={(e) => setNewPwd(e.target.value)}
-                      placeholder={lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов'}
-                      className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 pr-9 text-sm focus:outline-none focus:border-primary"
-                      autoComplete="new-password"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setPwdVisible(v => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {pwdVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                    </button>
-                  </div>
-                  <input
-                    type={pwdVisible ? 'text' : 'password'}
-                    value={newPwd2}
-                    onChange={(e) => setNewPwd2(e.target.value)}
-                    placeholder={lang === 'en' ? 'Repeat password' : 'Повторите пароль'}
-                    className="w-full bg-background border border-border/50 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary"
-                    autoComplete="new-password"
-                  />
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => { setShowChangePwd(false); setNewPwd(''); setNewPwd2(''); }}
-                      disabled={pwdSaving}
-                      className="flex-1 text-xs font-semibold py-2 rounded-lg border border-border/50 hover:bg-secondary/40 transition-colors disabled:opacity-50"
-                    >
-                      {lang === 'en' ? 'Cancel' : 'Отмена'}
-                    </button>
-                    <button
-                      onClick={handleChangePassword}
-                      disabled={pwdSaving || newPwd.length < 8 || newPwd !== newPwd2}
-                      className="flex-1 text-xs font-bold py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-1.5"
-                    >
-                      {pwdSaving && <Loader2 className="w-3 h-3 animate-spin" />}
-                      {lang === 'en' ? 'Save' : 'Сохранить'}
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              onClick={() => setShowChangePwd(v => !v)}
-              className="flex items-center justify-center gap-1.5 text-xs font-bold py-3 rounded-xl border border-border/50 hover:bg-secondary/40 transition-colors"
-            >
-              <KeyRound className="w-3.5 h-3.5" />
-              {lang === 'en' ? 'Password' : 'Пароль'}
-            </button>
-            <button
-              onClick={() => setConfirmSignOut(true)}
-              className="flex items-center justify-center gap-1.5 text-xs font-bold text-destructive py-3 rounded-xl border border-destructive/30 hover:bg-destructive/10 transition-colors"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              {lang === 'en' ? 'Sign out' : 'Выйти'}
-            </button>
-          </div>
-        </div>
       </div>
 
       {/* ═══════════ Sign-out confirmation ═══════════ */}
