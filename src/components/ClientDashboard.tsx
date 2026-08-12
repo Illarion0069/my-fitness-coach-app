@@ -164,7 +164,7 @@ const ModuleCard = ({ icon, title, subtitle, preview, onClick, accentColor, badg
   <motion.button
     onClick={() => { if (hint) markHintSeen(hint.id); onClick(); }}
     whileTap={{ scale: 0.97 }}
-    className="relative w-full bg-card border border-border/40 rounded-2xl p-4 text-left hover:border-primary/30 transition-all group"
+    className="relative w-full bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/30 transition-all group"
   >
     {hint && <HintDot id={hint.id} en={hint.en} ru={hint.ru} className="top-2 right-2" side="left" />}
     <div className="flex items-start justify-between mb-2">
@@ -868,7 +868,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           transition={{ delay: 0.2 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => { setBookingStep('date'); setBookingOpen(true); }}
-          className="w-full gradient-primary rounded-2xl py-4 px-6 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
+          className="w-full gradient-primary rounded-3xl py-4 px-6 flex items-center justify-center gap-2.5 glow-primary hover:scale-[1.01] transition-transform active:scale-[0.99]"
         >
           <CalendarDays className="w-5 h-5 text-primary-foreground" />
           <span className="text-base font-bold text-primary-foreground">
@@ -977,7 +977,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.25 }}
         >
-          <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1 mb-3">
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em] px-1 mb-3">
             {lang === 'en' ? 'My Progress' : 'Мой прогресс'}
           </p>
           <div className="grid grid-cols-2 gap-3">
@@ -1133,7 +1133,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             <button
               type="button"
               onClick={() => { markHintSeen('buy_sessions'); onNavigate('pricing'); }}
-              className="w-full flex items-center justify-center gap-2 rounded-2xl py-4 text-sm font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.99] transition-transform"
+              className="w-full flex items-center justify-center gap-2 rounded-3xl py-4 text-sm font-bold gradient-primary text-primary-foreground shadow-lg active:scale-[0.99] transition-transform"
             >
               <ShoppingCart className="w-5 h-5" />
               {lang === 'en' ? 'Buy more sessions' : 'Докупить тренировки'}
