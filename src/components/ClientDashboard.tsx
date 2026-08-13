@@ -603,7 +603,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           </div>
           {/* Name + greeting */}
           <div className="flex-1 min-w-0">
-            <h2 className="text-foreground/90 text-[15px] font-light tracking-[0.01em] leading-none truncate">
+            <h2 className="text-foreground text-2xl uppercase tracking-[0.03em] leading-none truncate">
               {lang === 'en'
                 ? `Hello, ${profile?.full_name?.split(' ')[0] || ''}`
                 : `Привет, ${localizeName(profile?.full_name?.split(' ')[0], lang)}`}
