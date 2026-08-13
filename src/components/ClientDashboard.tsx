@@ -264,6 +264,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [testsOpen, setTestsOpen] = useState(false);
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
   const [nutritionOpen, setNutritionOpen] = useState(false);
+  const [nutritionAutoAdd, setNutritionAutoAdd] = useState(false);
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
 
@@ -1070,7 +1071,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             </div>
             {todayKcal === 0 && (
               <div
-                onClick={(e) => { e.stopPropagation(); setNutritionOpen(true); }}
+                onClick={(e) => { e.stopPropagation(); setNutritionAutoAdd(true); setNutritionOpen(true); }}
                 className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors cursor-pointer"
               >
                 <Plus className="w-4 h-4" />
@@ -1314,11 +1315,11 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
       <FullscreenModule
         open={nutritionOpen}
-        onClose={() => setNutritionOpen(false)}
+        onClose={() => { setNutritionOpen(false); setNutritionAutoAdd(false); }}
         title={lang === 'en' ? 'Nutrition Diary' : 'Дневник питания'}
         icon={<UtensilsCrossed className="w-5 h-5 text-orange-400" />}
       >
-        <NutritionDiary lang={lang} calorieGoal={calorieGoal} />
+        <NutritionDiary key={nutritionAutoAdd ? 'add' : 'view'} lang={lang} calorieGoal={calorieGoal} autoOpenAdd={nutritionAutoAdd} />
       </FullscreenModule>
 
       {/* Booking Modal */}

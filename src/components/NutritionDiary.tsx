@@ -60,6 +60,8 @@ interface Props {
   lang: string;
   isTrainer?: boolean;
   calorieGoal?: number | null;
+  /** Opens the "Add meal" chooser (photo / manual) immediately on mount. */
+  autoOpenAdd?: boolean;
 }
 
 type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
@@ -174,7 +176,7 @@ const MacroRing = ({ value, max, color, size = 40, strokeWidth = 3.5 }: { value:
   );
 };
 
-const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false, calorieGoal }, ref) => {
+const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false, calorieGoal, autoOpenAdd = false }, ref) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
@@ -203,7 +205,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddProtein, setQuickAddProtein] = useState('');
   const [quickAddCarbs, setQuickAddCarbs] = useState('');
   const [quickAddFat, setQuickAddFat] = useState('');
-  const [showAddMenu, setShowAddMenu] = useState(false);
+  const [showAddMenu, setShowAddMenu] = useState(autoOpenAdd);
   const [quickAddTime, setQuickAddTime] = useState<string>('');
   const [foodSuggestions, setFoodSuggestions] = useState<any[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
@@ -1734,7 +1736,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               </button>
 
 
-              <button onClick={() => { setShowAddMenu(false); const now = new Date(); setQuickAddTime(`${String(now.getHours()).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
+              <button onClick={() => { setShowAddMenu(false); const now = new Date(); const h = now.getHours(); setQuickAddMeal(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack'); setQuickAddTime(`${String(h).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
                 <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
                   <PencilLine className="w-5 h-5 text-primary" />
