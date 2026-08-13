@@ -601,9 +601,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           </div>
           {/* Name + greeting */}
           <div className="flex-1 min-w-0">
-            <h2 className="font-heading uppercase tracking-wide text-foreground text-[22px] leading-none truncate">
-              {lang === 'en' ? 'Hello' : 'Привет'}, {profile?.full_name?.split(' ')[0] || ''}
-            </h2>
+            {lang === 'en' ? (
+              <h2 className="font-heading uppercase tracking-wide text-foreground text-[22px] leading-none truncate">
+                Hello, {profile?.full_name?.split(' ')[0] || ''}
+              </h2>
+            ) : (
+              <h2 className="uppercase text-foreground text-[18px] font-extrabold tracking-[0.06em] leading-none truncate">
+                Привет, {localizeName(profile?.full_name?.split(' ')[0], lang)}
+              </h2>
+            )}
+
             <p className="text-[10px] text-muted-foreground uppercase tracking-[0.18em] mt-1 truncate">
               {pkg?.package_name || (lang === 'en' ? 'Member' : 'Участник')}
             </p>
