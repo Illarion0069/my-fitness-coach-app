@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  CalendarDays, Activity, LogOut, Ruler, ClipboardCheck, Camera,
+  CalendarDays, Activity, LogOut, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
   ShoppingCart, Trophy, Settings, Plus,
@@ -818,75 +818,76 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-card border border-border/40 rounded-3xl p-4 space-y-2.5"
           >
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em]">
+            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em] px-1 mb-3">
               {lang === 'en' ? 'Next scheduled' : 'Ближайшие'}
             </p>
-            {sessions.slice(0, showAllSessions ? sessions.length : 3).map((s, i) => (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.15 + i * 0.05 }}
-                className="flex items-center gap-3 rounded-2xl bg-secondary/40 border border-border/30 px-3 py-2.5"
-              >
-                <div className="w-11 h-11 rounded-2xl bg-background/70 border border-border/40 flex flex-col items-center justify-center shrink-0">
-                  {s.is_recurring ? (
-                    <RotateCw className="w-4 h-4 text-primary" />
-                  ) : (
-                    <>
-                      <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none">
-                        {new Date(s.session_date + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { month: 'short' })}
-                      </span>
-                      <span className="font-heading text-base leading-none text-foreground mt-0.5">
-                        {new Date(s.session_date + 'T12:00:00').getDate()}
-                      </span>
-                    </>
-                  )}
-                </div>
-                <span className="text-[13px] font-medium flex-1 min-w-0 break-words">{formatSessionDate(s)}</span>
+            <div className="bg-card border border-border/40 rounded-3xl p-4 space-y-2.5">
+              {sessions.slice(0, showAllSessions ? sessions.length : 3).map((s, i) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.15 + i * 0.05 }}
+                  className="flex items-center gap-3 rounded-2xl bg-secondary/40 border border-border/30 px-3 py-2.5"
+                >
+                  <div className="w-11 h-11 rounded-2xl bg-background/70 border border-border/40 flex flex-col items-center justify-center shrink-0">
+                    {s.is_recurring ? (
+                      <RotateCw className="w-4 h-4 text-primary" />
+                    ) : (
+                      <>
+                        <span className="text-[8px] font-bold uppercase text-muted-foreground leading-none">
+                          {new Date(s.session_date + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { month: 'short' })}
+                        </span>
+                        <span className="font-heading text-base leading-none text-foreground mt-0.5">
+                          {new Date(s.session_date + 'T12:00:00').getDate()}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <span className="text-[13px] font-medium flex-1 min-w-0 break-words">{formatSessionDate(s)}</span>
 
-                {canCancel(s) ? (
-                  confirmCancelId === s.id ? (
-                    <div className="flex items-center gap-1 flex-shrink-0">
+                  {canCancel(s) ? (
+                    confirmCancelId === s.id ? (
+                      <div className="flex items-center gap-1 flex-shrink-0">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
+                          className="h-7 px-2 rounded-lg bg-secondary/60 text-[10px] font-bold text-muted-foreground"
+                        >
+                          {lang === 'en' ? 'No' : 'Нет'}
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); handleCancel(s); }}
+                          disabled={cancellingId === s.id}
+                          className="h-7 px-2 rounded-lg bg-destructive text-[10px] font-bold text-destructive-foreground"
+                        >
+                          {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Cancel' : 'Отменить')}
+                        </button>
+                      </div>
+                    ) : (
                       <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); }}
-                        className="h-7 px-2 rounded-lg bg-secondary/60 text-[10px] font-bold text-muted-foreground"
+                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(s.id); }}
+                        className="text-[11px] text-destructive/80 font-semibold bg-destructive/8 px-2.5 py-1 rounded-lg hover:bg-destructive/15 transition-colors"
                       >
-                        {lang === 'en' ? 'No' : 'Нет'}
+                        <XCircle className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setConfirmCancelId(null); handleCancel(s); }}
-                        disabled={cancellingId === s.id}
-                        className="h-7 px-2 rounded-lg bg-destructive text-[10px] font-bold text-destructive-foreground"
-                      >
-                        {cancellingId === s.id ? <Loader2 className="w-3 h-3 animate-spin" /> : (lang === 'en' ? 'Cancel' : 'Отменить')}
-                      </button>
-                    </div>
+                    )
                   ) : (
-                    <button
-                      onClick={(e) => { e.stopPropagation(); setConfirmCancelId(s.id); }}
-                      className="text-[11px] text-destructive/80 font-semibold bg-destructive/8 px-2.5 py-1 rounded-lg hover:bg-destructive/15 transition-colors"
-                    >
-                      <XCircle className="w-3.5 h-3.5" />
-                    </button>
-                  )
-                ) : (
-                  <span className="text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{'<24h'}</span>
-                )}
-              </motion.div>
-            ))}
-            {sessions.length > 3 && (
-              <button
-                onClick={() => setShowAllSessions(prev => !prev)}
-                className="w-full text-xs text-primary font-semibold py-1.5 text-center hover:underline"
-              >
-                {showAllSessions
-                  ? (lang === 'en' ? 'Show less' : 'Свернуть')
-                  : `+${sessions.length - 3} ${lang === 'en' ? 'more' : 'ещё'}`}
-              </button>
-            )}
+                    <span className="text-[9px] text-muted-foreground bg-secondary px-1.5 py-0.5 rounded">{'<24h'}</span>
+                  )}
+                </motion.div>
+              ))}
+              {sessions.length > 3 && (
+                <button
+                  onClick={() => setShowAllSessions(prev => !prev)}
+                  className="w-full text-xs text-primary font-semibold py-1.5 text-center hover:underline"
+                >
+                  {showAllSessions
+                    ? (lang === 'en' ? 'Show less' : 'Свернуть')
+                    : `+${sessions.length - 3} ${lang === 'en' ? 'more' : 'ещё'}`}
+                </button>
+              )}
+            </div>
           </motion.div>
         )}
 
@@ -999,8 +1000,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           );
         })()}
 
-        {/* ═══════════ Modules Grid ═══════════ */}
-
+        {/* ═══════════ My Progress ═══════════ */}
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -1009,155 +1009,150 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em] px-1 mb-3">
             {lang === 'en' ? 'My Progress' : 'Мой прогресс'}
           </p>
-          <div className="grid grid-cols-2 gap-3">
-            {/* ═════ Nutrition — HERO (ring + macros grid) ═════ */}
-            <motion.button
-              onClick={() => setNutritionOpen(true)}
-              whileTap={{ scale: 0.98 }}
-              className="col-span-2 relative overflow-hidden bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/40 transition-all"
-            >
-              <div className="flex items-center gap-4">
-                {/* Calorie ring */}
-                <div className="relative w-[92px] h-[92px] shrink-0">
-                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-secondary" />
-                    <motion.circle
-                      cx="50" cy="50" r="42" fill="none" strokeWidth="10" strokeLinecap="round"
-                      className={kcalOver ? 'stroke-destructive' : 'stroke-primary'}
-                      initial={{ strokeDasharray: '0 264' }}
-                      animate={{ strokeDasharray: `${(calorieGoal ? kcalPct : 0) * 2.64} 264` }}
-                      transition={{ duration: 0.9, ease: 'easeOut' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className={`font-heading leading-none text-[22px] ${kcalOver ? 'text-destructive' : 'text-foreground'}`}>{todayKcal}</span>
-                    <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
-                      {calorieGoal ? `/${calorieGoal} ${lang === 'en' ? 'kcal' : 'ккал'}` : (lang === 'en' ? 'kcal' : 'ккал')}
-                    </span>
-                  </div>
+          {/* ═════ Nutrition — HERO (ring + macros grid) ═════ */}
+          <motion.button
+            onClick={() => setNutritionOpen(true)}
+            whileTap={{ scale: 0.98 }}
+            className="w-full relative overflow-hidden bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/40 transition-all"
+          >
+            <div className="flex items-center gap-4">
+              {/* Calorie ring */}
+              <div className="relative w-[92px] h-[92px] shrink-0">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-secondary" />
+                  <motion.circle
+                    cx="50" cy="50" r="42" fill="none" strokeWidth="10" strokeLinecap="round"
+                    className={kcalOver ? 'stroke-destructive' : 'stroke-primary'}
+                    initial={{ strokeDasharray: '0 264' }}
+                    animate={{ strokeDasharray: `${(calorieGoal ? kcalPct : 0) * 2.64} 264` }}
+                    transition={{ duration: 0.9, ease: 'easeOut' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className={`font-heading leading-none text-[22px] ${kcalOver ? 'text-destructive' : 'text-foreground'}`}>{todayKcal}</span>
+                  <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
+                    {calorieGoal ? `/${calorieGoal} ${lang === 'en' ? 'kcal' : 'ккал'}` : (lang === 'en' ? 'kcal' : 'ккал')}
+                  </span>
                 </div>
-                {/* Macro grid */}
-                <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
-                  {[
-                    { l: lang === 'en' ? 'Protein' : 'Белки', v: `${todayMacros.protein} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.protein * 4 / todayKcal) * 100 : 0 },
-                    { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: `${todayMacros.carbs} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.carbs * 4 / todayKcal) * 100 : 0 },
-                    { l: lang === 'en' ? 'Fat' : 'Жиры', v: `${todayMacros.fat} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.fat * 9 / todayKcal) * 100 : 0 },
-                    {
-                      l: lang === 'en' ? 'Score' : 'Оценка',
-                      v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,
-                      pct: todayScore ?? 0,
-                      accent: true,
-                    },
-                  ].map((m, i) => (
+              </div>
+              {/* Macro grid */}
+              <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
+                {[
+                  { l: lang === 'en' ? 'Protein' : 'Белки', v: `${todayMacros.protein} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.protein * 4 / todayKcal) * 100 : 0 },
+                  { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: `${todayMacros.carbs} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.carbs * 4 / todayKcal) * 100 : 0 },
+                  { l: lang === 'en' ? 'Fat' : 'Жиры', v: `${todayMacros.fat} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.fat * 9 / todayKcal) * 100 : 0 },
+                  {
+                    l: lang === 'en' ? 'Score' : 'Оценка',
+                    v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,
+                    pct: todayScore ?? 0,
+                    accent: true,
+                  },
+                ].map((m, i) => (
+                  <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
+                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
+                    <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : 'text-foreground'}`}>{m.v}</div>
+                    <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
+                        transition={{ duration: 0.8, ease: 'easeOut' }}
+                        className="h-full rounded-full bg-primary"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {todayKcal === 0 && (
+              <p className="text-[11px] text-muted-foreground mt-3 text-center">
+                {lang === 'en' ? 'Tap to log your first meal today' : 'Нажмите, чтобы добавить первый приём пищи'}
+              </p>
+            )}
+          </motion.button>
+        </motion.div>
+
+        {/* ═══════════ Body Measurements ═══════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.18em] px-1 mb-3">
+            {lang === 'en' ? 'Body Measurements' : 'Замеры тела'}
+          </p>
+          {/* ═════ Body Measurements — HERO (ring + metrics grid) ═════ */}
+          <motion.div
+            onClick={() => setMeasurementsOpen(true)}
+            whileTap={{ scale: 0.98 }}
+            className="relative overflow-hidden bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/40 transition-all cursor-pointer"
+          >
+            <div className="flex items-center gap-4">
+              {/* Weight ring */}
+              <div className="relative w-[92px] h-[92px] shrink-0">
+                <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
+                  <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-secondary" />
+                  <motion.circle
+                    cx="50" cy="50" r="42" fill="none" strokeWidth="10" strokeLinecap="round"
+                    className="stroke-primary"
+                    initial={{ strokeDasharray: '0 264' }}
+                    animate={{ strokeDasharray: `${Math.min(Math.abs(bodyPanel.weight30 ?? 0) / 4, 1) * 264 || 26} 264` }}
+                    transition={{ duration: 0.9, ease: 'easeOut' }}
+                  />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="font-heading leading-none text-[22px] text-foreground">
+                    {weightTrend ? weightTrend.current : (weightSparkData[0] ?? '—')}
+                  </span>
+                  <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
+                    {lang === 'en' ? 'kg' : 'кг'}
+                  </span>
+                  {bodyPanel.weight30 != null && (
+                    <span className={`text-[8px] font-bold mt-0.5 ${bodyPanel.weight30 < 0 ? 'text-green-400' : bodyPanel.weight30 > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
+                      {bodyPanel.weight30 > 0 ? '+' : ''}{bodyPanel.weight30} / 30d
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Metrics grid */}
+              <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
+                {bodyPanel.metrics.map((m, i) => {
+                  const positive = m.diff === 0 ? null : (m.good === 'down' ? m.diff < 0 : m.diff > 0);
+                  const color = positive == null ? 'text-muted-foreground' : positive ? 'text-green-400' : 'text-orange-400';
+                  return (
                     <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
-                      <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
-                      <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : 'text-foreground'}`}>{m.v}</div>
-                      <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
-                          transition={{ duration: 0.8, ease: 'easeOut' }}
-                          className="h-full rounded-full bg-primary"
-                        />
+                      <div className="flex items-center gap-1">
+                        <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">
+                          {lang === 'en' ? m.en : m.ru}
+                        </span>
+                        {m.diff !== 0 && (
+                          m.diff > 0
+                            ? <TrendingUp className={`w-3 h-3 ml-auto ${color}`} />
+                            : <TrendingDown className={`w-3 h-3 ml-auto ${color}`} />
+                        )}
+                      </div>
+                      <div className="text-[12px] font-extrabold truncate text-foreground">
+                        {m.last != null ? `${m.last} ${lang === 'en' ? 'cm' : 'см'}` : '—'}
+                      </div>
+                      <div className="mt-1 h-[14px] flex items-center">
+                        {m.series.length >= 2
+                          ? <Sparkline data={m.series} color={positive === false ? 'hsl(25 90% 55%)' : 'hsl(142 70% 45%)'} height={14} width={72} />
+                          : <div className="h-[1px] w-full bg-background/70 rounded-full" />}
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
               </div>
-              {todayKcal === 0 && (
-                <p className="text-[11px] text-muted-foreground mt-3 text-center">
-                  {lang === 'en' ? 'Tap to log your first meal today' : 'Нажмите, чтобы добавить первый приём пищи'}
-                </p>
-              )}
-            </motion.button>
+            </div>
 
-
-            {/* ═════ Body Measurements — HERO (ring + metrics grid) ═════ */}
-            <motion.div
-              onClick={() => setMeasurementsOpen(true)}
-              whileTap={{ scale: 0.98 }}
-              className="col-span-2 relative overflow-hidden bg-card border border-border/40 rounded-3xl p-4 text-left hover:border-primary/40 transition-all cursor-pointer"
+            <button
+              onClick={(e) => { e.stopPropagation(); setMeasurementsOpen(true); }}
+              className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors"
             >
-              <div className="flex items-center gap-2 mb-3">
-                <Ruler className="w-4 h-4 text-primary" />
-                <span className="font-heading text-base tracking-wide text-foreground">
-                  {lang === 'en' ? 'Body Measurements' : 'Замеры тела'}
-                </span>
-              </div>
-
-              <div className="flex items-center gap-4">
-                {/* Weight ring */}
-                <div className="relative w-[92px] h-[92px] shrink-0">
-                  <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                    <circle cx="50" cy="50" r="42" fill="none" strokeWidth="10" className="stroke-secondary" />
-                    <motion.circle
-                      cx="50" cy="50" r="42" fill="none" strokeWidth="10" strokeLinecap="round"
-                      className="stroke-primary"
-                      initial={{ strokeDasharray: '0 264' }}
-                      animate={{ strokeDasharray: `${Math.min(Math.abs(bodyPanel.weight30 ?? 0) / 4, 1) * 264 || 26} 264` }}
-                      transition={{ duration: 0.9, ease: 'easeOut' }}
-                    />
-                  </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <span className="font-heading leading-none text-[22px] text-foreground">
-                      {weightTrend ? weightTrend.current : (weightSparkData[0] ?? '—')}
-                    </span>
-                    <span className="text-[8px] font-bold uppercase tracking-[0.1em] text-muted-foreground mt-0.5">
-                      {lang === 'en' ? 'kg' : 'кг'}
-                    </span>
-                    {bodyPanel.weight30 != null && (
-                      <span className={`text-[8px] font-bold mt-0.5 ${bodyPanel.weight30 < 0 ? 'text-green-400' : bodyPanel.weight30 > 0 ? 'text-orange-400' : 'text-muted-foreground'}`}>
-                        {bodyPanel.weight30 > 0 ? '+' : ''}{bodyPanel.weight30} / 30d
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Metrics grid */}
-                <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
-                  {bodyPanel.metrics.map((m, i) => {
-                    const positive = m.diff === 0 ? null : (m.good === 'down' ? m.diff < 0 : m.diff > 0);
-                    const color = positive == null ? 'text-muted-foreground' : positive ? 'text-green-400' : 'text-orange-400';
-                    return (
-                      <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">
-                            {lang === 'en' ? m.en : m.ru}
-                          </span>
-                          {m.diff !== 0 && (
-                            m.diff > 0
-                              ? <TrendingUp className={`w-3 h-3 ml-auto ${color}`} />
-                              : <TrendingDown className={`w-3 h-3 ml-auto ${color}`} />
-                          )}
-                        </div>
-                        <div className="text-[12px] font-extrabold truncate text-foreground">
-                          {m.last != null ? `${m.last} ${lang === 'en' ? 'cm' : 'см'}` : '—'}
-                        </div>
-                        <div className="mt-1 h-[14px] flex items-center">
-                          {m.series.length >= 2
-                            ? <Sparkline data={m.series} color={positive === false ? 'hsl(25 90% 55%)' : 'hsl(142 70% 45%)'} height={14} width={72} />
-                            : <div className="h-[1px] w-full bg-background/70 rounded-full" />}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <button
-                onClick={(e) => { e.stopPropagation(); setMeasurementsOpen(true); }}
-                className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                {lang === 'en' ? 'Add measurement' : 'Добавить замер'}
-              </button>
-            </motion.div>
-
-
-
-            {/* Photos and History moved out of modules grid — history lives inside the balance card */}
-
-          </div>
+              <Plus className="w-4 h-4" />
+              {lang === 'en' ? 'Add measurement' : 'Добавить замер'}
+            </button>
+          </motion.div>
         </motion.div>
 
         {/* Achievements moved to the avatar badge (tap the medal) */}
