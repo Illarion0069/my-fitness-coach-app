@@ -112,6 +112,10 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  .font-heading {
+    font-family: 'Bebas Neue', 'Oswald', 'Inter', sans-serif;
+    letter-spacing: 0.04em;
+  }
 }
 
 /* Prevent iOS auto-zoom on input focus (requires font-size >= 16px) */

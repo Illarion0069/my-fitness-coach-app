@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  ShoppingCart, Trophy, Settings, Plus,
+  ShoppingCart, Trophy, Settings, Plus, Calculator,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -17,6 +17,7 @@ import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
+import NutritionCalcInfo from './NutritionCalcInfo';
 import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
@@ -267,6 +268,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [nutritionAutoAdd, setNutritionAutoAdd] = useState(false);
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
@@ -1352,9 +1354,19 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           testsCount={testResults.length}
           lastTestPct={lastTestPct}
           onOpenTests={() => { setSettingsOpen(false); setTestsInitial(null); setTestsOpen(true); }}
-          onOpenNutrition={() => { setSettingsOpen(false); setNutritionOpen(true); }}
+          onOpenCalcInfo={() => { setSettingsOpen(false); setCalcInfoOpen(true); }}
           onSignOut={() => setConfirmSignOut(true)}
         />
+      </FullscreenModule>
+
+      {/* How we calculate calories info */}
+      <FullscreenModule
+        open={calcInfoOpen}
+        onClose={() => setCalcInfoOpen(false)}
+        title={lang === 'en' ? 'How we calculate' : 'Как мы считаем'}
+        icon={<Calculator className="w-5 h-5 text-primary" />}
+      >
+        <NutritionCalcInfo userId={user.id} />
       </FullscreenModule>
 
       {/* Achievements popup (opened from the avatar medal) */}

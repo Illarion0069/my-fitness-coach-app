@@ -16,7 +16,7 @@ interface ClientSettingsProps {
   testsCount: number;
   lastTestPct: number | null;
   onOpenTests: () => void;
-  onOpenNutrition: () => void;
+  onOpenCalcInfo: () => void;
   onSignOut: () => void;
 }
 
@@ -51,7 +51,7 @@ const Row = ({
 };
 
 const ClientSettings = ({
-  userId, avatarUrl, onAvatarChange, testsCount, lastTestPct, onOpenTests, onOpenNutrition, onSignOut,
+  userId, avatarUrl, onAvatarChange, testsCount, lastTestPct, onOpenTests, onOpenCalcInfo, onSignOut,
 }: ClientSettingsProps) => {
   const { profile, refreshProfile } = useAuth();
   const { lang, setLang } = useLanguage();
@@ -425,7 +425,7 @@ const ClientSettings = ({
         <Row
           icon={<HeartPulse className="w-4 h-4" />}
           label={en ? 'How we calculate calories' : 'Как мы считаем калории'}
-          onClick={onOpenNutrition}
+          onClick={onOpenCalcInfo}
         />
       </Section>
 
