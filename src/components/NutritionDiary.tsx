@@ -217,7 +217,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [showFeedback, setShowFeedback] = useState(false);
   const [showFeedbackHint, setShowFeedbackHint] = useState(false);
   const [showCalcInfo, setShowCalcInfo] = useState(false);
+  const [showCalcInfoButton, setShowCalcInfoButton] = useState(false);
+  const calcInfoScrollRef = useRef<HTMLDivElement>(null);
   const [showCalcInfoHint, setShowCalcInfoHint] = useState(false);
+
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
   const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
   const [editFoodName, setEditFoodName] = useState('');
