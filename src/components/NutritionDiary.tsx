@@ -2054,10 +2054,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         {showCalcInfo && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             onClick={() => setShowCalcInfo(false)}
-            className="fixed inset-0 z-[200] bg-black/50 flex items-end justify-center p-4 pb-8">
+            className="fixed inset-0 z-[200] bg-black/50 flex items-end justify-center p-4 pb-[calc(env(safe-area-inset-bottom,0px)+72px)]">
             <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl border border-border/40 max-h-[80vh] flex flex-col overflow-hidden">
+              className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl border border-border/40 max-h-[70vh] flex flex-col overflow-hidden">
               {/* Sticky header — close button stays visible while scrolling */}
               <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-md border-b border-border/30 px-5 pt-4 pb-3 flex items-center justify-between shrink-0">
                 <p className="text-sm font-bold text-foreground">
