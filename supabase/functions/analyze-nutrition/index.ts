@@ -331,7 +331,7 @@ serve(async (req) => {
         .order("created_at", { ascending: true }),
       supabase
         .from("nutrition_logs")
-        .select("manual_entries")
+        .select("manual_entries, water_ml, coffee_cups, tea_cups, alcohol_ml")
         .eq("user_id", user_id)
         .eq("log_date", log_date)
         .maybeSingle(),
@@ -516,10 +516,9 @@ serve(async (req) => {
       kcalByMeal[mt] = (kcalByMeal[mt] || 0) + (Number(e.calories) || 0);
       proteinByMeal[mt] = (proteinByMeal[mt] || 0) + (Number(e.protein_g) || 0);
     }
-    const consumedKcal = Object.values(kcalByMeal).reduce((a, b) => a + b, 0);
+    const consumedKcalFood = Object.values(kcalByMeal).reduce((a, b) => a + b, 0);
     const consumedProtein = Object.values(proteinByMeal).reduce((a, b) => a + b, 0);
     const calorieGoal = Number((clientProfile as any)?.daily_calorie_goal) || targetKcal || 0;
-    const remainingKcal = calorieGoal > 0 ? Math.round(calorieGoal - consumedKcal) : null;
 
     // Which main meals are still ahead, based on the local hour (breakfast<11, lunch<16, dinner<22)
     const mealWindowEnd: Record<string, number> = { breakfast: 11, lunch: 16, dinner: 22 };
@@ -532,12 +531,25 @@ serve(async (req) => {
       return `- ${m}: ${logged ? `LOGGED (${Math.round(kcalByMeal[m] || 0)} kcal, ${Math.round(proteinByMeal[m] || 0)} g protein)` : (localHour >= mealWindowEnd[m] && isToday ? "MISSED (window closed)" : "NOT YET EATEN")}`;
     }).join("\n") + `\n- snack: ${mealTypesLogged.has("snack") ? `LOGGED (${Math.round(kcalByMeal["snack"] || 0)} kcal)` : "none"}`;
 
+    // --- LIQUIDS (water / coffee / tea / alcohol) — part of the day, affect calories & advice ---
+    const waterMlLogged = Number((logData as any)?.water_ml) || 0;
+    const coffeeCups = Number((logData as any)?.coffee_cups) || 0;
+    const teaCups = Number((logData as any)?.tea_cups) || 0;
+    const alcoholMl = Number((logData as any)?.alcohol_ml) || 0;
+    // Keep in sync with src/lib/nutritionTotals.ts
+    const liquidCalories = Math.round(coffeeCups * 20 + teaCups * 5 + alcoholMl * 0.6);
+    const consumedKcal = consumedKcalFood + liquidCalories;
+    const remainingKcal = calorieGoal > 0 ? Math.round(calorieGoal - consumedKcal) : null;
+    const waterPct = waterTargetMl > 0 ? Math.round((waterMlLogged / waterTargetMl) * 100) : null;
+
+    const liquidsBlock = `\n\nLIQUIDS LOGGED TODAY (authoritative — the client tracks these in the diary, they are part of the day):\n- water: ${waterMlLogged} ml${waterPct !== null ? ` (${waterPct}% of the ~${waterTargetMl} ml target)` : ""}\n- coffee: ${coffeeCups} cup(s)\n- tea: ${teaCups} cup(s)\n- alcohol: ${alcoholMl} ml\n- estimated liquid calories: ${liquidCalories} kcal (already added to the day's calorie total by the server)\n\nHARD RULES for liquids:\n- Liquid calories COUNT toward the day: treat CONSUMED_SO_FAR / the day's total as including ${liquidCalories} kcal from drinks.\n- Alcohol: if alcohol_ml > 0, it MUST be reflected in the score (it blocks fat oxidation, worsens sleep and recovery, drives evening snacking). Mention it in issues/score_killers with a calm, non-shaming tone and give a concrete lighter alternative for next time. Never ignore it.\n- Water: if water is below ~70% of the target, that is a real issue — give a concrete, time-bound fix (e.g. "2 glasses before lunch"). If water is at/above target, praise it briefly and do NOT nag.\n- Coffee: more than 3 cups, or coffee late in the day, is worth one short remark (sleep/cortisol/appetite), not a lecture. 1-2 cups = fine, say nothing or praise.\n- The end-of-day summary MUST take water, coffee and alcohol into account, not just food.`;
+
     const mealContextBlock = `\n\nDAY PROGRESS TRACKING (authoritative — use this, do not guess):\n${mealProgressText}\nCONSUMED_SO_FAR: ${Math.round(consumedKcal)} kcal, ${Math.round(consumedProtein)} g protein\nDAILY_CALORIE_GOAL: ${calorieGoal > 0 ? calorieGoal : "unknown"}\nREMAINING_KCAL_BUDGET: ${remainingKcal !== null ? remainingKcal : "unknown"}\nUPCOMING_MEALS_TODAY: ${upcomingMeals.length ? upcomingMeals.join(", ") : "none"}\nNEXT_MEAL_TO_ADVISE_ON: ${nextMeal}\n\nHARD RULE — recommendations must target NEXT_MEAL_TO_ADVISE_ON:\n- Every tip in boost_potential.tips must be about ${nextMeal === "tomorrow_breakfast" ? "TOMORROW's meals (start with breakfast)" : `the upcoming ${nextMeal} (and later meals today)`}, with concrete foods and grams that fit REMAINING_KCAL_BUDGET (if known) and close the protein/vegetable gap listed above.\n- NEVER advise changing a meal that is already LOGGED or MISSED — those are in the past. Comment on them only retrospectively, in past tense.\n- Explicitly name the meal in the tip ("На ужин — ...", "Tomorrow at breakfast — ...").\n- If REMAINING_KCAL_BUDGET is known and small (<250), advise a light protein+vegetable option; if the client is far below budget, advise a full balanced plate, never "eat less".`;
 
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${anthroBlock}${mealContextBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${anthroBlock}${mealContextBlock}${liquidsBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
@@ -627,7 +639,9 @@ serve(async (req) => {
       perMealTotals[mt].carbs_g += cb;
       perMealTotals[mt].fat_g += f;
     }
-    analysis.total_calories = Math.round(totalCalories);
+    analysis.liquid_calories = liquidCalories;
+    analysis.liquids = { water_ml: waterMlLogged, coffee_cups: coffeeCups, tea_cups: teaCups, alcohol_ml: alcoholMl };
+    analysis.total_calories = Math.round(totalCalories); // food only — liquids are added by the client via computeNutritionTotals
     analysis.total_protein_g = Math.round(totalProtein);
     analysis.total_carbs_g = Math.round(totalCarbs);
     analysis.total_fat_g = Math.round(totalFat);

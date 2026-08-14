@@ -388,7 +388,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     (async () => {
       const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Nicosia' });
       const { data } = await supabase
-        .from('nutrition_logs').select('ai_analysis, manual_entries, ai_score, trainer_override_score')
+        .from('nutrition_logs').select('ai_analysis, manual_entries, ai_score, trainer_override_score, water_ml, coffee_cups, tea_cups, alcohol_ml')
         .eq('user_id', user.id).eq('log_date', today).maybeSingle();
       if (cancelled) return;
       const totals = computeNutritionTotals(data);

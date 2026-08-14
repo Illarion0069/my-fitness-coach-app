@@ -564,7 +564,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     if (!hasFood) return;
     const manualIdsKey = manual.map((e: any) => `${e.id || ''}:${e.calories || 0}`).sort().join('|');
     const photoIdsKey = photos.map(p => p.id).sort().join('|');
-    const key = `${date}::${photoIdsKey}::${manualIdsKey}`;
+    // Liquids are part of the day too: coarse buckets so tiny sips don't re-run the AI,
+    // but coffee/alcohol/meaningful water changes do.
+    const liquidsKey = [
+      Math.round((log?.water_ml || 0) / 500),
+      log?.coffee_cups || 0,
+      log?.tea_cups || 0,
+      Math.round((log?.alcohol_ml || 0) / 100),
+    ].join(':');
+    const key = `${date}::${photoIdsKey}::${manualIdsKey}::${liquidsKey}`;
     if (autoAnalyzeKeyRef.current === key) return;
     const firstRun = autoAnalyzeKeyRef.current === '';
     autoAnalyzeKeyRef.current = key;
@@ -574,7 +582,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     const currentKcal = computeNutritionTotals({
       ai_analysis: log?.ai_analysis,
       manual_entries: manual,
-    }).calories;
+      water_ml: log?.water_ml,
+      coffee_cups: log?.coffee_cups,
+      tea_cups: log?.tea_cups,
+      alcohol_ml: log?.alcohol_ml,
+    } as any).calories;
+
     const mealsKey = Array.from(new Set([
       ...manual.map((e: any) => String(e.meal_type || 'snack')),
       ...photos.map((p: any) => String(p.meal_type || 'snack')),
@@ -984,9 +997,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   }, [analysis]);
 
   const totals = useMemo(
-    () => computeNutritionTotals({ ai_analysis: analysis, manual_entries: manualEntries }),
-    [analysis, manualEntries]
+    () => computeNutritionTotals({
+      ai_analysis: analysis,
+      manual_entries: manualEntries,
+      water_ml: log?.water_ml,
+      coffee_cups: log?.coffee_cups,
+      tea_cups: log?.tea_cups,
+      alcohol_ml: log?.alcohol_ml,
+    } as any),
+    [analysis, manualEntries, log?.water_ml, log?.coffee_cups, log?.tea_cups, log?.alcohol_ml]
   );
+
 
   // Per-meal data
   const mealData = useMemo(() => {
