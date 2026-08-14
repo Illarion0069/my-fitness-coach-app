@@ -602,7 +602,7 @@ const ClientDetailAccordion = ({
         return (
           <div className="space-y-3">
             <BodyMeasurementsView key={measurementKey} userId={client.user_id} lang={lang} editable />
-            <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
+            <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => { setMeasurementKey(k => k + 1); loadCalorieGoal(); }} />
           </div>
         );
 
