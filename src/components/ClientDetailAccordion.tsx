@@ -132,23 +132,54 @@ const ClientDetailAccordion = ({
   };
 
 
+  const loadCalorieGoal = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('daily_calorie_goal, nutrition_goal, calorie_goal_auto, height_cm, birth_date, weight_kg')
+      .eq('user_id', client.user_id)
+      .maybeSingle();
+    const d = data as any;
+    const goal = d?.daily_calorie_goal || null;
+    setCalorieGoal(goal);
+    setCalorieGoalInput(goal ? String(goal) : '');
+    setNutritionGoal(d?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss');
+    setCalorieAuto(d?.calorie_goal_auto !== false);
+    setHasAnthro(Boolean(d?.height_cm && d?.birth_date && d?.weight_kg));
+    setLoadingGoal(false);
+  };
+
   useEffect(() => {
-    supabase.from('profiles').select('daily_calorie_goal, nutrition_goal').eq('user_id', client.user_id).maybeSingle()
-      .then(({ data }) => {
-        const goal = (data as any)?.daily_calorie_goal || null;
-        setCalorieGoal(goal);
-        setCalorieGoalInput(goal ? String(goal) : '');
-        const ng = (data as any)?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss';
-        setNutritionGoal(ng);
-        setLoadingGoal(false);
-      });
+    setLoadingGoal(true);
+    loadCalorieGoal();
   }, [client.user_id]);
 
   const saveCalorieGoal = async () => {
     const val = parseInt(calorieGoalInput.trim()) || null;
-    await supabase.from('profiles').update({ daily_calorie_goal: val } as any).eq('user_id', client.user_id);
+    await supabase
+      .from('profiles')
+      .update({ daily_calorie_goal: val, calorie_goal_auto: false } as any)
+      .eq('user_id', client.user_id);
     setCalorieGoal(val);
-    toast({ title: lang === 'en' ? 'Goal saved' : 'Цель сохранена' });
+    setCalorieAuto(false);
+    toast({ title: lang === 'en' ? 'Manual goal saved' : 'Цель сохранена вручную' });
+  };
+
+  const enableAutoGoal = async () => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ calorie_goal_auto: true } as any)
+      .eq('user_id', client.user_id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Failed' : 'Не удалось', description: error.message, variant: 'destructive' });
+      return;
+    }
+    await loadCalorieGoal();
+    toast({
+      title: lang === 'en' ? 'Auto calculation on' : 'Авторасчёт включён',
+      description: lang === 'en'
+        ? 'Goal recalculates from height, weight, age and plan'
+        : 'Норма пересчитывается по росту, весу, возрасту и цели',
+    });
   };
 
   const saveNutritionGoal = async (next: 'fat_loss' | 'muscle_gain') => {
