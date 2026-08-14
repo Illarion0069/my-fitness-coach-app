@@ -16,7 +16,7 @@ interface ClientSettingsProps {
   testsCount: number;
   lastTestPct: number | null;
   onOpenTests: () => void;
-  onOpenNutrition: () => void;
+  onOpenCalcInfo: () => void;
   onSignOut: () => void;
 }
 
