@@ -497,6 +497,7 @@ export type Database = {
           archived_at: string | null
           avatar_url: string | null
           birth_date: string | null
+          calorie_goal_auto: boolean
           created_at: string
           daily_calorie_goal: number | null
           email: string
@@ -513,12 +514,14 @@ export type Database = {
           telegram_link_code: string | null
           updated_at: string
           user_id: string
+          weight_kg: number | null
         }
         Insert: {
           archive_reason?: string | null
           archived_at?: string | null
           avatar_url?: string | null
           birth_date?: string | null
+          calorie_goal_auto?: boolean
           created_at?: string
           daily_calorie_goal?: number | null
           email: string
@@ -535,12 +538,14 @@ export type Database = {
           telegram_link_code?: string | null
           updated_at?: string
           user_id: string
+          weight_kg?: number | null
         }
         Update: {
           archive_reason?: string | null
           archived_at?: string | null
           avatar_url?: string | null
           birth_date?: string | null
+          calorie_goal_auto?: boolean
           created_at?: string
           daily_calorie_goal?: number | null
           email?: string
@@ -557,6 +562,7 @@ export type Database = {
           telegram_link_code?: string | null
           updated_at?: string
           user_id?: string
+          weight_kg?: number | null
         }
         Relationships: []
       }
@@ -919,6 +925,16 @@ export type Database = {
     }
     Functions: {
       cleanup_password_reset_data: { Args: never; Returns: undefined }
+      compute_calorie_goal: {
+        Args: {
+          _birth_date: string
+          _gender: string
+          _height_cm: number
+          _nutrition_goal: string
+          _weight_kg: number
+        }
+        Returns: number
+      }
       get_trainer_blocked_dates: {
         Args: { _trainer: string }
         Returns: string[]
@@ -930,6 +946,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      latest_weight_kg: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
       app_role: "admin" | "trainer" | "client"
