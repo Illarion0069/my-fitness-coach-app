@@ -90,10 +90,15 @@ export function computeNutritionTotals(log: NutritionLogLike | null | undefined)
     fat      += Number(e?.fat_g)     || 0;
   }
 
+  // Liquids (coffee / tea / alcohol) always count toward the day's calories.
+  // AI totals are food-only (totals_source = "manual_entries"), so no double counting.
+  calories += computeLiquidCalories(log);
+
   return {
     calories: Math.round(calories),
     protein: Math.round(protein),
     carbs: Math.round(carbs),
     fat: Math.round(fat),
   };
+
 }
