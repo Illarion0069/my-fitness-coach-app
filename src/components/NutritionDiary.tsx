@@ -2068,7 +2068,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div
+                ref={calcInfoScrollRef}
+                onScroll={() => {
+                  const el = calcInfoScrollRef.current;
+                  if (!el) return;
+                  const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;
+                  setShowCalcInfoButton(nearBottom);
+                }}
+                className="flex-1 overflow-y-auto px-5 py-4"
+              >
                 {effectiveUserId ? (
                   <NutritionCalcInfo userId={effectiveUserId} />
                 ) : (
@@ -2076,16 +2085,25 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                     {lang === 'en' ? 'Sign in to see your personal calculation.' : 'Войдите, чтобы увидеть персональный расчёт.'}
                   </p>
                 )}
-              </div>
 
-              {/* Sticky footer — explicit close action at the end of the scroll */}
-              <div className="sticky bottom-0 z-10 bg-card/95 backdrop-blur-md border-t border-border/30 px-5 py-3 shrink-0">
-                <button
-                  onClick={() => setShowCalcInfo(false)}
-                  className="w-full h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
-                >
-                  {lang === 'en' ? 'Got it' : 'Понятно'}
-                </button>
+                {/* Button appears only when the user scrolls to the very bottom */}
+                <AnimatePresence>
+                  {showCalcInfoButton && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 16 }}
+                      className="pt-4 pb-2"
+                    >
+                      <button
+                        onClick={() => setShowCalcInfo(false)}
+                        className="w-full h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
+                      >
+                        {lang === 'en' ? 'Got it' : 'Понятно'}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </motion.div>
