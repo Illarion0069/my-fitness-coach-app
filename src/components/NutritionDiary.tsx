@@ -5,6 +5,7 @@ import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { motion, AnimatePresence } from 'framer-motion';
+import NutritionCalcInfo from './NutritionCalcInfo';
 
 interface NutritionLog {
   id: string;
