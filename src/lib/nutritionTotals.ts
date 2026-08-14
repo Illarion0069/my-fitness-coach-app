@@ -33,8 +33,27 @@ export interface NutritionTotals {
   fat: number;
 }
 
+/**
+ * Calories coming from logged liquids.
+ * Assumptions (kept in sync with supabase/functions/analyze-nutrition):
+ *  - water: 0 kcal
+ *  - coffee: 20 kcal / cup (allows for a splash of milk)
+ *  - tea: 5 kcal / cup
+ *  - alcohol: 0.6 kcal / ml (average of wine/beer/spirits mixes)
+ */
+export const LIQUID_KCAL = { coffeeCup: 20, teaCup: 5, alcoholMl: 0.6 } as const;
+
+export function computeLiquidCalories(log: any): number {
+  if (!log) return 0;
+  const coffee = Number(log.coffee_cups) || 0;
+  const tea = Number(log.tea_cups) || 0;
+  const alcohol = Number(log.alcohol_ml) || 0;
+  return Math.round(coffee * LIQUID_KCAL.coffeeCup + tea * LIQUID_KCAL.teaCup + alcohol * LIQUID_KCAL.alcoholMl);
+}
+
 export function computeNutritionTotals(log: NutritionLogLike | null | undefined): NutritionTotals {
   let calories = 0, protein = 0, carbs = 0, fat = 0;
+
 
   const analysis: any = log?.ai_analysis;
   const aiActive = analysis && !analysis.invalidated;
