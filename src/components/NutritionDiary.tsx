@@ -2057,23 +2057,36 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             className="fixed inset-0 z-[200] bg-black/50 flex items-end justify-center p-4 pb-8">
             <motion.div initial={{ y: 100 }} animate={{ y: 0 }} exit={{ y: 100 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl p-5 pt-4 border border-border/40 max-h-[80vh] overflow-y-auto pb-6">
-              <div className="flex items-center justify-between mb-4">
+              className="w-full max-w-md bg-card/95 backdrop-blur-md rounded-3xl border border-border/40 max-h-[80vh] flex flex-col overflow-hidden">
+              {/* Sticky header — close button stays visible while scrolling */}
+              <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-md border-b border-border/30 px-5 pt-4 pb-3 flex items-center justify-between shrink-0">
                 <p className="text-sm font-bold text-foreground">
                   {lang === 'en' ? 'How we calculate' : 'Как мы считаем'}
                 </p>
-                <button onClick={() => setShowCalcInfo(false)} className="p-1 rounded-full hover:bg-secondary/60 transition-colors">
+                <button onClick={() => setShowCalcInfo(false)} className="p-1.5 rounded-full hover:bg-secondary/60 transition-colors">
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
 
-              {effectiveUserId ? (
-                <NutritionCalcInfo userId={effectiveUserId} />
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  {lang === 'en' ? 'Sign in to see your personal calculation.' : 'Войдите, чтобы увидеть персональный расчёт.'}
-                </p>
-              )}
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                {effectiveUserId ? (
+                  <NutritionCalcInfo userId={effectiveUserId} />
+                ) : (
+                  <p className="text-xs text-muted-foreground">
+                    {lang === 'en' ? 'Sign in to see your personal calculation.' : 'Войдите, чтобы увидеть персональный расчёт.'}
+                  </p>
+                )}
+              </div>
+
+              {/* Sticky footer — explicit close action at the end of the scroll */}
+              <div className="sticky bottom-0 z-10 bg-card/95 backdrop-blur-md border-t border-border/30 px-5 py-3 shrink-0">
+                <button
+                  onClick={() => setShowCalcInfo(false)}
+                  className="w-full h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
+                >
+                  {lang === 'en' ? 'Got it' : 'Понятно'}
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
