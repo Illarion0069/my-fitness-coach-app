@@ -425,7 +425,7 @@ const ClientSettings = ({
         <Row
           icon={<HeartPulse className="w-4 h-4" />}
           label={en ? 'How we calculate calories' : 'Как мы считаем калории'}
-          onClick={onOpenNutrition}
+          onClick={onOpenCalcInfo}
         />
       </Section>
 
