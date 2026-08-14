@@ -217,7 +217,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [showFeedback, setShowFeedback] = useState(false);
   const [showFeedbackHint, setShowFeedbackHint] = useState(false);
   const [showCalcInfo, setShowCalcInfo] = useState(false);
+  const [showCalcInfoButton, setShowCalcInfoButton] = useState(false);
+  const calcInfoScrollRef = useRef<HTMLDivElement>(null);
   const [showCalcInfoHint, setShowCalcInfoHint] = useState(false);
+
   const [expandedMeal, setExpandedMeal] = useState<MealType | null>(null);
   const [editingFood, setEditingFood] = useState<{ mealType: MealType; index: number } | null>(null);
   const [editFoodName, setEditFoodName] = useState('');
@@ -287,6 +290,30 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     const seen = localStorage.getItem('nutrition_calc_info_hint_seen');
     if (!seen) setShowCalcInfoHint(true);
   }, []);
+
+  // Show the "Got it" button in the calc-info modal only after the user
+  // scrolls to the very bottom. If the content is short, show it immediately.
+  useEffect(() => {
+    if (!showCalcInfo) {
+      setShowCalcInfoButton(false);
+      return;
+    }
+    const el = calcInfoScrollRef.current;
+    if (!el) return;
+    const check = () => {
+      setShowCalcInfoButton(el.scrollTop + el.clientHeight >= el.scrollHeight - 24);
+    };
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    // Recheck after content (NutritionCalcInfo) renders and fetches data.
+    const r1 = requestAnimationFrame(check);
+    const t = setTimeout(check, 250);
+    return () => {
+      el.removeEventListener('scroll', check);
+      cancelAnimationFrame(r1);
+      clearTimeout(t);
+    };
+  }, [showCalcInfo]);
 
   const todayStr = (() => {
     const now = new Date();
@@ -2068,7 +2095,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto px-5 py-4">
+              <div
+                ref={calcInfoScrollRef}
+                className="flex-1 overflow-y-auto px-5 py-4"
+              >
                 {effectiveUserId ? (
                   <NutritionCalcInfo userId={effectiveUserId} />
                 ) : (
@@ -2076,16 +2106,25 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                     {lang === 'en' ? 'Sign in to see your personal calculation.' : 'Войдите, чтобы увидеть персональный расчёт.'}
                   </p>
                 )}
-              </div>
 
-              {/* Sticky footer — explicit close action at the end of the scroll */}
-              <div className="sticky bottom-0 z-10 bg-card/95 backdrop-blur-md border-t border-border/30 px-5 py-3 shrink-0">
-                <button
-                  onClick={() => setShowCalcInfo(false)}
-                  className="w-full h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
-                >
-                  {lang === 'en' ? 'Got it' : 'Понятно'}
-                </button>
+                {/* Button appears only when the user scrolls to the very bottom */}
+                <AnimatePresence>
+                  {showCalcInfoButton && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 16 }}
+                      className="pt-4 pb-2"
+                    >
+                      <button
+                        onClick={() => setShowCalcInfo(false)}
+                        className="w-full h-10 rounded-xl bg-primary text-xs font-bold text-primary-foreground"
+                      >
+                        {lang === 'en' ? 'Got it' : 'Понятно'}
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           </motion.div>
