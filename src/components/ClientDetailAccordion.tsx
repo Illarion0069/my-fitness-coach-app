@@ -545,6 +545,31 @@ const ClientDetailAccordion = ({
                   {lang === 'en' ? 'Save' : 'ОК'}
                 </button>
               </div>
+
+              {!loadingGoal && (
+                <div className={`rounded-lg px-2.5 py-1.5 text-[10px] leading-snug border ${
+                  calorieAuto
+                    ? 'border-primary/30 bg-primary/10 text-primary'
+                    : 'border-border/50 bg-secondary/40 text-muted-foreground'
+                }`}>
+                  {calorieAuto ? (
+                    hasAnthro
+                      ? (lang === 'en'
+                          ? `Auto: calculated from height, weight, age and plan${calorieGoal ? ` — ${calorieGoal} kcal/day` : ''}. Recalculates on every new weight entry.`
+                          : `Авто: считается по росту, весу, возрасту и цели${calorieGoal ? ` — ${calorieGoal} ккал/день` : ''}. Пересчёт при каждом новом замере веса.`)
+                      : (lang === 'en'
+                          ? 'Auto is on, but height / date of birth / weight are missing — add them below or set the goal manually.'
+                          : 'Авторасчёт включён, но нет роста / даты рождения / веса — добавьте их ниже или задайте норму вручную.')
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{lang === 'en' ? 'Manual goal (auto calculation off)' : 'Задано вручную (авторасчёт выключен)'}</span>
+                      <button onClick={enableAutoGoal} className="font-bold text-primary whitespace-nowrap">
+                        {lang === 'en' ? 'Enable auto' : 'Включить авто'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* BODY QUICK INPUT */}
@@ -558,7 +583,11 @@ const ClientDetailAccordion = ({
                 <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${quickBodyOpen ? 'rotate-180' : ''}`} />
               </button>
               {quickBodyOpen && (
-                <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
+                <BodyMeasurementsInput
+                  userId={client.user_id}
+                  lang={lang}
+                  onSaved={() => { setMeasurementKey(k => k + 1); loadCalorieGoal(); }}
+                />
               )}
             </div>
           </div>
