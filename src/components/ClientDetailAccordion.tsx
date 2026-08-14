@@ -206,6 +206,7 @@ const ClientDetailAccordion = ({
       });
       return;
     }
+    await loadCalorieGoal();
     toast({
       title: lang === 'en'
         ? (next === 'muscle_gain' ? 'Plan: Muscle gain' : 'Plan: Fat loss')
