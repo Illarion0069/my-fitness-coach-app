@@ -291,6 +291,30 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     if (!seen) setShowCalcInfoHint(true);
   }, []);
 
+  // Show the "Got it" button in the calc-info modal only after the user
+  // scrolls to the very bottom. If the content is short, show it immediately.
+  useEffect(() => {
+    if (!showCalcInfo) {
+      setShowCalcInfoButton(false);
+      return;
+    }
+    const el = calcInfoScrollRef.current;
+    if (!el) return;
+    const check = () => {
+      setShowCalcInfoButton(el.scrollTop + el.clientHeight >= el.scrollHeight - 24);
+    };
+    check();
+    el.addEventListener('scroll', check, { passive: true });
+    // Recheck after content (NutritionCalcInfo) renders and fetches data.
+    const r1 = requestAnimationFrame(check);
+    const t = setTimeout(check, 250);
+    return () => {
+      el.removeEventListener('scroll', check);
+      cancelAnimationFrame(r1);
+      clearTimeout(t);
+    };
+  }, [showCalcInfo]);
+
   const todayStr = (() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
