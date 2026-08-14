@@ -997,9 +997,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   }, [analysis]);
 
   const totals = useMemo(
-    () => computeNutritionTotals({ ai_analysis: analysis, manual_entries: manualEntries }),
-    [analysis, manualEntries]
+    () => computeNutritionTotals({
+      ai_analysis: analysis,
+      manual_entries: manualEntries,
+      water_ml: log?.water_ml,
+      coffee_cups: log?.coffee_cups,
+      tea_cups: log?.tea_cups,
+      alcohol_ml: log?.alcohol_ml,
+    } as any),
+    [analysis, manualEntries, log?.water_ml, log?.coffee_cups, log?.tea_cups, log?.alcohol_ml]
   );
+
 
   // Per-meal data
   const mealData = useMemo(() => {
