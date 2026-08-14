@@ -519,7 +519,6 @@ serve(async (req) => {
     const consumedKcalFood = Object.values(kcalByMeal).reduce((a, b) => a + b, 0);
     const consumedProtein = Object.values(proteinByMeal).reduce((a, b) => a + b, 0);
     const calorieGoal = Number((clientProfile as any)?.daily_calorie_goal) || targetKcal || 0;
-    const remainingKcal = calorieGoal > 0 ? Math.round(calorieGoal - consumedKcal) : null;
 
     // Which main meals are still ahead, based on the local hour (breakfast<11, lunch<16, dinner<22)
     const mealWindowEnd: Record<string, number> = { breakfast: 11, lunch: 16, dinner: 22 };
@@ -539,6 +538,8 @@ serve(async (req) => {
     const alcoholMl = Number((logData as any)?.alcohol_ml) || 0;
     // Keep in sync with src/lib/nutritionTotals.ts
     const liquidCalories = Math.round(coffeeCups * 20 + teaCups * 5 + alcoholMl * 0.6);
+    const consumedKcal = consumedKcalFood + liquidCalories;
+    const remainingKcal = calorieGoal > 0 ? Math.round(calorieGoal - consumedKcal) : null;
     const waterPct = waterTargetMl > 0 ? Math.round((waterMlLogged / waterTargetMl) * 100) : null;
 
     const liquidsBlock = `\n\nLIQUIDS LOGGED TODAY (authoritative — the client tracks these in the diary, they are part of the day):\n- water: ${waterMlLogged} ml${waterPct !== null ? ` (${waterPct}% of the ~${waterTargetMl} ml target)` : ""}\n- coffee: ${coffeeCups} cup(s)\n- tea: ${teaCups} cup(s)\n- alcohol: ${alcoholMl} ml\n- estimated liquid calories: ${liquidCalories} kcal (already added to the day's calorie total by the server)\n\nHARD RULES for liquids:\n- Liquid calories COUNT toward the day: treat CONSUMED_SO_FAR / the day's total as including ${liquidCalories} kcal from drinks.\n- Alcohol: if alcohol_ml > 0, it MUST be reflected in the score (it blocks fat oxidation, worsens sleep and recovery, drives evening snacking). Mention it in issues/score_killers with a calm, non-shaming tone and give a concrete lighter alternative for next time. Never ignore it.\n- Water: if water is below ~70% of the target, that is a real issue — give a concrete, time-bound fix (e.g. "2 glasses before lunch"). If water is at/above target, praise it briefly and do NOT nag.\n- Coffee: more than 3 cups, or coffee late in the day, is worth one short remark (sleep/cortisol/appetite), not a lecture. 1-2 cups = fine, say nothing or praise.\n- The end-of-day summary MUST take water, coffee and alcohol into account, not just food.`;
@@ -638,7 +639,9 @@ serve(async (req) => {
       perMealTotals[mt].carbs_g += cb;
       perMealTotals[mt].fat_g += f;
     }
-    analysis.total_calories = Math.round(totalCalories);
+    analysis.liquid_calories = liquidCalories;
+    analysis.liquids = { water_ml: waterMlLogged, coffee_cups: coffeeCups, tea_cups: teaCups, alcohol_ml: alcoholMl };
+    analysis.total_calories = Math.round(totalCalories + liquidCalories);
     analysis.total_protein_g = Math.round(totalProtein);
     analysis.total_carbs_g = Math.round(totalCarbs);
     analysis.total_fat_g = Math.round(totalFat);
