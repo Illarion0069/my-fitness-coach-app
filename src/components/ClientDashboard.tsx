@@ -1273,10 +1273,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           userId={user.id}
           editable
           onChanged={async () => {
-            const { data } = await supabase
-              .from('body_measurements').select('*').eq('user_id', user.id)
-              .order('measured_at', { ascending: false }).limit(50);
+            const [{ data }, { data: prof }] = await Promise.all([
+              supabase
+                .from('body_measurements').select('*').eq('user_id', user.id)
+                .order('measured_at', { ascending: false }).limit(50),
+              supabase.from('profiles').select('daily_calorie_goal').eq('user_id', user.id).maybeSingle(),
+            ]);
             setMeasurements(data || []);
+            setCalorieGoal((prof as any)?.daily_calorie_goal || null);
           }}
           onClose={() => setMeasurementsOpen(false)}
         />

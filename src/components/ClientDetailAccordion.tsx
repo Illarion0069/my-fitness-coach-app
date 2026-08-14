@@ -94,6 +94,8 @@ const ClientDetailAccordion = ({
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
   const [calorieGoalInput, setCalorieGoalInput] = useState('');
   const [loadingGoal, setLoadingGoal] = useState(true);
+  const [calorieAuto, setCalorieAuto] = useState(true);
+  const [hasAnthro, setHasAnthro] = useState(false);
   const [nutritionGoal, setNutritionGoal] = useState<'fat_loss' | 'muscle_gain'>('fat_loss');
   const [savingNutritionGoal, setSavingNutritionGoal] = useState(false);
   const [editName, setEditName] = useState(client.full_name || '');
@@ -132,23 +134,54 @@ const ClientDetailAccordion = ({
   };
 
 
+  const loadCalorieGoal = async () => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('daily_calorie_goal, nutrition_goal, calorie_goal_auto, height_cm, birth_date, weight_kg')
+      .eq('user_id', client.user_id)
+      .maybeSingle();
+    const d = data as any;
+    const goal = d?.daily_calorie_goal || null;
+    setCalorieGoal(goal);
+    setCalorieGoalInput(goal ? String(goal) : '');
+    setNutritionGoal(d?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss');
+    setCalorieAuto(d?.calorie_goal_auto !== false);
+    setHasAnthro(Boolean(d?.height_cm && d?.birth_date && d?.weight_kg));
+    setLoadingGoal(false);
+  };
+
   useEffect(() => {
-    supabase.from('profiles').select('daily_calorie_goal, nutrition_goal').eq('user_id', client.user_id).maybeSingle()
-      .then(({ data }) => {
-        const goal = (data as any)?.daily_calorie_goal || null;
-        setCalorieGoal(goal);
-        setCalorieGoalInput(goal ? String(goal) : '');
-        const ng = (data as any)?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss';
-        setNutritionGoal(ng);
-        setLoadingGoal(false);
-      });
+    setLoadingGoal(true);
+    loadCalorieGoal();
   }, [client.user_id]);
 
   const saveCalorieGoal = async () => {
     const val = parseInt(calorieGoalInput.trim()) || null;
-    await supabase.from('profiles').update({ daily_calorie_goal: val } as any).eq('user_id', client.user_id);
+    await supabase
+      .from('profiles')
+      .update({ daily_calorie_goal: val, calorie_goal_auto: false } as any)
+      .eq('user_id', client.user_id);
     setCalorieGoal(val);
-    toast({ title: lang === 'en' ? 'Goal saved' : 'Цель сохранена' });
+    setCalorieAuto(false);
+    toast({ title: lang === 'en' ? 'Manual goal saved' : 'Цель сохранена вручную' });
+  };
+
+  const enableAutoGoal = async () => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ calorie_goal_auto: true } as any)
+      .eq('user_id', client.user_id);
+    if (error) {
+      toast({ title: lang === 'en' ? 'Failed' : 'Не удалось', description: error.message, variant: 'destructive' });
+      return;
+    }
+    await loadCalorieGoal();
+    toast({
+      title: lang === 'en' ? 'Auto calculation on' : 'Авторасчёт включён',
+      description: lang === 'en'
+        ? 'Goal recalculates from height, weight, age and plan'
+        : 'Норма пересчитывается по росту, весу, возрасту и цели',
+    });
   };
 
   const saveNutritionGoal = async (next: 'fat_loss' | 'muscle_gain') => {
@@ -173,6 +206,7 @@ const ClientDetailAccordion = ({
       });
       return;
     }
+    await loadCalorieGoal();
     toast({
       title: lang === 'en'
         ? (next === 'muscle_gain' ? 'Plan: Muscle gain' : 'Plan: Fat loss')
@@ -512,6 +546,31 @@ const ClientDetailAccordion = ({
                   {lang === 'en' ? 'Save' : 'ОК'}
                 </button>
               </div>
+
+              {!loadingGoal && (
+                <div className={`rounded-lg px-2.5 py-1.5 text-[10px] leading-snug border ${
+                  calorieAuto
+                    ? 'border-primary/30 bg-primary/10 text-primary'
+                    : 'border-border/50 bg-secondary/40 text-muted-foreground'
+                }`}>
+                  {calorieAuto ? (
+                    hasAnthro
+                      ? (lang === 'en'
+                          ? `Auto: calculated from height, weight, age and plan${calorieGoal ? ` — ${calorieGoal} kcal/day` : ''}. Recalculates on every new weight entry.`
+                          : `Авто: считается по росту, весу, возрасту и цели${calorieGoal ? ` — ${calorieGoal} ккал/день` : ''}. Пересчёт при каждом новом замере веса.`)
+                      : (lang === 'en'
+                          ? 'Auto is on, but height / date of birth / weight are missing — add them below or set the goal manually.'
+                          : 'Авторасчёт включён, но нет роста / даты рождения / веса — добавьте их ниже или задайте норму вручную.')
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <span>{lang === 'en' ? 'Manual goal (auto calculation off)' : 'Задано вручную (авторасчёт выключен)'}</span>
+                      <button onClick={enableAutoGoal} className="font-bold text-primary whitespace-nowrap">
+                        {lang === 'en' ? 'Enable auto' : 'Включить авто'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* BODY QUICK INPUT */}
@@ -525,7 +584,11 @@ const ClientDetailAccordion = ({
                 <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform ${quickBodyOpen ? 'rotate-180' : ''}`} />
               </button>
               {quickBodyOpen && (
-                <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
+                <BodyMeasurementsInput
+                  userId={client.user_id}
+                  lang={lang}
+                  onSaved={() => { setMeasurementKey(k => k + 1); loadCalorieGoal(); }}
+                />
               )}
             </div>
           </div>
@@ -539,7 +602,7 @@ const ClientDetailAccordion = ({
         return (
           <div className="space-y-3">
             <BodyMeasurementsView key={measurementKey} userId={client.user_id} lang={lang} editable />
-            <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => setMeasurementKey(k => k + 1)} />
+            <BodyMeasurementsInput userId={client.user_id} lang={lang} onSaved={() => { setMeasurementKey(k => k + 1); loadCalorieGoal(); }} />
           </div>
         );
 
