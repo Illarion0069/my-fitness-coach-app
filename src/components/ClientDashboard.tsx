@@ -1352,7 +1352,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           testsCount={testResults.length}
           lastTestPct={lastTestPct}
           onOpenTests={() => { setSettingsOpen(false); setTestsInitial(null); setTestsOpen(true); }}
-          onOpenNutrition={() => { setSettingsOpen(false); setNutritionOpen(true); }}
+          onOpenCalcInfo={() => { setSettingsOpen(false); setCalcInfoOpen(true); }}
           onSignOut={() => setConfirmSignOut(true)}
         />
       </FullscreenModule>

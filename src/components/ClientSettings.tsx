@@ -51,7 +51,7 @@ const Row = ({
 };
 
 const ClientSettings = ({
-  userId, avatarUrl, onAvatarChange, testsCount, lastTestPct, onOpenTests, onOpenNutrition, onSignOut,
+  userId, avatarUrl, onAvatarChange, testsCount, lastTestPct, onOpenTests, onOpenCalcInfo, onSignOut,
 }: ClientSettingsProps) => {
   const { profile, refreshProfile } = useAuth();
   const { lang, setLang } = useLanguage();
