@@ -267,6 +267,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [nutritionAutoAdd, setNutritionAutoAdd] = useState(false);
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [calcInfoOpen, setCalcInfoOpen] = useState(false);
 
   const [showAllSessions, setShowAllSessions] = useState(false);
   const [balanceExpanded, setBalanceExpanded] = useState(false);
