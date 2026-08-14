@@ -4,7 +4,7 @@ import {
   CalendarDays, Activity, LogOut, ClipboardCheck, Camera,
   History, ChevronRight, ChevronDown, RotateCw, XCircle, Loader2,
   Upload, User, TrendingUp, TrendingDown, Minus, Dumbbell, Phone,
-  ShoppingCart, Trophy, Settings, Plus,
+  ShoppingCart, Trophy, Settings, Plus, Calculator,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
@@ -17,6 +17,7 @@ import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 import ClientTestHistory from './ClientTestHistory';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
+import NutritionCalcInfo from './NutritionCalcInfo';
 import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
