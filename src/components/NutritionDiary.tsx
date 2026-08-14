@@ -2097,12 +2097,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
               <div
                 ref={calcInfoScrollRef}
-                onScroll={() => {
-                  const el = calcInfoScrollRef.current;
-                  if (!el) return;
-                  const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 24;
-                  setShowCalcInfoButton(nearBottom);
-                }}
                 className="flex-1 overflow-y-auto px-5 py-4"
               >
                 {effectiveUserId ? (
