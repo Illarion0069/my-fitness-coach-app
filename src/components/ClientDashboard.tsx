@@ -1358,6 +1358,16 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         />
       </FullscreenModule>
 
+      {/* How we calculate calories info */}
+      <FullscreenModule
+        open={calcInfoOpen}
+        onClose={() => setCalcInfoOpen(false)}
+        title={lang === 'en' ? 'How we calculate' : 'Как мы считаем'}
+        icon={<Calculator className="w-5 h-5 text-primary" />}
+      >
+        <NutritionCalcInfo userId={user.id} />
+      </FullscreenModule>
+
       {/* Achievements popup (opened from the avatar medal) */}
       <FullscreenModule
         open={showAchievements}
