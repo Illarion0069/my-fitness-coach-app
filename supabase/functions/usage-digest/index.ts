@@ -11,6 +11,11 @@ const esc = (s: string) =>
 
 const TZ = "Asia/Nicosia";
 
+// Разрыв активности, после которого считаем новую сессию
+const SESSION_GAP_MS = 15 * 60 * 1000;
+// Сколько «весит» одиночное событие в сессии
+const TAIL_MS = 30 * 1000;
+
 function cyprusDate(d = new Date()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: TZ,
@@ -18,6 +23,12 @@ function cyprusDate(d = new Date()): string {
     month: "2-digit",
     day: "2-digit",
   }).format(d);
+}
+
+function hm(iso: string) {
+  return new Intl.DateTimeFormat("ru-RU", {
+    timeZone: TZ, hour: "2-digit", minute: "2-digit",
+  }).format(new Date(iso));
 }
 
 function top<T>(counts: Map<T, number>, n: number): [T, number][] {
@@ -52,24 +63,41 @@ serve(async (req) => {
     const dayStartUtc = new Date(`${day}T00:00:00+03:00`).toISOString();
     const dayEndUtc = new Date(`${day}T23:59:59.999+03:00`).toISOString();
 
-    const [eventsRes, profilesRes] = await Promise.all([
+    const [eventsRes, profilesRes, staffRes] = await Promise.all([
       supabase.from("app_events")
         .select("user_id, anon_id, event_type, label, path, device, created_at")
         .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc)
         .order("created_at", { ascending: true })
         .limit(20000),
       supabase.from("profiles").select("user_id, full_name, created_at"),
+      supabase.from("user_roles").select("user_id, role").in("role", ["trainer", "admin"]),
     ]);
 
-    const events = eventsRes.data || [];
+    const rawEvents = eventsRes.data || [];
     const profiles = profilesRes.data || [];
+
+    // --- Исключаем активность тренера/админа (в т.ч. его гостевые anon_id) ---
+    const staffIds = new Set((staffRes.data || []).map((r: any) => r.user_id));
+    const staffAnon = new Set<string>();
+    for (const e of rawEvents) {
+      if (e.user_id && staffIds.has(e.user_id) && e.anon_id) staffAnon.add(e.anon_id);
+    }
+    const events = rawEvents.filter(
+      (e: any) => !(e.user_id && staffIds.has(e.user_id)) && !staffAnon.has(e.anon_id),
+    );
+    const excluded = rawEvents.length - events.length;
 
     const nameOf = new Map<string, string>();
     const isNewClient = new Set<string>();
+    const signedUpToday = new Set<string>();
     const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
     for (const p of profiles) {
       nameOf.set(p.user_id, p.full_name || "Клиент");
-      if (new Date(p.created_at).getTime() >= weekAgo) isNewClient.add(p.user_id);
+      const t = new Date(p.created_at).getTime();
+      if (t >= weekAgo) isNewClient.add(p.user_id);
+      if (t >= new Date(dayStartUtc).getTime() && t <= new Date(dayEndUtc).getTime()) {
+        signedUpToday.add(p.user_id);
+      }
     }
 
     // --- Агрегация ---
@@ -84,17 +112,16 @@ serve(async (req) => {
     const clicksGuests = new Map<string, number>();
     const devices = new Map<string, number>();
     const perClient = new Map<string, number>();
-    const firstSeen = new Map<string, string>();
-    const lastSeen = new Map<string, string>();
     const funnelReach = new Map<string, Set<string>>();
-
+    const timeline = new Map<string, any[]>(); // vid -> события (для новых/гостей)
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
       visitorsAll.add(vid);
-      devices.set(e.device || "?", (devices.get(e.device || "?") || 0) + 1);
-      if (!firstSeen.has(vid)) firstSeen.set(vid, e.created_at);
-      lastSeen.set(vid, e.created_at);
+      bump(devices, e.device || "?");
+
+      if (!timeline.has(vid)) timeline.set(vid, []);
+      timeline.get(vid)!.push(e);
 
       const isNew = e.user_id ? isNewClient.has(e.user_id) : false;
       if (!e.user_id) visitorsGuests.add(vid);
@@ -112,6 +139,27 @@ serve(async (req) => {
         else bump(clicksClients, e.label);
       }
       if (e.user_id) bump(perClient, e.user_id);
+    }
+
+    // --- Корректное время в приложении: сумма сессий с разрывом 15 мин ---
+    function sessionStats(vid: string) {
+      const list = timeline.get(vid) || [];
+      let total = 0;
+      let sessions = 0;
+      let sStart = 0;
+      let prev = 0;
+      for (const e of list) {
+        const t = new Date(e.created_at).getTime();
+        if (!prev) { sStart = t; sessions = 1; }
+        else if (t - prev > SESSION_GAP_MS) {
+          total += Math.max(TAIL_MS, prev - sStart);
+          sessions++;
+          sStart = t;
+        }
+        prev = t;
+      }
+      if (prev) total += Math.max(TAIL_MS, prev - sStart);
+      return { minutes: Math.max(1, Math.round(total / 60000)), sessions };
     }
 
     // --- Воронка: визит → запись ---
@@ -153,20 +201,70 @@ serve(async (req) => {
       ? `\n\n🔻 Основной отвал: <b>${esc(worstDrop.from)} → ${esc(worstDrop.to)}</b> — потеряли ${worstDrop.lost} чел. (${worstDrop.pct}%)`
       : "";
 
-
     const fmtTop = (m: Map<string, number>, n = 8) =>
       top(m, n).map(([l, c], i) => `${i + 1}. ${esc(String(l))} — ${c}`).join("\n") || "—";
 
-    const durMin = (vid: string) => {
-      const a = new Date(firstSeen.get(vid)!).getTime();
-      const b = new Date(lastSeen.get(vid)!).getTime();
-      return Math.max(1, Math.round((b - a) / 60000));
-    };
-
     const clientLines = top(perClient, 10).map(([uid, c]) => {
+      const st = sessionStats(uid);
       const tag = isNewClient.has(uid) ? " 🆕" : "";
-      return `• ${esc(nameOf.get(uid) || "Клиент")}${tag} — ${c} действий, ~${durMin(uid)} мин`;
+      return `• ${esc(nameOf.get(uid) || "Клиент")}${tag} — ${c} действий, ~${st.minutes} мин (${st.sessions} захода)`;
     });
+
+    // --- Детально: новые клиенты и гости, путь и причина отказа ---
+    const FUNNEL_LABEL: Record<string, string> = {
+      booking_open: "открыл запись",
+      booking_date: "выбрал дату",
+      booking_time: "выбрал время",
+      booking_payment: "дошёл до оплаты",
+      booking_done: "записался",
+      signup_submit: "начал регистрацию",
+      signup_done: "зарегистрировался",
+    };
+    const FUNNEL_ORDER = ["booking_open", "booking_date", "booking_time", "booking_payment", "booking_done"];
+
+    const newcomerIds = [
+      ...[...visitorsNew],
+      ...[...visitorsGuests],
+    ];
+
+    const newcomerBlocks = newcomerIds
+      .sort((a, b) => (timeline.get(b)?.length || 0) - (timeline.get(a)?.length || 0))
+      .slice(0, 8)
+      .map((vid) => {
+        const list = timeline.get(vid) || [];
+        const st = sessionStats(vid);
+        const isUser = !!list[0]?.user_id;
+        const who = isUser
+          ? `${esc(nameOf.get(list[0].user_id) || "Клиент")}${signedUpToday.has(list[0].user_id) ? " 🆕 сегодня" : " 🆕"}`
+          : `Гость ${esc(String(vid).slice(0, 6))}`;
+
+        const screens = list.filter((e: any) => e.event_type === "screen")
+          .map((e: any) => e.label || e.path).filter(Boolean);
+        const uniqScreens: string[] = [];
+        for (const s of screens) if (uniqScreens[uniqScreens.length - 1] !== s) uniqScreens.push(s);
+
+        const clicks = list.filter((e: any) => e.event_type === "click").map((e: any) => e.label);
+        const funnels = list.filter((e: any) => e.event_type === "funnel").map((e: any) => e.label);
+
+        const lastStep = FUNNEL_ORDER.filter((f) => funnels.includes(f)).pop();
+        const done = funnels.includes("booking_done");
+        let verdict: string;
+        if (done) verdict = "✅ записался";
+        else if (!lastStep) verdict = "❌ не открывал запись — только смотрел";
+        else {
+          const idx = FUNNEL_ORDER.indexOf(lastStep);
+          const next = FUNNEL_ORDER[idx + 1];
+          verdict = `❌ остановился на «${FUNNEL_LABEL[lastStep]}»` +
+            (next ? `, не дошёл до «${FUNNEL_LABEL[next]}»` : "");
+        }
+
+        return [
+          `👤 <b>${who}</b> · ${hm(list[0].created_at)}–${hm(list[list.length - 1].created_at)} · ~${st.minutes} мин · ${esc(list[0].device || "?")}`,
+          `   Путь: ${esc(uniqScreens.slice(0, 6).join(" → ") || "—")}`,
+          `   Нажимал: ${esc(clicks.slice(0, 6).join(", ") || "—")}`,
+          `   Итог: ${verdict}`,
+        ].join("\n");
+      });
 
     const dateLabel = new Intl.DateTimeFormat("ru-RU", {
       timeZone: TZ, weekday: "short", day: "numeric", month: "long",
@@ -178,17 +276,20 @@ serve(async (req) => {
 
     let text: string;
     if (events.length === 0) {
-      text = `📈 <b>Активность в приложении — ${esc(dateLabel)}</b>\n\nЗа день не зафиксировано ни одного действия.`;
+      text = `📈 <b>Активность в приложении — ${esc(dateLabel)}</b>\n\nЗа день не зафиксировано ни одного действия клиентов.`;
     } else {
       text =
-        `📈 <b>Активность в приложении — ${esc(dateLabel)}</b>\n\n` +
+        `📈 <b>Активность в приложении — ${esc(dateLabel)}</b>\n` +
+        `<i>(без учёта вашей активности${excluded ? `, скрыто ${excluded} событий` : ""})</i>\n\n` +
         `👥 Уникальных: <b>${visitorsAll.size}</b> ` +
         `(клиенты: ${visitorsClients.size}, из них новые: ${visitorsNew.size}; гости: ${visitorsGuests.size})\n` +
         `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}\n\n` +
         `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}\n\n` +
         `<b>Регистрация</b>\n${signupLines}\n\n` +
+        (newcomerBlocks.length
+          ? `<b>🆕 Новые и гости — детально</b>\n${newcomerBlocks.join("\n\n")}\n\n`
+          : "") +
         `<b>Куда заходят (экраны)</b>\n${fmtTop(screensAll)}\n\n` +
-
         `<b>Что нажимают действующие клиенты</b>\n${fmtTop(clicksClients)}\n\n` +
         `<b>Что нажимают новые клиенты (до 7 дней)</b>\n${fmtTop(clicksNew, 6)}\n\n` +
         `<b>Что нажимают гости (без входа)</b>\n${fmtTop(clicksGuests, 6)}` +
@@ -207,12 +308,12 @@ serve(async (req) => {
       const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chat, text, parse_mode: "HTML", disable_web_page_preview: true }),
+        body: JSON.stringify({ chat_id: chat, text: text.slice(0, 4000), parse_mode: "HTML", disable_web_page_preview: true }),
       });
       if (!res.ok) console.error("telegram error:", await res.text());
     }
 
-    return new Response(JSON.stringify({ ok: true, events: events.length }), {
+    return new Response(JSON.stringify({ ok: true, events: events.length, excluded }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
