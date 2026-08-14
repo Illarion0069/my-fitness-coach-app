@@ -641,7 +641,7 @@ serve(async (req) => {
     }
     analysis.liquid_calories = liquidCalories;
     analysis.liquids = { water_ml: waterMlLogged, coffee_cups: coffeeCups, tea_cups: teaCups, alcohol_ml: alcoholMl };
-    analysis.total_calories = Math.round(totalCalories + liquidCalories);
+    analysis.total_calories = Math.round(totalCalories); // food only — liquids are added by the client via computeNutritionTotals
     analysis.total_protein_g = Math.round(totalProtein);
     analysis.total_carbs_g = Math.round(totalCarbs);
     analysis.total_fat_g = Math.round(totalFat);
