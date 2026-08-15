@@ -1045,31 +1045,40 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               </div>
               {/* Macro grid */}
               <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
-                {[
-                  { l: lang === 'en' ? 'Protein' : 'Белки', v: `${todayMacros.protein} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.protein * 4 / todayKcal) * 100 : 0 },
-                  { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: `${todayMacros.carbs} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.carbs * 4 / todayKcal) * 100 : 0 },
-                  { l: lang === 'en' ? 'Fat' : 'Жиры', v: `${todayMacros.fat} ${lang === 'en' ? 'g' : 'г'}`, pct: todayKcal ? (todayMacros.fat * 9 / todayKcal) * 100 : 0 },
-                  {
-                    l: lang === 'en' ? 'Score' : 'Оценка',
-                    v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,
-                    pct: todayScore ?? 0,
-                    accent: true,
-                  },
-                ].map((m, i) => (
+                {(() => {
+                  // Macro targets derived from the daily calorie goal (30% protein / 40% carbs / 30% fat)
+                  const pTarget = calorieGoal ? Math.round((calorieGoal * 0.30) / 4) : 0;
+                  const cTarget = calorieGoal ? Math.round((calorieGoal * 0.40) / 4) : 0;
+                  const fTarget = calorieGoal ? Math.round((calorieGoal * 0.30) / 9) : 0;
+                  const g = lang === 'en' ? 'g' : 'г';
+                  return [
+                    { l: lang === 'en' ? 'Protein' : 'Белки', v: pTarget ? `${todayMacros.protein} / ${pTarget} ${g}` : `${todayMacros.protein} ${g}`, pct: pTarget ? (todayMacros.protein / pTarget) * 100 : 0, over: pTarget ? todayMacros.protein > pTarget : false },
+                    { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: cTarget ? `${todayMacros.carbs} / ${cTarget} ${g}` : `${todayMacros.carbs} ${g}`, pct: cTarget ? (todayMacros.carbs / cTarget) * 100 : 0, over: cTarget ? todayMacros.carbs > cTarget : false },
+                    { l: lang === 'en' ? 'Fat' : 'Жиры', v: fTarget ? `${todayMacros.fat} / ${fTarget} ${g}` : `${todayMacros.fat} ${g}`, pct: fTarget ? (todayMacros.fat / fTarget) * 100 : 0, over: fTarget ? todayMacros.fat > fTarget : false },
+                    {
+                      l: lang === 'en' ? 'Score' : 'Оценка',
+                      v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,
+                      pct: todayScore ?? 0,
+                      accent: true,
+                      over: false,
+                    },
+                  ];
+                })().map((m: any, i) => (
                   <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
                     <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
-                    <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : 'text-foreground'}`}>{m.v}</div>
+                    <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : m.over ? 'text-destructive' : 'text-foreground'}`}>{m.v}</div>
                     <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
                       <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
                         transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className="h-full rounded-full bg-primary"
+                        className={`h-full rounded-full ${m.over ? 'bg-destructive' : 'bg-primary'}`}
                       />
                     </div>
                   </div>
                 ))}
               </div>
+
             </div>
             {todayKcal === 0 && (
               <div
