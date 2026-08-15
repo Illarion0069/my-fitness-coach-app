@@ -39,6 +39,51 @@ function bump<T>(m: Map<T, number>, k: T, by = 1) {
   m.set(k, (m.get(k) || 0) + by);
 }
 
+// --- Человекочитаемые названия экранов вместо технических путей ---
+const SCREEN_NAMES: Record<string, string> = {
+  "/": "Главная",
+  "/index": "Главная",
+  "/#pricing": "Главная → Цены",
+  "/#about": "Главная → Обо мне",
+  "/#workouts": "Главная → Тренировки",
+  "/#contact": "Главная → Контакты",
+  "/#booking": "Главная → Запись",
+  "/#hero": "Главная (верх)",
+  "/#faq": "Главная → Вопросы",
+  "/pricing": "Цены",
+  "/booking": "Запись на тренировку",
+  "/booking-en": "Запись на тренировку (EN)",
+  "/ru": "Главная (RU)",
+  "/en": "Главная (EN)",
+  "/dashboard": "Кабинет клиента",
+  "/nutrition": "Дневник питания",
+  "/settings": "Настройки клиента",
+  "/admin": "Админ-панель",
+  "/auth": "Вход / Регистрация",
+};
+
+function prettyScreen(raw: string): string {
+  const s = (raw || "/").trim();
+  const key = s.toLowerCase().replace(/\/+$/, "") || "/";
+  if (SCREEN_NAMES[key]) return SCREEN_NAMES[key];
+
+  // «/#pricing» уже покрыт; отдельно разбираем хеш-якорь на любой странице
+  const [pathPart, hashPart] = key.split("#");
+  const base = SCREEN_NAMES[pathPart.replace(/\/+$/, "") || "/"];
+  if (hashPart) {
+    const anchor = SCREEN_NAMES[`/#${hashPart}`];
+    if (anchor) return anchor;
+    return `${base || pathPart} → ${hashPart}`;
+  }
+
+  if (/^\/client-\d+/.test(key)) return `Несуществующая страница (${s})`;
+  if (base) return base;
+  // Неизвестный путь: делаем читабельным
+  const words = key.replace(/^\//, "").replace(/[-_/]+/g, " ").trim();
+  return words ? `Страница «${words}»` : "Главная";
+}
+
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
