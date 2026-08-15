@@ -1190,13 +1190,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         <div className={`rounded-2xl border border-border/30 overflow-hidden ${
           displayScore >= 75 ? 'bg-green-500/5' : displayScore >= 50 ? 'bg-yellow-500/5' : 'bg-red-500/5'
         }`}>
-          <button
+          <div
+            role="button"
+            tabIndex={0}
             onClick={() => {
               setShowFeedback(!showFeedback);
               localStorage.setItem('nutrition_feedback_hint_seen', '1');
               setShowFeedbackHint(false);
             }}
-            className="w-full flex items-center justify-between p-3.5 text-left active:bg-secondary/30 transition-colors"
+            className="w-full flex items-center justify-between p-3.5 text-left active:bg-secondary/30 transition-colors cursor-pointer"
           >
             <div className="flex items-center gap-2">
               <Sparkles className="w-4 h-4 text-primary" />
@@ -1209,10 +1211,26 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </span>
               )}
             </div>
-            <motion.div animate={{ rotate: showFeedback ? 180 : 0 }} transition={{ duration: 0.2 }}>
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            </motion.div>
-          </button>
+            <div className="flex items-center gap-1.5">
+              {!isReadOnly && !userId && (
+                <button
+                  type="button"
+                  aria-label={lang === 'en' ? 'Recalculate' : 'Пересчитать'}
+                  disabled={analyzing}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAnalyze();
+                  }}
+                  className="w-7 h-7 rounded-lg bg-secondary/60 flex items-center justify-center text-muted-foreground active:scale-95 transition disabled:opacity-50"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${analyzing ? 'animate-spin' : ''}`} />
+                </button>
+              )}
+              <motion.div animate={{ rotate: showFeedback ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              </motion.div>
+            </div>
+          </div>
 
           <AnimatePresence>
             {showFeedback && (
