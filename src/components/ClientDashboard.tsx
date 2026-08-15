@@ -240,6 +240,9 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
+  const [nutritionGoal, setNutritionGoal] = useState<string | null>(null);
+  const [macroUnit, setMacroUnit] = useState<'g' | 'pct'>('g');
+
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [tier, setTier] = useState<Tier>(null);
   const [showAchievements, setShowAchievements] = useState(false);
