@@ -183,10 +183,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
   const isReadOnly = !!userId && !isTrainer;
+
+  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   // Training slots for this date (recalculated live on cancel / reschedule)
   const trainingDayKey = useTrainingDayKey(effectiveUserId, date);
 
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [log, setLog] = useState<NutritionLog | null>(null);
   const [photos, setPhotos] = useState<FoodPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
