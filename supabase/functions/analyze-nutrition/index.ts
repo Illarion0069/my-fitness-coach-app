@@ -473,11 +473,41 @@ serve(async (req) => {
 
     const nextDayStr = new Date(new Date(log_date + "T12:00:00").getTime() + 86400000)
       .toISOString().slice(0, 10);
-    const { data: sessionsAround } = await supabase
+    const { data: oneOffSessions } = await supabase
       .from("scheduled_sessions")
       .select("session_date, session_time, duration_minutes, is_recurring, recurrence_day")
       .eq("user_id", user_id)
+      .eq("is_recurring", false)
       .in("session_date", [log_date, nextDayStr]);
+
+    // Recurring weekly series: session_date is the series start, so match by weekday
+    const { data: recurringSessions } = await supabase
+      .from("scheduled_sessions")
+      .select("session_date, session_time, recurrence_time, duration_minutes, is_recurring, recurrence_day, recurrence_end_date, recurring_exceptions")
+      .eq("user_id", user_id)
+      .eq("is_recurring", true);
+
+    const dow = (d: string) => new Date(d + "T12:00:00").getDay();
+    const expandRecurring = (day: string) =>
+      (recurringSessions || [])
+        .filter((s: any) =>
+          s.recurrence_day === dow(day) &&
+          String(s.session_date) <= day &&
+          (!s.recurrence_end_date || String(s.recurrence_end_date) >= day) &&
+          !((s.recurring_exceptions || []) as string[]).includes(day)
+        )
+        .map((s: any) => ({
+          session_date: day,
+          session_time: s.recurrence_time || s.session_time,
+          duration_minutes: s.duration_minutes,
+        }));
+
+    const sessionsAround = [
+      ...(oneOffSessions || []),
+      ...expandRecurring(log_date),
+      ...expandRecurring(nextDayStr),
+    ];
+
 
     const weightSeries = (measurementHistory || [])
       .filter((m: any) => m.weight_kg != null)
