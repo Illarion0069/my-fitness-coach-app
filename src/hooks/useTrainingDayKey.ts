@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { computeTrainingDayKey } from '@/lib/trainingDay';
 
 /**
  * Returns a stable fingerprint of the client's training slots for a given date.
@@ -24,26 +25,7 @@ export function useTrainingDayKey(userId?: string | null, date?: string) {
       if (cancelled) return;
       if (error || !data) { setKey(''); return; }
 
-      // Noon avoids UTC shifting (Asia/Nicosia rule).
-      const d = new Date(`${date}T12:00:00`);
-      const weekday = d.getDay();
-      const times: string[] = [];
-
-      for (const s of data as any[]) {
-        if (s.is_recurring) {
-          if (s.recurrence_day !== weekday) continue;
-          if (s.recurrence_end_date && date > s.recurrence_end_date) continue;
-          const startedOn = (s.session_date || String(s.created_at || '').slice(0, 10));
-          if (startedOn && date < startedOn) continue;
-          const exceptions: string[] = s.recurring_exceptions || [];
-          if (exceptions.includes(date)) continue;
-          times.push((s.recurrence_time || '').slice(0, 5));
-        } else if (s.session_date === date) {
-          times.push((s.session_time || '').slice(0, 5));
-        }
-      }
-
-      setKey(Array.from(new Set(times)).sort().join(','));
+      setKey(computeTrainingDayKey(data as any, date));
     };
 
     load();
