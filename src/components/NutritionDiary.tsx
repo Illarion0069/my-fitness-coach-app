@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useTrainingDayKey } from '@/hooks/useTrainingDayKey';
 import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
 
@@ -184,6 +185,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const isReadOnly = !!userId && !isTrainer;
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
+  // Training slots for this date (recalculated live on cancel / reschedule)
+  const trainingDayKey = useTrainingDayKey(effectiveUserId, date);
+
   const [log, setLog] = useState<NutritionLog | null>(null);
   const [photos, setPhotos] = useState<FoodPhoto[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -572,7 +576,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       log?.tea_cups || 0,
       Math.round((log?.alcohol_ml || 0) / 100),
     ].join(':');
-    const key = `${date}::${photoIdsKey}::${manualIdsKey}::${liquidsKey}`;
+    // Schedule is part of the day's context: a cancelled or moved session must
+    // regenerate the advice (training day vs rest day) without manual action.
+    if (trainingDayKey === null) return; // schedule still loading
+    const key = `${date}::${photoIdsKey}::${manualIdsKey}::${liquidsKey}::sched:${trainingDayKey}`;
     if (autoAnalyzeKeyRef.current === key) return;
     const firstRun = autoAnalyzeKeyRef.current === '';
     autoAnalyzeKeyRef.current = key;
@@ -588,7 +595,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       alcohol_ml: log?.alcohol_ml,
     } as any).calories;
 
-    const mealsKey = Array.from(new Set([
+    // Include the training slots so a schedule change bypasses the calorie-delta
+    // gate below and always yields fresh, date-accurate recommendations.
+    const mealsKey = 'sched:' + trainingDayKey + '|' + Array.from(new Set([
       ...manual.map((e: any) => String(e.meal_type || 'snack')),
       ...photos.map((p: any) => String(p.meal_type || 'snack')),
     ])).sort().join(',');
@@ -619,7 +628,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       handleAnalyze({ silent: true });
     }, 1200);
     return () => clearTimeout(t);
-  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, effectiveUserId, handleAnalyze]);
+  }, [photos, log?.manual_entries, log?.ai_score, log?.ai_feedback, log?.ai_analysis, analyzing, analysisCount, date, isReadOnly, userId, effectiveUserId, trainingDayKey, handleAnalyze]);
 
 
 
