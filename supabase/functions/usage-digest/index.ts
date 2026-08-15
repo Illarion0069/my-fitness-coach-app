@@ -174,7 +174,7 @@ serve(async (req) => {
       else visitorsClients.add(vid);
 
       if (e.event_type === "screen") {
-        bump(screensAll, e.label || e.path || "/");
+        bump(screensAll, prettyScreen(e.label || e.path || "/"));
       } else if (e.event_type === "funnel") {
         if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
         funnelReach.get(e.label)!.add(vid);
@@ -284,7 +284,7 @@ serve(async (req) => {
           : `Гость ${esc(String(vid).slice(0, 6))}`;
 
         const screens = list.filter((e: any) => e.event_type === "screen")
-          .map((e: any) => e.label || e.path).filter(Boolean);
+          .map((e: any) => prettyScreen(e.label || e.path)).filter(Boolean);
         const uniqScreens: string[] = [];
         for (const s of screens) if (uniqScreens[uniqScreens.length - 1] !== s) uniqScreens.push(s);
 
