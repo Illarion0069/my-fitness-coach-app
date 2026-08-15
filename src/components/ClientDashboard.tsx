@@ -1102,15 +1102,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               </div>
 
             </div>
-            {todayKcal === 0 && (
-              <div
-                onClick={(e) => { e.stopPropagation(); setNutritionAutoAdd(true); setNutritionOpen(true); }}
-                className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                {lang === 'en' ? 'Add meal' : 'Добавить приём пищи'}
-              </div>
-            )}
+            <div
+              onClick={(e) => { e.stopPropagation(); setNutritionAutoAdd(true); setNutritionOpen(true); }}
+              className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" />
+              {lang === 'en' ? 'Add meal' : 'Добавить приём пищи'}
+            </div>
+
           </motion.button>
         </motion.div>
 
