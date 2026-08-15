@@ -473,11 +473,41 @@ serve(async (req) => {
 
     const nextDayStr = new Date(new Date(log_date + "T12:00:00").getTime() + 86400000)
       .toISOString().slice(0, 10);
-    const { data: sessionsAround } = await supabase
+    const { data: oneOffSessions } = await supabase
       .from("scheduled_sessions")
       .select("session_date, session_time, duration_minutes, is_recurring, recurrence_day")
       .eq("user_id", user_id)
+      .eq("is_recurring", false)
       .in("session_date", [log_date, nextDayStr]);
+
+    // Recurring weekly series: session_date is the series start, so match by weekday
+    const { data: recurringSessions } = await supabase
+      .from("scheduled_sessions")
+      .select("session_date, session_time, recurrence_time, duration_minutes, is_recurring, recurrence_day, recurrence_end_date, recurring_exceptions")
+      .eq("user_id", user_id)
+      .eq("is_recurring", true);
+
+    const dow = (d: string) => new Date(d + "T12:00:00").getDay();
+    const expandRecurring = (day: string) =>
+      (recurringSessions || [])
+        .filter((s: any) =>
+          s.recurrence_day === dow(day) &&
+          String(s.session_date) <= day &&
+          (!s.recurrence_end_date || String(s.recurrence_end_date) >= day) &&
+          !((s.recurring_exceptions || []) as string[]).includes(day)
+        )
+        .map((s: any) => ({
+          session_date: day,
+          session_time: s.recurrence_time || s.session_time,
+          duration_minutes: s.duration_minutes,
+        }));
+
+    const sessionsAround = [
+      ...(oneOffSessions || []),
+      ...expandRecurring(log_date),
+      ...expandRecurring(nextDayStr),
+    ];
+
 
     const weightSeries = (measurementHistory || [])
       .filter((m: any) => m.weight_kg != null)
@@ -507,8 +537,12 @@ serve(async (req) => {
     const fmtSess = (arr: any[]) => arr.length
       ? arr.map((s: any) => `${String(s.session_time || "").slice(0, 5) || "time n/a"} (${s.duration_minutes || 60} min)`).join(", ")
       : "no training";
+    const dayTypeText = trainingToday.length
+      ? `TRAINING DAY (session${trainingToday.length > 1 ? "s" : ""} at ${fmtSess(trainingToday)})`
+      : (trainingTomorrow.length ? "REST DAY (but training tomorrow)" : "REST DAY");
 
-    const individualBlock = `\n\nINDIVIDUAL CLIENT CONTEXT (authoritative — this is why the advice must be personal, never generic):\n- goal: ${nutritionGoal}\n- weight / waist trend: ${weightTrendText}\n- training on ${log_date}: ${fmtSess(trainingToday)}\n- training on ${nextDayStr}: ${fmtSess(trainingTomorrow)}\n- last logged days:\n${historyText}\n\nHOW TO USE THIS (mandatory):\n- Read the weight trend against the goal. If the trend already moves the right way, confirm that the current pattern works and do NOT prescribe extra changes. If it stalls or moves the wrong way, name the ONE most likely dietary reason from the data above.\n- Fat loss: weight falling faster than ~1 kg/week = too aggressive, tell the client to eat a bit more (protein + vegetables), not less. Muscle gain: weight rising faster than ~0.5 kg/week = the surplus is too big and is turning into fat, trim carbs/fats.\n- On a TRAINING day, put carbohydrates around the session (before/after) and keep protein high; on a REST day, shift calories down slightly toward protein + vegetables. Explicitly reference the training when it exists ("сегодня у тебя тренировка в 18:00 — ...").\n- Compare today with the recent days above: if the same mistake repeats (low protein, late carbs, alcohol, over-eating), name it as a PATTERN, not as a one-off; if today is better than the recent average, say so explicitly and praise the progress.\n- Never repeat verbatim the same tip the client already got on the previous day — vary the wording and pick the next highest-leverage fix.\n- If a piece of this context is missing (no measurements, no training), simply do not mention it — never invent it.`;
+
+    const individualBlock = `\n\nINDIVIDUAL CLIENT CONTEXT (authoritative — this is why the advice must be personal, never generic):\n- goal: ${nutritionGoal}\n- day type for ${log_date}: ${dayTypeText}\n- weight / waist trend: ${weightTrendText}\n- training on ${log_date}: ${fmtSess(trainingToday)}\n- training on ${nextDayStr}: ${fmtSess(trainingTomorrow)}\n- last logged days:\n${historyText}\n\nHOW TO USE THIS (mandatory):\n- Read the weight trend against the goal. If the trend already moves the right way, confirm that the current pattern works and do NOT prescribe extra changes. If it stalls or moves the wrong way, name the ONE most likely dietary reason from the data above.\n- Fat loss: weight falling faster than ~1 kg/week = too aggressive, tell the client to eat a bit more (protein + vegetables), not less. Muscle gain: weight rising faster than ~0.5 kg/week = the surplus is too big and is turning into fat, trim carbs/fats.\n- Adapt to the day type above: on a TRAINING day keep carbohydrates concentrated around the session (a carb+protein meal 1.5-2 h before, protein + carbs within ~2 h after) and keep protein at the upper end; on a REST day shift calories slightly down and toward protein + vegetables, with fewer carbs in the evening. If there is training tomorrow, make sure tonight's dinner is not carb-empty. Explicitly reference the training when it exists ("сегодня у тебя тренировка в 18:00 — ...").\n- Compare today with the recent days above: if the same mistake repeats (low protein, late carbs, alcohol, over-eating), name it as a PATTERN, not as a one-off; if today is better than the recent average, say so explicitly and praise the progress.\n- Never repeat verbatim the same tip the client already got on the previous day — vary the wording and pick the next highest-leverage fix.\n- If a piece of this context is missing (no measurements, no training), simply do not mention it — never invent it.`;
 
 
 
