@@ -455,6 +455,62 @@ serve(async (req) => {
       ? `\n\nCLIENT ANTHROPOMETRY (authoritative, from the client's profile — use it to personalise every number you give):\n- height: ${heightCm > 0 ? heightCm + " cm" : "unknown"}\n- weight: ${weightKg > 0 ? weightKg + " kg" + ((latestMeasurement as any)?.measured_at ? ` (measured ${(latestMeasurement as any).measured_at})` : "") : "unknown"}\n- age: ${age > 0 ? age : "unknown"}\n- gender: ${gender || "unknown"}\n- BMI: ${bmi > 0 ? `${bmi} (${bmiCategory})` : "unknown"}\n- estimated BMR: ${bmr > 0 ? bmr + " kcal" : "unknown"}\n- estimated TDEE (training 2-3x/week): ${tdee > 0 ? tdee + " kcal" : "unknown"}\n- personalised calorie target for goal "${nutritionGoal}": ${targetKcal > 0 ? `~${targetKcal} kcal/day` : "unknown"}\n- protein target: ${proteinTarget > 0 ? `~${proteinTarget} g/day` : "unknown"}\n- water target: ${waterTargetMl > 0 ? `~${waterTargetMl} ml/day` : "unknown"}\n\nHOW TO USE THIS (mandatory):\n- Portion advice must be sized for THIS body (e.g. "${weightKg > 0 ? Math.round(weightKg * 0.5) : 100} g of chicken breast"), never generic.\n- Judge protein/calorie sufficiency against the targets above, not against a generic 2000 kcal day.\n- Keep the Tolstikova principles intact (whole foods, protein at every meal, vegetables, no snacking chaos, no demonising food) — but express them in numbers tuned to this client's height, weight, age and gender.\n- Never state the BMI/BMR formulas or call them "calculations"; just speak in concrete food amounts and reassuring, expert language.\n- If a value above is "unknown", do NOT invent it and do NOT ask for it more than once in the whole response.`
       : "";
 
+    // --- INDIVIDUAL CONTEXT: weight/waist trend, training days, recent nutrition history ---
+    const { data: measurementHistory } = await supabase
+      .from("body_measurements")
+      .select("weight_kg, waist_cm, measured_at")
+      .eq("user_id", user_id)
+      .order("measured_at", { ascending: false })
+      .limit(6);
+
+    const { data: recentLogs } = await supabase
+      .from("nutrition_logs")
+      .select("log_date, ai_score, ai_analysis")
+      .eq("user_id", user_id)
+      .lt("log_date", log_date)
+      .order("log_date", { ascending: false })
+      .limit(7);
+
+    const nextDayStr = new Date(new Date(log_date + "T12:00:00").getTime() + 86400000)
+      .toISOString().slice(0, 10);
+    const { data: sessionsAround } = await supabase
+      .from("scheduled_sessions")
+      .select("session_date, session_time, duration_minutes, is_recurring, recurrence_day")
+      .eq("user_id", user_id)
+      .in("session_date", [log_date, nextDayStr]);
+
+    const weightSeries = (measurementHistory || [])
+      .filter((m: any) => m.weight_kg != null)
+      .map((m: any) => `${m.measured_at}: ${Number(m.weight_kg)} kg${m.waist_cm != null ? `, waist ${Number(m.waist_cm)} cm` : ""}`);
+    let weightTrendText = "no measurement history yet";
+    if (weightSeries.length > 0) {
+      const wl = (measurementHistory || []).filter((m: any) => m.weight_kg != null);
+      const newest = Number(wl[0].weight_kg);
+      const oldest = Number(wl[wl.length - 1].weight_kg);
+      const delta = Math.round((newest - oldest) * 10) / 10;
+      weightTrendText = `${weightSeries.slice().reverse().join(" → ")}${wl.length > 1 ? ` (net change ${delta > 0 ? "+" : ""}${delta} kg over this period)` : ""}`;
+    }
+
+    const historyText = (recentLogs || []).length
+      ? (recentLogs || [])
+          .map((l: any) => {
+            const a = l.ai_analysis || {};
+            const kcal = Math.round(Number(a.total_calories) || 0);
+            const prot = Math.round(Number(a.total_protein_g) || 0);
+            return `- ${l.log_date}: score ${l.ai_score ?? "—"}/100, ${kcal} kcal, ${prot} g protein`;
+          })
+          .join("\n")
+      : "- no previous logged days";
+
+    const trainingToday = (sessionsAround || []).filter((s: any) => s.session_date === log_date);
+    const trainingTomorrow = (sessionsAround || []).filter((s: any) => s.session_date === nextDayStr);
+    const fmtSess = (arr: any[]) => arr.length
+      ? arr.map((s: any) => `${String(s.session_time || "").slice(0, 5) || "time n/a"} (${s.duration_minutes || 60} min)`).join(", ")
+      : "no training";
+
+    const individualBlock = `\n\nINDIVIDUAL CLIENT CONTEXT (authoritative — this is why the advice must be personal, never generic):\n- goal: ${nutritionGoal}\n- weight / waist trend: ${weightTrendText}\n- training on ${log_date}: ${fmtSess(trainingToday)}\n- training on ${nextDayStr}: ${fmtSess(trainingTomorrow)}\n- last logged days:\n${historyText}\n\nHOW TO USE THIS (mandatory):\n- Read the weight trend against the goal. If the trend already moves the right way, confirm that the current pattern works and do NOT prescribe extra changes. If it stalls or moves the wrong way, name the ONE most likely dietary reason from the data above.\n- Fat loss: weight falling faster than ~1 kg/week = too aggressive, tell the client to eat a bit more (protein + vegetables), not less. Muscle gain: weight rising faster than ~0.5 kg/week = the surplus is too big and is turning into fat, trim carbs/fats.\n- On a TRAINING day, put carbohydrates around the session (before/after) and keep protein high; on a REST day, shift calories down slightly toward protein + vegetables. Explicitly reference the training when it exists ("сегодня у тебя тренировка в 18:00 — ...").\n- Compare today with the recent days above: if the same mistake repeats (low protein, late carbs, alcohol, over-eating), name it as a PATTERN, not as a one-off; if today is better than the recent average, say so explicitly and praise the progress.\n- Never repeat verbatim the same tip the client already got on the previous day — vary the wording and pick the next highest-leverage fix.\n- If a piece of this context is missing (no measurements, no training), simply do not mention it — never invent it.`;
+
+
 
     let nameSource: "profile_full_name" | "auth_metadata" | "email_prefix" | "fallback" = "fallback";
     let firstName = extractFirst(clientProfile?.full_name as string | undefined);
@@ -579,7 +635,7 @@ serve(async (req) => {
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${anthroBlock}${mealContextBlock}${liquidsBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${anthroBlock}${individualBlock}${mealContextBlock}${liquidsBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
       },
     ];
 
