@@ -1051,25 +1051,41 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               {/* Macro grid */}
               <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
                 {(() => {
-                  // Macro targets derived from the daily calorie goal (30% protein / 40% carbs / 30% fat)
-                  const pTarget = calorieGoal ? Math.round((calorieGoal * 0.30) / 4) : 0;
-                  const cTarget = calorieGoal ? Math.round((calorieGoal * 0.40) / 4) : 0;
-                  const fTarget = calorieGoal ? Math.round((calorieGoal * 0.30) / 9) : 0;
+                  // Macro targets: protein from body weight (g/kg), fat 25% of kcal goal, carbs = remainder
+                  const bodyWeight = weightTrend?.current || 0;
+                  const gain = nutritionGoal === 'muscle_gain';
+                  const pFromWeight = bodyWeight > 0 ? Math.round(bodyWeight * (gain ? 1.8 : 1.6)) : 0;
+                  const pTarget = pFromWeight || (calorieGoal ? Math.round((calorieGoal * 0.30) / 4) : 0);
+                  const fTarget = calorieGoal ? Math.round((calorieGoal * 0.25) / 9) : 0;
+                  const cTarget = calorieGoal
+                    ? Math.max(0, Math.round((calorieGoal - pTarget * 4 - fTarget * 9) / 4))
+                    : 0;
                   const g = lang === 'en' ? 'g' : 'г';
+                  const fmt = (val: number, target: number) => {
+                    if (!target) return `${val} ${g}`;
+                    return macroUnit === 'pct'
+                      ? `${Math.round((val / target) * 100)}%`
+                      : `${val} / ${target} ${g}`;
+                  };
                   return [
-                    { l: lang === 'en' ? 'Protein' : 'Белки', v: pTarget ? `${todayMacros.protein} / ${pTarget} ${g}` : `${todayMacros.protein} ${g}`, pct: pTarget ? (todayMacros.protein / pTarget) * 100 : 0, over: pTarget ? todayMacros.protein > pTarget : false },
-                    { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: cTarget ? `${todayMacros.carbs} / ${cTarget} ${g}` : `${todayMacros.carbs} ${g}`, pct: cTarget ? (todayMacros.carbs / cTarget) * 100 : 0, over: cTarget ? todayMacros.carbs > cTarget : false },
-                    { l: lang === 'en' ? 'Fat' : 'Жиры', v: fTarget ? `${todayMacros.fat} / ${fTarget} ${g}` : `${todayMacros.fat} ${g}`, pct: fTarget ? (todayMacros.fat / fTarget) * 100 : 0, over: fTarget ? todayMacros.fat > fTarget : false },
+                    { l: lang === 'en' ? 'Protein' : 'Белки', v: fmt(todayMacros.protein, pTarget), pct: pTarget ? (todayMacros.protein / pTarget) * 100 : 0, over: pTarget ? todayMacros.protein > pTarget : false },
+                    { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: fmt(todayMacros.carbs, cTarget), pct: cTarget ? (todayMacros.carbs / cTarget) * 100 : 0, over: cTarget ? todayMacros.carbs > cTarget : false },
+                    { l: lang === 'en' ? 'Fat' : 'Жиры', v: fmt(todayMacros.fat, fTarget), pct: fTarget ? (todayMacros.fat / fTarget) * 100 : 0, over: fTarget ? todayMacros.fat > fTarget : false },
                     {
                       l: lang === 'en' ? 'Score' : 'Оценка',
                       v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,
                       pct: todayScore ?? 0,
                       accent: true,
                       over: false,
+                      noToggle: true,
                     },
                   ];
                 })().map((m: any, i) => (
-                  <div key={i} className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0">
+                  <div
+                    key={i}
+                    onClick={(e) => { if (!m.noToggle) { e.stopPropagation(); setMacroUnit(u => (u === 'g' ? 'pct' : 'g')); } }}
+                    className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0 cursor-pointer active:scale-[0.97] transition-transform"
+                  >
                     <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
                     <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : m.over ? 'text-destructive' : 'text-foreground'}`}>{m.v}</div>
                     <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
@@ -1080,6 +1096,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                         className={`h-full rounded-full ${m.over ? 'bg-destructive' : 'bg-primary'}`}
                       />
                     </div>
+
                   </div>
                 ))}
               </div>
