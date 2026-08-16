@@ -560,9 +560,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
     setAnalyzing(true);
     try {
-      const { data, error } = await supabase.functions.invoke('analyze-nutrition', {
-        body: { user_id: effectiveUserId, log_date: date, lang },
-      });
+      // Mobile networks (esp. Android on 3G/weak Wi-Fi) drop the request now and
+      // then — retry twice before showing an error, otherwise calories never appear.
+      let data: any = null;
+      let error: any = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        const res = await supabase.functions.invoke('analyze-nutrition', {
+          body: { user_id: effectiveUserId, log_date: date, lang },
+        });
+        data = res.data;
+        error = res.error;
+        const transient = !!error && /failed to fetch|network|timeout|load failed|aborted/i.test((error as any)?.message || '');
+        if (!transient) break;
+        await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
+      }
       const errMsg = (data?.error || (error as any)?.message || '') as string;
       const isCredits = data?.code === 'credits' || /credit|402|403/i.test(errMsg);
       if (isCredits) {
@@ -585,8 +596,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         fetchData();
       }
     } catch (err: any) {
-      if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
+      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
+      if (!opts?.silent) toast({
+        title: lang === 'en' ? 'Error' : 'Ошибка',
+        description: offline
+          ? (lang === 'en' ? 'No internet connection — the meal is saved, calories will be counted once you are back online.' : 'Нет интернета — приём пищи сохранён, калории посчитаются после восстановления связи.')
+          : err.message,
+        variant: 'destructive',
+      });
     }
+
     setAnalyzing(false);
   }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
 
