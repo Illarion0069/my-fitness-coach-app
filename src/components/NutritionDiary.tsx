@@ -391,13 +391,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     const file = e.target.files?.[0];
     if (!file) return;
     const ext = file.name.split('.').pop()?.toLowerCase() || '';
-    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    // Android cameras often hand over files with no extension (or "image"), so
+    // trust the MIME type first and only fall back to the extension check.
+    const looksLikeImage = file.type.startsWith('image/') || ALLOWED_EXTENSIONS.includes(ext);
+    if (!looksLikeImage) {
       toast({ title: lang === 'en' ? 'Only image files allowed' : 'Только изображения (jpg, png, webp)', variant: 'destructive' });
       if (fileRef.current) fileRef.current.value = '';
       return;
     }
-    if (file.size > 10 * 1024 * 1024) {
-      toast({ title: lang === 'en' ? 'File too large (max 10MB)' : 'Файл слишком большой (макс 10МБ)', variant: 'destructive' });
+    if (file.size > 25 * 1024 * 1024) {
+      toast({ title: lang === 'en' ? 'File too large (max 25MB)' : 'Файл слишком большой (макс 25МБ)', variant: 'destructive' });
       if (fileRef.current) fileRef.current.value = '';
       return;
     }
@@ -414,18 +417,24 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
 
   const handleUploadWithTime = async (fileOverride?: File) => {
-    const file = fileOverride || pendingFile;
-    if (!file || !user || !pendingMealType) return;
+    const original = fileOverride || pendingFile;
+    if (!original || !user || !pendingMealType) return;
     if (!VALID_MEAL_TYPES.includes(pendingMealType)) return;
     setUploading(true);
     const mealType = pendingMealType;
     const mealTime = pendingMealTime || null;
-    const ext = file.name.split('.').pop();
-    const path = `${user.id}/${date}_${Date.now()}.${ext}`;
 
     try {
-      const { error: uploadError } = await supabase.storage.from('food-photos').upload(path, file, { upsert: true });
+      // Shrink big Android/iPhone camera shots so the upload survives weak mobile networks.
+      const file = await compressImage(original);
+      const rawExt = (file.name.split('.').pop() || '').toLowerCase();
+      const ext = /^(jpg|jpeg|png|webp|heic|heif)$/.test(rawExt) ? rawExt : 'jpg';
+      const path = `${user.id}/${date}_${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from('food-photos')
+        .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
       if (uploadError) throw uploadError;
+
       const { data: { publicUrl } } = supabase.storage.from('food-photos').getPublicUrl(path);
       const { data: validation, error: valError } = await supabase.functions.invoke('validate-food-photo', {
         body: { photo_url: publicUrl },
