@@ -1125,6 +1125,46 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         </button>
       </div>
 
+      {/* 14-day strip — tap a day to open it */}
+      <div className="overflow-x-auto -mx-1 px-1 pb-1" data-no-swipe>
+        <div className="flex gap-1.5 min-w-max">
+          {Array.from({ length: 14 }).map((_, i) => {
+            const d = new Date(todayStr + 'T12:00:00');
+            d.setDate(d.getDate() - (13 - i));
+            const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            const h = history[ds];
+            const active = ds === date;
+            const kcal = h?.calories || 0;
+            const pct = calorieGoal && calorieGoal > 0 ? Math.min(1, kcal / calorieGoal) : (kcal > 0 ? 1 : 0);
+            return (
+              <button
+                key={ds}
+                onClick={() => setDate(ds)}
+                className={`w-[44px] rounded-xl px-1 py-1.5 flex flex-col items-center gap-1 border transition-colors ${
+                  active ? 'bg-primary/15 border-primary/50' : 'bg-secondary/40 border-transparent'
+                }`}
+              >
+                <span className={`text-[9px] font-bold uppercase ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                  {d.toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'short' })}
+                </span>
+                <span className="text-[11px] font-extrabold text-foreground">{d.getDate()}</span>
+                <span className="w-full h-1 rounded-full bg-border/60 overflow-hidden">
+                  <span
+                    className="block h-full rounded-full"
+                    style={{
+                      width: `${pct * 100}%`,
+                      background: calorieGoal > 0 && kcal > calorieGoal ? 'hsl(0, 72%, 51%)' : 'hsl(var(--primary))',
+                    }}
+                  />
+                </span>
+                <span className="text-[8.5px] text-muted-foreground leading-none">{kcal > 0 ? Math.round(kcal) : '—'}</span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+
       {/* Hero Dashboard — Cal AI inspired large ring + macro rings */}
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-card border border-border/40 rounded-3xl p-5 relative overflow-hidden">
         <AnimatePresence>
