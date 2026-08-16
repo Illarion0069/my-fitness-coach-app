@@ -274,6 +274,37 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  // ---- 14-day history strip (calories + score per day) ----
+  const [history, setHistory] = useState<Record<string, { calories: number; protein: number; carbs: number; fat: number; score: number | null }>>({});
+
+  const loadHistory = useCallback(async () => {
+    if (!effectiveUserId) return;
+    const from = new Date(date + 'T12:00:00');
+    from.setDate(from.getDate() - 20);
+    const fromStr = `${from.getFullYear()}-${String(from.getMonth() + 1).padStart(2, '0')}-${String(from.getDate()).padStart(2, '0')}`;
+    const { data } = await supabase
+      .from('nutrition_logs')
+      .select('log_date, ai_analysis, manual_entries, coffee_cups, tea_cups, alcohol_ml, water_ml, ai_score, trainer_override_score')
+      .eq('user_id', effectiveUserId)
+      .gte('log_date', fromStr)
+      .order('log_date', { ascending: true });
+    const map: Record<string, { calories: number; protein: number; carbs: number; fat: number; score: number | null }> = {};
+    for (const row of (data as any[]) || []) {
+      const t = computeNutritionTotals(row as any);
+      map[row.log_date] = { ...t, score: row.trainer_override_score ?? row.ai_score ?? null };
+    }
+    setHistory(map);
+  }, [effectiveUserId, date]);
+
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+  // Keep the strip in sync with the currently open day's live totals
+  useEffect(() => {
+    if (!log) return;
+    const t = computeNutritionTotals(log as any);
+    setHistory(prev => ({ ...prev, [date]: { ...t, score: log.trainer_override_score ?? log.ai_score ?? null } }));
+  }, [log, date]);
+
+
   // Keep the cache in sync with optimistic local updates.
   // Never overwrite a warm cache with the empty initial state on remount —
   // that would bring back the "numbers jump" flicker before the fetch lands.
