@@ -1211,15 +1211,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
             />
             <div className="absolute inset-0 flex flex-col items-center justify-center">
               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                {calorieGoal && calorieGoal > 0 ? (lang === 'en' ? 'Remaining' : 'Осталось') : ''}
+                {!isToday ? (lang === 'en' ? 'Eaten' : 'Съедено') : (calorieGoal && calorieGoal > 0 ? (lang === 'en' ? 'Remaining' : 'Осталось') : '')}
               </span>
               <span className={`text-5xl font-black tracking-tight mt-0.5 ${calorieGoal > 0 && totals.calories > calorieGoal ? 'text-destructive' : 'text-foreground'}`}>
-                <AnimatedNumber value={calorieGoal && calorieGoal > 0 ? Math.max(0, calorieGoal - totals.calories) : totals.calories} />
+                <AnimatedNumber value={!isToday ? totals.calories : (calorieGoal && calorieGoal > 0 ? Math.max(0, calorieGoal - totals.calories) : totals.calories)} />
               </span>
               <span className="text-[10px] text-muted-foreground mt-1">
                 {calorieGoal && calorieGoal > 0
                   ? `${Math.round(totals.calories)} / ${calorieGoal} ${lang === 'en' ? 'kcal' : 'ккал'}`
-                  : (lang === 'en' ? 'consumed today' : 'потреблено за день')}
+                  : (lang === 'en' ? 'kcal consumed' : 'ккал за день')}
               </span>
             </div>
           </div>
@@ -1230,20 +1230,25 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               const goal = (calorieGoal && calorieGoal > 0) ? Math.round((calorieGoal * m.macroRatio) / (m.key === 'fat' ? 9 : 4)) : null;
               const ringMax = goal && goal > 0 ? goal : Math.max(m.value, 1);
               const ringValue = goal && goal > 0 ? Math.min(m.value, goal) : m.value;
-              const centerValue = goal && goal > 0 ? Math.max(0, goal - m.value) : m.value;
+              const centerValue = !isToday ? m.value : (goal && goal > 0 ? Math.max(0, goal - m.value) : m.value);
+              const over = goal && goal > 0 && m.value > goal;
               return (
                 <div key={m.key} className="flex flex-col items-center">
                   <div className="relative">
-                    <MacroRing value={ringValue} max={ringMax} color={m.color} size={56} strokeWidth={4.5} />
+                    <MacroRing value={ringValue} max={ringMax} color={over ? 'hsl(0, 72%, 51%)' : m.color} size={56} strokeWidth={4.5} />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-[10px] font-bold text-foreground">{Math.round(centerValue)}</span>
+                      <span className={`text-[10px] font-bold ${over ? 'text-destructive' : 'text-foreground'}`}>{Math.round(centerValue)}</span>
                     </div>
                   </div>
                   <span className="text-[10px] font-bold text-muted-foreground mt-1.5 uppercase tracking-wider">{m.short}</span>
+                  <span className="text-[9px] text-muted-foreground/80 leading-none mt-0.5">
+                    {goal && goal > 0 ? `${Math.round(m.value)}/${goal}${lang === 'en' ? 'g' : 'г'}` : `${Math.round(m.value)}${lang === 'en' ? 'g' : 'г'}`}
+                  </span>
                 </div>
               );
             })}
           </div>
+
 
           {/* How we calculate info */}
           <button
