@@ -423,13 +423,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setUploading(true);
     const mealType = pendingMealType;
     const mealTime = pendingMealTime || null;
+    let path = '';
 
     try {
       // Shrink big Android/iPhone camera shots so the upload survives weak mobile networks.
       const file = await compressImage(original);
       const rawExt = (file.name.split('.').pop() || '').toLowerCase();
       const ext = /^(jpg|jpeg|png|webp|heic|heif)$/.test(rawExt) ? rawExt : 'jpg';
-      const path = `${user.id}/${date}_${Date.now()}.${ext}`;
+      path = `${user.id}/${date}_${Date.now()}.${ext}`;
+
       const { error: uploadError } = await supabase.storage
         .from('food-photos')
         .upload(path, file, { upsert: true, contentType: file.type || 'image/jpeg' });
