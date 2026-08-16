@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { useTrainingDayKey } from '@/hooks/useTrainingDayKey';
 import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
+import { compressImage } from '@/lib/imageCompress';
+
 
 interface NutritionLog {
   id: string;
