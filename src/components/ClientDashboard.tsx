@@ -1416,7 +1416,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
       {/* "Illarion's face" announcement — how we calculate calories */}
       <FaceHint
-        id="illarion_face_calc_info_v2"
+        id="illarion_face_calc_info_v3"
         en="Want to know how we count your calories?"
         ru="Хочешь узнать, как мы считаем калории?"
         onTap={() => setCalcInfoOpen(true)}
