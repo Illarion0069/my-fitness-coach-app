@@ -44,12 +44,32 @@ const FaceHint = ({
   const { visible, dismiss } = useHint(id);
   const [shown, setShown] = useState(false);
   const [smiling, setSmiling] = useState(false);
+  const [vw, setVw] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 390));
+  const [vh, setVh] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
+
+  useEffect(() => {
+    const onResize = () => {
+      setVw(window.innerWidth);
+      setVh(window.innerHeight);
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
+
+  // Scale the head with the viewport: never wider than ~34% of the screen,
+  // never taller than ~22% of the height, and clamped for tiny/large screens.
+  const headW = Math.max(88, Math.min(160, vw * 0.34, vh * 0.22 * (128 / 172)));
 
   useEffect(() => {
     if (!visible) return;
     const t = setTimeout(() => setShown(true), delay);
     return () => clearTimeout(t);
   }, [visible, delay]);
+
 
   if (!visible) return null;
 
@@ -66,10 +86,12 @@ const FaceHint = ({
 
   const isRight = side === 'right';
 
-  // Height of the visible head area — the rest stays hidden below the screen edge
-  const HEAD_W = 128;
-  const HEAD_H = 172;
-  const PEEK = 96; // how much of the head (hair -> forehead -> eyes) rises above the edge
+  // Head size adapts to the viewport so it always peeks neatly at the edge
+  const HEAD_W = Math.round(headW);
+  const HEAD_H = Math.round(headW * (172 / 128));
+  const PEEK = Math.round(HEAD_H * (96 / 172)); // hair -> forehead -> eyes above the edge
+  const bubbleMax = Math.max(150, Math.min(230, vw - HEAD_W - 40));
+
 
   return (
     <AnimatePresence>
@@ -124,9 +146,11 @@ const FaceHint = ({
             initial={{ opacity: 0, scale: 0.92, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 1.1, type: 'spring', damping: 18, stiffness: 240 }}
-            className={`relative max-w-[190px] text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
+            style={{ maxWidth: bubbleMax }}
+            className={`relative text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
               isRight ? 'rounded-br-sm' : 'rounded-bl-sm'
             }`}
+
           >
             <span className="block text-[11px] leading-snug font-medium text-foreground">
               {lang === 'en' ? en : ru}
