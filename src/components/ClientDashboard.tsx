@@ -18,6 +18,7 @@ import ClientTestHistory from './ClientTestHistory';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import NutritionCalcInfo from './NutritionCalcInfo';
+import FaceHint from './FaceHint';
 import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
 import AchievementsWidget from './AchievementsWidget';
@@ -1412,6 +1413,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       >
         <AchievementsWidget userId={user.id} isTrainer={forceClientView} />
       </FullscreenModule>
+
+      {/* "Illarion's face" announcement — how we calculate calories */}
+      <FaceHint
+        id="illarion_face_calc_info_v1"
+        en="Want to know how we count your calories?"
+        ru="Хочешь узнать, как мы считаем калории?"
+        onTap={() => setCalcInfoOpen(true)}
+      />
 
     </div>
   );
