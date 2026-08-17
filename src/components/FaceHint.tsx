@@ -146,9 +146,11 @@ const FaceHint = ({
             initial={{ opacity: 0, scale: 0.92, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 1.1, type: 'spring', damping: 18, stiffness: 240 }}
-            className={`relative max-w-[190px] text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
+            style={{ maxWidth: bubbleMax }}
+            className={`relative text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
               isRight ? 'rounded-br-sm' : 'rounded-bl-sm'
             }`}
+
           >
             <span className="block text-[11px] leading-snug font-medium text-foreground">
               {lang === 'en' ? en : ru}
