@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { markHintSeen, useHint } from './HintDot';
+import { countHintShown, markHintSeen, useHint } from './HintDot';
 import headNeutral from '@/assets/illarion-head-neutral.png';
 import headSmile from '@/assets/illarion-head-smile.png';
 
