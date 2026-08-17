@@ -66,10 +66,12 @@ const FaceHint = ({
 
   const isRight = side === 'right';
 
-  // Height of the visible head area — the rest stays hidden below the screen edge
-  const HEAD_W = 128;
-  const HEAD_H = 172;
-  const PEEK = 96; // how much of the head (hair -> forehead -> eyes) rises above the edge
+  // Head size adapts to the viewport so it always peeks neatly at the edge
+  const HEAD_W = Math.round(headW);
+  const HEAD_H = Math.round(headW * (172 / 128));
+  const PEEK = Math.round(HEAD_H * (96 / 172)); // hair -> forehead -> eyes above the edge
+  const bubbleMax = Math.max(150, Math.min(230, vw - HEAD_W - 40));
+
 
   return (
     <AnimatePresence>
