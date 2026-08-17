@@ -58,10 +58,10 @@ const FaceHint = ({
     setSmiling(true);
     markHintSeen(id);
     setTimeout(() => {
-      setShown(false);
       onTap();
-      setTimeout(dismiss, 400);
-    }, 650);
+      setShown(false);
+      setTimeout(dismiss, 500);
+    }, 850);
   };
 
   const isRight = side === 'right';
