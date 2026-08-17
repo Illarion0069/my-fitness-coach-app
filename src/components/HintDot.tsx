@@ -9,21 +9,54 @@ import { useLanguage } from '@/contexts/LanguageContext';
  */
 
 const seenKey = (id: string) => `hint_seen_${id}`;
+const showsKey = (id: string) => `hint_shows_${id}`;
 
 export const markHintSeen = (id: string) => {
   try { localStorage.setItem(seenKey(id), '1'); } catch { /* ignore */ }
 };
 
-export const useHint = (id: string) => {
+/** Counts one display of the hint; returns the new total. */
+export const countHintShown = (id: string) => {
+  try {
+    const next = (parseInt(localStorage.getItem(showsKey(id)) || '0', 10) || 0) + 1;
+    localStorage.setItem(showsKey(id), String(next));
+    return next;
+  } catch { return 1; }
+};
+
+export const getHintShows = (id: string) => {
+  try { return parseInt(localStorage.getItem(showsKey(id)) || '0', 10) || 0; } catch { return 0; }
+};
+
+/** Clears both the "seen" flag and the display counter (admin replay). */
+export const resetHint = (id: string) => {
+  try {
+    localStorage.removeItem(seenKey(id));
+    localStorage.removeItem(showsKey(id));
+  } catch { /* ignore */ }
+};
+
+/**
+ * @param maxShows how many separate visits the hint may appear in (default 1)
+ */
+export const useHint = (id: string, maxShows = 1) => {
   const [visible, setVisible] = useState(() => {
-    try { return !localStorage.getItem(seenKey(id)); } catch { return false; }
+    try {
+      if (localStorage.getItem(seenKey(id))) return false;
+      return getHintShows(id) < maxShows;
+    } catch { return false; }
   });
   const dismiss = useCallback(() => {
     markHintSeen(id);
     setVisible(false);
   }, [id]);
-  return { visible, dismiss };
+  const replay = useCallback(() => {
+    resetHint(id);
+    setVisible(true);
+  }, [id]);
+  return { visible, dismiss, replay };
 };
+
 
 interface HintDotProps {
   /** Unique id — used as the localStorage key */
