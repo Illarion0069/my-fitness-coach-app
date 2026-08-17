@@ -44,12 +44,32 @@ const FaceHint = ({
   const { visible, dismiss } = useHint(id);
   const [shown, setShown] = useState(false);
   const [smiling, setSmiling] = useState(false);
+  const [vw, setVw] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 390));
+  const [vh, setVh] = useState(() => (typeof window !== 'undefined' ? window.innerHeight : 800));
+
+  useEffect(() => {
+    const onResize = () => {
+      setVw(window.innerWidth);
+      setVh(window.innerHeight);
+    };
+    window.addEventListener('resize', onResize);
+    window.addEventListener('orientationchange', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      window.removeEventListener('orientationchange', onResize);
+    };
+  }, []);
+
+  // Scale the head with the viewport: never wider than ~34% of the screen,
+  // never taller than ~22% of the height, and clamped for tiny/large screens.
+  const headW = Math.max(88, Math.min(160, vw * 0.34, vh * 0.22 * (128 / 172)));
 
   useEffect(() => {
     if (!visible) return;
     const t = setTimeout(() => setShown(true), delay);
     return () => clearTimeout(t);
   }, [visible, delay]);
+
 
   if (!visible) return null;
 
