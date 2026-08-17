@@ -38,7 +38,7 @@ const FaceHint = ({
   onTap,
   side = 'right',
   delay = 1500,
-  bottomClass = 'bottom-28',
+  bottomClass = 'bottom-32',
 }: FaceHintProps) => {
   const { lang } = useLanguage();
   const { visible, dismiss } = useHint(id);
