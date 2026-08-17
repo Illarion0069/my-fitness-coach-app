@@ -66,28 +66,65 @@ const FaceHint = ({
 
   const isRight = side === 'right';
 
+  // Height of the visible head area — the rest stays hidden below the screen edge
+  const HEAD_W = 128;
+  const HEAD_H = 172;
+  const PEEK = 96; // how much of the head (hair -> forehead -> eyes) rises above the edge
+
   return (
     <AnimatePresence>
       {shown && (
         <motion.div
-          initial={{ x: isRight ? 130 : -130, y: 26, rotate: isRight ? 22 : -22, opacity: 0 }}
-          animate={{ x: isRight ? 26 : -26, y: 0, rotate: isRight ? 12 : -12, opacity: 1 }}
-          exit={{ x: isRight ? 150 : -150, y: 30, rotate: isRight ? 24 : -24, opacity: 0 }}
-          transition={{ type: 'spring', damping: 20, stiffness: 140, mass: 0.9 }}
-          className={`fixed ${bottomClass} ${isRight ? 'right-0' : 'left-0'} z-[60] flex items-end gap-1 ${
-            isRight ? 'flex-row' : 'flex-row-reverse'
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0, transition: { duration: 0.25 } }}
+          className={`fixed ${bottomClass} ${isRight ? 'right-2' : 'left-2'} z-[60] flex items-end gap-2 ${
+            isRight ? 'flex-row-reverse' : 'flex-row'
           }`}
-          style={{ paddingBottom: 'env(safe-area-inset-bottom)', transformOrigin: 'bottom center', willChange: 'transform' }}
+          style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
+          {/* Head — rises slowly from behind the edge: hair, forehead, then the eyes */}
+          <motion.div
+            className="relative overflow-hidden"
+            style={{ width: HEAD_W, height: PEEK }}
+          >
+            <motion.button
+              type="button"
+              onClick={handleTap}
+              aria-label={lang === 'en' ? en : ru}
+              className="absolute left-0 top-0 block"
+              style={{ width: HEAD_W, height: HEAD_H, transformOrigin: 'bottom center', willChange: 'transform' }}
+              initial={{ y: PEEK, rotate: isRight ? -10 : 10 }}
+              animate={{ y: 0, rotate: isRight ? -6 : 6 }}
+              exit={{ y: PEEK, rotate: isRight ? -10 : 10, transition: { duration: 0.4, ease: [0.4, 0, 1, 1] } }}
+              transition={{ duration: 1.5, ease: [0.16, 1, 0.3, 1] }}
+            >
+              <img
+                src={headNeutral}
+                alt=""
+                className="absolute inset-0 w-full h-auto drop-shadow-2xl select-none pointer-events-none"
+                draggable={false}
+              />
+              <motion.img
+                src={headSmile}
+                alt=""
+                initial={{ opacity: 0 }}
+                animate={{ opacity: smiling ? 1 : 0 }}
+                transition={{ duration: 0.4, ease: 'easeInOut' }}
+                className="absolute inset-0 w-full h-auto drop-shadow-2xl select-none pointer-events-none"
+                draggable={false}
+              />
+            </motion.button>
+          </motion.div>
+
           {/* Speech bubble */}
           <motion.button
             type="button"
             onClick={handleTap}
-            initial={{ opacity: 0, scale: 0.9, y: 6 }}
+            initial={{ opacity: 0, scale: 0.92, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 0.45, type: 'spring', damping: 18, stiffness: 260 }}
-            style={{ rotate: isRight ? -12 : 12 }}
-            className={`relative max-w-[190px] text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-8 ${
+            transition={{ delay: 1.1, type: 'spring', damping: 18, stiffness: 240 }}
+            className={`relative max-w-[190px] text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
               isRight ? 'rounded-br-sm' : 'rounded-bl-sm'
             }`}
           >
@@ -101,53 +138,18 @@ const FaceHint = ({
               </span>
               {lang === 'en' ? tapEn : tapRu}
             </span>
-          </motion.button>
-
-          {/* Head — both frames stacked, only the mouth changes via a soft crossfade */}
-          <motion.div
-            className="relative"
-            animate={{ y: smiling ? 0 : [0, -3, 0], rotate: smiling ? (isRight ? -2 : 2) : 0 }}
-            transition={
-              smiling
-                ? { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
-                : { duration: 3.6, repeat: Infinity, ease: 'easeInOut' }
-            }
-          >
-            <button
-              type="button"
-              onClick={handleTap}
-              aria-label={lang === 'en' ? en : ru}
-              className="block relative w-[96px]"
-            >
-              <img
-                src={headNeutral}
-                alt=""
-                className="w-[96px] h-auto drop-shadow-2xl select-none pointer-events-none"
-                draggable={false}
-              />
-              <motion.img
-                src={headSmile}
-                alt=""
-                initial={{ opacity: 0 }}
-                animate={{ opacity: smiling ? 1 : 0 }}
-                transition={{ duration: 0.35, ease: 'easeInOut' }}
-                className="absolute inset-0 w-[96px] h-auto drop-shadow-2xl select-none pointer-events-none"
-                draggable={false}
-              />
-            </button>
-            <button
-              type="button"
+            <span
               onClick={(e) => { e.stopPropagation(); setShown(false); dismiss(); }}
-              aria-label="Close"
-              className="absolute -top-1 left-0 w-5 h-5 rounded-full bg-muted/90 border border-border flex items-center justify-center text-muted-foreground"
+              className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-muted border border-border flex items-center justify-center text-muted-foreground"
             >
               <X className="w-3 h-3" />
-            </button>
-          </motion.div>
+            </span>
+          </motion.button>
         </motion.div>
       )}
     </AnimatePresence>
   );
 };
+
 
 export default FaceHint;
