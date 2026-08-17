@@ -3,8 +3,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { markHintSeen, useHint } from './HintDot';
-import headNeutral from '@/assets/illarion-head-neutral.png.asset.json';
-import headSmile from '@/assets/illarion-head-smile.png.asset.json';
+import headNeutral from '@/assets/illarion-head-neutral.png';
+import headSmile from '@/assets/illarion-head-smile.png';
 
 interface FaceHintProps {
   /** Unique id — used as the localStorage key (new feature = new id) */
@@ -120,13 +120,13 @@ const FaceHint = ({
               className="block relative w-[96px]"
             >
               <img
-                src={headNeutral.url}
+                src={headNeutral}
                 alt=""
                 className="w-[96px] h-auto drop-shadow-2xl select-none pointer-events-none"
                 draggable={false}
               />
               <motion.img
-                src={headSmile.url}
+                src={headSmile}
                 alt=""
                 initial={{ opacity: 0 }}
                 animate={{ opacity: smiling ? 1 : 0 }}
