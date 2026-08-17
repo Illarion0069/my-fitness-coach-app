@@ -22,12 +22,16 @@ interface FaceHintProps {
   delay?: number;
   /** Distance from the bottom of the screen */
   bottomClass?: string;
+  /** How many separate visits it may appear in (default 2) */
+  maxShows?: number;
+  /** Increment this number to replay the hint (admin/preview mode) */
+  replayToken?: number;
 }
 
 /**
  * "Illarion's face" announcement: a cut-out head slides in from the screen edge
  * with a speech bubble. On tap the face switches to a big smile, then the
- * related feature opens. Shown once per `id`.
+ * related feature opens. Shown on the first `maxShows` visits per `id`.
  */
 const FaceHint = ({
   id,
@@ -39,9 +43,11 @@ const FaceHint = ({
   side = 'right',
   delay = 1500,
   bottomClass = 'bottom-32',
+  maxShows = 2,
+  replayToken = 0,
 }: FaceHintProps) => {
   const { lang } = useLanguage();
-  const { visible, dismiss } = useHint(id);
+  const { visible, dismiss, replay } = useHint(id, maxShows);
   const [shown, setShown] = useState(false);
   const [smiling, setSmiling] = useState(false);
   const [vw, setVw] = useState(() => (typeof window !== 'undefined' ? window.innerWidth : 390));
@@ -60,15 +66,25 @@ const FaceHint = ({
     };
   }, []);
 
+  // Admin replay: reset the counters and show it again
+  useEffect(() => {
+    if (!replayToken) return;
+    setSmiling(false);
+    setShown(false);
+    replay();
+  }, [replayToken, replay]);
+
   // Scale the head with the viewport: never wider than ~34% of the screen,
   // never taller than ~22% of the height, and clamped for tiny/large screens.
   const headW = Math.max(88, Math.min(160, vw * 0.34, vh * 0.22 * (128 / 172)));
 
   useEffect(() => {
     if (!visible) return;
+    countHintShown(id);
     const t = setTimeout(() => setShown(true), delay);
     return () => clearTimeout(t);
-  }, [visible, delay]);
+  }, [visible, delay, id]);
+
 
 
   if (!visible) return null;
