@@ -1420,7 +1420,22 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         en="Want to know how we count your calories?"
         ru="Хочешь узнать, как мы считаем калории?"
         onTap={() => setCalcInfoOpen(true)}
+        maxShows={2}
+        replayToken={faceReplay}
       />
+
+      {/* Admin-only: replay the face announcement as many times as needed */}
+      {forceClientView && (
+        <button
+          type="button"
+          onClick={() => setFaceReplay((v) => v + 1)}
+          className="fixed left-2 bottom-32 z-[70] rounded-full bg-card/90 border border-border shadow-lg px-2.5 py-1 text-[10px] font-semibold text-muted-foreground backdrop-blur"
+          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
+        >
+          {lang === 'en' ? 'Replay face' : 'Повтор лица'}
+        </button>
+      )}
+
 
     </div>
   );
