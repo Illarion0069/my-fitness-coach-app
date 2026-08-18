@@ -22,10 +22,6 @@ export function showAppError(payload: AppErrorPayload = {}) {
   listeners.forEach((l) => l(payload));
 }
 
-if (typeof window !== 'undefined') {
-  (window as unknown as Record<string, unknown>).__showAppError = showAppError;
-}
-
 export function hideAppError() {
   listeners.forEach((l) => l(null));
 }
