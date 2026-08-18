@@ -345,10 +345,12 @@ const Index = () => (
     />
     <LanguageProvider>
       <ConnectionSplash />
+      <AppErrorDialog />
       <AuthProvider>
         <AppContent />
       </AuthProvider>
     </LanguageProvider>
+
   </ThemeProvider>
 );
 
