@@ -69,54 +69,56 @@ const AppErrorDialog = () => {
           exit={{ opacity: 0 }}
           onClick={close}
         >
-          <motion.div
-            className="relative w-full max-w-sm rounded-3xl border border-destructive/40 bg-card p-6 pt-14 text-center shadow-2xl"
-            initial={{ opacity: 0, y: 24, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 16, scale: 0.96 }}
-            transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={close}
-              aria-label={lang === 'en' ? 'Close' : 'Закрыть'}
-              className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            {/* Sad head, seated in the card's top edge */}
+          <div className="relative w-full max-w-sm">
+            {/* Sad head peeking from behind the modal, asymmetrically */}
             <motion.div
-              className="absolute -top-10 left-1/2 -translate-x-1/2"
-              initial={{ y: 12, scale: 0.8, opacity: 0 }}
-              animate={{ y: 0, scale: 1, opacity: 1 }}
+              className="absolute -top-7 -left-8 z-0"
+              initial={{ y: 20, rotate: -28, scale: 0.8, opacity: 0 }}
+              animate={{ y: 0, rotate: -14, scale: 1, opacity: 1 }}
               transition={{ delay: 0.06, type: 'spring', stiffness: 260, damping: 18 }}
             >
-              <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-destructive/50 bg-card shadow-[0_8px_24px_-8px_hsl(var(--destructive)/0.6)]">
+              <div className="h-24 w-24 overflow-hidden rounded-full border-2 border-destructive/50 bg-card shadow-[0_10px_28px_-8px_hsl(var(--destructive)/0.6)]">
                 <img
                   src={headSad}
                   alt=""
-                  className="h-full w-full scale-[1.18] object-cover object-top"
+                  className="h-full w-full scale-[1.22] object-cover object-top"
                 />
               </div>
             </motion.div>
 
-            <h3 className="text-xl font-bold text-destructive">{title}</h3>
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{body}</p>
-            {detail && (
-              <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{detail}</p>
-            )}
+            <motion.div
+              className="relative z-10 w-full rounded-3xl border border-destructive/40 bg-card p-6 pt-14 text-center shadow-2xl"
+              initial={{ opacity: 0, y: 24, scale: 0.94 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.96 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={close}
+                aria-label={lang === 'en' ? 'Close' : 'Закрыть'}
+                className="absolute right-3 top-3 rounded-full p-2 text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
 
-            <div className="mt-5 flex gap-2">
-              <Button variant="outline" className="flex-1" onClick={close}>
-                {lang === 'en' ? 'Close' : 'Закрыть'}
-              </Button>
-              <Button className="flex-1 gap-2" onClick={handleRetry} disabled={retrying}>
-                <RotateCcw className={`w-4 h-4 ${retrying ? 'animate-spin' : ''}`} />
-                {lang === 'en' ? 'Try again' : 'Ещё раз'}
-              </Button>
-            </div>
-          </motion.div>
+              <h3 className="text-xl font-bold text-destructive">{title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{body}</p>
+              {detail && (
+                <p className="mt-3 rounded-xl bg-destructive/10 px-3 py-2 text-xs text-destructive">{detail}</p>
+              )}
+
+              <div className="mt-5 flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={close}>
+                  {lang === 'en' ? 'Close' : 'Закрыть'}
+                </Button>
+                <Button className="flex-1 gap-2" onClick={handleRetry} disabled={retrying}>
+                  <RotateCcw className={`w-4 h-4 ${retrying ? 'animate-spin' : ''}`} />
+                  {lang === 'en' ? 'Try again' : 'Ещё раз'}
+                </Button>
+              </div>
+            </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>,
