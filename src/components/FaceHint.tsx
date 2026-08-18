@@ -161,7 +161,7 @@ const FaceHint = ({
             onClick={handleTap}
             initial={{ opacity: 0, scale: 0.92, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ delay: 1.1, type: 'spring', damping: 18, stiffness: 240 }}
+            transition={{ delay: 0.45, type: 'spring', damping: 18, stiffness: 240 }}
             style={{ maxWidth: bubbleMax }}
             className={`relative text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
               isRight ? 'rounded-br-sm' : 'rounded-bl-sm'

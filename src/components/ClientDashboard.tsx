@@ -1422,6 +1422,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         en="Want to know how we count your calories?"
         ru="Хочешь узнать, как мы считаем калории?"
         onTap={() => setCalcInfoOpen(true)}
+        delay={0}
         maxShows={2}
         replayToken={faceReplay}
       />
