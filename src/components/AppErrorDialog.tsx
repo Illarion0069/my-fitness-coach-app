@@ -26,6 +26,12 @@ export function hideAppError() {
   listeners.forEach((l) => l(null));
 }
 
+// Dev-only helper for visual QA of the error card
+if (import.meta.env.DEV && typeof window !== 'undefined') {
+  (window as unknown as Record<string, unknown>).showAppError = showAppError;
+}
+
+
 const AppErrorDialog = () => {
   const { lang } = useLanguage();
   const [payload, setPayload] = useState<AppErrorPayload | null>(null);
