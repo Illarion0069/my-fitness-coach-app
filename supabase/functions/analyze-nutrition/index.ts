@@ -939,61 +939,19 @@ serve(async (req) => {
       }
     }
 
-    // --- Notify trainer via Telegram ---
+    // --- Queue the trainer report (final digest only) ---
+    // We no longer notify on every recalculation. The day is marked as "pending report";
+    // nutrition-report-flush sends one final message once the client stopped editing.
     try {
-      const TELEGRAM_BOT_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
-      const TELEGRAM_CHAT_ID = Deno.env.get("TELEGRAM_CHAT_ID");
-
-      if (TELEGRAM_BOT_TOKEN && TELEGRAM_CHAT_ID) {
-        // Fetch client name and manual entries
-        const [{ data: profile }, { data: logData }] = await Promise.all([
-          supabase.from("profiles").select("full_name").eq("user_id", user_id).single(),
-          supabase.from("nutrition_logs").select("manual_entries").eq("user_id", user_id).eq("log_date", log_date).single(),
-        ]);
-
-        const clientName = profile?.full_name || "Клиент";
-        const summaryRu = (analysis.summary_ru || analysis.summary_en || feedback || "") as string;
-        const appUrl = "https://my-fitness-coach-app.lovable.app";
-
-        const scoreEmoji = score >= 75 ? "🟢" : score >= 50 ? "🟡" : "🔴";
-
-        // Build meals detail — now one entry per meal_type
-        const meals = (analysis.meals as Array<Record<string, unknown>>) || [];
-        const mealsDetail = meals.map((m) => {
-          const mealScore = (m.score as number) || 0;
-          const mealEmoji = mealScore >= 75 ? "✅" : mealScore >= 50 ? "⚠️" : "❌";
-          const detectedFoods = (m.detected_foods as Array<Record<string, unknown>>) || [];
-          const foods = detectedFoods.map((f) => {
-            if (typeof f === "string") return f;
-            return `${f.name}${f.portion_g ? ` (${f.portion_g}g)` : ""} — ${f.calories || 0}kcal`;
-          }).join(", ");
-          return `${mealEmoji} <b>${m.meal_type}</b> — ${mealScore}/100${foods ? `\n   ${foods}` : ""}`;
-        }).join("\n");
-
-        // Include manual entries
-        const manualEntries = ((logData?.manual_entries || []) as Array<Record<string, unknown>>);
-        let manualDetail = "";
-        if (manualEntries.length > 0) {
-          const manualLines = manualEntries.map((e) => 
-            `✏️ ${e.name || "Quick add"} — ${e.calories || 0}kcal (P${e.protein_g || 0} C${e.carbs_g || 0} F${e.fat_g || 0})`
-          ).join("\n");
-          manualDetail = `\n\n📝 <b>Ручной ввод:</b>\n${manualLines}`;
-        }
-
-        const msg = `🍽 <b>Дневник питания</b>\n\n👤 ${clientName}\n📅 ${log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n" : ""}${manualDetail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
-
-        const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text: msg, parse_mode: "HTML", disable_web_page_preview: true }),
-        });
-        if (!res.ok) {
-          console.error("Telegram notify error:", await res.text());
-        }
-      }
-    } catch (tgErr) {
-      console.error("Telegram notification failed (non-critical):", tgErr);
+      await supabase
+        .from("nutrition_logs")
+        .update({ report_pending: true, report_marked_at: new Date().toISOString() })
+        .eq("user_id", user_id)
+        .eq("log_date", log_date);
+    } catch (queueErr) {
+      console.error("Queueing trainer report failed (non-critical):", queueErr);
     }
+
 
     return jsonResponse({ score, feedback, analysis });
   } catch (e) {
