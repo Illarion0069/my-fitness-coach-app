@@ -78,7 +78,7 @@ const AppErrorDialog = () => {
           <div className="relative w-full max-w-sm">
             {/* Sad head peeking from behind the modal, asymmetrically */}
             <motion.div
-              className="absolute -top-8 left-3 z-0"
+              className="absolute -top-[76px] left-4 z-0"
               initial={{ y: 20, rotate: -28, scale: 0.8, opacity: 0 }}
               animate={{ y: 0, rotate: -14, scale: 1, opacity: 1 }}
               transition={{ delay: 0.06, type: 'spring', stiffness: 260, damping: 18 }}
@@ -87,7 +87,7 @@ const AppErrorDialog = () => {
                 <img
                   src={headSad}
                   alt=""
-                  className="h-full w-full scale-[1.22] object-cover object-top"
+                  className="h-full w-full scale-[1.15] object-cover object-center"
                 />
               </div>
             </motion.div>
