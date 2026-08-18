@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { showAppError } from '@/components/AppErrorDialog';
 import { useTrainingDayKey } from '@/hooks/useTrainingDayKey';
 import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
@@ -497,7 +498,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       fetchData();
     } catch (err: any) {
       try { await supabase.storage.from('food-photos').remove([path]); } catch {}
-      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
+      showAppError({ detailEn: err.message, detailRu: err.message });
     }
     setPendingFile(null);
     setPendingMealType(null);
@@ -548,9 +549,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       setSelectedPhoto(null);
       fetchData();
     } catch (err: any) {
-      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: err.message, variant: 'destructive' });
+      showAppError({ detailEn: err.message, detailRu: err.message });
     }
   };
+
+  const handleAnalyzeRef = useRef<((opts?: { silent?: boolean }) => Promise<void>) | null>(null);
 
   const handleAnalyze = useCallback(async (opts?: { silent?: boolean }) => {
     if (!effectiveUserId) return;
@@ -589,7 +592,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       }
       if (error) throw error;
       if (data?.error) {
-        if (!opts?.silent) toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: data.error, variant: 'destructive' });
+        if (!opts?.silent) showAppError({ detailEn: data.error, detailRu: data.error, onRetry: () => handleAnalyzeRef.current?.() });
       } else {
         if (!opts?.silent) toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
         setAnalysisCount(prev => prev + 1);
@@ -597,17 +600,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       }
     } catch (err: any) {
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      if (!opts?.silent) toast({
-        title: lang === 'en' ? 'Error' : 'Ошибка',
-        description: offline
-          ? (lang === 'en' ? 'No internet connection — the meal is saved, calories will be counted once you are back online.' : 'Нет интернета — приём пищи сохранён, калории посчитаются после восстановления связи.')
-          : err.message,
-        variant: 'destructive',
+      if (!opts?.silent) showAppError({
+        detailEn: offline ? 'No internet connection — the meal is saved, calories will be counted once you are back online.' : err.message,
+        detailRu: offline ? 'Нет интернета — приём пищи сохранён, калории посчитаются после восстановления связи.' : err.message,
+        onRetry: () => handleAnalyzeRef.current?.(),
       });
     }
 
     setAnalyzing(false);
   }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
+
+  handleAnalyzeRef.current = handleAnalyze;
 
   // Auto-trigger analysis when the day changes MEANINGFULLY.
   // A tiny addition (e.g. one cucumber) should not rewrite the recommendations —
