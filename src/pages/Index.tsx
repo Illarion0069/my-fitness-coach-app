@@ -13,6 +13,8 @@ import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import SwipeHint from '@/components/SwipeHint';
+import AppErrorDialog, { showAppError } from '@/components/AppErrorDialog';
+
 
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
