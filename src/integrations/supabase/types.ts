@@ -356,6 +356,9 @@ export type Database = {
           log_date: string
           manual_entries: Json | null
           notes: string | null
+          report_marked_at: string | null
+          report_pending: boolean
+          report_sent_at: string | null
           tea_cups: number
           trainer_override_note: string | null
           trainer_override_score: number | null
@@ -374,6 +377,9 @@ export type Database = {
           log_date?: string
           manual_entries?: Json | null
           notes?: string | null
+          report_marked_at?: string | null
+          report_pending?: boolean
+          report_sent_at?: string | null
           tea_cups?: number
           trainer_override_note?: string | null
           trainer_override_score?: number | null
@@ -392,6 +398,9 @@ export type Database = {
           log_date?: string
           manual_entries?: Json | null
           notes?: string | null
+          report_marked_at?: string | null
+          report_pending?: boolean
+          report_sent_at?: string | null
           tea_cups?: number
           trainer_override_note?: string | null
           trainer_override_score?: number | null
