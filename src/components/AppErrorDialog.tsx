@@ -4,7 +4,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
-import headNeutral from '@/assets/illarion-head-neutral.png';
+import headSad from '@/assets/illarion-head-sad.png';
 
 export interface AppErrorPayload {
   /** Optional short reason in plain language (already localized by the caller) */
@@ -85,20 +85,19 @@ const AppErrorDialog = () => {
               <X className="w-4 h-4" />
             </button>
 
-            {/* Sad head peeking above the card */}
+            {/* Sad head, seated in the card's top edge */}
             <motion.div
-              className="absolute -top-12 left-1/2 -translate-x-1/2"
-              initial={{ y: -20, rotate: 0, opacity: 0 }}
-              animate={{ y: 0, rotate: -8, opacity: 1 }}
-              transition={{ delay: 0.08, type: 'spring', stiffness: 260, damping: 18 }}
+              className="absolute -top-10 left-1/2 -translate-x-1/2"
+              initial={{ y: 12, scale: 0.8, opacity: 0 }}
+              animate={{ y: 0, scale: 1, opacity: 1 }}
+              transition={{ delay: 0.06, type: 'spring', stiffness: 260, damping: 18 }}
             >
-              <div className="relative">
+              <div className="h-20 w-20 overflow-hidden rounded-full border-2 border-destructive/50 bg-card shadow-[0_8px_24px_-8px_hsl(var(--destructive)/0.6)]">
                 <img
-                  src={headNeutral}
+                  src={headSad}
                   alt=""
-                  className="w-24 h-24 object-contain drop-shadow-xl [filter:grayscale(0.35)_brightness(0.95)]"
+                  className="h-full w-full scale-[1.18] object-cover object-top"
                 />
-                <span className="absolute -right-1 bottom-1 text-2xl">😔</span>
               </div>
             </motion.div>
 
