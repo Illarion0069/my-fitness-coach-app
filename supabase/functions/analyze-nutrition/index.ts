@@ -666,22 +666,28 @@ serve(async (req) => {
 
     const mealContextBlock = `\n\nDAY PROGRESS TRACKING (authoritative — use this, do not guess):\n${mealProgressText}\nCONSUMED_SO_FAR: ${Math.round(consumedKcal)} kcal, ${Math.round(consumedProtein)} g protein\nDAILY_CALORIE_GOAL: ${calorieGoal > 0 ? calorieGoal : "unknown"}\nREMAINING_KCAL_BUDGET: ${remainingKcal !== null ? remainingKcal : "unknown"}\nUPCOMING_MEALS_TODAY: ${upcomingMeals.length ? upcomingMeals.join(", ") : "none"}\nNEXT_MEAL_TO_ADVISE_ON: ${nextMeal}\n\nHARD RULE — recommendations must target NEXT_MEAL_TO_ADVISE_ON:\n- Every tip in boost_potential.tips must be about ${nextMeal === "tomorrow_breakfast" ? "TOMORROW's meals (start with breakfast)" : `the upcoming ${nextMeal} (and later meals today)`}, with concrete foods and grams that fit REMAINING_KCAL_BUDGET and the MACRO BUDGET below.\n- NEVER advise changing a meal that is already LOGGED or MISSED — those are in the past. Comment on them only retrospectively, in past tense.\n- Explicitly name the meal in the tip ("На ужин — ...", "Tomorrow at breakfast — ...").\n- If REMAINING_KCAL_BUDGET is known and small (<250), advise a light vegetable-based option or skipping the meal; if the client is far below budget, advise a full balanced plate.${macroBudgetBlock}`;
 
+    // The AI gateway accepts at most 10 images per request — send the most recent ones,
+    // older photos are described in text (their food is already in manual_entries via photo_id).
+    const MAX_IMAGES = 10;
+    const allPhotos = (photos || []) as Array<Record<string, unknown>>;
+    const imagePhotos = allPhotos.slice(-MAX_IMAGES);
+    const skippedCount = allPhotos.length - imagePhotos.length;
+    const attachedIds = new Set(imagePhotos.map((p) => String(p.id)));
+
     const userContent: unknown[] = [
       {
         type: "text",
-        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${anthroBlock}${individualBlock}${mealContextBlock}${liquidsBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${photos!.map((p: Record<string, unknown>, i: number) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})`).join('\n')}` : 'No photos uploaded.'}${manualEntriesText}`,
+        text: `CLIENT_FIRST_NAME: "${firstName}" (address the client by this name in summary_ru and summary_en; in summary_en transliterate it to Latin script, in summary_ru keep/write it in Cyrillic).\nCURRENT_LOCAL_TIME: "${localTimeStr}" (Asia/Nicosia)\nCURRENT_LOCAL_HOUR: ${localHour}\nIS_TODAY: ${isToday}\nHAS_DINNER_LOGGED: ${hasDinner}\nMODE: ${mode}${anthroBlock}${individualBlock}${mealContextBlock}${liquidsBlock}\n\nAnalyze food intake from ${log_date}. There are ${photoCount} food photo(s)${hasManual ? ` and ${manualEntries.length} manual text entries` : ''}. Each photo has a meal type label assigned by the client — you MUST respect the client's meal_type assignment, do NOT reassign photos to different meal types. Return ONLY valid JSON, no markdown.\n\n${photoCount > 0 ? `Photos:\n${allPhotos.map((p, i) => `Photo ${i + 1}: meal_type="${p.meal_type}", meal_time="${(p as any).meal_time || 'unknown'}" (uploaded at ${(p as any).created_at})${attachedIds.has(String(p.id)) ? " [image attached]" : " [image NOT attached — use the matching manual entry data for this photo]"}`).join('\n')}` : 'No photos uploaded.'}${skippedCount > 0 ? `\n\nNOTE: only the ${MAX_IMAGES} most recent photos are attached as images (gateway limit). The ${skippedCount} earlier photo(s) are already represented in the manual entries list — count them from that data, do not ignore them.` : ""}${manualEntriesText}`,
       },
     ];
 
-
-    if (photos) {
-      for (const photo of photos) {
-        userContent.push({
-          type: "image_url",
-          image_url: { url: (photo as Record<string, unknown>).photo_url },
-        });
-      }
+    for (const photo of imagePhotos) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: photo.photo_url },
+      });
     }
+
 
     // --- Call AI ---
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
