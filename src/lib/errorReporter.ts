@@ -24,20 +24,23 @@ export async function reportClientError(input: {
   message: string;
   stack?: string;
   source?: string;
+  /** true — клиент реально увидел ошибку на экране: шлём алерт даже при сетевом шуме */
+  userVisible?: boolean;
 }) {
   try {
     const message = (input.message || "").slice(0, 500);
     if (!message) return;
     const lower = message.toLowerCase();
-    if (IGNORE.some((p) => lower.includes(p))) return;
+    if (!input.userVisible && IGNORE.some((p) => lower.includes(p))) return;
     // Оффлайн — любая ошибка почти наверняка следствие потери связи
-    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    if (!input.userVisible && typeof navigator !== "undefined" && navigator.onLine === false) return;
 
     const key = `${input.source || "app"}|${message}`;
     const now = Date.now();
     const last = sentRecently.get(key);
     if (last && now - last < DEDUP_MS) return;
     sentRecently.set(key, now);
+
 
     let user_id = "";
     let user_name = "";
