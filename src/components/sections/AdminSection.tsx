@@ -442,7 +442,7 @@ const AdminSection = () => {
               await signOut();
               toast({ title: lang === 'en' ? 'Signed out' : 'Вы вышли', duration: 2000 });
             }}
-            className="w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors"
+            className={`${viewMode === 'clients' ? '' : 'ml-auto'} w-9 h-9 rounded-xl bg-destructive/10 border border-destructive/30 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors`}
           >
             <LogOut className="w-4 h-4" />
           </button>
