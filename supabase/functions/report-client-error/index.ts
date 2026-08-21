@@ -29,16 +29,24 @@ type Verdict = {
   fix: string; // что делать
 };
 
-function classify(message: string, source: string, online: boolean): Verdict {
+function classify(message: string, source: string, online: boolean, userVisible: boolean): Verdict {
   const m = message.toLowerCase();
 
   if (!online || NETWORK_NOISE.some((n) => m.includes(n))) {
+    if (userVisible) {
+      return {
+        level: "warning",
+        reason: "У клиента оборвалась связь (заблокировал телефон, ушёл в фон, слабый интернет) — и он увидел красное окно с ошибкой.",
+        fix: "Данные не потеряны. Если повторяется часто — не показывать окно, а тихо повторять запрос при возвращении в приложение.",
+      };
+    }
     return {
       level: "ignore",
       reason: "Обрыв сети у посетителя (закрыл вкладку, потерял связь, блокировщик).",
       fix: "Ничего делать не нужно — это не баг приложения.",
     };
   }
+
 
   if (m.includes("chunkloaderror") || m.includes("dynamically imported module")) {
     return {
