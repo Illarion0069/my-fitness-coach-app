@@ -419,13 +419,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
 
-  const handleUploadWithTime = async (fileOverride?: File) => {
+  const handleUploadWithTime = async (fileOverride?: File, mealTypeOverride?: string, mealTimeOverride?: string | null) => {
     const original = fileOverride || pendingFile;
-    if (!original || !user || !pendingMealType) return;
-    if (!VALID_MEAL_TYPES.includes(pendingMealType)) return;
+    const mealType = mealTypeOverride || pendingMealType;
+    const mealTime = mealTimeOverride !== undefined ? mealTimeOverride : (pendingMealTime || null);
+    if (!original || !user || !mealType) return;
+    if (!VALID_MEAL_TYPES.includes(mealType)) return;
     setUploading(true);
-    const mealType = pendingMealType;
-    const mealTime = pendingMealTime || null;
     let path = '';
 
     try {
@@ -447,9 +447,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       if (!valError && validation && !validation.is_food) {
         await supabase.storage.from('food-photos').remove([path]);
         toast({ title: lang === 'en' ? 'Not a food photo' : 'Это не фото еды', variant: 'destructive' });
-        setPendingFile(null);
-        setPendingMealType(null);
-        setUploading(false);
         return;
       }
       const detectedItems = Array.isArray(validation?.items) ? validation.items : [];
@@ -498,11 +495,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       fetchData();
     } catch (err: any) {
       try { await supabase.storage.from('food-photos').remove([path]); } catch {}
-      showAppError({ detailEn: err.message, detailRu: err.message });
+      showAppError({
+        detailEn: err.message,
+        detailRu: err.message,
+        source: 'nutrition-diary:upload',
+        onRetry: () => handleUploadWithTime(original, mealType, mealTime),
+      });
+    } finally {
+      setPendingFile(null);
+      setPendingMealType(null);
+      setUploading(false);
     }
-    setPendingFile(null);
-    setPendingMealType(null);
-    setUploading(false);
   };
 
   const handleDeletePhoto = async (photo: FoodPhoto) => {
