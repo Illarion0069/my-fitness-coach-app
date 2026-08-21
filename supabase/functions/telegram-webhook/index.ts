@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { reportSecurityEvent } from "../_shared/securityAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -49,6 +50,11 @@ serve(async (req) => {
     // Validate Telegram secret token for incoming updates
     if (!WEBHOOK_SECRET || req.headers.get("X-Telegram-Bot-Api-Secret-Token") !== WEBHOOK_SECRET) {
       console.warn("Telegram webhook: invalid or missing secret token");
+      await reportSecurityEvent(req, {
+        kind: "forged_webhook",
+        severity: "attack",
+        detail: "Пришёл поддельный запрос к Telegram-вебхуку с неверным секретом — кто-то пытается управлять ботом со стороны.",
+      });
       return new Response(JSON.stringify({ error: "Forbidden" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
