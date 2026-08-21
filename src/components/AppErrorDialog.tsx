@@ -4,23 +4,34 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
+import { reportClientError } from '@/lib/errorReporter';
 import headSad from '@/assets/illarion-head-sad.png';
 
 export interface AppErrorPayload {
   /** Optional short reason in plain language (already localized by the caller) */
   detailEn?: string;
   detailRu?: string;
+  /** Where the error came from (used in the Telegram alert) */
+  source?: string;
   /** Called when the client taps "Try again" */
   onRetry?: () => void | Promise<void>;
 }
+
 
 type Listener = (p: AppErrorPayload | null) => void;
 const listeners = new Set<Listener>();
 
 /** Show the global "something went wrong" card from anywhere in the app. */
 export function showAppError(payload: AppErrorPayload = {}) {
+  // Клиент реально видит ошибку — всегда шлём алерт в Telegram
+  reportClientError({
+    message: payload.detailEn || payload.detailRu || 'App error dialog shown',
+    source: payload.source || 'app-error-dialog',
+    userVisible: true,
+  });
   listeners.forEach((l) => l(payload));
 }
+
 
 export function hideAppError() {
   listeners.forEach((l) => l(null));
