@@ -120,6 +120,9 @@ Deno.serve(async (req) => {
     const online = body?.online !== false;
     const userVisible = body?.user_visible === true;
     const occurredAt = String(body?.occurred_at || new Date().toISOString());
+    const release = String(body?.release || "").slice(0, 60);
+    const breadcrumbs = String(body?.breadcrumbs || "").slice(0, 1500);
+    const viewport = String(body?.viewport || "").slice(0, 20);
 
     // Признаки атаки в самом тексте ошибки / адресе страницы — отдельный алерт по безопасности
     if (looksMalicious(message) || looksMalicious(url) || looksMalicious(route)) {
