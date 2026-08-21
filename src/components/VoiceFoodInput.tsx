@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mic, Square, Loader2, Keyboard, Check, Trash2, X, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -63,6 +64,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
   const [transcript, setTranscript] = useState('');
   const [items, setItems] = useState<VoiceFoodItem[] | null>(null);
   const [levels, setLevels] = useState<number[]>(Array(16).fill(0.15));
+  const [addMore, setAddMore] = useState('');
 
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<BlobPart[]>([]);
@@ -88,7 +90,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
     if (open) return;
     cleanup();
     setRecording(false); setSeconds(0); setProcessing(false); setSaving(false);
-    setText(''); setTranscript(''); setItems(null); setMode('voice');
+    setText(''); setTranscript(''); setItems(null); setMode('voice'); setAddMore('');
   }, [open, cleanup]);
 
   useEffect(() => {
@@ -98,7 +100,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  const analyse = useCallback(async (payload: { audio_base64?: string; format?: string; text?: string }) => {
+  const analyse = useCallback(async (payload: { audio_base64?: string; format?: string; text?: string }, append = false) => {
     setProcessing(true);
     try {
       const { data, error } = await supabase.functions.invoke('transcribe-food', {
@@ -107,8 +109,14 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
       if (error) throw error;
       if (data?.error && !Array.isArray(data?.items)) throw new Error(data.error);
       const list: VoiceFoodItem[] = Array.isArray(data?.items) ? data.items : [];
-      setTranscript(String(data?.transcript || payload.text || ''));
-      setItems(list);
+      const said = String(data?.transcript || payload.text || '');
+      if (append) {
+        setTranscript(prev => (prev ? `${prev} ${said}` : said).slice(0, 600));
+        setItems(prev => [...(prev || []), ...list]);
+      } else {
+        setTranscript(said);
+        setItems(list);
+      }
       if (list.length === 0) {
         toast({
           title: t(lang, 'No food recognised', 'Еда не распознана'),
@@ -135,7 +143,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
     setRecording(false);
   }, []);
 
-  const startRecording = useCallback(async () => {
+  const startRecording = useCallback(async (append = false) => {
     if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
       setMode('text');
       toast({ title: t(lang, 'Voice input is not available on this device', 'Голосовой ввод недоступен на этом устройстве') });
@@ -158,7 +166,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
           return;
         }
         const b64 = await blobToBase64(blob);
-        await analyse({ audio_base64: b64, format: formatRef.current });
+        await analyse({ audio_base64: b64, format: formatRef.current }, append);
       };
       recorderRef.current = rec;
       rec.start();
@@ -242,27 +250,34 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
         onClick={() => !recording && !processing && onClose()}
+        data-app-sheet="true"
         className="fixed inset-0 z-[220] bg-black/70 flex items-end justify-center"
       >
         <motion.div
           initial={{ y: 260 }} animate={{ y: 0 }} exit={{ y: 260 }} transition={{ type: 'spring', damping: 26 }}
           onClick={e => e.stopPropagation()}
-          className="w-full max-w-md bg-card rounded-t-3xl border border-border/40 p-5 pb-[calc(env(safe-area-inset-bottom,0px)+20px)] max-h-[88vh] overflow-y-auto"
+          className="w-full max-w-md bg-card rounded-t-3xl border border-border/40 flex flex-col max-h-[92vh]"
         >
-          <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-3" />
-          <div className="flex items-center justify-between mb-3">
-            <p className="text-sm font-bold text-foreground">
-              {title || t(lang, 'Say what you ate', 'Расскажите, что вы съели')}
-            </p>
-            <button onClick={onClose} className="p-1.5 rounded-full hover:bg-secondary/60" aria-label="close">
-              <X className="w-4 h-4 text-muted-foreground" />
-            </button>
+          <div className="px-5 pt-3 shrink-0">
+            <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-3" />
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-bold text-foreground">
+                {items
+                  ? t(lang, 'Check the list', 'Проверьте список')
+                  : (title || t(lang, 'Say what you ate', 'Расскажите, что вы съели'))}
+              </p>
+              <button onClick={onClose} className="p-1.5 rounded-full hover:bg-secondary/60" aria-label="close">
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
           </div>
+          <div className="px-5 pb-2 overflow-y-auto flex-1">
+
 
           {/* ---- Capture step ---- */}
           {!items && (
@@ -297,7 +312,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
                   ) : (
                     <motion.button
                       whileTap={{ scale: 0.93 }}
-                      onClick={recording ? stopRecording : startRecording}
+                      onClick={() => (recording ? stopRecording() : startRecording(false))}
                       className={`w-20 h-20 rounded-full flex items-center justify-center shadow-lg transition-colors ${
                         recording ? 'bg-destructive shadow-destructive/30' : 'bg-primary shadow-primary/30'
                       }`}
@@ -406,27 +421,79 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
                 </div>
               )}
 
-              <div className="flex gap-2 pt-1">
-                <button
-                  onClick={() => { setItems(null); setTranscript(''); setText(''); }}
-                  className="flex-1 bg-secondary/60 text-foreground rounded-2xl py-3 text-sm font-bold flex items-center justify-center gap-2"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  {t(lang, 'Redo', 'Заново')}
-                </button>
-                <button
-                  onClick={confirm}
-                  disabled={items.length === 0 || saving}
-                  className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2"
-                >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                  {t(lang, 'Confirm', 'Подтвердить')}
-                </button>
+              {/* Add more / correct */}
+              <div className="pt-1 space-y-2">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  {t(lang, 'Forgot something? Add it', 'Что-то забыли? Добавьте')}
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    value={addMore}
+                    onChange={e => setAddMore(e.target.value.slice(0, 300))}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter' && addMore.trim().length > 1 && !processing) {
+                        analyse({ text: addMore.trim() }, true);
+                        setAddMore('');
+                      }
+                    }}
+                    placeholder={t(lang, 'e.g. a cappuccino and a banana', 'например: капучино и банан')}
+                    className="flex-1 bg-secondary/50 border border-border/50 rounded-2xl px-3 py-2.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
+                  />
+                  <button
+                    onClick={() => {
+                      if (recording) { stopRecording(); return; }
+                      if (addMore.trim().length > 1) { analyse({ text: addMore.trim() }, true); setAddMore(''); return; }
+                      startRecording(true);
+                    }}
+                    disabled={processing}
+                    className={`w-11 h-11 shrink-0 rounded-2xl flex items-center justify-center disabled:opacity-40 ${
+                      recording ? 'bg-destructive' : 'bg-primary/15'
+                    }`}
+                    aria-label={t(lang, 'Add by voice', 'Добавить голосом')}
+                  >
+                    {processing
+                      ? <Loader2 className="w-4 h-4 animate-spin text-primary" />
+                      : recording
+                        ? <Square className="w-4 h-4 text-primary-foreground" />
+                        : addMore.trim().length > 1
+                          ? <Check className="w-4 h-4 text-primary" />
+                          : <Mic className="w-4 h-4 text-primary" />}
+                  </button>
+                </div>
+                {recording && (
+                  <p className="text-[10px] text-destructive font-bold">
+                    {t(lang, 'Recording… tap the square to stop', 'Записываю… нажмите квадрат, чтобы остановить')}
+                  </p>
+                )}
               </div>
             </div>
           )}
+          </div>
+
+          {/* Sticky footer */}
+          {items && (
+            <div className="shrink-0 border-t border-border/40 bg-card px-5 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+16px)] flex gap-2">
+              <button
+                onClick={() => { setItems(null); setTranscript(''); setText(''); setAddMore(''); }}
+                className="flex-1 bg-secondary/60 text-foreground rounded-2xl py-3 text-sm font-bold flex items-center justify-center gap-2"
+              >
+                <RefreshCw className="w-4 h-4" />
+                {t(lang, 'Redo', 'Заново')}
+              </button>
+              <button
+                onClick={confirm}
+                disabled={items.length === 0 || saving || processing || recording}
+                className="flex-1 bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold disabled:opacity-40 flex items-center justify-center gap-2"
+              >
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                {t(lang, 'Confirm', 'Подтвердить')}
+              </button>
+            </div>
+          )}
+          {!items && <div className="shrink-0 pb-[calc(env(safe-area-inset-bottom,0px)+8px)]" />}
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
