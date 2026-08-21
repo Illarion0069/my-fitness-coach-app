@@ -60,18 +60,8 @@ const FaceHint = ({
     };
     window.addEventListener('resize', onResize);
     window.addEventListener('orientationchange', onResize);
-    // Never overlap an open sheet/modal
-  const [sheetOpen, setSheetOpen] = useState(false);
-  useEffect(() => {
-    const check = () => setSheetOpen(!!document.querySelector('[data-app-sheet="true"]'));
-    check();
-    const obs = new MutationObserver(check);
-    obs.observe(document.body, { childList: true, subtree: true });
-    return () => obs.disconnect();
-  }, []);
-  if (sheetOpen) return null;
+    return () => {
 
-  return () => {
       window.removeEventListener('resize', onResize);
       window.removeEventListener('orientationchange', onResize);
     };
