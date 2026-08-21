@@ -508,12 +508,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
   };
 
-  const handleDeletePhoto = async (photo: FoodPhoto) => {
+  const executeDeletePhoto = async (photo: FoodPhoto) => {
     const hasAnalysis = log?.ai_score != null;
-    if (hasAnalysis) {
-      const confirmed = window.confirm(lang === 'en' ? 'Delete this photo? AI score will be recalculated on next analysis.' : 'Удалить фото? AI-оценка будет пересчитана при следующем анализе.');
-      if (!confirmed) return;
-    }
     try {
       const urlParts = photo.photo_url.split('/food-photos/');
       const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
@@ -552,8 +548,22 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       setSelectedPhoto(null);
       fetchData();
     } catch (err: any) {
-      showAppError({ detailEn: err.message, detailRu: err.message });
+      showAppError({
+        detailEn: err.message,
+        detailRu: err.message,
+        source: 'nutrition-diary:delete-photo',
+        onRetry: () => executeDeletePhoto(photo),
+      });
     }
+  };
+
+  const handleDeletePhoto = async (photo: FoodPhoto) => {
+    const hasAnalysis = log?.ai_score != null;
+    if (hasAnalysis) {
+      const confirmed = window.confirm(lang === 'en' ? 'Delete this photo? AI score will be recalculated on next analysis.' : 'Удалить фото? AI-оценка будет пересчитана при следующем анализе.');
+      if (!confirmed) return;
+    }
+    await executeDeletePhoto(photo);
   };
 
   const handleAnalyzeRef = useRef<((opts?: { silent?: boolean }) => Promise<void>) | null>(null);
