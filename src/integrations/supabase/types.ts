@@ -146,6 +146,69 @@ export type Database = {
         }
         Relationships: []
       }
+      client_errors: {
+        Row: {
+          breadcrumbs: string | null
+          created_at: string
+          fingerprint: string
+          id: string
+          level: string
+          message: string
+          occurred_at: string
+          online: boolean
+          release: string | null
+          route: string | null
+          source: string
+          stack: string | null
+          url: string | null
+          user_agent: string | null
+          user_id: string | null
+          user_name: string | null
+          user_visible: boolean
+          viewport: string | null
+        }
+        Insert: {
+          breadcrumbs?: string | null
+          created_at?: string
+          fingerprint: string
+          id?: string
+          level?: string
+          message: string
+          occurred_at?: string
+          online?: boolean
+          release?: string | null
+          route?: string | null
+          source?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_visible?: boolean
+          viewport?: string | null
+        }
+        Update: {
+          breadcrumbs?: string | null
+          created_at?: string
+          fingerprint?: string
+          id?: string
+          level?: string
+          message?: string
+          occurred_at?: string
+          online?: boolean
+          release?: string | null
+          route?: string | null
+          source?: string
+          stack?: string | null
+          url?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_visible?: boolean
+          viewport?: string | null
+        }
+        Relationships: []
+      }
       client_packages: {
         Row: {
           created_at: string

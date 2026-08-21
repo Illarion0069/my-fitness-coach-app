@@ -1,3 +1,4 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { reportSecurityEvent, looksMalicious } from "../_shared/securityAlert.ts";
 
@@ -120,6 +121,9 @@ Deno.serve(async (req) => {
     const online = body?.online !== false;
     const userVisible = body?.user_visible === true;
     const occurredAt = String(body?.occurred_at || new Date().toISOString());
+    const release = String(body?.release || "").slice(0, 60);
+    const breadcrumbs = String(body?.breadcrumbs || "").slice(0, 1500);
+    const viewport = String(body?.viewport || "").slice(0, 20);
 
     // Признаки атаки в самом тексте ошибки / адресе страницы — отдельный алерт по безопасности
     if (looksMalicious(message) || looksMalicious(url) || looksMalicious(route)) {
@@ -148,6 +152,37 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, ignored: true, reason: verdict.reason }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Журнал ошибок: пишем каждое событие, даже если алерт в Telegram задедуплен
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (SUPABASE_URL && SERVICE_KEY) {
+        const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+          auth: { persistSession: false },
+        });
+        await admin.from("client_errors").insert({
+          fingerprint: `${source}|${message.replace(/\d+/g, "#").slice(0, 200)}`,
+          message,
+          stack: stack || null,
+          source,
+          level: verdict.level,
+          route: route || null,
+          url: url || null,
+          release: release || null,
+          viewport: viewport || null,
+          breadcrumbs: breadcrumbs || null,
+          user_id: userId || null,
+          user_name: userName || null,
+          user_agent: userAgent || null,
+          online,
+          user_visible: userVisible,
+          occurred_at: occurredAt,
+        });
+      }
+    } catch (e) {
+      console.error("client_errors insert failed:", e);
     }
 
     const key = `${source}|${message}`;
@@ -185,10 +220,12 @@ Deno.serve(async (req) => {
         `👤 Кто: ${who}\n` +
         `🕐 Когда: ${esc(when)} (Кипр)\n` +
         `📄 Где: ${esc(route || url || "неизвестно")}\n` +
-        (userAgent ? `📱 Устройство: ${esc(userAgent)}\n` : "") +
+        (userAgent ? `📱 Устройство: ${esc(userAgent)}${viewport ? ` · ${esc(viewport)}` : ""}\n` : "") +
+        (release ? `🏷 Версия: ${esc(release)}\n` : "") +
         `\n💬 Почему: ${esc(verdict.reason)}\n` +
         `🛠 Что делать: ${esc(verdict.fix)}\n` +
         `\n❌ Техтекст: ${esc(message)} (${esc(source)})` +
+        (breadcrumbs ? `\n\n👣 Что делал перед ошибкой:\n<pre>${esc(breadcrumbs.slice(0, 700))}</pre>` : "") +
         (stack ? `\n\n<pre>${esc(stack)}</pre>` : "");
 
       const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
