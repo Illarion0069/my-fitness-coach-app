@@ -554,27 +554,71 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
   const handleAnalyzeRef = useRef<((opts?: { silent?: boolean }) => Promise<void>) | null>(null);
-  // Запрос сорвался из-за блокировки экрана/связи — повторим при возврате в приложение
-  const pendingRetryRef = useRef(false);
+  // Анализ выполняется на сервере. Если телефон заблокировали и соединение оборвалось,
+  // сервер всё равно досчитает и запишет результат — мы просто дожидаемся его из базы.
+  const awaitingResultRef = useRef(false);
+  const pollTimerRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    const retry = () => {
-      if (!pendingRetryRef.current) return;
-      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
-      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
-      pendingRetryRef.current = false;
-      handleAnalyzeRef.current?.();
-    };
-    document.addEventListener('visibilitychange', retry);
-    window.addEventListener('online', retry);
-    window.addEventListener('focus', retry);
-    return () => {
-      document.removeEventListener('visibilitychange', retry);
-      window.removeEventListener('online', retry);
-      window.removeEventListener('focus', retry);
-    };
+  const stopPolling = useCallback(() => {
+    awaitingResultRef.current = false;
+    if (pollTimerRef.current) {
+      window.clearInterval(pollTimerRef.current);
+      pollTimerRef.current = null;
+    }
   }, []);
 
+  // Ждём, пока сервер запишет свежий анализ (до 5 минут), затем обновляем экран.
+  const waitForServerResult = useCallback((baselineCount: number) => {
+    if (!effectiveUserId) return;
+    awaitingResultRef.current = true;
+    setAnalyzing(true);
+    const startedAt = Date.now();
+
+    const check = async () => {
+      if (!awaitingResultRef.current) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      if (Date.now() - startedAt > 5 * 60 * 1000) {
+        stopPolling();
+        setAnalyzing(false);
+        return;
+      }
+      const { data } = await supabase
+        .from('nutrition_logs')
+        .select('ai_score, ai_analysis')
+        .eq('user_id', effectiveUserId)
+        .eq('log_date', date)
+        .maybeSingle();
+      const count = ((data?.ai_analysis as any)?.analysis_count as number) || 0;
+      if (data && count > baselineCount) {
+        stopPolling();
+        setAnalysisCount(count);
+        setAnalyzing(false);
+        fetchData();
+      }
+    };
+
+    if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
+    pollTimerRef.current = window.setInterval(check, 4000);
+    check();
+  }, [effectiveUserId, date, fetchData, stopPolling]);
+
+  // Вернулись в приложение — сразу проверяем, готов ли результат.
+  useEffect(() => {
+    const onWake = () => {
+      if (!awaitingResultRef.current) return;
+      fetchData();
+    };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('online', onWake);
+    window.addEventListener('focus', onWake);
+    return () => {
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('online', onWake);
+      window.removeEventListener('focus', onWake);
+      if (pollTimerRef.current) window.clearInterval(pollTimerRef.current);
+    };
+  }, [fetchData]);
 
   const handleAnalyze = useCallback(async (opts?: { silent?: boolean }) => {
     if (!effectiveUserId) return;
@@ -582,76 +626,49 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       if (!opts?.silent) toast({ title: lang === 'en' ? 'Analysis limit reached' : 'Лимит анализов достигнут', variant: 'destructive' });
       return;
     }
+    const baselineCount = analysisCount;
     setAnalyzing(true);
     try {
-      // Mobile networks (esp. Android on 3G/weak Wi-Fi) drop the request now and
-      // then — retry twice before showing an error, otherwise calories never appear.
-      let data: any = null;
-      let error: any = null;
-      for (let attempt = 0; attempt < 3; attempt++) {
-        const res = await supabase.functions.invoke('analyze-nutrition', {
-          body: { user_id: effectiveUserId, log_date: date, lang },
-        });
-        data = res.data;
-        error = res.error;
-        const transient = !!error && /failed to fetch|network|timeout|load failed|aborted/i.test((error as any)?.message || '');
-        if (!transient) break;
-        await new Promise(r => setTimeout(r, 1200 * (attempt + 1)));
-      }
-      const errMsg = (data?.error || (error as any)?.message || '') as string;
+      // keepalive: запрос остаётся в сетевом стеке браузера даже если экран
+      // заблокировали или вкладку заморозили — сервер доводит анализ до конца.
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-nutrition`, {
+        method: 'POST',
+        keepalive: true,
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${session?.access_token ?? import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ user_id: effectiveUserId, log_date: date, lang }),
+      });
+      const data = await res.json().catch(() => ({} as any));
+
+      const errMsg = (data?.error || (res.ok ? '' : `HTTP ${res.status}`)) as string;
       const isCredits = data?.code === 'credits' || /credit|402|403/i.test(errMsg);
       if (isCredits) {
-        toast({
-          title: lang === 'en' ? 'Analysis temporarily unavailable' : 'Анализ временно недоступен',
-          description: lang === 'en'
-            ? 'The photo was saved. Recognition will resume shortly — please try again a bit later.'
-            : 'Фото сохранено. Распознавание скоро возобновится — попробуйте чуть позже.',
-          variant: 'destructive',
-        });
         setAnalyzing(false);
         return;
       }
-      if (error) throw error;
-      if (data?.error) {
-        if (!opts?.silent) showAppError({ detailEn: data.error, detailRu: data.error, source: 'analyze-nutrition', onRetry: () => handleAnalyzeRef.current?.() });
-      } else {
-        if (!opts?.silent) toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
-        setAnalysisCount(prev => prev + 1);
-        fetchData();
+      if (errMsg) {
+        // Серверная ошибка — пробуем дождаться результата, экран не пугаем.
+        waitForServerResult(baselineCount);
+        return;
       }
-    } catch (err: any) {
-      const msg = String(err?.message || '');
-      const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
-      const transient = offline || hidden || /failed to fetch|network|timeout|load failed|abort/i.test(msg);
-
-      if (transient) {
-        // Телефон заблокировали / связь отвалилась — не пугаем красным окном,
-        // тихо доиграем анализ, когда приложение снова станет активным.
-        pendingRetryRef.current = true;
-        if (!opts?.silent) {
-          toast({
-            title: lang === 'en' ? 'Meal saved' : 'Приём пищи сохранён',
-            description: lang === 'en'
-              ? 'Connection dropped — calories will be counted automatically when you are back.'
-              : 'Связь прервалась — калории посчитаются автоматически, когда вернётесь в приложение.',
-          });
-        }
-      } else if (!opts?.silent) {
-        showAppError({
-          detailEn: msg,
-          detailRu: msg,
-          source: 'analyze-nutrition',
-          onRetry: () => handleAnalyzeRef.current?.(),
-        });
-      }
+      stopPolling();
+      if (!opts?.silent) toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
+      setAnalysisCount(prev => prev + 1);
+      setAnalyzing(false);
+      fetchData();
+    } catch {
+      // Связь оборвалась (блокировка экрана, слабый Wi-Fi) — расчёт уже идёт
+      // на сервере. Молча ждём результат и покажем его, когда клиент вернётся.
+      waitForServerResult(baselineCount);
     }
-
-
-    setAnalyzing(false);
-  }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
+  }, [effectiveUserId, analysisCount, lang, date, fetchData, toast, waitForServerResult, stopPolling]);
 
   handleAnalyzeRef.current = handleAnalyze;
+
 
   // Auto-trigger analysis when the day changes MEANINGFULLY.
   // A tiny addition (e.g. one cucumber) should not rewrite the recommendations —
