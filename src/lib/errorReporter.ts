@@ -66,7 +66,9 @@ export async function reportClientError(input: {
         user_name,
         user_agent: navigator.userAgent.slice(0, 200),
         online: navigator.onLine,
+        user_visible: !!input.userVisible,
         occurred_at: new Date().toISOString(),
+
       },
     });
   } catch {
