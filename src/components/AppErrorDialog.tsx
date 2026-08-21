@@ -19,8 +19,15 @@ const listeners = new Set<Listener>();
 
 /** Show the global "something went wrong" card from anywhere in the app. */
 export function showAppError(payload: AppErrorPayload = {}) {
+  // Клиент реально видит ошибку — всегда шлём алерт в Telegram
+  reportClientError({
+    message: payload.detailEn || payload.detailRu || 'App error dialog shown',
+    source: payload.source || 'app-error-dialog',
+    userVisible: true,
+  });
   listeners.forEach((l) => l(payload));
 }
+
 
 export function hideAppError() {
   listeners.forEach((l) => l(null));
