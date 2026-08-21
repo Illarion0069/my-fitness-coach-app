@@ -413,17 +413,30 @@ const AdminSection = () => {
       <div className="max-w-lg mx-auto">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
-            <Users className="w-5 h-5 text-primary-foreground" />
+            {viewMode === 'calendar' ? (
+              <CalendarDays className="w-5 h-5 text-primary-foreground" />
+            ) : viewMode === 'stats' ? (
+              <BarChart3 className="w-5 h-5 text-primary-foreground" />
+            ) : (
+              <Users className="w-5 h-5 text-primary-foreground" />
+            )}
           </div>
           <h1 className="text-2xl font-extrabold font-heading uppercase tracking-tight">
-            {lang === 'en' ? 'Clients' : 'Клиенты'}
+            {viewMode === 'calendar'
+              ? (lang === 'en' ? 'Calendar' : 'Календарь')
+              : viewMode === 'stats'
+                ? (lang === 'en' ? 'Finance' : 'Финансы')
+                : (lang === 'en' ? 'Clients' : 'Клиенты')}
           </h1>
-          <button
-            onClick={() => setShowAddClient(!showAddClient)}
-            className="ml-auto w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
-          >
-            <UserPlus className="w-4 h-4" />
-          </button>
+          {viewMode === 'clients' && (
+            <button
+              onClick={() => setShowAddClient(!showAddClient)}
+              className="ml-auto w-9 h-9 rounded-xl gradient-primary flex items-center justify-center text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <UserPlus className="w-4 h-4" />
+            </button>
+          )}
+
           <button
             onClick={async () => {
               await signOut();
