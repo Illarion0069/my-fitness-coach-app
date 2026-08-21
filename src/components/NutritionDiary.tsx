@@ -2084,16 +2084,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'Quick Add' : 'Быстрый ввод'}</p>
 
               {/* Meal type selector */}
-              <div className="flex gap-1.5">
+              <div className="grid grid-cols-4 gap-1.5">
                 {MEAL_TYPES.map(mt => (
                   <button key={mt.key} onClick={() => setQuickAddMeal(mt.key)}
-                    className={`flex-1 py-2 rounded-xl text-[10px] font-bold transition-colors ${
+                    className={`flex flex-col items-center justify-center gap-0.5 py-2 px-1 rounded-xl leading-tight transition-colors ${
                       quickAddMeal === mt.key ? 'bg-primary text-primary-foreground' : 'bg-secondary/50 text-muted-foreground'
                     }`}>
-                    {mt.emoji} {lang === 'en' ? mt.labelEn.slice(0, 4) : mt.labelRu.slice(0, 4)}
+                    <span className="text-sm">{mt.icon}</span>
+                    <span className="text-[10px] font-bold truncate max-w-full">
+                      {lang === 'en' ? mt.labelEn : mt.labelRu}
+                    </span>
                   </button>
                 ))}
               </div>
+
 
               <div className="relative">
                 <input value={quickAddName} onChange={e => {
