@@ -5,7 +5,7 @@ import { X, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
 import { reportClientError } from '@/lib/errorReporter';
-import headSad from '@/assets/illarion-head-sad.png';
+import { illarionHeadSadInline as headSad } from '@/assets/illarionHeadSadInline';
 
 export interface AppErrorPayload {
   /** Optional short reason in plain language (already localized by the caller) */
