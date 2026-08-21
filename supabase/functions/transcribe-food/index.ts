@@ -8,7 +8,16 @@ const corsHeaders = {
 };
 
 const MAX_AUDIO_BYTES = 8 * 1024 * 1024; // ~60s of opus is far below this
-const ALLOWED_FORMATS = ["webm", "m4a", "mp4", "mp3", "wav", "ogg", "aac", "flac"];
+const ALLOWED_FORMATS = ["webm", "m4a", "mp4", "mp3", "wav", "aac", "flac"];
+const MIME_BY_FORMAT: Record<string, string> = {
+  webm: "audio/webm",
+  m4a: "audio/mp4",
+  mp4: "audio/mp4",
+  mp3: "audio/mpeg",
+  wav: "audio/wav",
+  aac: "audio/aac",
+  flac: "audio/flac",
+};
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -20,7 +29,6 @@ const systemPrompt = `You convert a person's description of what they ate into a
 
 Return ONLY valid JSON, no markdown:
 {
-  "transcript": "verbatim text of what the user said (or the text they typed)",
   "items": [
     {"name": "Scrambled eggs", "portion_g": 150, "calories": 220, "protein_g": 18, "carbs_g": 2, "fat_g": 16}
   ]
@@ -72,18 +80,35 @@ serve(async (req) => {
       return json({ error: "Audio too long", transcript: "", items: [] }, 400);
     }
 
-    const userContent: Record<string, unknown>[] = [
-      {
-        type: "text",
-        text: audioB64
-          ? `Transcribe the audio and build the food list. User language: ${lang}.`
-          : `User language: ${lang}. The person typed: "${text}"`,
-      },
-    ];
+    // ---- Step 1: speech-to-text (dedicated STT endpoint) ----
+    let spoken = text;
     if (audioB64) {
-      userContent.push({ type: "input_audio", input_audio: { data: audioB64, format } });
+      const bytes = Uint8Array.from(atob(audioB64), (c) => c.charCodeAt(0));
+      const mime = MIME_BY_FORMAT[format] || "audio/webm";
+      const form = new FormData();
+      form.append("model", "openai/gpt-4o-mini-transcribe");
+      form.append("file", new Blob([bytes], { type: mime }), `recording.${format}`);
+
+      const sttRes = await fetch("https://ai.gateway.lovable.dev/v1/audio/transcriptions", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}` },
+        body: form,
+      });
+      if (!sttRes.ok) {
+        const errText = await sttRes.text();
+        console.error("transcribe-food STT error:", sttRes.status, errText);
+        if (sttRes.status === 429) return json({ error: "Rate limit exceeded" }, 429);
+        if (sttRes.status === 402) return json({ error: "AI credits exhausted" }, 402);
+        return json({ error: "Could not recognise the recording", transcript: "", items: [] }, 400);
+      }
+      const sttData = await sttRes.json().catch(() => ({}));
+      spoken = String(sttData?.text || "").trim();
+      if (spoken.length < 2) {
+        return json({ transcript: "", items: [] });
+      }
     }
 
+    // ---- Step 2: turn the description into a structured food list ----
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -95,7 +120,7 @@ serve(async (req) => {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userContent },
+          { role: "user", content: `User language: ${lang}. The person described: "${spoken}"` },
         ],
       }),
     });
@@ -119,7 +144,7 @@ serve(async (req) => {
       parsed = JSON.parse(match ? match[0] : stripped);
     } catch (e) {
       console.error("transcribe-food parse error:", raw, e);
-      return json({ error: "Could not understand", transcript: "", items: [] }, 200);
+      return json({ error: "Could not understand", transcript: spoken, items: [] }, 200);
     }
 
     const items = Array.isArray(parsed.items)
@@ -148,7 +173,7 @@ serve(async (req) => {
           })
       : [];
 
-    const transcript = typeof parsed.transcript === "string" ? parsed.transcript.slice(0, 1000) : text;
+    const transcript = spoken.slice(0, 1000);
 
     return json({ transcript, items });
   } catch (e) {
