@@ -117,9 +117,11 @@ Deno.serve(async (req) => {
     const userName = String(body?.user_name || "").slice(0, 80);
     const userAgent = String(body?.user_agent || "").slice(0, 200);
     const online = body?.online !== false;
+    const userVisible = body?.user_visible === true;
     const occurredAt = String(body?.occurred_at || new Date().toISOString());
 
-    const verdict = classify(message, source, online);
+    const verdict = classify(message, source, online, userVisible);
+
     if (verdict.level === "ignore") {
       return new Response(JSON.stringify({ ok: true, ignored: true, reason: verdict.reason }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
