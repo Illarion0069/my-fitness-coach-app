@@ -14,11 +14,32 @@ const SwipeHint = () => {
 
   useEffect(() => {
     if (!visible) return;
-    // Shown once per user: mark as seen as soon as it appears.
-    const t1 = setTimeout(() => { setShow(true); markHintSeen('swipe_sections'); }, 2500);
-    const t2 = setTimeout(() => { setShow(false); dismiss(); }, 11000);
-    return () => { clearTimeout(t1); clearTimeout(t2); };
+    // Не показываем подсказку поверх открытых модалок/шторок
+    const overlayOpen = () =>
+      !!document.querySelector('[role="dialog"], .fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[70\\]');
+
+    let shown = false;
+    let hideTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const tick = setInterval(() => {
+      if (!shown) {
+        if (!overlayOpen()) {
+          shown = true;
+          setShow(true);
+          markHintSeen('swipe_sections');
+          hideTimer = setTimeout(() => { setShow(false); dismiss(); }, 8500);
+        }
+      } else if (overlayOpen()) {
+        setShow(false);
+        dismiss();
+        clearInterval(tick);
+      }
+    }, 800);
+
+    const start = setTimeout(() => {}, 0);
+    return () => { clearInterval(tick); clearTimeout(start); if (hideTimer) clearTimeout(hideTimer); };
   }, [visible, dismiss]);
+
 
 
   if (!visible) return null;

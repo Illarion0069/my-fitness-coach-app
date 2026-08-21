@@ -116,7 +116,7 @@ const FaceHint = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.25 } }}
-          className={`fixed ${bottomClass} ${isRight ? 'right-2' : 'left-2'} z-[60] flex items-end gap-2 ${
+          className={`fixed ${bottomClass} ${isRight ? 'right-2' : 'left-2'} z-[60] pointer-events-none flex items-end gap-2 ${
             isRight ? 'flex-row-reverse' : 'flex-row'
           }`}
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -130,7 +130,7 @@ const FaceHint = ({
               type="button"
               onClick={handleTap}
               aria-label={lang === 'en' ? en : ru}
-              className="absolute left-0 top-0 block"
+              className="absolute left-0 top-0 block pointer-events-auto"
               style={{ width: HEAD_W, height: HEAD_H, transformOrigin: 'bottom center', willChange: 'transform' }}
               initial={{ y: PEEK, rotate: isRight ? -10 : 10 }}
               animate={{ y: 0, rotate: isRight ? -6 : 6 }}
@@ -163,9 +163,10 @@ const FaceHint = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             transition={{ delay: 0.45, type: 'spring', damping: 18, stiffness: 240 }}
             style={{ maxWidth: bubbleMax }}
-            className={`relative text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
+            className={`relative pointer-events-auto text-left rounded-2xl bg-card border border-border shadow-xl px-3 py-2 mb-4 ${
               isRight ? 'rounded-br-sm' : 'rounded-bl-sm'
             }`}
+
 
           >
             <span className="block text-[11px] leading-snug font-medium text-foreground">
