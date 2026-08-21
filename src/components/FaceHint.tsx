@@ -116,7 +116,7 @@ const FaceHint = ({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0, transition: { duration: 0.25 } }}
-          className={`fixed ${bottomClass} ${isRight ? 'right-2' : 'left-2'} z-[60] flex items-end gap-2 ${
+          className={`fixed ${bottomClass} ${isRight ? 'right-2' : 'left-2'} z-[60] pointer-events-none flex items-end gap-2 ${
             isRight ? 'flex-row-reverse' : 'flex-row'
           }`}
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
@@ -130,7 +130,7 @@ const FaceHint = ({
               type="button"
               onClick={handleTap}
               aria-label={lang === 'en' ? en : ru}
-              className="absolute left-0 top-0 block"
+              className="absolute left-0 top-0 block pointer-events-auto"
               style={{ width: HEAD_W, height: HEAD_H, transformOrigin: 'bottom center', willChange: 'transform' }}
               initial={{ y: PEEK, rotate: isRight ? -10 : 10 }}
               animate={{ y: 0, rotate: isRight ? -6 : 6 }}
