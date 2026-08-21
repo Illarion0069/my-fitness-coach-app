@@ -220,10 +220,12 @@ Deno.serve(async (req) => {
         `👤 Кто: ${who}\n` +
         `🕐 Когда: ${esc(when)} (Кипр)\n` +
         `📄 Где: ${esc(route || url || "неизвестно")}\n` +
-        (userAgent ? `📱 Устройство: ${esc(userAgent)}\n` : "") +
+        (userAgent ? `📱 Устройство: ${esc(userAgent)}${viewport ? ` · ${esc(viewport)}` : ""}\n` : "") +
+        (release ? `🏷 Версия: ${esc(release)}\n` : "") +
         `\n💬 Почему: ${esc(verdict.reason)}\n` +
         `🛠 Что делать: ${esc(verdict.fix)}\n` +
         `\n❌ Техтекст: ${esc(message)} (${esc(source)})` +
+        (breadcrumbs ? `\n\n👣 Что делал перед ошибкой:\n<pre>${esc(breadcrumbs.slice(0, 700))}</pre>` : "") +
         (stack ? `\n\n<pre>${esc(stack)}</pre>` : "");
 
       const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
