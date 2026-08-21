@@ -2139,16 +2139,33 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 </div>
               </button>
 
-              <button onClick={() => { setShowAddMenu(false); const now = new Date(); const h = now.getHours(); setQuickAddMeal(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack'); setQuickAddTime(`${String(h).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
-                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
+              <button onClick={() => {
+                  setShowAddMenu(false);
+                  const now = new Date();
+                  const h = now.getHours();
+                  setPendingMealType(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack');
+                  const hh = String(h).padStart(2, '0');
+                  const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+                  setPendingMealTime(`${hh}:${mm}`);
+                  setTimeout(() => fileRef.current?.click(), 50);
+                }}
+                disabled={photosAtLimit || uploading}
+                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98] disabled:opacity-40">
                 <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <PencilLine className="w-5 h-5 text-primary" />
+                  <ImagePlus className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Quick add' : 'Быстрый ввод'}</p>
-                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Enter calories and macros manually' : 'Ввести КБЖУ вручную'}</p>
+                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'From gallery' : 'Из галереи'}</p>
+                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Pick a photo you already took' : 'Выбрать уже сделанное фото'}</p>
                 </div>
               </button>
+
+              <button onClick={() => { setShowAddMenu(false); const now = new Date(); const h = now.getHours(); setQuickAddMeal(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack'); setQuickAddTime(`${String(h).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
+                className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground py-2">
+                <PencilLine className="w-3.5 h-3.5" />
+                {lang === 'en' ? 'Quick add (enter numbers manually)' : 'Быстрый ввод (цифры вручную)'}
+              </button>
+
 
               <button onClick={() => setShowAddMenu(false)}
                 className="w-full text-xs text-muted-foreground py-3 text-center">

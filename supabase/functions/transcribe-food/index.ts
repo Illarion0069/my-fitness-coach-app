@@ -35,15 +35,17 @@ Return ONLY valid JSON, no markdown:
 }
 
 Rules:
-- Split the description into separate food items. One dish = one item.
-- If the person names an amount ("three eggs", "200 grams of rice", "a large cappuccino"), use it to compute portion_g.
-- If no amount is given, assume a realistic standard portion for that food.
+- Split the description into separate items. One dish = one item.
+- DRINKS COUNT AS ITEMS. Always include every beverage the person mentions: coffee, cappuccino, latte, tea, juice, soda, milk, protein shake, smoothie, beer, wine, spirits, kefir, yoghurt drinks. Water = 0 kcal but still return it as an item with calories 0.
+- Never skip anything the person named, even if it seems minor (sauce, sugar in coffee, a cookie, a spoon of oil).
+- If the person names an amount ("three eggs", "200 grams of rice", "a large cappuccino", "a glass of wine"), use it to compute portion_g. For drinks, portion_g = millilitres.
+- If no amount is given, assume a realistic standard portion for that food or drink (espresso 30ml, cappuccino 200ml, mug of tea 250ml, glass of juice 250ml, glass of wine 150ml, beer 500ml).
 - Use USDA/standard nutrition values. Never inflate.
-- Cross-check: calories ≈ protein_g*4 + carbs_g*4 + fat_g*9. Fix mismatches.
-- Reference per 100g: chicken breast ~165kcal, rice cooked ~130kcal, bread ~265kcal, banana ~89kcal, egg ~155kcal, olive oil ~884kcal, milk ~42kcal.
+- Cross-check: calories ≈ protein_g*4 + carbs_g*4 + fat_g*9. Fix mismatches (alcohol is the exception: 7 kcal per gram of ethanol).
+- Reference per 100g/100ml: chicken breast ~165kcal, rice cooked ~130kcal, bread ~265kcal, banana ~89kcal, egg ~155kcal, olive oil ~884kcal, milk ~42kcal, cappuccino ~40kcal, black coffee ~2kcal, tea ~1kcal, orange juice ~45kcal, dry wine ~85kcal, beer ~43kcal.
 - Integers only for numeric fields.
 - "name" must be in the user's language (ru or en, given below).
-- If the description contains no food at all, return {"transcript": "...", "items": []}.`;
+- If the description contains nothing edible or drinkable, return {"items": []}.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -158,12 +160,20 @@ serve(async (req) => {
             const fat_g = Math.max(0, Math.min(200, Math.round(Number(i.fat_g) || 0)));
             let calories = Math.max(0, Math.round(Number(i.calories) || 0));
             const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
-            if (macroCalc > 0 && (calories > macroCalc * 1.5 || calories < macroCalc * 0.5)) {
-              calories = macroCalc;
+            const name = String(i.name || (lang === "en" ? "Food" : "Еда")).slice(0, 80);
+            // Alcohol carries ~7 kcal/g of ethanol, which no macro field accounts for —
+            // never "correct" those calories down to the macro sum.
+            const alcoholic = /вин|пив|виск|водк|ром|джин|текил|коньяк|ликёр|ликер|шампан|просекк|сидр|мартини|коктейл|wine|beer|whisk|vodka|rum|gin|tequila|cognac|liqueur|champagne|prosecco|cider|cocktail|aperol|spritz/i.test(name);
+            if (macroCalc > 0 && !alcoholic) {
+              if (calories < macroCalc * 0.5) calories = macroCalc;
+              // Only trust the macro sum downward when there are real macros to sum.
+              else if (macroCalc > 80 && calories > macroCalc * 1.5) calories = macroCalc;
             }
+
             calories = Math.min(1500, calories);
             return {
-              name: String(i.name || (lang === "en" ? "Food" : "Еда")).slice(0, 80),
+              name,
+
               portion_g,
               calories,
               protein_g,
