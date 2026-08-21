@@ -419,7 +419,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
 
-  const handleUploadWithTime = async (fileOverride?: File, mealTypeOverride?: string, mealTimeOverride?: string | null) => {
+  const handleUploadWithTime = async (fileOverride?: File, mealTypeOverride?: MealType, mealTimeOverride?: string | null) => {
     const original = fileOverride || pendingFile;
     const mealType = mealTypeOverride || pendingMealType;
     const mealTime = mealTimeOverride !== undefined ? mealTimeOverride : (pendingMealTime || null);
