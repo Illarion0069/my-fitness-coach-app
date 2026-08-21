@@ -8,6 +8,7 @@ import { showAppError } from '@/components/AppErrorDialog';
 import { useTrainingDayKey } from '@/hooks/useTrainingDayKey';
 import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
+import HintDot from './HintDot';
 import { compressImage } from '@/lib/imageCompress';
 import VoiceFoodInput, { VoiceFoodItem } from './VoiceFoodInput';
 
@@ -2063,6 +2064,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           >
             <Plus className="w-6 h-6 text-primary-foreground" />
           </motion.button>
+          <HintDot
+            id="nutrition_voice_input_v1"
+            en="New: just say what you ate"
+            ru="Новое: просто скажите, что съели"
+            side="left"
+            className="top-1 left-1"
+            delay={600}
+          />
         </div>
       )}
 
