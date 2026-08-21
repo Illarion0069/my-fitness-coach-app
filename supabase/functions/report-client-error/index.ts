@@ -1,4 +1,5 @@
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { reportSecurityEvent, looksMalicious } from "../_shared/securityAlert.ts";
 
 // Simple in-memory dedup so one broken screen doesn't flood the chat
 const recent = new Map<string, number>();
@@ -119,6 +120,27 @@ Deno.serve(async (req) => {
     const online = body?.online !== false;
     const userVisible = body?.user_visible === true;
     const occurredAt = String(body?.occurred_at || new Date().toISOString());
+
+    // Признаки атаки в самом тексте ошибки / адресе страницы — отдельный алерт по безопасности
+    if (looksMalicious(message) || looksMalicious(url) || looksMalicious(route)) {
+      await reportSecurityEvent(req, {
+        kind: "injection_attempt",
+        severity: "attack",
+        detail: "В адресе страницы или данных запроса найден вредоносный код — кто-то пробует внедрить скрипт или SQL.",
+        userId: userId || null,
+        userName: userName || null,
+        route: route || url,
+        meta: { message, source },
+      });
+    } else if (message.toLowerCase().includes("row-level security") && !userId) {
+      await reportSecurityEvent(req, {
+        kind: "rls_probe",
+        severity: "suspicious",
+        detail: "Незалогиненный посетитель пытался прочитать закрытые данные — база отказала в доступе.",
+        route: route || url,
+        meta: { message, source },
+      });
+    }
 
     const verdict = classify(message, source, online, userVisible);
 
