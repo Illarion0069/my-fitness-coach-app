@@ -554,6 +554,27 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
   const handleAnalyzeRef = useRef<((opts?: { silent?: boolean }) => Promise<void>) | null>(null);
+  // Запрос сорвался из-за блокировки экрана/связи — повторим при возврате в приложение
+  const pendingRetryRef = useRef(false);
+
+  useEffect(() => {
+    const retry = () => {
+      if (!pendingRetryRef.current) return;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return;
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') return;
+      pendingRetryRef.current = false;
+      handleAnalyzeRef.current?.();
+    };
+    document.addEventListener('visibilitychange', retry);
+    window.addEventListener('online', retry);
+    window.addEventListener('focus', retry);
+    return () => {
+      document.removeEventListener('visibilitychange', retry);
+      window.removeEventListener('online', retry);
+      window.removeEventListener('focus', retry);
+    };
+  }, []);
+
 
   const handleAnalyze = useCallback(async (opts?: { silent?: boolean }) => {
     if (!effectiveUserId) return;
