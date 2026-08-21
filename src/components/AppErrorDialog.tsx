@@ -4,15 +4,19 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, RotateCcw } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Button } from '@/components/ui/button';
+import { reportClientError } from '@/lib/errorReporter';
 import headSad from '@/assets/illarion-head-sad.png';
 
 export interface AppErrorPayload {
   /** Optional short reason in plain language (already localized by the caller) */
   detailEn?: string;
   detailRu?: string;
+  /** Where the error came from (used in the Telegram alert) */
+  source?: string;
   /** Called when the client taps "Try again" */
   onRetry?: () => void | Promise<void>;
 }
+
 
 type Listener = (p: AppErrorPayload | null) => void;
 const listeners = new Set<Listener>();
