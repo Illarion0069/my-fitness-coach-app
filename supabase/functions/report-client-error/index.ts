@@ -153,6 +153,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Журнал ошибок: пишем каждое событие, даже если алерт в Telegram задедуплен
+    try {
+      const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+      const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+      if (SUPABASE_URL && SERVICE_KEY) {
+        const admin = createClient(SUPABASE_URL, SERVICE_KEY, {
+          auth: { persistSession: false },
+        });
+        await admin.from("client_errors").insert({
+          fingerprint: `${source}|${message.replace(/\d+/g, "#").slice(0, 200)}`,
+          message,
+          stack: stack || null,
+          source,
+          level: verdict.level,
+          route: route || null,
+          url: url || null,
+          release: release || null,
+          viewport: viewport || null,
+          breadcrumbs: breadcrumbs || null,
+          user_id: userId || null,
+          user_name: userName || null,
+          user_agent: userAgent || null,
+          online,
+          user_visible: userVisible,
+          occurred_at: occurredAt,
+        });
+      }
+    } catch (e) {
+      console.error("client_errors insert failed:", e);
+    }
+
     const key = `${source}|${message}`;
     const now = Date.now();
     const last = recent.get(key);
