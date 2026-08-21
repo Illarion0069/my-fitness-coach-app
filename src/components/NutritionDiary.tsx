@@ -592,20 +592,40 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       }
       if (error) throw error;
       if (data?.error) {
-        if (!opts?.silent) showAppError({ detailEn: data.error, detailRu: data.error, onRetry: () => handleAnalyzeRef.current?.() });
+        if (!opts?.silent) showAppError({ detailEn: data.error, detailRu: data.error, source: 'analyze-nutrition', onRetry: () => handleAnalyzeRef.current?.() });
       } else {
         if (!opts?.silent) toast({ title: lang === 'en' ? `Score: ${data.score}%` : `Оценка: ${data.score}%` });
         setAnalysisCount(prev => prev + 1);
         fetchData();
       }
     } catch (err: any) {
+      const msg = String(err?.message || '');
       const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
-      if (!opts?.silent) showAppError({
-        detailEn: offline ? 'No internet connection — the meal is saved, calories will be counted once you are back online.' : err.message,
-        detailRu: offline ? 'Нет интернета — приём пищи сохранён, калории посчитаются после восстановления связи.' : err.message,
-        onRetry: () => handleAnalyzeRef.current?.(),
-      });
+      const hidden = typeof document !== 'undefined' && document.visibilityState === 'hidden';
+      const transient = offline || hidden || /failed to fetch|network|timeout|load failed|abort/i.test(msg);
+
+      if (transient) {
+        // Телефон заблокировали / связь отвалилась — не пугаем красным окном,
+        // тихо доиграем анализ, когда приложение снова станет активным.
+        pendingRetryRef.current = true;
+        if (!opts?.silent) {
+          toast({
+            title: lang === 'en' ? 'Meal saved' : 'Приём пищи сохранён',
+            description: lang === 'en'
+              ? 'Connection dropped — calories will be counted automatically when you are back.'
+              : 'Связь прервалась — калории посчитаются автоматически, когда вернётесь в приложение.',
+          });
+        }
+      } else if (!opts?.silent) {
+        showAppError({
+          detailEn: msg,
+          detailRu: msg,
+          source: 'analyze-nutrition',
+          onRetry: () => handleAnalyzeRef.current?.(),
+        });
+      }
     }
+
 
     setAnalyzing(false);
   }, [effectiveUserId, analysisCount, lang, date, fetchData, toast]);
