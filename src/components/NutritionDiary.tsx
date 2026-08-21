@@ -252,6 +252,29 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
 
+  // Esc закрывает верхнюю открытую шторку/модалку
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      const closers: [boolean, () => void][] = [
+        [showTimePicker, () => setShowTimePicker(false)],
+        [showQuickAdd, () => setShowQuickAdd(false)],
+        [showLiquids, () => setShowLiquids(false)],
+        [showCalcInfo, () => setShowCalcInfo(false)],
+        [showOverrideModal, () => setShowOverrideModal(false)],
+        [showMealPicker, () => setShowMealPicker(false)],
+        [showSourcePicker, () => setShowSourcePicker(false)],
+        [showFeedback, () => setShowFeedback(false)],
+      ];
+      const hit = closers.find(([open]) => open);
+      if (hit) { e.stopPropagation(); hit[1](); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showTimePicker, showQuickAdd, showLiquids, showCalcInfo, showOverrideModal, showMealPicker, showSourcePicker, showFeedback]);
+
+
+
   const applyLogData = useCallback((logData: any, photosData: any[]) => {
     setLog(logData || null);
     setPhotos((photosData as FoodPhoto[]) || []);
