@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, ChevronDown, Camera, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine, HelpCircle, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, Camera, Mic, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine, HelpCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,6 +9,7 @@ import { useTrainingDayKey } from '@/hooks/useTrainingDayKey';
 import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
 import { compressImage } from '@/lib/imageCompress';
+import VoiceFoodInput, { VoiceFoodItem } from './VoiceFoodInput';
 
 
 interface NutritionLog {
@@ -214,6 +215,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [quickAddCarbs, setQuickAddCarbs] = useState('');
   const [quickAddFat, setQuickAddFat] = useState('');
   const [showAddMenu, setShowAddMenu] = useState(autoOpenAdd);
+  const [voiceOpen, setVoiceOpen] = useState(false);
+  const [voiceMeal, setVoiceMeal] = useState<MealType>('snack');
+  const [voiceTime, setVoiceTime] = useState<string>('');
+  const [voicePhotoId, setVoicePhotoId] = useState<string | null>(null);
+  const [voiceTitle, setVoiceTitle] = useState<string | undefined>(undefined);
+  const [voicePrompt, setVoicePrompt] = useState<{ photoId: string; mealType: MealType; mealTime: string | null } | null>(null);
   const [quickAddTime, setQuickAddTime] = useState<string>('');
   const [foodSuggestions, setFoodSuggestions] = useState<any[]>([]);
   const [suggestLoading, setSuggestLoading] = useState(false);
@@ -515,6 +522,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       }
       const mealLabel = MEAL_TYPES.find(m => m.key === mealType);
       toast({ title: `${mealLabel?.emoji} ${lang === 'en' ? 'Photo added' : 'Фото добавлено'}` });
+      // Offer to describe the photo by voice — merged into the same meal.
+      setVoicePrompt({ photoId, mealType, mealTime: mealTime || null });
       fetchData();
     } catch (err: any) {
       try { await supabase.storage.from('food-photos').remove([path]); } catch {}
@@ -810,6 +819,48 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       setShowOverrideModal(false);
       fetchData();
     }
+  };
+
+  const openVoiceInput = (mealType: MealType, mealTime: string | null, photoId: string | null, title?: string) => {
+    setVoiceMeal(mealType);
+    setVoiceTime(mealTime || '');
+    setVoicePhotoId(photoId);
+    setVoiceTitle(title);
+    setVoiceOpen(true);
+  };
+
+  const handleVoiceConfirm = async (items: VoiceFoodItem[]) => {
+    if (!user || isReadOnly) return;
+    const newEntries: ManualEntry[] = items.map(i => ({
+      id: crypto.randomUUID(),
+      meal_type: voiceMeal,
+      name: i.name || (lang === 'en' ? 'Food' : 'Еда'),
+      calories: Math.max(0, Math.round(i.calories || 0)),
+      protein_g: Math.max(0, Math.round(i.protein_g || 0)),
+      carbs_g: Math.max(0, Math.round(i.carbs_g || 0)),
+      fat_g: Math.max(0, Math.round(i.fat_g || 0)),
+      portion_g: Math.max(0, Math.round(i.portion_g || 0)) || undefined,
+      meal_time: voiceTime || undefined,
+      created_at: new Date().toISOString(),
+      ...(voicePhotoId ? { photo_id: voicePhotoId } : {}),
+    }));
+    const currentEntries = (log?.manual_entries || []) as ManualEntry[];
+    const allEntries = [...currentEntries, ...newEntries];
+
+    setLog(prev => prev
+      ? { ...prev, manual_entries: allEntries } as any
+      : { id: '', log_date: date, water_ml: 0, coffee_cups: 0, tea_cups: 0, alcohol_ml: 0, notes: null, ai_score: null, ai_feedback: null, ai_analysis: null, trainer_override_score: null, trainer_override_note: null, manual_entries: allEntries } as any);
+
+    const { error } = await supabase.from('nutrition_logs').upsert({
+      user_id: user.id,
+      log_date: date,
+      manual_entries: allEntries as any,
+    } as any, { onConflict: 'user_id,log_date' });
+    if (error) console.error('Failed to save voice entries', error);
+
+    setVoicePrompt(null);
+    toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
+    await fetchData();
   };
 
   const handleQuickAdd = async () => {
@@ -1959,6 +2010,49 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       })()}
 
 
+      {/* Voice / text food input */}
+      <VoiceFoodInput
+        open={voiceOpen}
+        lang={lang}
+        title={voiceTitle}
+        onClose={() => setVoiceOpen(false)}
+        onConfirm={handleVoiceConfirm}
+      />
+
+      {/* Post-photo voice prompt */}
+      <AnimatePresence>
+        {voicePrompt && !voiceOpen && !isReadOnly && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 30 }}
+            className="fixed left-4 right-4 z-[95] max-w-md mx-auto"
+            style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 140px)' }}
+          >
+            <div className="flex items-center gap-3 bg-card/95 backdrop-blur border border-primary/30 rounded-2xl p-3 shadow-lg">
+              <button
+                onClick={() => openVoiceInput(
+                  voicePrompt.mealType,
+                  voicePrompt.mealTime,
+                  voicePrompt.photoId,
+                  lang === 'en' ? 'Tell us what is on the photo' : 'Расскажите, что на фото',
+                )}
+                className="flex items-center gap-3 flex-1 text-left"
+              >
+                <div className="w-9 h-9 rounded-xl bg-primary/15 flex items-center justify-center shrink-0">
+                  <Mic className="w-4 h-4 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-foreground">{lang === 'en' ? 'Add a voice description' : 'Добавить описание голосом'}</p>
+                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Tell what the photo does not show' : 'Скажите то, что не видно на фото'}</p>
+                </div>
+              </button>
+              <button onClick={() => setVoicePrompt(null)} className="p-1.5 rounded-full hover:bg-secondary/60" aria-label="dismiss">
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* FAB - Add meal */}
       {!isReadOnly && !userId && (
         <div className="fixed z-[90] right-4" style={{ bottom: 'calc(env(safe-area-inset-bottom, 0px) + 72px)' }}>
@@ -2017,6 +2111,25 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               </button>
 
 
+              <button onClick={() => {
+                  setShowAddMenu(false);
+                  const now = new Date();
+                  const h = now.getHours();
+                  const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+                  const hh = String(h).padStart(2, '0');
+                  const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+                  openVoiceInput(inferred, `${hh}:${mm}`, null);
+                }}
+                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
+                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
+                  <Mic className="w-5 h-5 text-primary" />
+                </div>
+                <div className="text-left">
+                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Say or type it' : 'Голосом или текстом'}</p>
+                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Describe the meal — AI builds the list' : 'Опишите приём пищи — ИИ составит список'}</p>
+                </div>
+              </button>
+
               <button onClick={() => { setShowAddMenu(false); const now = new Date(); const h = now.getHours(); setQuickAddMeal(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack'); setQuickAddTime(`${String(h).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
                 <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
@@ -2068,8 +2181,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
               </div>
 
               <div className="pt-1 space-y-2">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">{lang === 'en' ? 'Photo source' : 'Источник фото'}</p>
-                <div className="grid grid-cols-2 gap-2">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">{lang === 'en' ? 'How to add' : 'Как добавить'}</p>
+                <div className="grid grid-cols-3 gap-2">
                   <button onClick={() => { setShowSourcePicker(false); cameraRef.current?.click(); }}
                     disabled={!pendingMealType}
                     className="flex flex-col items-center gap-1.5 bg-primary/15 hover:bg-primary/25 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
@@ -2081,6 +2194,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                     className="flex flex-col items-center gap-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
                     <ImagePlus className="w-5 h-5 text-primary" />
                     <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Gallery' : 'Галерея'}</span>
+                  </button>
+                  <button onClick={() => { setShowSourcePicker(false); openVoiceInput(pendingMealType || 'snack', pendingMealTime || null, null); }}
+                    disabled={!pendingMealType}
+                    className="flex flex-col items-center gap-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
+                    <Mic className="w-5 h-5 text-primary" />
+                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Voice' : 'Голос'}</span>
                   </button>
                 </div>
               </div>
