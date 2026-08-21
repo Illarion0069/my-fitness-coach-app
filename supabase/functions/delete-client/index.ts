@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { reportSecurityEvent } from "../_shared/securityAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -44,6 +45,12 @@ serve(async (req) => {
       .maybeSingle();
 
     if (!roleData) {
+      await reportSecurityEvent(req, {
+        kind: "privilege_escalation",
+        severity: "attack",
+        detail: "Кто-то попытался УДАЛИТЬ клиента, не будучи тренером.",
+        userId: user.id,
+      });
       return new Response(JSON.stringify({ error: "Forbidden: trainer role required" }), {
         status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { reportSecurityEvent, looksMalicious } from "../_shared/securityAlert.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +70,14 @@ serve(async (req) => {
     if (action === "send_new_password") {
       const mode = body.mode === "email" ? "email" : "phone";
       const identifier = String(body.identifier || "").trim();
-      if (!identifier || identifier.length < 5 || identifier.length > 100) {
+      if (!identifier || identifier.length < 5 || identifier.length > 100 || looksMalicious(identifier)) {
+        if (identifier && looksMalicious(identifier)) {
+          await reportSecurityEvent(req, {
+            kind: "injection_attempt",
+            severity: "attack",
+            detail: "В поле восстановления пароля прислали вредоносный текст (попытка внедрения кода).",
+          });
+        }
         return json({ error: "invalid_identifier" }, 400);
       }
 
@@ -77,6 +85,11 @@ serve(async (req) => {
       const rl = await isRateLimited(identifier);
       if (rl.limited) {
         await logAttempt(identifier, false, `rate_limit_${rl.reason}`);
+        await reportSecurityEvent(req, {
+          kind: "brute_force_reset",
+          severity: "attack",
+          detail: `Слишком много запросов на восстановление пароля (лимит по ${rl.reason === "ip" ? "IP-адресу" : "номеру/почте"}). Похоже на подбор доступа к аккаунту.`,
+        });
         return json({
           error: "rate_limited",
           message: `Слишком много попыток. Подождите ${WINDOW_MINUTES} минут или свяжитесь с тренером.`,
@@ -294,6 +307,11 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!resetCode) {
+        await reportSecurityEvent(req, {
+          kind: "brute_force_reset",
+          severity: "suspicious",
+          detail: "Введён неверный код восстановления пароля — возможен подбор кода.",
+        });
         return json({ error: "invalid_code" }, 400);
       }
 
@@ -352,6 +370,12 @@ serve(async (req) => {
         .maybeSingle();
 
       if (!roleData) {
+        await reportSecurityEvent(req, {
+          kind: "privilege_escalation",
+          severity: "attack",
+          detail: "Кто-то попытался сменить пароль чужому аккаунту, не будучи тренером.",
+          userId: user.id,
+        });
         return json({ error: "Forbidden" }, 403);
       }
 

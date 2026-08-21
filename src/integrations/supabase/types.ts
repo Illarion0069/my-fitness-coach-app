@@ -635,6 +635,48 @@ export type Database = {
         }
         Relationships: []
       }
+      security_events: {
+        Row: {
+          created_at: string
+          detail: string | null
+          id: string
+          ip: string | null
+          kind: string
+          meta: Json
+          route: string | null
+          severity: string
+          user_agent: string | null
+          user_id: string | null
+          user_name: string | null
+        }
+        Insert: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ip?: string | null
+          kind: string
+          meta?: Json
+          route?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Update: {
+          created_at?: string
+          detail?: string | null
+          id?: string
+          ip?: string | null
+          kind?: string
+          meta?: Json
+          route?: string | null
+          severity?: string
+          user_agent?: string | null
+          user_id?: string | null
+          user_name?: string | null
+        }
+        Relationships: []
+      }
       session_ledger: {
         Row: {
           created_at: string
