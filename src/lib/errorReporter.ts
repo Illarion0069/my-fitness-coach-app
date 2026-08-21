@@ -20,6 +20,34 @@ const NETWORK_NOISE = [
 
 const IGNORE = ["resizeobserver loop", ...NETWORK_NOISE];
 
+/* ------------------------------------------------------------------ */
+/* Breadcrumbs — короткая история действий перед падением              */
+/* ------------------------------------------------------------------ */
+
+type Crumb = { t: string; kind: string; text: string };
+const crumbs: Crumb[] = [];
+const MAX_CRUMBS = 25;
+
+export function addBreadcrumb(kind: string, text: string) {
+  if (!text) return;
+  crumbs.push({
+    t: new Date().toISOString().slice(11, 19),
+    kind,
+    text: String(text).slice(0, 120),
+  });
+  if (crumbs.length > MAX_CRUMBS) crumbs.shift();
+}
+
+function crumbsText() {
+  return crumbs.map((c) => `${c.t} [${c.kind}] ${c.text}`).join("\n").slice(0, 900);
+}
+
+/** Версия сборки — чтобы понимать, на какой версии упало */
+const RELEASE =
+  (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_APP_RELEASE ||
+  (typeof document !== "undefined" ? document.documentElement.dataset.build : "") ||
+  "dev";
+
 export async function reportClientError(input: {
   message: string;
   stack?: string;
@@ -40,7 +68,6 @@ export async function reportClientError(input: {
     const last = sentRecently.get(key);
     if (last && now - last < DEDUP_MS) return;
     sentRecently.set(key, now);
-
 
     let user_id = "";
     let user_name = "";
@@ -68,7 +95,9 @@ export async function reportClientError(input: {
         online: navigator.onLine,
         user_visible: !!input.userVisible,
         occurred_at: new Date().toISOString(),
-
+        release: RELEASE,
+        breadcrumbs: crumbsText(),
+        viewport: `${window.innerWidth}x${window.innerHeight}`,
       },
     });
   } catch {
@@ -82,13 +111,25 @@ export function installGlobalErrorReporting() {
   if (installed) return;
   installed = true;
 
+  addBreadcrumb("nav", window.location.pathname);
+
   window.addEventListener("error", (event) => {
+    // Ошибки загрузки ресурсов (картинки, скрипты, чанки) приходят без message
+    const target = event.target as (HTMLElement & { src?: string; href?: string }) | null;
+    if (target && target !== (window as unknown as HTMLElement) && (target.src || target.href)) {
+      addBreadcrumb("resource", `failed to load ${target.src || target.href}`);
+      reportClientError({
+        message: `Не загрузился ресурс: ${(target.src || target.href || "").slice(0, 200)}`,
+        source: "resource-error",
+      });
+      return;
+    }
     reportClientError({
       message: event.message || String(event.error ?? "Unknown error"),
       stack: (event.error as Error | undefined)?.stack,
       source: "window.onerror",
     });
-  });
+  }, true);
 
   window.addEventListener("unhandledrejection", (event) => {
     const reason = event.reason as unknown;
@@ -99,4 +140,53 @@ export function installGlobalErrorReporting() {
       source: "unhandledrejection",
     });
   });
+
+  // console.error — «тихие» падения, которые не долетают до window.onerror
+  const origError = console.error.bind(console);
+  console.error = (...args: unknown[]) => {
+    origError(...args);
+    try {
+      const err = args.find((a) => a instanceof Error) as Error | undefined;
+      const text = args
+        .map((a) => (a instanceof Error ? a.message : typeof a === "string" ? a : safeJson(a)))
+        .join(" ")
+        .slice(0, 300);
+      addBreadcrumb("console.error", text);
+      if (!text) return;
+      // React-предупреждения и dev-шум в алерты не тащим
+      if (/^warning:|prop type|deprecat|react-router future flag/i.test(text)) return;
+      reportClientError({ message: text, stack: err?.stack, source: "console.error" });
+    } catch {
+      /* ignore */
+    }
+  };
+
+  // Хлебные крошки: переходы и клики
+  const pushState = history.pushState.bind(history);
+  history.pushState = ((...args: Parameters<typeof history.pushState>) => {
+    const r = pushState(...args);
+    addBreadcrumb("nav", window.location.pathname);
+    return r;
+  }) as typeof history.pushState;
+  window.addEventListener("popstate", () => addBreadcrumb("nav", window.location.pathname));
+
+  document.addEventListener(
+    "click",
+    (e) => {
+      const el = (e.target as HTMLElement | null)?.closest("button,a,[role=button]") as HTMLElement | null;
+      if (el) addBreadcrumb("click", el.getAttribute("aria-label") || el.innerText || el.tagName);
+    },
+    true
+  );
+
+  window.addEventListener("offline", () => addBreadcrumb("net", "offline"));
+  window.addEventListener("online", () => addBreadcrumb("net", "online"));
+}
+
+function safeJson(v: unknown) {
+  try {
+    return JSON.stringify(v)?.slice(0, 120) ?? "";
+  } catch {
+    return "";
+  }
 }
