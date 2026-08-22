@@ -34,6 +34,20 @@ type Verdict = {
 function classify(message: string, source: string, online: boolean, userVisible: boolean): Verdict {
   const m = message.toLowerCase();
 
+  // Боты/старые вкладки: несуществующие маршруты и протухшие файлы сборки
+  if (
+    m.includes("404 error: user attempted to access non-existent route") ||
+    m.includes("не загрузился ресурс") ||
+    source === "resource-error"
+  ) {
+    return {
+      level: "ignore",
+      reason: "Заход на несуществующую страницу или старый файл сборки у закешированной вкладки (обычно поисковый бот).",
+      fix: "Ничего делать не нужно.",
+    };
+  }
+
+
   if (!online || NETWORK_NOISE.some((n) => m.includes(n))) {
     if (userVisible) {
       return {
