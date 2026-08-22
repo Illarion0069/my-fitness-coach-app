@@ -6,7 +6,6 @@ const NotFound = () => {
   const location = useLocation();
 
   useEffect(() => {
-    console.error("404 Error: User attempted to access non-existent route:", location.pathname);
     // Dismiss the boot splash overlay (normally hidden by ConnectionSplash on the main app)
     window.__appReady = true;
     document.getElementById("splash")?.classList.remove("show");
