@@ -18,7 +18,13 @@ const NETWORK_NOISE = [
   "отменено",
 ];
 
-const IGNORE = ["resizeobserver loop", ...NETWORK_NOISE];
+const IGNORE = [
+  "resizeobserver loop",
+  // Боты и старые вкладки: 404-маршруты и протухшие ассеты после деплоя
+  "404 error: user attempted to access non-existent route",
+  "не загрузился ресурс",
+  ...NETWORK_NOISE,
+];
 
 /* ------------------------------------------------------------------ */
 /* Breadcrumbs — короткая история действий перед падением              */
