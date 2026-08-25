@@ -2082,76 +2082,61 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { setShowSourcePicker(false); handleFileSelect(e); }} disabled={uploading} />
 
 
-      {/* Add Menu Modal */}
+      {/* Add Menu Modal — two round buttons: voice & photo */}
       <AnimatePresence>
         {showAddMenu && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddMenu(false)}
             className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center pb-[calc(env(safe-area-inset-bottom,0px)+60px)]">
             <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }} transition={{ type: 'spring', damping: 25 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md bg-card rounded-3xl p-5 pb-6 space-y-2 border border-border/40">
-              <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-3" />
-              <p className="text-sm font-bold text-foreground text-center mb-2">
+              className="w-full max-w-md bg-card rounded-3xl p-6 pb-8 border border-border/40">
+              <div className="w-10 h-1 bg-muted-foreground/20 rounded-full mx-auto mb-6" />
+              <p className="text-sm font-bold text-foreground text-center mb-8">
                 {lang === 'en' ? 'Add meal' : 'Добавить приём пищи'}
               </p>
 
-              <button onClick={() => {
-                  setShowAddMenu(false);
-                  // Auto-infer meal & time from current time of day
-                  const now = new Date();
-                  const h = now.getHours();
-                  const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
-                  setPendingMealType(inferred);
-                  const hh = String(h).padStart(2, '0');
-                  const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-                  setPendingMealTime(`${hh}:${mm}`);
-                  setTimeout(() => fileRef.current?.click(), 50);
-                }}
-                disabled={photosAtLimit || uploading}
-                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98] disabled:opacity-40">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <Camera className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Photo' : 'Фото'}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {photosAtLimit
-                      ? (lang === 'en' ? `Daily photo limit reached (${MAX_PHOTOS_PER_DAY}) — use Quick add` : `Лимит фото на сегодня (${MAX_PHOTOS_PER_DAY}) — используйте быстрый ввод`)
-                      : (lang === 'en' ? 'Camera or gallery — AI detects food & macros' : 'Камера или галерея — ИИ определит еду и КБЖУ')}
-                  </p>
-                </div>
-              </button>
+              <div className="flex items-center justify-center gap-10">
+                {/* Voice */}
+                <button
+                  onClick={() => {
+                    setShowAddMenu(false);
+                    const now = new Date();
+                    const h = now.getHours();
+                    const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+                    const hh = String(h).padStart(2, '0');
+                    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+                    openVoiceInput(inferred, `${hh}:${mm}`, null);
+                  }}
+                  className="flex flex-col items-center gap-3 active:scale-[0.95] transition-transform"
+                >
+                  <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center shadow-lg shadow-primary/10">
+                    <Mic className="w-8 h-8 text-primary" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">{lang === 'en' ? 'Say' : 'Сказать'}</span>
+                </button>
 
-              <button onClick={() => {
-                  setShowAddMenu(false);
-                  const now = new Date();
-                  const h = now.getHours();
-                  const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
-                  const hh = String(h).padStart(2, '0');
-                  const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-                  openVoiceInput(inferred, `${hh}:${mm}`, null);
-                }}
-                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98]">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <Mic className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Say or write' : 'Сказать или написать'}</p>
-                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Describe the meal — edit grams & macros' : 'Опишите приём пищи — правка граммов и КБЖУ'}</p>
-                </div>
-              </button>
-
-              <button onClick={() => { setShowAddMenu(false); const now = new Date(); const h = now.getHours(); setQuickAddMeal(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack'); setQuickAddTime(`${String(h).padStart(2,'0')}:00`); setShowQuickAdd(true); }}
-                className="w-full flex items-center justify-center gap-1.5 text-xs text-muted-foreground py-2">
-                <PencilLine className="w-3.5 h-3.5" />
-                {lang === 'en' ? 'Quick add (enter numbers manually)' : 'Быстрый ввод (цифры вручную)'}
-              </button>
-
-
-              <button onClick={() => setShowAddMenu(false)}
-                className="w-full text-xs text-muted-foreground py-3 text-center">
-                {lang === 'en' ? 'Cancel' : 'Отмена'}
-              </button>
+                {/* Photo */}
+                <button
+                  onClick={() => {
+                    setShowAddMenu(false);
+                    const now = new Date();
+                    const h = now.getHours();
+                    const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+                    setPendingMealType(inferred);
+                    const hh = String(h).padStart(2, '0');
+                    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+                    setPendingMealTime(`${hh}:${mm}`);
+                    setTimeout(() => fileRef.current?.click(), 50);
+                  }}
+                  disabled={photosAtLimit || uploading}
+                  className="flex flex-col items-center gap-3 active:scale-[0.95] transition-transform disabled:opacity-40"
+                >
+                  <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center shadow-lg shadow-primary/10">
+                    <Camera className="w-8 h-8 text-primary" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">{lang === 'en' ? 'Photo' : 'Фото'}</span>
+                </button>
+              </div>
             </motion.div>
           </motion.div>
         )}
