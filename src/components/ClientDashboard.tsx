@@ -273,7 +273,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
-  const [faceReplay, setFaceReplay] = useState(0);
+  
 
 
   const [showAllSessions, setShowAllSessions] = useState(false);
