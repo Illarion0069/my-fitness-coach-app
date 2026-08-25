@@ -2211,24 +2211,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
 
               <div className="pt-1 space-y-2">
                 <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">{lang === 'en' ? 'How to add' : 'Как добавить'}</p>
-                <div className="grid grid-cols-3 gap-2">
-                  <button onClick={() => { setShowSourcePicker(false); cameraRef.current?.click(); }}
+                <div className="grid grid-cols-2 gap-2">
+                  <button onClick={() => { setShowSourcePicker(false); fileRef.current?.click(); }}
                     disabled={!pendingMealType}
                     className="flex flex-col items-center gap-1.5 bg-primary/15 hover:bg-primary/25 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
                     <Camera className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Camera' : 'Камера'}</span>
-                  </button>
-                  <button onClick={() => { setShowSourcePicker(false); fileRef.current?.click(); }}
-                    disabled={!pendingMealType}
-                    className="flex flex-col items-center gap-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
-                    <ImagePlus className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Gallery' : 'Галерея'}</span>
+                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Photo' : 'Фото'}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight text-center">{lang === 'en' ? 'Camera or gallery' : 'Камера или галерея'}</span>
                   </button>
                   <button onClick={() => { setShowSourcePicker(false); openVoiceInput(pendingMealType || 'snack', pendingMealTime || null, null); }}
                     disabled={!pendingMealType}
                     className="flex flex-col items-center gap-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
                     <Mic className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Voice' : 'Голос'}</span>
+                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Say or write' : 'Сказать или написать'}</span>
+                    <span className="text-[10px] text-muted-foreground leading-tight text-center">{lang === 'en' ? 'Edit grams & macros' : 'Правка граммов и КБЖУ'}</span>
                   </button>
                 </div>
               </div>
