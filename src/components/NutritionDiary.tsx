@@ -2086,6 +2086,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       <AnimatePresence>
         {showAddMenu && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddMenu(false)}
+            data-app-sheet="true"
             className="fixed inset-0 z-[200] bg-black/60 flex items-end justify-center pb-[calc(env(safe-area-inset-bottom,0px)+60px)]">
             <motion.div initial={{ y: 200 }} animate={{ y: 0 }} exit={{ y: 200 }} transition={{ type: 'spring', damping: 25 }}
               onClick={e => e.stopPropagation()}
