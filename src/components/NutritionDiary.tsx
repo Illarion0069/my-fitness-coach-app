@@ -2147,6 +2147,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       <AnimatePresence>
         {showSourcePicker && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSourcePicker(false)}
+            data-app-sheet="true"
             className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
