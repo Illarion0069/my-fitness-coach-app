@@ -16,7 +16,7 @@ const SwipeHint = () => {
     if (!visible) return;
     // Не показываем подсказку поверх открытых модалок/шторок
     const overlayOpen = () =>
-      !!document.querySelector('[role="dialog"], .fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[70\\]');
+      !!document.querySelector('[role="dialog"], [data-app-sheet="true"], .fixed.inset-0.z-50, .fixed.inset-0.z-\\[60\\], .fixed.inset-0.z-\\[70\\]');
 
     let shown = false;
     let hideTimer: ReturnType<typeof setTimeout> | undefined;
