@@ -934,6 +934,9 @@ serve(async (req) => {
 
     const summaryRuStr = String(analysis.summary_ru || "");
 
+    // Remember what the day contained when this analysis ran
+    analysis.report_signature = contentSignature;
+
     // --- Save to DB ---
     const { error: upsertError } = await supabase
       .from("nutrition_logs")
@@ -942,6 +945,7 @@ serve(async (req) => {
         { onConflict: "user_id,log_date" }
       );
     if (upsertError) throw upsertError;
+
 
     // --- Alert trainer if name was missing or not used ---
     if (nameFallbackUsed || nameMissingInClientFacing) {
