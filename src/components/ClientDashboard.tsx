@@ -273,7 +273,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [nutritionRefresh, setNutritionRefresh] = useState(0);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [calcInfoOpen, setCalcInfoOpen] = useState(false);
-  const [faceReplay, setFaceReplay] = useState(0);
+  
 
 
   const [showAllSessions, setShowAllSessions] = useState(false);
@@ -1424,20 +1424,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         onTap={() => setCalcInfoOpen(true)}
         delay={0}
         maxShows={2}
-        replayToken={faceReplay}
       />
-
-      {/* Admin-only: replay the face announcement as many times as needed */}
-      {forceClientView && (
-        <button
-          type="button"
-          onClick={() => setFaceReplay((v) => v + 1)}
-          className="fixed left-2 bottom-32 z-[70] rounded-full bg-card/90 border border-border shadow-lg px-2.5 py-1 text-[10px] font-semibold text-muted-foreground backdrop-blur"
-          style={{ marginBottom: 'env(safe-area-inset-bottom)' }}
-        >
-          {lang === 'en' ? 'Replay face' : 'Повтор лица'}
-        </button>
-      )}
 
 
     </div>
