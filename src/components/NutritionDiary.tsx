@@ -2105,7 +2105,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   const hh = String(h).padStart(2, '0');
                   const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
                   setPendingMealTime(`${hh}:${mm}`);
-                  setShowSourcePicker(true);
+                  setTimeout(() => fileRef.current?.click(), 50);
                 }}
                 disabled={photosAtLimit || uploading}
                 className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98] disabled:opacity-40">
@@ -2113,15 +2113,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   <Camera className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Take photo' : 'Сфотографировать еду'}</p>
+                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Photo' : 'Фото'}</p>
                   <p className="text-[10px] text-muted-foreground">
                     {photosAtLimit
                       ? (lang === 'en' ? `Daily photo limit reached (${MAX_PHOTOS_PER_DAY}) — use Quick add` : `Лимит фото на сегодня (${MAX_PHOTOS_PER_DAY}) — используйте быстрый ввод`)
-                      : (lang === 'en' ? 'AI will detect food and macros' : 'ИИ определит еду и КБЖУ')}
+                      : (lang === 'en' ? 'Camera or gallery — AI detects food & macros' : 'Камера или галерея — ИИ определит еду и КБЖУ')}
                   </p>
                 </div>
               </button>
-
 
               <button onClick={() => {
                   setShowAddMenu(false);
@@ -2137,29 +2136,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   <Mic className="w-5 h-5 text-primary" />
                 </div>
                 <div className="text-left">
-                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Say or type it' : 'Голосом или текстом'}</p>
-                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Describe the meal — AI builds the list' : 'Опишите приём пищи — ИИ составит список'}</p>
-                </div>
-              </button>
-
-              <button onClick={() => {
-                  setShowAddMenu(false);
-                  const now = new Date();
-                  const h = now.getHours();
-                  setPendingMealType(h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack');
-                  const hh = String(h).padStart(2, '0');
-                  const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-                  setPendingMealTime(`${hh}:${mm}`);
-                  setTimeout(() => fileRef.current?.click(), 50);
-                }}
-                disabled={photosAtLimit || uploading}
-                className="w-full flex items-center gap-3 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-[0.98] disabled:opacity-40">
-                <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center">
-                  <ImagePlus className="w-5 h-5 text-primary" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'From gallery' : 'Из галереи'}</p>
-                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Pick a photo you already took' : 'Выбрать уже сделанное фото'}</p>
+                  <p className="text-sm font-bold text-foreground">{lang === 'en' ? 'Say or write' : 'Сказать или написать'}</p>
+                  <p className="text-[10px] text-muted-foreground">{lang === 'en' ? 'Describe the meal — edit grams & macros' : 'Опишите приём пищи — правка граммов и КБЖУ'}</p>
                 </div>
               </button>
 
