@@ -198,11 +198,12 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [uploading, setUploading] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [selectedPhoto, setSelectedPhoto] = useState<FoodPhoto | null>(null);
-  const [showSourcePicker, setShowSourcePicker] = useState(false);
   const [showMealPicker, setShowMealPicker] = useState(false);
   const [pendingFile, setPendingFile] = useState<File | null>(null);
   const [pendingMealType, setPendingMealType] = useState<MealType | null>(null);
   const [pendingMealTime, setPendingMealTime] = useState<string>('');
+  const [pendingVoiceItems, setPendingVoiceItems] = useState<VoiceFoodItem[] | null>(null);
+  const [pendingPhoto, setPendingPhoto] = useState<{ photoUrl: string; storagePath: string; detectedItems: any[] } | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [showOverrideModal, setShowOverrideModal] = useState(false);
   const [overrideScore, setOverrideScore] = useState('');
@@ -271,7 +272,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         [showCalcInfo, () => setShowCalcInfo(false)],
         [showOverrideModal, () => setShowOverrideModal(false)],
         [showMealPicker, () => setShowMealPicker(false)],
-        [showSourcePicker, () => setShowSourcePicker(false)],
         [showFeedback, () => setShowFeedback(false)],
       ];
       const hit = closers.find(([open]) => open);
@@ -279,7 +279,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [showTimePicker, showQuickAdd, showLiquids, showCalcInfo, showOverrideModal, showMealPicker, showSourcePicker, showFeedback]);
+  }, [showTimePicker, showQuickAdd, showLiquids, showCalcInfo, showOverrideModal, showMealPicker, showFeedback]);
 
 
 
@@ -397,6 +397,15 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setDate(newDate);
   };
 
+  const inferMealAndTime = (): { mealType: MealType; mealTime: string } => {
+    const now = new Date();
+    const h = now.getHours();
+    const mealType: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
+    const hh = String(h).padStart(2, '0');
+    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
+    return { mealType, mealTime: `${hh}:${mm}` };
+  };
+
   const isToday = date === todayStr;
 
   const upsertLog = async (field: string, value: number) => {
@@ -450,12 +459,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   };
 
 
-  const handleUploadWithTime = async (fileOverride?: File, mealTypeOverride?: MealType, mealTimeOverride?: string | null) => {
+  const handleUploadWithTime = async (fileOverride?: File) => {
     const original = fileOverride || pendingFile;
-    const mealType = mealTypeOverride || pendingMealType;
-    const mealTime = mealTimeOverride !== undefined ? mealTimeOverride : (pendingMealTime || null);
-    if (!original || !user || !mealType) return;
-    if (!VALID_MEAL_TYPES.includes(mealType)) return;
+    if (!original || !user) return;
     setUploading(true);
     let path = '';
 
@@ -481,11 +487,37 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         return;
       }
       const detectedItems = Array.isArray(validation?.items) ? validation.items : [];
+
+      // Recognition done — now let the user pick the meal type before saving.
+      setPendingPhoto({ photoUrl: publicUrl, storagePath: path, detectedItems });
+      const { mealType, mealTime } = inferMealAndTime();
+      setPendingMealType(mealType);
+      setPendingMealTime(mealTime);
+      setShowMealPicker(true);
+    } catch (err: any) {
+      try { await supabase.storage.from('food-photos').remove([path]); } catch {}
+      showAppError({
+        detailEn: err.message,
+        detailRu: err.message,
+        source: 'nutrition-diary:upload',
+        onRetry: () => handleUploadWithTime(original),
+      });
+    } finally {
+      setPendingFile(null);
+      setUploading(false);
+    }
+  };
+
+  const savePendingPhoto = async (mealType: MealType, mealTime: string | null) => {
+    if (!user || !pendingPhoto) return;
+    const { photoUrl, storagePath, detectedItems } = pendingPhoto;
+
+    try {
       const { data: insertedPhoto, error: insertError } = await supabase.from('food_photos').insert({
-        user_id: user.id, log_date: date, photo_url: publicUrl, meal_type: mealType, meal_time: mealTime,
+        user_id: user.id, log_date: date, photo_url: photoUrl, meal_type: mealType, meal_time: mealTime,
       } as any).select('id').single();
       if (insertError) {
-        await supabase.storage.from('food-photos').remove([path]);
+        await supabase.storage.from('food-photos').remove([storagePath]);
         throw insertError;
       }
       const photoId = (insertedPhoto as any)?.id || crypto.randomUUID();
@@ -525,19 +557,20 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       toast({ title: `${mealLabel?.emoji} ${lang === 'en' ? 'Photo added' : 'Фото добавлено'}` });
       // Offer to describe the photo by voice — merged into the same meal.
       setVoicePrompt({ photoId, mealType, mealTime: mealTime || null });
-      fetchData();
+      await fetchData();
     } catch (err: any) {
-      try { await supabase.storage.from('food-photos').remove([path]); } catch {}
+      try { await supabase.storage.from('food-photos').remove([storagePath]); } catch {}
       showAppError({
         detailEn: err.message,
         detailRu: err.message,
-        source: 'nutrition-diary:upload',
-        onRetry: () => handleUploadWithTime(original, mealType, mealTime),
+        source: 'nutrition-diary:save-photo',
+        onRetry: () => savePendingPhoto(mealType, mealTime),
       });
     } finally {
-      setPendingFile(null);
+      setPendingPhoto(null);
       setPendingMealType(null);
-      setUploading(false);
+      setPendingMealTime('');
+      setShowMealPicker(false);
     }
   };
 
@@ -822,28 +855,28 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     }
   };
 
-  const openVoiceInput = (mealType: MealType, mealTime: string | null, photoId: string | null, title?: string) => {
-    setVoiceMeal(mealType);
+  const openVoiceInput = (mealType?: MealType, mealTime?: string | null, photoId?: string | null, title?: string) => {
+    setVoiceMeal(mealType || 'snack');
     setVoiceTime(mealTime || '');
-    setVoicePhotoId(photoId);
+    setVoicePhotoId(photoId || null);
     setVoiceTitle(title);
     setVoiceOpen(true);
   };
 
-  const handleVoiceConfirm = async (items: VoiceFoodItem[]) => {
+  const saveVoiceEntries = async (items: VoiceFoodItem[], mealType: MealType, mealTime: string | null, photoId?: string | null) => {
     if (!user || isReadOnly) return;
     const newEntries: ManualEntry[] = items.map(i => ({
       id: crypto.randomUUID(),
-      meal_type: voiceMeal,
+      meal_type: mealType,
       name: i.name || (lang === 'en' ? 'Food' : 'Еда'),
       calories: Math.max(0, Math.round(i.calories || 0)),
       protein_g: Math.max(0, Math.round(i.protein_g || 0)),
       carbs_g: Math.max(0, Math.round(i.carbs_g || 0)),
       fat_g: Math.max(0, Math.round(i.fat_g || 0)),
       portion_g: Math.max(0, Math.round(i.portion_g || 0)) || undefined,
-      meal_time: voiceTime || undefined,
+      meal_time: mealTime || undefined,
       created_at: new Date().toISOString(),
-      ...(voicePhotoId ? { photo_id: voicePhotoId } : {}),
+      ...(photoId ? { photo_id: photoId } : {}),
     }));
     const currentEntries = (log?.manual_entries || []) as ManualEntry[];
     const allEntries = [...currentEntries, ...newEntries];
@@ -862,6 +895,21 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setVoicePrompt(null);
     toast({ title: lang === 'en' ? 'Added' : 'Добавлено' });
     await fetchData();
+  };
+
+  const handleVoiceConfirm = async (items: VoiceFoodItem[]) => {
+    if (!user || isReadOnly) return;
+    // Voice prompt for an existing photo inherits the photo's meal type/time.
+    if (voicePhotoId) {
+      await saveVoiceEntries(items, voiceMeal, voiceTime || null, voicePhotoId);
+      return;
+    }
+    // Initial "Say" flow: choose meal type after recognition.
+    setPendingVoiceItems(items);
+    const { mealType, mealTime } = inferMealAndTime();
+    setPendingMealType(mealType);
+    setPendingMealTime(mealTime);
+    setShowMealPicker(true);
   };
 
   const handleQuickAdd = async () => {
@@ -2076,10 +2124,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       )}
 
       {/* Hidden file inputs */}
-      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { setShowSourcePicker(false); handleFileSelect(e); }} disabled={uploading} />
+      <input ref={cameraRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { handleFileSelect(e); }} disabled={uploading} />
       {/* Gallery picker: explicit MIME list (no image/* wildcard) so iOS/Android
           open the photo library instead of offering the camera. */}
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { setShowSourcePicker(false); handleFileSelect(e); }} disabled={uploading} />
+      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => { handleFileSelect(e); }} disabled={uploading} />
 
 
       {/* Add Menu Modal — two round buttons: voice & photo */}
@@ -2101,12 +2149,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 <button
                   onClick={() => {
                     setShowAddMenu(false);
-                    const now = new Date();
-                    const h = now.getHours();
-                    const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
-                    const hh = String(h).padStart(2, '0');
-                    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-                    openVoiceInput(inferred, `${hh}:${mm}`, null);
+                    openVoiceInput();
                   }}
                   className="flex flex-col items-center gap-3 active:scale-[0.95] transition-transform"
                 >
@@ -2120,13 +2163,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                 <button
                   onClick={() => {
                     setShowAddMenu(false);
-                    const now = new Date();
-                    const h = now.getHours();
-                    const inferred: MealType = h < 11 ? 'breakfast' : h < 16 ? 'lunch' : h < 22 ? 'dinner' : 'snack';
-                    setPendingMealType(inferred);
-                    const hh = String(h).padStart(2, '0');
-                    const mm = String(Math.floor(now.getMinutes() / 15) * 15).padStart(2, '0');
-                    setPendingMealTime(`${hh}:${mm}`);
                     setTimeout(() => fileRef.current?.click(), 50);
                   }}
                   disabled={photosAtLimit || uploading}
@@ -2143,16 +2179,47 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
         )}
       </AnimatePresence>
 
-      {/* Combined Meal + Time + Source Picker Modal */}
+      {/* Meal type picker — appears after voice/photo recognition */}
       <AnimatePresence>
-        {showSourcePicker && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowSourcePicker(false)}
+        {showMealPicker && (pendingVoiceItems || pendingPhoto) && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            onClick={() => {
+              if (pendingPhoto?.storagePath) {
+                supabase.storage.from('food-photos').remove([pendingPhoto.storagePath]).catch(() => {});
+              }
+              setPendingPhoto(null);
+              setPendingVoiceItems(null);
+              setPendingMealType(null);
+              setPendingMealTime('');
+              setShowMealPicker(false);
+            }}
             data-app-sheet="true"
             className="fixed inset-0 z-[200] bg-black/60 flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-4 border border-border/40">
-              <p className="text-sm font-bold text-foreground text-center">{lang === 'en' ? 'Meal & time' : 'Приём пищи и время'}</p>
+              className="w-full max-w-sm bg-card rounded-3xl p-5 space-y-4 border border-border/40 max-h-[92vh] overflow-y-auto">
+              <p className="text-sm font-bold text-foreground text-center">
+                {lang === 'en' ? 'What meal is this?' : 'Что это за приём пищи?'}
+              </p>
+
+              {/* Recognised items preview */}
+              {(pendingVoiceItems?.length || pendingPhoto?.detectedItems?.length) ? (
+                <div className="bg-secondary/40 rounded-2xl p-3 space-y-2">
+                  <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                    {lang === 'en' ? 'Recognised' : 'Распознано'}
+                  </p>
+                  <div className="space-y-1.5">
+                    {(pendingVoiceItems || pendingPhoto?.detectedItems || []).map((it: any, idx: number) => (
+                      <div key={idx} className="flex items-center justify-between text-sm">
+                        <span className="font-medium text-foreground truncate pr-2">{it.name}</span>
+                        <span className="text-xs text-muted-foreground shrink-0">
+                          {Math.round(it.calories || 0)} {lang === 'en' ? 'kcal' : 'ккал'}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
 
               <div className="grid grid-cols-2 gap-2">
                 {MEAL_TYPES.map(mt => {
@@ -2174,29 +2241,40 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                   className="bg-secondary/50 border border-border/50 rounded-2xl px-5 py-2.5 text-xl font-bold text-foreground text-center focus:outline-none focus:border-primary/50" />
               </div>
 
-              <div className="pt-1 space-y-2">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground text-center">{lang === 'en' ? 'How to add' : 'Как добавить'}</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <button onClick={() => { setShowSourcePicker(false); fileRef.current?.click(); }}
-                    disabled={!pendingMealType}
-                    className="flex flex-col items-center gap-1.5 bg-primary/15 hover:bg-primary/25 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
-                    <Camera className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Photo' : 'Фото'}</span>
-                    <span className="text-[10px] text-muted-foreground leading-tight text-center">{lang === 'en' ? 'Camera or gallery' : 'Камера или галерея'}</span>
-                  </button>
-                  <button onClick={() => { setShowSourcePicker(false); openVoiceInput(pendingMealType || 'snack', pendingMealTime || null, null); }}
-                    disabled={!pendingMealType}
-                    className="flex flex-col items-center gap-1.5 bg-secondary/50 hover:bg-secondary/70 rounded-2xl p-4 transition-colors active:scale-95 disabled:opacity-40">
-                    <Mic className="w-5 h-5 text-primary" />
-                    <span className="text-sm font-bold text-foreground">{lang === 'en' ? 'Say or write' : 'Сказать или написать'}</span>
-                    <span className="text-[10px] text-muted-foreground leading-tight text-center">{lang === 'en' ? 'Edit grams & macros' : 'Правка граммов и КБЖУ'}</span>
-                  </button>
-                </div>
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  onClick={() => {
+                    if (pendingPhoto?.storagePath) {
+                      supabase.storage.from('food-photos').remove([pendingPhoto.storagePath]).catch(() => {});
+                    }
+                    setPendingPhoto(null);
+                    setPendingVoiceItems(null);
+                    setPendingMealType(null);
+                    setPendingMealTime('');
+                    setShowMealPicker(false);
+                  }}
+                  className="bg-secondary/60 text-foreground rounded-2xl py-3 text-sm font-bold">
+                  {lang === 'en' ? 'Cancel' : 'Отмена'}
+                </button>
+                <button
+                  onClick={() => {
+                    const mealType = pendingMealType || 'snack';
+                    const mealTime = pendingMealTime || null;
+                    if (pendingVoiceItems) {
+                      saveVoiceEntries(pendingVoiceItems, mealType, mealTime);
+                      setPendingVoiceItems(null);
+                    } else if (pendingPhoto) {
+                      savePendingPhoto(mealType, mealTime);
+                    }
+                    setPendingMealType(null);
+                    setPendingMealTime('');
+                    setShowMealPicker(false);
+                  }}
+                  disabled={!pendingMealType}
+                  className="bg-primary text-primary-foreground rounded-2xl py-3 text-sm font-bold disabled:opacity-40">
+                  {lang === 'en' ? 'Confirm' : 'Подтвердить'}
+                </button>
               </div>
-
-              <button onClick={() => setShowSourcePicker(false)} className="w-full text-xs text-muted-foreground py-2 text-center">
-                {lang === 'en' ? 'Cancel' : 'Отмена'}
-              </button>
             </motion.div>
           </motion.div>
         )}
