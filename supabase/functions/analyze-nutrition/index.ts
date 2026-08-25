@@ -354,6 +354,26 @@ serve(async (req) => {
     const hasPhotos = photos && photos.length > 0;
     const hasManual = manualEntries.length > 0;
 
+    // Fingerprint of the day's ACTUAL food content. Used further below to decide
+    // whether the trainer report needs to be (re)queued. A pure recalculation
+    // (opening the diary on another device, schedule change, preview mode)
+    // must never trigger a new report — only real food/liquid edits do.
+    const contentSignature = JSON.stringify({
+      p: (photos || []).map((p: Record<string, unknown>) => String(p.id)).sort(),
+      m: manualEntries
+        .map((e) => `${e.id || e.name || ""}:${Math.round(Number(e.calories) || 0)}`)
+        .sort(),
+      l: [
+        Number((logData as Record<string, unknown>)?.water_ml) || 0,
+        Number((logData as Record<string, unknown>)?.coffee_cups) || 0,
+        Number((logData as Record<string, unknown>)?.tea_cups) || 0,
+        Number((logData as Record<string, unknown>)?.alcohol_ml) || 0,
+      ],
+    });
+    const prevSignature = (currentLog?.ai_analysis as Record<string, unknown> | null)
+      ?.report_signature as string | undefined;
+
+
     if (!hasPhotos && !hasManual) {
       const emptyAnalysis = { overall_score: 0, meals: [], analysis_count: currentCount + 1 };
       const { error: upsertError } = await supabase
@@ -914,6 +934,9 @@ serve(async (req) => {
 
     const summaryRuStr = String(analysis.summary_ru || "");
 
+    // Remember what the day contained when this analysis ran
+    analysis.report_signature = contentSignature;
+
     // --- Save to DB ---
     const { error: upsertError } = await supabase
       .from("nutrition_logs")
@@ -922,6 +945,7 @@ serve(async (req) => {
         { onConflict: "user_id,log_date" }
       );
     if (upsertError) throw upsertError;
+
 
     // --- Alert trainer if name was missing or not used ---
     if (nameFallbackUsed || nameMissingInClientFacing) {
@@ -946,17 +970,23 @@ serve(async (req) => {
     }
 
     // --- Queue the trainer report (final digest only) ---
-    // We no longer notify on every recalculation. The day is marked as "pending report";
-    // nutrition-report-flush sends one final message once the client stopped editing.
-    try {
-      await supabase
-        .from("nutrition_logs")
-        .update({ report_pending: true, report_marked_at: new Date().toISOString() })
-        .eq("user_id", user_id)
-        .eq("log_date", log_date);
-    } catch (queueErr) {
-      console.error("Queueing trainer report failed (non-critical):", queueErr);
+    // Queue ONLY when the day's food content actually changed since the last analysis.
+    // A plain recalculation (other device, schedule change, trainer preview) must not
+    // produce a report — otherwise the trainer gets a "phantom" digest hours later.
+    if (contentSignature !== prevSignature) {
+      try {
+        await supabase
+          .from("nutrition_logs")
+          .update({ report_pending: true, report_marked_at: new Date().toISOString() })
+          .eq("user_id", user_id)
+          .eq("log_date", log_date);
+      } catch (queueErr) {
+        console.error("Queueing trainer report failed (non-critical):", queueErr);
+      }
+    } else {
+      console.log("[analyze-nutrition] recalculation without food changes — trainer report not queued");
     }
+
 
 
     return jsonResponse({ score, feedback, analysis });
