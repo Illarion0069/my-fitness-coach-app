@@ -354,6 +354,26 @@ serve(async (req) => {
     const hasPhotos = photos && photos.length > 0;
     const hasManual = manualEntries.length > 0;
 
+    // Fingerprint of the day's ACTUAL food content. Used further below to decide
+    // whether the trainer report needs to be (re)queued. A pure recalculation
+    // (opening the diary on another device, schedule change, preview mode)
+    // must never trigger a new report — only real food/liquid edits do.
+    const contentSignature = JSON.stringify({
+      p: (photos || []).map((p: Record<string, unknown>) => String(p.id)).sort(),
+      m: manualEntries
+        .map((e) => `${e.id || e.name || ""}:${Math.round(Number(e.calories) || 0)}`)
+        .sort(),
+      l: [
+        Number((logData as Record<string, unknown>)?.water_ml) || 0,
+        Number((logData as Record<string, unknown>)?.coffee_cups) || 0,
+        Number((logData as Record<string, unknown>)?.tea_cups) || 0,
+        Number((logData as Record<string, unknown>)?.alcohol_ml) || 0,
+      ],
+    });
+    const prevSignature = (currentLog?.ai_analysis as Record<string, unknown> | null)
+      ?.report_signature as string | undefined;
+
+
     if (!hasPhotos && !hasManual) {
       const emptyAnalysis = { overall_score: 0, meals: [], analysis_count: currentCount + 1 };
       const { error: upsertError } = await supabase
