@@ -970,17 +970,23 @@ serve(async (req) => {
     }
 
     // --- Queue the trainer report (final digest only) ---
-    // We no longer notify on every recalculation. The day is marked as "pending report";
-    // nutrition-report-flush sends one final message once the client stopped editing.
-    try {
-      await supabase
-        .from("nutrition_logs")
-        .update({ report_pending: true, report_marked_at: new Date().toISOString() })
-        .eq("user_id", user_id)
-        .eq("log_date", log_date);
-    } catch (queueErr) {
-      console.error("Queueing trainer report failed (non-critical):", queueErr);
+    // Queue ONLY when the day's food content actually changed since the last analysis.
+    // A plain recalculation (other device, schedule change, trainer preview) must not
+    // produce a report — otherwise the trainer gets a "phantom" digest hours later.
+    if (contentSignature !== prevSignature) {
+      try {
+        await supabase
+          .from("nutrition_logs")
+          .update({ report_pending: true, report_marked_at: new Date().toISOString() })
+          .eq("user_id", user_id)
+          .eq("log_date", log_date);
+      } catch (queueErr) {
+        console.error("Queueing trainer report failed (non-critical):", queueErr);
+      }
+    } else {
+      console.log("[analyze-nutrition] recalculation without food changes — trainer report not queued");
     }
+
 
 
     return jsonResponse({ score, feedback, analysis });
