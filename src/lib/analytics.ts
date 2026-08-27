@@ -17,8 +17,15 @@ function getAnonId(): string {
 
 function getDevice(): string {
   const ua = navigator.userAgent;
-  if (/iPad|Tablet/i.test(ua)) return "tablet";
-  if (/iPhone|Android|Mobile/i.test(ua)) return "mobile";
+  const touchMac = /Macintosh/.test(ua) && (navigator.maxTouchPoints || 0) > 1; // iPadOS masquerades as Mac
+  if (/iPad/i.test(ua) || touchMac) return "ipad";
+  if (/iPhone|iPod/i.test(ua)) return "iphone";
+  if (/Android/i.test(ua)) return /Mobile/i.test(ua) ? "android" : "android-tablet";
+  if (/Tablet/i.test(ua)) return "tablet";
+  if (/Mobile/i.test(ua)) return "mobile";
+  if (/Macintosh|Mac OS X/i.test(ua)) return "mac";
+  if (/Windows/i.test(ua)) return "windows";
+  if (/Linux/i.test(ua)) return "linux";
   return "desktop";
 }
 
