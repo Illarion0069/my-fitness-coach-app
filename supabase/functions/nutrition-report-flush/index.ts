@@ -72,22 +72,33 @@ serve(async (req) => {
         return `${mealEmoji} <b>${m.meal_type}</b> — ${mealScore}/100${foods ? `\n   ${foods}` : ""}`;
       }).join("\n");
 
-      // Manual entries linked to a photo come from AI recognition, the rest are typed by the client
+      // Entries are grouped by how the client added them: photo (AI), voice, or typed by hand
       const entries = ((log.manual_entries || []) as Array<Record<string, unknown>>);
       const fmt = (e: Record<string, unknown>) =>
         `${e.name || "Quick add"} — ${e.calories || 0}kcal (P${e.protein_g || 0} C${e.carbs_g || 0} F${e.fat_g || 0})`;
-      const fromPhoto = entries.filter((e) => e.photo_id);
-      const typed = entries.filter((e) => !e.photo_id);
+      const fromPhoto = entries.filter((e) => e.photo_id || e.source === "photo");
+      const fromVoice = entries.filter((e) => !e.photo_id && e.source === "voice");
+      const typed = entries.filter((e) => !e.photo_id && e.source !== "voice" && e.source !== "photo");
 
       let detail = "";
       if (fromPhoto.length > 0) {
         detail += `\n\n📷 <b>С фото (AI):</b>\n${fromPhoto.map((e) => `• ${fmt(e)}`).join("\n")}`;
       }
+      if (fromVoice.length > 0) {
+        detail += `\n\n🎤 <b>Голосом (надиктовано):</b>\n${fromVoice.map((e) => `• ${fmt(e)}`).join("\n")}`;
+      }
       if (typed.length > 0) {
         detail += `\n\n✏️ <b>Ручной ввод:</b>\n${typed.map((e) => `• ${fmt(e)}`).join("\n")}`;
       }
 
-      const msg = `🍽 <b>Дневник питания — итог дня</b>\n\n👤 ${clientName}\n📅 ${log.log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n" : ""}${detail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
+      const sourceParts = [
+        fromPhoto.length ? `📷 фото: ${fromPhoto.length}` : null,
+        fromVoice.length ? `🎤 голос: ${fromVoice.length}` : null,
+        typed.length ? `✏️ вручную: ${typed.length}` : null,
+      ].filter(Boolean).join("  •  ");
+      const sourceLine = sourceParts ? `\n🧾 Способ ввода: ${sourceParts}` : "";
+
+      const msg = `🍽 <b>Дневник питания — итог дня</b>\n\n👤 ${clientName}\n📅 ${log.log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>${sourceLine}\n\n${mealsDetail ? mealsDetail + "\n" : ""}${detail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
 
       if (TG_TOKEN && TG_CHAT) {
         const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {

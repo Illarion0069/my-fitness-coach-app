@@ -60,6 +60,7 @@ interface ManualEntry {
   meal_time?: string;
   created_at: string;
   photo_id?: string; // links auto-detected entries to their source photo
+  source?: 'voice' | 'manual' | 'photo'; // how the entry was created
 }
 
 interface Props {
@@ -876,6 +877,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       portion_g: Math.max(0, Math.round(i.portion_g || 0)) || undefined,
       meal_time: mealTime || undefined,
       created_at: new Date().toISOString(),
+      source: 'voice',
       ...(photoId ? { photo_id: photoId } : {}),
     }));
     const currentEntries = (log?.manual_entries || []) as ManualEntry[];
@@ -932,6 +934,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       fat_g: fat,
       meal_time: quickAddTime || undefined,
       created_at: new Date().toISOString(),
+      source: 'manual',
     };
     const currentEntries = (log?.manual_entries || []) as ManualEntry[];
     const newEntries = [...currentEntries, entry];
