@@ -91,7 +91,14 @@ serve(async (req) => {
         detail += `\n\n✏️ <b>Ручной ввод:</b>\n${typed.map((e) => `• ${fmt(e)}`).join("\n")}`;
       }
 
-      const msg = `🍽 <b>Дневник питания — итог дня</b>\n\n👤 ${clientName}\n📅 ${log.log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>\n\n${mealsDetail ? mealsDetail + "\n" : ""}${detail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
+      const sourceParts = [
+        fromPhoto.length ? `📷 фото: ${fromPhoto.length}` : null,
+        fromVoice.length ? `🎤 голос: ${fromVoice.length}` : null,
+        typed.length ? `✏️ вручную: ${typed.length}` : null,
+      ].filter(Boolean).join("  •  ");
+      const sourceLine = sourceParts ? `\n🧾 Способ ввода: ${sourceParts}` : "";
+
+      const msg = `🍽 <b>Дневник питания — итог дня</b>\n\n👤 ${clientName}\n📅 ${log.log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>${sourceLine}\n\n${mealsDetail ? mealsDetail + "\n" : ""}${detail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
 
       if (TG_TOKEN && TG_CHAT) {
         const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
