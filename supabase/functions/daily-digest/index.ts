@@ -168,6 +168,89 @@ serve(async (req) => {
       ...tests.map((t: any) => t.user_id),
     ]);
 
+    // ---------- Посещаемость (app_events) ----------
+    const [eventsRes, pastEventsRes, staffRes] = await Promise.all([
+      supabase.from("app_events")
+        .select("user_id, anon_id, event_type, label, device, created_at")
+        .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc)
+        .order("created_at", { ascending: true }).limit(20000),
+      supabase.from("app_events")
+        .select("anon_id, user_id")
+        .lt("created_at", dayStartUtc).limit(50000),
+      supabase.from("user_roles").select("user_id, role").in("role", ["trainer", "admin"]),
+    ]);
+
+    const rawEvents = eventsRes.data ?? [];
+    const staffIds = new Set((staffRes.data ?? []).map((r: any) => r.user_id));
+    const staffAnon = new Set<string>();
+    for (const e of rawEvents) {
+      if (e.user_id && staffIds.has(e.user_id) && e.anon_id) staffAnon.add(e.anon_id);
+    }
+    // Трафик тренера/админа не считаем как посещения клиентов
+    const events = rawEvents.filter(
+      (e: any) => !(e.user_id && staffIds.has(e.user_id)) && !staffAnon.has(e.anon_id),
+    );
+
+    const seenBefore = new Set<string>();
+    for (const e of pastEventsRes.data ?? []) {
+      if (e.anon_id) seenBefore.add(e.anon_id);
+      if (e.user_id) seenBefore.add(e.user_id);
+    }
+
+    const visitors = new Set<string>();
+    const newVisitors = new Set<string>();
+    const knownClients = new Set<string>();
+    const deviceCount = new Map<string, number>();
+    const deviceSeen = new Set<string>(); // vid|device — считаем устройства по визитёрам
+    const funnelReach = new Map<string, Set<string>>();
+
+    for (const e of events) {
+      const vid = e.user_id || e.anon_id;
+      if (!vid) continue;
+      visitors.add(vid);
+      if (e.user_id) knownClients.add(e.user_id);
+      if (!seenBefore.has(vid) && !(e.user_id && seenBefore.has(e.user_id))) newVisitors.add(vid);
+
+      const dev = e.device || "?";
+      const key = `${vid}|${dev}`;
+      if (!deviceSeen.has(key)) {
+        deviceSeen.add(key);
+        deviceCount.set(dev, (deviceCount.get(dev) || 0) + 1);
+      }
+      if (e.event_type === "funnel") {
+        if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
+        funnelReach.get(e.label)!.add(vid);
+      }
+    }
+    // Клиенты, которые уже были раньше, не считаются «новыми»
+    for (const uid of knownClients) if (seenBefore.has(uid)) newVisitors.delete(uid);
+
+    const DEVICE_LABEL: Record<string, string> = {
+      iphone: "📱 iPhone", ipad: "📱 iPad", android: "📱 Android",
+      "android-tablet": "📱 Android планшет", tablet: "📱 Планшет", mobile: "📱 Телефон",
+      mac: "💻 Mac", windows: "💻 Windows", linux: "💻 Linux", desktop: "💻 Компьютер",
+    };
+    const deviceLines = Array.from(deviceCount.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([d, c]) => `• ${DEVICE_LABEL[d] || esc(d)} — ${c}`);
+
+    const reach = (k: string) => funnelReach.get(k)?.size || 0;
+    const bookingOpen = reach("booking_open");
+    const bookingDone = reach("booking_done");
+    const signupDone = reach("signup_done");
+    const pct = (a: number, b: number) => (b ? Math.round((a / b) * 100) : 0);
+
+    // Имена вернувшихся клиентов
+    const clientIds = Array.from(knownClients);
+    const visitorNames: string[] = [];
+    if (clientIds.length) {
+      const { data: vp } = await supabase
+        .from("profiles").select("user_id, full_name").in("user_id", clientIds);
+      for (const p of vp ?? []) visitorNames.push(esc(p.full_name || "Без имени"));
+    }
+
+    const guestsCount = Math.max(0, visitors.size - knownClients.size);
+
     const dayLabel = new Date(`${day}T12:00:00`).toLocaleDateString("ru-RU", {
       day: "2-digit", month: "long", weekday: "short",
     });
@@ -180,6 +263,28 @@ serve(async (req) => {
       `🆕 Регистраций: <b>${newProfiles.length}</b>  •  ` +
       `📱 Активных в приложении: <b>${activeUsers.size}</b>`,
     );
+
+    L.push("", "<b>👥 Посещаемость</b>");
+    L.push(
+      `Всего визитёров: <b>${visitors.size}</b>  •  ` +
+      `🆕 Новых: <b>${newVisitors.size}</b>  •  ` +
+      `🔁 Вернувшихся клиентов: <b>${knownClients.size}</b>  •  ` +
+      `👤 Гостей без входа: <b>${guestsCount}</b>`,
+    );
+    if (visitorNames.length) {
+      L.push(`Кто заходил: ${visitorNames.join(", ")}`);
+    }
+
+    L.push("", "<b>📈 Конверсия</b>");
+    L.push(
+      `• Открыли запись: <b>${bookingOpen}</b> (${pct(bookingOpen, visitors.size)}% от визитов)\n` +
+      `• Завершили бронь: <b>${bookingDone}</b> (${pct(bookingDone, bookingOpen)}% от открывших)\n` +
+      `• Заявок гостей: <b>${guests.length}</b>  •  Регистраций: <b>${signupDone || newProfiles.length}</b>`,
+    );
+
+    if (deviceLines.length) {
+      L.push("", "<b>💻 Устройства</b>", ...deviceLines);
+    }
 
     if (sessionLines.length) {
       L.push("", "<b>Тренировки</b>", ...sessionLines);
@@ -222,6 +327,32 @@ serve(async (req) => {
 
     if (debts.length) L.push("", "🔴 <b>Долги</b>", ...debts);
     if (lowBalance.length) L.push("", "⚠️ <b>Заканчиваются занятия</b>", ...lowBalance);
+
+    // ---------- Вывод ----------
+    const verdict: string[] = [];
+    if (visitors.size === 0) {
+      verdict.push("Трафика не было — брони и покупки ожидать неоткуда.");
+    } else if (bookingDone > 0 || guests.length > 0) {
+      verdict.push(
+        `Брони есть (${bookingDone + guests.length}). Основной источник — ${
+          deviceLines[0] ? deviceLines[0].replace("• ", "").split(" — ")[0] : "мобильные"
+        }.`,
+      );
+    } else if (bookingOpen > 0) {
+      verdict.push(
+        `Запись открывали ${bookingOpen} раз, но никто не дошёл до конца — узкое место внутри формы брони (дата/время/данные).`,
+      );
+    } else if (newVisitors.size > 0) {
+      verdict.push(
+        `${newVisitors.size} новых зашли, но до кнопки записи не добрались — не хватает призыва к действию на первом экране.`,
+      );
+    } else {
+      verdict.push("Заходили только знакомые пользователи, попыток брони не было.");
+    }
+    if (debts.length) verdict.push(`Есть долги по занятиям: ${debts.length} — стоит напомнить об оплате.`);
+    if (lowBalance.length) verdict.push(`У ${lowBalance.length} клиентов заканчивается пакет — момент для продления.`);
+
+    L.push("", "🧠 <b>Вывод</b>", ...verdict.map((v) => `• ${v}`));
 
     const text = L.join("\n");
 
