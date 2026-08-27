@@ -366,23 +366,38 @@ serve(async (req) => {
     const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
     if (!TG_TOKEN || !TG_CHAT) throw new Error("Telegram credentials are not configured");
 
-    const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TG_CHAT,
-        text: text.slice(0, 4000),
-        parse_mode: "HTML",
-        disable_web_page_preview: true,
-      }),
-    });
-    const tg = await res.json();
-    if (!res.ok || tg?.ok === false) {
-      console.error("Telegram error:", res.status, JSON.stringify(tg));
-      return new Response(JSON.stringify({ error: "Telegram send failed", details: tg }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+    // Отчёт может быть длинным — режем по строкам, чтобы «Вывод» не терялся
+    const chunks: string[] = [];
+    let buf = "";
+    for (const line of text.split("\n")) {
+      if ((buf + "\n" + line).length > 3800) {
+        chunks.push(buf);
+        buf = line;
+      } else {
+        buf = buf ? `${buf}\n${line}` : line;
+      }
+    }
+    if (buf) chunks.push(buf);
+
+    for (const chunk of chunks) {
+      const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: TG_CHAT,
+          text: chunk,
+          parse_mode: "HTML",
+          disable_web_page_preview: true,
+        }),
       });
+      const tg = await res.json();
+      if (!res.ok || tg?.ok === false) {
+        console.error("Telegram error:", res.status, JSON.stringify(tg));
+        return new Response(JSON.stringify({ error: "Telegram send failed", details: tg }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ ok: true, date: day, sessions: sessions.length }), {
