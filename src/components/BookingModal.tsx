@@ -848,6 +848,28 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   </div>
                 )}
 
+                {/* Guest price summary */}
+                {!user && (
+                  <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm text-muted-foreground">
+                        {lang === 'en' ? 'Single session' : 'Разовая тренировка'}
+                      </p>
+                      <p className="text-sm font-bold">100€</p>
+                    </div>
+                    <div className="h-px bg-primary/10" />
+                    <div className="flex items-center justify-between">
+                      <p className="text-base font-bold">{lang === 'en' ? 'Total' : 'Итого'}</p>
+                      <p className="text-lg font-extrabold text-primary">100€</p>
+                    </div>
+                    <p className="text-[10px] text-muted-foreground/70">
+                      {lang === 'en'
+                        ? 'Payment is made before the session via Revolut or cash.'
+                        : 'Оплата производится перед тренировкой через Revolut или наличными.'}
+                    </p>
+                  </div>
+                )}
+
                 {user && (
                   <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-3">
                     <p className="text-xs text-destructive font-medium">
