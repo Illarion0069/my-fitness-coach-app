@@ -617,16 +617,18 @@ serve(async (req) => {
     const localTimeStr = `${nowParts.hour}:${nowParts.minute}`;
     const isToday = localDateStr === log_date;
 
-    // End-of-day mode = dinner already logged, OR past day, OR local time >= 21:00.
-    // In that case the AI gives a FINAL day verdict + plan for tomorrow (Tolstikova-style),
+    // End-of-day mode = past day, OR local time >= 21:00, OR dinner logged late (>= 19:00).
+    // A "dinner" logged at 17:00 does NOT close the day — the client can still eat/log more.
+    // In end-of-day mode the AI gives a FINAL day verdict + plan for tomorrow (Tolstikova-style),
     // not "boost it now" tips. Midday mode = actionable tips for the rest of today.
     const mealTypesLogged = new Set<string>([
       ...((photos || []) as any[]).map(p => String(p?.meal_type || "").toLowerCase()),
       ...manualEntries.map(e => String((e.meal_type as string) || "").toLowerCase()),
     ]);
     const hasDinner = mealTypesLogged.has("dinner");
-    const isEndOfDay = !isToday || hasDinner || localHour >= 21;
+    const isEndOfDay = !isToday || localHour >= 21 || (hasDinner && localHour >= 19);
     const mode = isEndOfDay ? "end_of_day" : "midday";
+
 
     // --- Meal-by-meal progress tracking (what was eaten, what is still ahead) ---
     const MEAL_ORDER = ["breakfast", "lunch", "dinner"] as const;
