@@ -127,6 +127,13 @@ Your nutrition philosophy follows evidence-based fat-loss principles aligned wit
   - Если приём пищи идеален — в summary прямо так и скажи: "тут всё на месте, ничего не меняй" / "perfect plate, keep it". Не добавляй "но можно ещё...". Похвала без хвостов.
 - Tone: like a coach showing the path UP when it's needed, and stepping back when the client already nailed it. Never invent problems to fill space.
 
+## HOW TO SET "overall_score" (hard rule — do not violate):
+- overall_score primarily reflects the QUALITY of what the client actually logged (weighted average of meal scores), NOT how many meals are missing.
+- In MODE = "midday" NEVER penalize the client for meals that have not happened yet or were not logged yet. Score only what is on the table. A single decent meal at 14:00 must not produce a score like 10–20.
+- In MODE = "end_of_day" missing main meals / a very low-calorie day MAY lower the score, but by at most 25 points below the weighted average of the logged meals. Floor: if at least one logged meal scores ≥ 40, overall_score must be ≥ 35.
+- Only give overall_score < 20 when what was actually logged is genuinely bad (ultra-processed food, alcohol-heavy day, zero protein AND zero vegetables) — never merely because few meals were logged.
+
+
 IMPORTANT: For detected_foods, return an array of objects with name, portion_g, calories, protein_g, carbs_g, fat_g for each detected food item — these are used ONLY for qualitative feedback (positives, issues, scoring), NOT for daily totals. The server will recompute total_calories, total_protein_g, total_carbs_g, total_fat_g and per-meal calorie/macro totals strictly from the client's manual_entries (the source of truth). You may still return totals fields, but they will be overridden. Do NOT add extra "phantom" foods to detected_foods that the client did not log via manual_entries — only describe what the client actually entered.`;
 
 const SYSTEM_PROMPT_MUSCLE_GAIN = `You are an expert nutritionist AI working with a personal fitness trainer's clients.
@@ -248,6 +255,7 @@ Your nutrition philosophy for lean muscle gain:
 - "boost_potential.achievable_today" = realistic score reachable if tips are followed (overall_score + sum of points_gain, capped at 95). Missing meal = biggest boost.
 - "boost_potential.tips" = 1–3 highest-leverage actions, sorted by points_gain descending. Frame positively: "Добавь...", "Замени...", "Логируй...". NEVER "не ешь / нельзя".
 - Tone: coach showing the path UP, not punishing. Motivate to try.
+- overall_score = quality of what was actually logged (weighted average of meal scores). In MODE = "midday" never penalize for meals that have not happened yet; in "end_of_day" a low-calorie / incomplete day may cut at most 25 points off that average, floor 35 if any logged meal scores ≥ 40.
 
 IMPORTANT: Same totals-recompute rule as in the fat-loss prompt. The server overrides total_* fields from the client's manual_entries (source of truth). Do NOT invent foods the client did not log.`;
 
@@ -617,16 +625,18 @@ serve(async (req) => {
     const localTimeStr = `${nowParts.hour}:${nowParts.minute}`;
     const isToday = localDateStr === log_date;
 
-    // End-of-day mode = dinner already logged, OR past day, OR local time >= 21:00.
-    // In that case the AI gives a FINAL day verdict + plan for tomorrow (Tolstikova-style),
+    // End-of-day mode = past day, OR local time >= 21:00, OR dinner logged late (>= 19:00).
+    // A "dinner" logged at 17:00 does NOT close the day — the client can still eat/log more.
+    // In end-of-day mode the AI gives a FINAL day verdict + plan for tomorrow (Tolstikova-style),
     // not "boost it now" tips. Midday mode = actionable tips for the rest of today.
     const mealTypesLogged = new Set<string>([
       ...((photos || []) as any[]).map(p => String(p?.meal_type || "").toLowerCase()),
       ...manualEntries.map(e => String((e.meal_type as string) || "").toLowerCase()),
     ]);
     const hasDinner = mealTypesLogged.has("dinner");
-    const isEndOfDay = !isToday || hasDinner || localHour >= 21;
+    const isEndOfDay = !isToday || localHour >= 21 || (hasDinner && localHour >= 19);
     const mode = isEndOfDay ? "end_of_day" : "midday";
+
 
     // --- Meal-by-meal progress tracking (what was eaten, what is still ahead) ---
     const MEAL_ORDER = ["breakfast", "lunch", "dinner"] as const;
