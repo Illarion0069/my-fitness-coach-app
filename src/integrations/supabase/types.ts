@@ -24,6 +24,7 @@ export type Database = {
           label: string
           path: string | null
           props: Json
+          referrer: string | null
           user_id: string | null
         }
         Insert: {
@@ -35,6 +36,7 @@ export type Database = {
           label: string
           path?: string | null
           props?: Json
+          referrer?: string | null
           user_id?: string | null
         }
         Update: {
@@ -46,6 +48,7 @@ export type Database = {
           label?: string
           path?: string | null
           props?: Json
+          referrer?: string | null
           user_id?: string | null
         }
         Relationships: []
