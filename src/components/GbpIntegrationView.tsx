@@ -224,7 +224,7 @@ const GbpIntegrationView = ({ lang }: Props) => {
                     className="w-full flex items-start gap-2.5 text-left py-1.5 group"
                   >
                     <span
-                      className={`mt-0.5 w-4.5 h-4.5 min-w-[18px] h-[18px] rounded-md border flex items-center justify-center transition-colors ${
+                      className={`mt-0.5 w-[18px] h-[18px] shrink-0 rounded-md border flex items-center justify-center transition-colors ${
                         checked ? 'bg-primary border-primary text-primary-foreground' : 'border-border group-hover:border-primary/60'
                       }`}
                     >
