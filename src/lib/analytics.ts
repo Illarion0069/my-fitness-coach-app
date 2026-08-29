@@ -46,6 +46,46 @@ supabase.auth.onAuthStateChange((_e, session) => {
   cachedUserId = session?.user?.id ?? null;
 });
 
+// --- Источник перехода (referrer + UTM), фиксируется один раз на сессию ---
+const REF_KEY = "app_referrer";
+
+function categorizeSource(raw: string | null, utmSource: string | null): string | null {
+  if (utmSource) return utmSource.toLowerCase();
+  if (!raw) return null;
+  try {
+    const u = new URL(raw);
+    if (u.origin === window.location.origin) return null; // внутренний переход
+    const h = u.hostname.toLowerCase();
+    if (h.includes("google") && (u.pathname.startsWith("/maps") || h.includes("maps"))) return "Google Maps";
+    if (h.includes("google")) return "Google";
+    if (h.includes("yandex")) return "Yandex";
+    if (h.includes("instagram") || h.includes("l.instagram")) return "Instagram";
+    if (h.includes("facebook") || h.includes("fb.com") || h.includes("l.facebook")) return "Facebook";
+    if (h.includes("t.me") || h.includes("telegram")) return "Telegram";
+    if (h.includes("wa.me") || h.includes("whatsapp")) return "WhatsApp";
+    if (h.includes("tiktok")) return "TikTok";
+    return h.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
+
+function getReferrer(): string | null {
+  try {
+    const cached = sessionStorage.getItem(REF_KEY);
+    if (cached !== null) return cached || null;
+
+    const params = new URLSearchParams(window.location.search);
+    const utmSource = params.get("utm_source");
+    const source = categorizeSource(document.referrer, utmSource);
+    const value = source || "Прямой заход";
+    sessionStorage.setItem(REF_KEY, value);
+    return value;
+  } catch {
+    return null;
+  }
+}
+
 // Небольшая защита от спама одинаковыми событиями
 const lastSent = new Map<string, number>();
 const DEDUP_MS = 1500;
