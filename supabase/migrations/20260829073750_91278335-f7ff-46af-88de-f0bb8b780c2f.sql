@@ -1,0 +1,1 @@
+alter table public.app_events add column if not exists referrer text;

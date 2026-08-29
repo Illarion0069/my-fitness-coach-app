@@ -110,7 +110,7 @@ serve(async (req) => {
 
     const [eventsRes, profilesRes, staffRes] = await Promise.all([
       supabase.from("app_events")
-        .select("user_id, anon_id, event_type, label, path, device, created_at")
+        .select("user_id, anon_id, event_type, label, path, device, referrer, created_at")
         .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc)
         .order("created_at", { ascending: true })
         .limit(20000),
@@ -159,6 +159,9 @@ serve(async (req) => {
     const perClient = new Map<string, number>();
     const funnelReach = new Map<string, Set<string>>();
     const timeline = new Map<string, any[]>(); // vid -> события (для новых/гостей)
+    const sourceByVisitor = new Map<string, string>(); // vid -> источник
+    const sourcesVisitors = new Map<string, Set<string>>(); // источник -> посетители
+    const bookedBySource = new Map<string, number>(); // источник -> записавшиеся
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
@@ -167,6 +170,12 @@ serve(async (req) => {
 
       if (!timeline.has(vid)) timeline.set(vid, []);
       timeline.get(vid)!.push(e);
+
+      if (e.referrer && !sourceByVisitor.has(vid)) {
+        sourceByVisitor.set(vid, e.referrer);
+        if (!sourcesVisitors.has(e.referrer)) sourcesVisitors.set(e.referrer, new Set());
+        sourcesVisitors.get(e.referrer)!.add(vid);
+      }
 
       const isNew = e.user_id ? isNewClient.has(e.user_id) : false;
       if (!e.user_id) visitorsGuests.add(vid);
@@ -178,6 +187,10 @@ serve(async (req) => {
       } else if (e.event_type === "funnel") {
         if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
         funnelReach.get(e.label)!.add(vid);
+        if (e.label === "booking_done") {
+          const src = sourceByVisitor.get(vid);
+          if (src) bump(bookedBySource, src);
+        }
       } else {
         if (!e.user_id) bump(clicksGuests, e.label);
         else if (isNew) bump(clicksNew, e.label);
@@ -319,6 +332,18 @@ serve(async (req) => {
       .map(([d, c]) => `${d}: ${Math.round((c / Math.max(1, events.length)) * 100)}%`)
       .join(" • ");
 
+    // --- Источники трафика ---
+    const sourceLines = [...sourcesVisitors.entries()]
+      .sort((a, b) => b[1].size - a[1].size)
+      .slice(0, 8)
+      .map(([src, set]) => {
+        const booked = bookedBySource.get(src) || 0;
+        return `• ${esc(src)} — ${set.size} чел.${booked ? ` · ✅ записей: ${booked}` : ""}`;
+      }).join("\n");
+    const sourcesBlock = sourceLines
+      ? `\n\n<b>🌐 Откуда пришли</b>\n${sourceLines}`
+      : "";
+
     let text: string;
     if (events.length === 0) {
       text = `📈 <b>Активность в приложении — ${esc(dateLabel)}</b>\n\nЗа день не зафиксировано ни одного действия клиентов.`;
@@ -328,7 +353,7 @@ serve(async (req) => {
         `<i>(без учёта вашей активности${excluded ? `, скрыто ${excluded} событий` : ""})</i>\n\n` +
         `👥 Уникальных: <b>${visitorsAll.size}</b> ` +
         `(клиенты: ${visitorsClients.size}, из них новые: ${visitorsNew.size}; гости: ${visitorsGuests.size})\n` +
-        `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}\n\n` +
+        `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}${sourcesBlock}\n\n` +
         `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}\n\n` +
         `<b>Регистрация</b>\n${signupLines}\n\n` +
         (newcomerBlocks.length
