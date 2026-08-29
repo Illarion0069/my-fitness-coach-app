@@ -317,13 +317,13 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
                   {photos && (
                     <div className="grid grid-cols-2 gap-2 mb-3">
                       <div className="relative rounded-2xl overflow-hidden">
-                        <img src={photos.before} alt="Before" className="w-full h-52 object-cover object-top" />
+                        <img src={photos.before} alt={`${lang === 'en' ? 'Client transformation before personal training' : 'Клиент до персональных тренировок'} — Limassol Fitness`} className="w-full h-52 object-cover object-top" />
                         <span className="absolute bottom-2 left-2 bg-background/80 backdrop-blur-sm text-foreground text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase">
                           {lang === 'en' ? 'Before' : 'До'}
                         </span>
                       </div>
                       <div className="relative rounded-2xl overflow-hidden">
-                        <img src={photos.after} alt="After" className="w-full h-52 object-cover object-top" />
+                        <img src={photos.after} alt={`${lang === 'en' ? 'Client transformation after personal training' : 'Клиент после персональных тренировок'} — Limassol Fitness`} className="w-full h-52 object-cover object-top" />
                         <span className="absolute bottom-2 left-2 bg-primary/90 text-primary-foreground text-[10px] font-bold px-2 py-0.5 rounded-lg uppercase">
                           {lang === 'en' ? 'After' : 'После'}
                         </span>
