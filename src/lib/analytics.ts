@@ -112,6 +112,7 @@ export async function trackEvent(
       label: clean,
       path: window.location.pathname + window.location.hash,
       device: getDevice(),
+      referrer: getReferrer(),
       props: props as never,
     });
   } catch {
