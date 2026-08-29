@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { motion, Reorder } from 'framer-motion';
-import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3, Download, MapPin } from 'lucide-react';
+import { Users, Send, UserPlus, LogOut, GripVertical, CalendarDays, Search, X, BarChart3, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 import FinanceStatsView from '@/components/FinanceStatsView';
-import GbpIntegrationView from '@/components/GbpIntegrationView';
+
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from '@/components/AvatarTierBadge';
 
 interface Profile {
@@ -50,7 +50,7 @@ const AdminSection = () => {
   const [newClientEmail, setNewClientEmail] = useState('');
   const [newClientPhone, setNewClientPhone] = useState('');
   const [inviting, setInviting] = useState(false);
-  const [viewMode, setViewMode] = useState<'clients' | 'calendar' | 'stats' | 'gbp'>('clients');
+  const [viewMode, setViewMode] = useState<'clients' | 'calendar' | 'stats'>('clients');
   const [allSessions, setAllSessions] = useState<{ user_id: string; session_date: string; is_recurring: boolean; recurrence_day: number | null }[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
@@ -418,8 +418,6 @@ const AdminSection = () => {
               <CalendarDays className="w-5 h-5 text-primary-foreground" />
             ) : viewMode === 'stats' ? (
               <BarChart3 className="w-5 h-5 text-primary-foreground" />
-            ) : viewMode === 'gbp' ? (
-              <MapPin className="w-5 h-5 text-primary-foreground" />
             ) : (
               <Users className="w-5 h-5 text-primary-foreground" />
             )}
@@ -429,9 +427,7 @@ const AdminSection = () => {
               ? (lang === 'en' ? 'Calendar' : 'Календарь')
               : viewMode === 'stats'
                 ? (lang === 'en' ? 'Finance' : 'Финансы')
-                : viewMode === 'gbp'
-                  ? (lang === 'en' ? 'Google Profile' : 'Google-профиль')
-                  : (lang === 'en' ? 'Clients' : 'Клиенты')}
+                : (lang === 'en' ? 'Clients' : 'Клиенты')}
           </h1>
           {viewMode === 'clients' && (
             <button
@@ -482,20 +478,9 @@ const AdminSection = () => {
             <BarChart3 className="w-3.5 h-3.5" />
             {lang === 'en' ? 'Stats' : 'Финансы'}
           </button>
-          <button
-            onClick={() => setViewMode('gbp')}
-            className={`flex-1 text-xs font-bold py-2 rounded-lg flex items-center justify-center gap-1.5 transition-colors ${
-              viewMode === 'gbp' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            {lang === 'en' ? 'Google' : 'Google'}
-          </button>
         </div>
 
-        {viewMode === 'gbp' ? (
-          <GbpIntegrationView lang={lang} />
-        ) : viewMode === 'stats' ? (
+        {viewMode === 'stats' ? (
           <FinanceStatsView lang={lang} />
         ) : viewMode === 'calendar' ? (
           <div className="space-y-4">
