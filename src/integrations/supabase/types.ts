@@ -371,6 +371,33 @@ export type Database = {
         }
         Relationships: []
       }
+      gbp_settings: {
+        Row: {
+          checklist: Json
+          created_at: string
+          fields: Json
+          id: string
+          trainer_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          fields?: Json
+          id?: string
+          trainer_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          fields?: Json
+          id?: string
+          trainer_user_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guest_bookings: {
         Row: {
           created_at: string
