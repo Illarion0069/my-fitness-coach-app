@@ -110,7 +110,7 @@ serve(async (req) => {
 
     const [eventsRes, profilesRes, staffRes] = await Promise.all([
       supabase.from("app_events")
-        .select("user_id, anon_id, event_type, label, path, device, created_at")
+        .select("user_id, anon_id, event_type, label, path, device, referrer, created_at")
         .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc)
         .order("created_at", { ascending: true })
         .limit(20000),
