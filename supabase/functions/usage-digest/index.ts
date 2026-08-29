@@ -353,7 +353,7 @@ serve(async (req) => {
         `<i>(без учёта вашей активности${excluded ? `, скрыто ${excluded} событий` : ""})</i>\n\n` +
         `👥 Уникальных: <b>${visitorsAll.size}</b> ` +
         `(клиенты: ${visitorsClients.size}, из них новые: ${visitorsNew.size}; гости: ${visitorsGuests.size})\n` +
-        `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}\n\n` +
+        `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}${sourcesBlock}\n\n` +
         `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}\n\n` +
         `<b>Регистрация</b>\n${signupLines}\n\n` +
         (newcomerBlocks.length
