@@ -86,7 +86,10 @@ serve(async (req) => {
 
       const clientName = profile?.full_name || "Клиент";
       const summaryRu = (analysis.summary_ru || analysis.summary_en || log.ai_feedback || "") as string;
-      const scoreEmoji = score >= 75 ? "🟢" : score >= 50 ? "🟡" : "🔴";
+      const hasScore = log.ai_score != null;
+      const scoreEmoji = !hasScore ? "⚪️" : score >= 75 ? "🟢" : score >= 50 ? "🟡" : "🔴";
+      const scoreText = hasScore ? `Оценка: <b>${score}/100</b>` : "Без AI-оценки (анализ не запускался)";
+
 
       const meals = (analysis.meals as Array<Record<string, unknown>>) || [];
       const mealsDetail = meals.map((m) => {
