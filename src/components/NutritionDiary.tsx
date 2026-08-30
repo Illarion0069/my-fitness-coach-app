@@ -1231,6 +1231,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       setEditFoodFat(String(f));
       // Reset baseline so future portion-change scales from the new values
       setEditFoodOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      setMacroFlash(true);
+      setTimeout(() => setMacroFlash(false), 1500);
       toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
     } catch (e: any) {
       toast({ title: lang === 'en' ? 'Recalc failed' : 'Ошибка пересчёта', description: e?.message, variant: 'destructive' });
@@ -1747,7 +1749,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                   <input value={editFoodName} onChange={e => setEditFoodName(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                     placeholder={lang === 'en' ? 'Food name' : 'Название'} />
-                                  <div className="grid grid-cols-5 gap-1.5">
+                                  <div className={`grid grid-cols-5 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
                                      <div>
                                       <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
                                       <input type="number" value={editFoodPortion} onChange={e => handlePortionChange(e.target.value)}
