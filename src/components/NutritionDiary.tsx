@@ -249,6 +249,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   // Snapshot of original food at edit-start — used to auto-scale macros when portion changes
   const [editFoodOrig, setEditFoodOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
   const [editFoodRecalcLoading, setEditFoodRecalcLoading] = useState(false);
+  const [macroFlash, setMacroFlash] = useState(false);
   const [editingManualId, setEditingManualId] = useState<string | null>(null);
   const [editManualName, setEditManualName] = useState('');
   const [editManualPortion, setEditManualPortion] = useState('');
@@ -1079,6 +1080,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       setEditManualCarbs(String(c));
       setEditManualFat(String(f));
       setEditManualOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      setMacroFlash(true);
+      setTimeout(() => setMacroFlash(false), 1500);
       toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
     } catch (e: any) {
       toast({ title: lang === 'en' ? 'Recalc failed' : 'Ошибка пересчёта', description: e?.message, variant: 'destructive' });
@@ -1230,6 +1233,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       setEditFoodFat(String(f));
       // Reset baseline so future portion-change scales from the new values
       setEditFoodOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      setMacroFlash(true);
+      setTimeout(() => setMacroFlash(false), 1500);
       toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
     } catch (e: any) {
       toast({ title: lang === 'en' ? 'Recalc failed' : 'Ошибка пересчёта', description: e?.message, variant: 'destructive' });
@@ -1746,7 +1751,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                   <input value={editFoodName} onChange={e => setEditFoodName(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                     placeholder={lang === 'en' ? 'Food name' : 'Название'} />
-                                  <div className="grid grid-cols-5 gap-1.5">
+                                  <div className={`grid grid-cols-5 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
                                      <div>
                                       <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
                                       <input type="number" value={editFoodPortion} onChange={e => handlePortionChange(e.target.value)}
@@ -1776,12 +1781,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                   <button
                                     onClick={handleRecalcFoodMacros}
                                     disabled={editFoodRecalcLoading || !editFoodName.trim()}
-                                    className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                                    className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-70 disabled:pointer-events-none flex items-center justify-center gap-1"
                                   >
                                     {editFoodRecalcLoading
-                                      ? <Loader2 className="w-3 h-3 animate-spin" />
-                                      : <Sparkles className="w-3 h-3" />}
-                                    {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                      ? (<>
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          {lang === 'en' ? 'Counting…' : 'Считаю…'}
+                                        </>)
+                                      : (<>
+                                          <Sparkles className="w-3 h-3" />
+                                          {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                        </>)}
                                   </button>
                                   <div className="flex gap-1.5">
                                     <button onClick={() => { setEditingFood(null); setEditFoodOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
@@ -1841,7 +1851,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               <input value={editManualName} onChange={e => setEditManualName(e.target.value)}
                                 className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                 placeholder={lang === 'en' ? 'Food name' : 'Название'} />
-                              <div className="grid grid-cols-5 gap-1.5">
+                              <div className={`grid grid-cols-5 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
                                 <div>
                                   <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
                                   <input type="number" value={editManualPortion} onChange={e => handleManualPortionChange(e.target.value)}
@@ -1871,12 +1881,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               <button
                                 onClick={handleRecalcManualMacros}
                                 disabled={editManualRecalcLoading || !editManualName.trim()}
-                                className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                                className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-70 disabled:pointer-events-none flex items-center justify-center gap-1"
                               >
                                 {editManualRecalcLoading
-                                  ? <Loader2 className="w-3 h-3 animate-spin" />
-                                  : <Sparkles className="w-3 h-3" />}
-                                {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                  ? (<>
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      {lang === 'en' ? 'Counting…' : 'Считаю…'}
+                                    </>)
+                                  : (<>
+                                      <Sparkles className="w-3 h-3" />
+                                      {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                    </>)}
                               </button>
                               <div className="flex gap-1.5">
                                 <button onClick={() => { setEditingManualId(null); setEditManualOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
