@@ -1776,12 +1776,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                   <button
                                     onClick={handleRecalcFoodMacros}
                                     disabled={editFoodRecalcLoading || !editFoodName.trim()}
-                                    className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                                    className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-70 disabled:pointer-events-none flex items-center justify-center gap-1"
                                   >
                                     {editFoodRecalcLoading
-                                      ? <Loader2 className="w-3 h-3 animate-spin" />
-                                      : <Sparkles className="w-3 h-3" />}
-                                    {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                      ? (<>
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          {lang === 'en' ? 'Counting…' : 'Считаю…'}
+                                        </>)
+                                      : (<>
+                                          <Sparkles className="w-3 h-3" />
+                                          {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                        </>)}
                                   </button>
                                   <div className="flex gap-1.5">
                                     <button onClick={() => { setEditingFood(null); setEditFoodOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
@@ -1871,12 +1876,17 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               <button
                                 onClick={handleRecalcManualMacros}
                                 disabled={editManualRecalcLoading || !editManualName.trim()}
-                                className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-50 flex items-center justify-center gap-1"
+                                className="w-full h-7 rounded-lg bg-primary/10 border border-primary/30 text-[10px] font-bold text-primary disabled:opacity-70 disabled:pointer-events-none flex items-center justify-center gap-1"
                               >
                                 {editManualRecalcLoading
-                                  ? <Loader2 className="w-3 h-3 animate-spin" />
-                                  : <Sparkles className="w-3 h-3" />}
-                                {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                  ? (<>
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                      {lang === 'en' ? 'Counting…' : 'Считаю…'}
+                                    </>)
+                                  : (<>
+                                      <Sparkles className="w-3 h-3" />
+                                      {lang === 'en' ? 'Recalculate KBJU from name & portion' : 'Пересчитать КБЖУ по названию и порции'}
+                                    </>)}
                               </button>
                               <div className="flex gap-1.5">
                                 <button onClick={() => { setEditingManualId(null); setEditManualOrig(null); }} className="flex-1 h-8 rounded-lg bg-secondary/50 text-[11px] font-bold text-muted-foreground">
