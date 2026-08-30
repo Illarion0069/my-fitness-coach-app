@@ -33,19 +33,46 @@ serve(async (req) => {
     const quietMinutes = typeof body?.quiet_minutes === "number" ? body.quiet_minutes : QUIET_MINUTES;
     const cutoff = new Date(Date.now() - quietMinutes * 60_000).toISOString();
 
-    const { data: logs, error } = await supabase
+    const cols = "id, user_id, log_date, ai_score, ai_feedback, ai_analysis, manual_entries";
+
+    const { data: pendingLogs, error } = await supabase
       .from("nutrition_logs")
-      .select("id, user_id, log_date, ai_score, ai_feedback, ai_analysis, manual_entries")
+      .select(cols)
       .eq("report_pending", true)
       .lt("report_marked_at", cutoff)
       .limit(20);
 
     if (error) throw error;
-    if (!logs || logs.length === 0) {
+
+    // Safety net: the day has food but the AI analysis never ran (voice/manual entries
+    // added while the app was closed, AI error, etc.). The trainer must still get the
+    // day summary once the client stopped editing.
+    const since = new Date(Date.now() - 3 * 24 * 3600_000).toISOString().slice(0, 10);
+    const { data: orphanLogs } = await supabase
+      .from("nutrition_logs")
+      .select(cols + ", updated_at")
+      .is("report_sent_at", null)
+      .eq("report_pending", false)
+      .gte("log_date", since)
+      .lt("updated_at", cutoff)
+      .limit(20);
+
+    const seen = new Set((pendingLogs ?? []).map((l) => l.id));
+    const logs = [
+      ...(pendingLogs ?? []),
+      ...((orphanLogs ?? []) as Array<Record<string, unknown>>).filter((l) =>
+        !seen.has(l.id as string) &&
+        Array.isArray(l.manual_entries) &&
+        (l.manual_entries as unknown[]).length > 0
+      ),
+    ] as Array<Record<string, any>>;
+
+    if (logs.length === 0) {
       return new Response(JSON.stringify({ success: true, sent: 0 }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
 
     let sent = 0;
     const appUrl = "https://my-fitness-coach-app.lovable.app";
