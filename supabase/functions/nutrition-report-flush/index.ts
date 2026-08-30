@@ -128,7 +128,7 @@ serve(async (req) => {
       ].filter(Boolean).join("  •  ");
       const sourceLine = sourceParts ? `\n🧾 Способ ввода: ${sourceParts}` : "";
 
-      const msg = `🍽 <b>Дневник питания — итог дня</b>\n\n👤 ${clientName}\n📅 ${log.log_date}\n${scoreEmoji} Оценка: <b>${score}/100</b>${sourceLine}\n\n${mealsDetail ? mealsDetail + "\n" : ""}${detail}\n\n💬 ${summaryRu}\n\n🔗 <a href="${appUrl}">Открыть приложение</a>`;
+      const msg = `🍽 <b>Дневник питания — итог дня</b>\n\n👤 ${clientName}\n📅 ${log.log_date}\n${scoreEmoji} ${scoreText}${sourceLine}\n\n${mealsDetail ? mealsDetail + "\n" : ""}${detail}\n\n${summaryRu ? `💬 ${summaryRu}\n\n` : ""}🔗 <a href="${appUrl}">Открыть приложение</a>`;
 
       if (TG_TOKEN && TG_CHAT) {
         const res = await fetch(`https://api.telegram.org/bot${TG_TOKEN}/sendMessage`, {
