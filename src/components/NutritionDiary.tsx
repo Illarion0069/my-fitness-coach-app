@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
 import HintDot from './HintDot';
 import { compressImage } from '@/lib/imageCompress';
+import { withSignedFoodPhotos, signFoodPhotoPath, foodPhotoPath } from '@/lib/foodPhotoUrl';
 import VoiceFoodInput, { VoiceFoodItem } from './VoiceFoodInput';
 
 
@@ -304,8 +305,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       supabase.from('nutrition_logs').select('*').eq('user_id', effectiveUserId).eq('log_date', date).maybeSingle(),
       supabase.from('food_photos').select('*').eq('user_id', effectiveUserId).eq('log_date', date).order('created_at', { ascending: true }),
     ]);
-    diaryCache.set(ck, { log: logRes.data || null, photos: photosRes.data || [], ts: Date.now() });
-    applyLogData(logRes.data, (photosRes.data as any[]) || []);
+    // The bucket is private — swap stored paths for short-lived signed URLs before rendering.
+    const signedPhotos = await withSignedFoodPhotos(((photosRes.data as any[]) || []) as FoodPhoto[]);
+    diaryCache.set(ck, { log: logRes.data || null, photos: signedPhotos, ts: Date.now() });
+    applyLogData(logRes.data, signedPhotos);
   }, [effectiveUserId, date, applyLogData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
@@ -480,8 +483,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('food-photos').getPublicUrl(path);
+      // Bucket is private: the function signs the path server-side before showing it to the AI.
       const { data: validation, error: valError } = await supabase.functions.invoke('validate-food-photo', {
-        body: { photo_url: publicUrl },
+        body: { photo_path: path },
       });
       if (!valError && validation && !validation.is_food) {
         await supabase.storage.from('food-photos').remove([path]);
@@ -579,8 +583,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const executeDeletePhoto = async (photo: FoodPhoto) => {
     const hasAnalysis = log?.ai_score != null;
     try {
-      const urlParts = photo.photo_url.split('/food-photos/');
-      const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
+      const storagePath = foodPhotoPath(photo.photo_url);
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
 

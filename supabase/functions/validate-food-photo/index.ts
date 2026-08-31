@@ -7,9 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ALLOWED_URL_PREFIX = Deno.env.get("SUPABASE_URL")
-  ? `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/food-photos/`
-  : null;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -42,27 +39,40 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
 
-    const { photo_url } = await req.json();
-    if (!photo_url || typeof photo_url !== "string") {
-      return new Response(JSON.stringify({ error: "photo_url required" }), {
+    const body = await req.json();
+    const rawPath: unknown = body?.photo_path ??
+      (typeof body?.photo_url === "string" ? body.photo_url.split("?")[0].split("/food-photos/")[1] : undefined);
+
+    if (!rawPath || typeof rawPath !== "string" || rawPath.length > 500) {
+      return new Response(JSON.stringify({ error: "photo_path required" }), {
         status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const photoPath = decodeURIComponent(rawPath);
+
+    // Photos live under "<user_id>/..." — a client may only validate its own upload.
+    if (photoPath.split("/")[0] !== userData.user.id) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    if (ALLOWED_URL_PREFIX && !photo_url.startsWith(ALLOWED_URL_PREFIX)) {
-      return new Response(JSON.stringify({ error: "Invalid photo URL" }), {
-        status: 400,
+    // The bucket is private; sign a short-lived URL for the AI gateway to fetch.
+    const serviceClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+    const { data: signed, error: signError } = await serviceClient.storage
+      .from("food-photos")
+      .createSignedUrl(photoPath, 300);
+    if (signError || !signed?.signedUrl) {
+      console.error("Failed to sign food photo:", signError);
+      return new Response(JSON.stringify({ error: "Could not read photo" }), {
+        status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    const photo_url = signed.signedUrl;
 
-    if (photo_url.length > 500) {
-      return new Response(JSON.stringify({ error: "URL too long" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
