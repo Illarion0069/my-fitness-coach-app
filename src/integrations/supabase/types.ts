@@ -614,6 +614,7 @@ export type Database = {
           signup_notified_at: string | null
           telegram_chat_id: string | null
           telegram_link_code: string | null
+          trainer_user_id: string | null
           updated_at: string
           user_id: string
           weight_kg: number | null
@@ -638,6 +639,7 @@ export type Database = {
           signup_notified_at?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
+          trainer_user_id?: string | null
           updated_at?: string
           user_id: string
           weight_kg?: number | null
@@ -662,6 +664,7 @@ export type Database = {
           signup_notified_at?: string | null
           telegram_chat_id?: string | null
           telegram_link_code?: string | null
+          trainer_user_id?: string | null
           updated_at?: string
           user_id?: string
           weight_kg?: number | null
@@ -1090,6 +1093,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_my_client: { Args: { _client_user_id: string }; Returns: boolean }
       latest_weight_kg: { Args: { _user_id: string }; Returns: number }
     }
     Enums: {
