@@ -15,7 +15,7 @@ const NotFound = () => {
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">
       <PageHead
-        title="Page not found — Limassol Fitness"
+        title="Page not found — Limassol Fitness — Personal Trainer Illarion Ientin"
         description="This page doesn't exist. Head back to Limassol Fitness to book a personal training session in Limassol, Cyprus."
         path={location.pathname}
         noIndex
