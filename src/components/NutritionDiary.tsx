@@ -483,8 +483,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage.from('food-photos').getPublicUrl(path);
+      // Bucket is private: the function signs the path server-side before showing it to the AI.
       const { data: validation, error: valError } = await supabase.functions.invoke('validate-food-photo', {
-        body: { photo_url: publicUrl },
+        body: { photo_path: path },
       });
       if (!valError && validation && !validation.is_food) {
         await supabase.storage.from('food-photos').remove([path]);
