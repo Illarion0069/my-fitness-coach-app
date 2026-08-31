@@ -11,9 +11,9 @@ export const translations = {
   },
   hero: {
     title: {
-      line1: { en: 'PERSONAL TRAINER', ru: 'ПЕРСОНАЛЬНЫЙ' },
-      line2: { en: '& GYM', ru: 'ТРЕНЕР И ЗАЛ' },
-      line3: { en: 'IN LIMASSOL', ru: 'В ЛИМАССОЛЕ' },
+      line1: { en: 'PERSONAL', ru: 'ПЕРСОНАЛЬНЫЙ' },
+      line2: { en: 'FITNESS', ru: 'ФИТНЕС' },
+      line3: { en: 'ASSISTANT', ru: 'АССИСТЕНТ' },
     },
     subtitle: {
       en: 'Personal training that fits your life — not the other way around',
