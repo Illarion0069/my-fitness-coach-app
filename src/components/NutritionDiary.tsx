@@ -583,8 +583,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const executeDeletePhoto = async (photo: FoodPhoto) => {
     const hasAnalysis = log?.ai_score != null;
     try {
-      const urlParts = photo.photo_url.split('/food-photos/');
-      const storagePath = urlParts[1] ? decodeURIComponent(urlParts[1]) : null;
+      const storagePath = foodPhotoPath(photo.photo_url);
       if (storagePath) await supabase.storage.from('food-photos').remove([storagePath]);
       await supabase.from('food_photos').delete().eq('id', photo.id);
 
