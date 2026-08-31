@@ -342,7 +342,7 @@ export default function OAuthConsent() {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-5">
       <PageHead
-        title="Connect your account — Limassol Fitness"
+        title="Connect your account — Limassol Fitness — Personal Trainer Illarion Ientin"
         description="Authorize a third-party app to access your Limassol Fitness account data securely."
         path="/.lovable/oauth/consent"
         noIndex
