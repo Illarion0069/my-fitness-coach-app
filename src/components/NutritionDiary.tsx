@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
 import HintDot from './HintDot';
 import { compressImage } from '@/lib/imageCompress';
+import { withSignedFoodPhotos, signFoodPhotoPath, foodPhotoPath } from '@/lib/foodPhotoUrl';
 import VoiceFoodInput, { VoiceFoodItem } from './VoiceFoodInput';
 
 
