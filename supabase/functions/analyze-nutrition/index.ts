@@ -711,10 +711,21 @@ serve(async (req) => {
       },
     ];
 
+    // The food-photos bucket is private — sign each stored path for the AI gateway fetch.
     for (const photo of imagePhotos) {
+      const storedUrl = String(photo.photo_url || "");
+      const rawPath = storedUrl.split("?")[0].split("/food-photos/")[1];
+      if (!rawPath) continue;
+      const { data: signed, error: signError } = await supabase.storage
+        .from("food-photos")
+        .createSignedUrl(decodeURIComponent(rawPath), 600);
+      if (signError || !signed?.signedUrl) {
+        console.error("Failed to sign food photo for analysis:", signError);
+        continue;
+      }
       userContent.push({
         type: "image_url",
-        image_url: { url: photo.photo_url },
+        image_url: { url: signed.signedUrl },
       });
     }
 
