@@ -304,8 +304,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       supabase.from('nutrition_logs').select('*').eq('user_id', effectiveUserId).eq('log_date', date).maybeSingle(),
       supabase.from('food_photos').select('*').eq('user_id', effectiveUserId).eq('log_date', date).order('created_at', { ascending: true }),
     ]);
-    diaryCache.set(ck, { log: logRes.data || null, photos: photosRes.data || [], ts: Date.now() });
-    applyLogData(logRes.data, (photosRes.data as any[]) || []);
+    // The bucket is private — swap stored paths for short-lived signed URLs before rendering.
+    const signedPhotos = await withSignedFoodPhotos(((photosRes.data as any[]) || []) as FoodPhoto[]);
+    diaryCache.set(ck, { log: logRes.data || null, photos: signedPhotos, ts: Date.now() });
+    applyLogData(logRes.data, signedPhotos);
   }, [effectiveUserId, date, applyLogData]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
