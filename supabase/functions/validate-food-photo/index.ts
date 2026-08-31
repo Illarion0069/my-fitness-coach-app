@@ -7,9 +7,6 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const ALLOWED_URL_PREFIX = Deno.env.get("SUPABASE_URL")
-  ? `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/food-photos/`
-  : null;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
