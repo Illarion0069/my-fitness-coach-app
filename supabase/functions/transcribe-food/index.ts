@@ -40,10 +40,13 @@ Rules:
 - Never skip anything the person named, even if it seems minor (sauce, sugar in coffee, a cookie, a spoon of oil).
 - If the person names an amount ("three eggs", "200 grams of rice", "a large cappuccino", "a glass of wine"), use it to compute portion_g. For drinks, portion_g = millilitres.
 - If no amount is given, assume a realistic standard portion for that food or drink (espresso 30ml, cappuccino 200ml, mug of tea 250ml, glass of juice 250ml, glass of wine 150ml, beer 500ml).
-- Use USDA/standard nutrition values. Never inflate.
+- Use USDA/standard nutrition values. Never inflate. Be deterministic: the same description must always produce the same numbers.
 - Cross-check: calories ≈ protein_g*4 + carbs_g*4 + fat_g*9. Fix mismatches (alcohol is the exception: 7 kcal per gram of ethanol).
 - Reference per 100g/100ml: chicken breast ~165kcal, rice cooked ~130kcal, bread ~265kcal, banana ~89kcal, egg ~155kcal, olive oil ~884kcal, milk ~42kcal, cappuccino ~40kcal, black coffee ~2kcal, tea ~1kcal, orange juice ~45kcal, dry wine ~85kcal, beer ~43kcal.
+- PROTEIN SANITY: protein per 100g is low for most dishes. Vegetable salads (incl. Greek salad with feta) ~2-4g/100g, pizza ~11g/100g, pasta dishes ~5-8g/100g, cooked meat/fish ~20-30g/100g, cheese ~20g/100g, eggs ~13g/100g. Never assign meat-level protein to a vegetable dish. A 250g Greek salad is ~200-230 kcal with ~7g protein, ~13g fat, ~10g carbs.
+- Macros must be physically possible for the portion: protein_g ≤ 0.32 × portion_g, fat_g ≤ 1.0 × portion_g, carbs_g ≤ 0.85 × portion_g.
 - Integers only for numeric fields.
+
 - "name" must be in the user's language (ru or en, given below).
 - If the description contains nothing edible or drinkable, return {"items": []}.`;
 
@@ -119,6 +122,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        temperature: 0,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
@@ -155,9 +159,15 @@ serve(async (req) => {
           .slice(0, 20)
           .map((i: Record<string, unknown>) => {
             const portion_g = Math.max(0, Math.min(3000, Math.round(Number(i.portion_g) || 0)));
-            const protein_g = Math.max(0, Math.min(200, Math.round(Number(i.protein_g) || 0)));
-            const carbs_g = Math.max(0, Math.min(500, Math.round(Number(i.carbs_g) || 0)));
-            const fat_g = Math.max(0, Math.min(200, Math.round(Number(i.fat_g) || 0)));
+            // Physical density ceilings — a portion cannot contain more macros than it weighs.
+            const capBy = (v: unknown, perGram: number, hardMax: number) => {
+              const val = Math.max(0, Math.round(Number(v) || 0));
+              const cap = portion_g > 0 ? Math.round(portion_g * perGram) : hardMax;
+              return Math.min(val, cap, hardMax);
+            };
+            const protein_g = capBy(i.protein_g, 0.32, 200);
+            const carbs_g = capBy(i.carbs_g, 0.85, 500);
+            const fat_g = capBy(i.fat_g, 1.0, 200);
             let calories = Math.max(0, Math.round(Number(i.calories) || 0));
             const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
             const name = String(i.name || (lang === "en" ? "Food" : "Еда")).slice(0, 80);

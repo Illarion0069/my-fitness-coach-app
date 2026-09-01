@@ -82,6 +82,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        temperature: 0,
         response_format: { type: "json_object" },
         messages: [
           {
@@ -101,6 +102,9 @@ CRITICAL rules for accurate estimation:
 - Estimate the ACTUAL visible portion size in grams carefully. A typical plate has 200-400g of food total.
 - Use standard USDA/nutritional database values per 100g, then multiply by actual portion.
 - Cross-check: calories must approximately equal (protein_g * 4) + (carbs_g * 4) + (fat_g * 9). If not, fix the values.
+- PROTEIN SANITY: vegetable salads (incl. Greek salad with feta) ~2-4g protein per 100g, pizza ~11g/100g, pasta dishes ~5-8g/100g, cooked meat/fish ~20-30g/100g, eggs ~13g/100g. Never assign meat-level protein to a vegetable dish.
+- Macros must be physically possible: protein_g ≤ 0.32 × portion_g, fat_g ≤ 1.0 × portion_g, carbs_g ≤ 0.85 × portion_g.
+- Be deterministic: the same photo must always produce the same numbers.
 - A typical meal is 300-700 kcal. Only exceed 800 kcal if the portion is clearly very large or calorie-dense (fried food, large pasta, etc.)
 - A protein shake/smoothie is typically 150-350 kcal per serving (300-500ml)
 - A salad is typically 150-400 kcal
@@ -142,9 +146,15 @@ CRITICAL rules for accurate estimation:
             .map((item: Record<string, unknown>) => {
               const portion_g = Math.max(0, Math.min(2000, Math.round(Number(item.portion_g) || 0)));
               let calories = Math.max(0, Math.round(Number(item.calories) || 0));
-              const protein_g = Math.max(0, Math.min(200, Math.round(Number(item.protein_g) || 0)));
-              const carbs_g = Math.max(0, Math.min(500, Math.round(Number(item.carbs_g) || 0)));
-              const fat_g = Math.max(0, Math.min(200, Math.round(Number(item.fat_g) || 0)));
+              // Physical density ceilings — a portion cannot contain more macros than it weighs.
+              const capBy = (v: unknown, perGram: number, hardMax: number) => {
+                const val = Math.max(0, Math.round(Number(v) || 0));
+                const cap = portion_g > 0 ? Math.round(portion_g * perGram) : hardMax;
+                return Math.min(val, cap, hardMax);
+              };
+              const protein_g = capBy(item.protein_g, 0.32, 200);
+              const carbs_g = capBy(item.carbs_g, 0.85, 500);
+              const fat_g = capBy(item.fat_g, 1.0, 200);
               // Sanity: recalculate calories from macros if AI value is wildly off
               const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
               if (macroCalc > 0 && (calories > macroCalc * 1.5 || calories < macroCalc * 0.5)) {
