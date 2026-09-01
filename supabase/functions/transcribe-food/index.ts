@@ -122,6 +122,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
+        temperature: 0,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemPrompt },
@@ -158,9 +159,15 @@ serve(async (req) => {
           .slice(0, 20)
           .map((i: Record<string, unknown>) => {
             const portion_g = Math.max(0, Math.min(3000, Math.round(Number(i.portion_g) || 0)));
-            const protein_g = Math.max(0, Math.min(200, Math.round(Number(i.protein_g) || 0)));
-            const carbs_g = Math.max(0, Math.min(500, Math.round(Number(i.carbs_g) || 0)));
-            const fat_g = Math.max(0, Math.min(200, Math.round(Number(i.fat_g) || 0)));
+            // Physical density ceilings — a portion cannot contain more macros than it weighs.
+            const capBy = (v: unknown, perGram: number, hardMax: number) => {
+              const val = Math.max(0, Math.round(Number(v) || 0));
+              const cap = portion_g > 0 ? Math.round(portion_g * perGram) : hardMax;
+              return Math.min(val, cap, hardMax);
+            };
+            const protein_g = capBy(i.protein_g, 0.32, 200);
+            const carbs_g = capBy(i.carbs_g, 0.85, 500);
+            const fat_g = capBy(i.fat_g, 1.0, 200);
             let calories = Math.max(0, Math.round(Number(i.calories) || 0));
             const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
             const name = String(i.name || (lang === "en" ? "Food" : "Еда")).slice(0, 80);
