@@ -249,8 +249,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editFoodProtein, setEditFoodProtein] = useState('');
   const [editFoodCarbs, setEditFoodCarbs] = useState('');
   const [editFoodFat, setEditFoodFat] = useState('');
+  const [editFoodFiber, setEditFoodFiber] = useState('');
   // Snapshot of original food at edit-start — used to auto-scale macros when portion changes
-  const [editFoodOrig, setEditFoodOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const [editFoodOrig, setEditFoodOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number } | null>(null);
   const [editFoodRecalcLoading, setEditFoodRecalcLoading] = useState(false);
   const [macroFlash, setMacroFlash] = useState(false);
   const [editingManualId, setEditingManualId] = useState<string | null>(null);
@@ -260,7 +261,8 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const [editManualProtein, setEditManualProtein] = useState('');
   const [editManualCarbs, setEditManualCarbs] = useState('');
   const [editManualFat, setEditManualFat] = useState('');
-  const [editManualOrig, setEditManualOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number } | null>(null);
+  const [editManualFiber, setEditManualFiber] = useState('');
+  const [editManualOrig, setEditManualOrig] = useState<{ portion_g: number; calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number } | null>(null);
   const [editManualRecalcLoading, setEditManualRecalcLoading] = useState(false);
   const [confirmDeleteManualId, setConfirmDeleteManualId] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -1037,12 +1039,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditManualProtein(String(entry.protein_g || ''));
     setEditManualCarbs(String(entry.carbs_g || ''));
     setEditManualFat(String(entry.fat_g || ''));
+    setEditManualFiber(String((entry as any).fiber_g || ''));
     setEditManualOrig({
       portion_g: Number(entry.portion_g) || 0,
       calories: Number(entry.calories) || 0,
       protein_g: Number(entry.protein_g) || 0,
       carbs_g: Number(entry.carbs_g) || 0,
       fat_g: Number(entry.fat_g) || 0,
+      fiber_g: Number((entry as any).fiber_g) || 0,
     });
   };
 
@@ -1057,6 +1061,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditManualProtein(String(Math.round(editManualOrig.protein_g * ratio)));
     setEditManualCarbs(String(Math.round(editManualOrig.carbs_g * ratio)));
     setEditManualFat(String(Math.round(editManualOrig.fat_g * ratio)));
+    setEditManualFiber(String(Math.round(editManualOrig.fiber_g * ratio))); 
   };
 
   const handleRecalcManualMacros = async () => {
@@ -1082,11 +1087,13 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const p = Math.round((Number(top.protein_g) || 0) * k);
       const c = Math.round((Number(top.carbs_g) || 0) * k);
       const f = Math.round((Number(top.fat_g) || 0) * k);
+      const fib = Math.round((Number(top.fiber_g) || 0) * k);
       setEditManualCal(String(cal));
       setEditManualProtein(String(p));
       setEditManualCarbs(String(c));
       setEditManualFat(String(f));
-      setEditManualOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      setEditManualFiber(String(fib));
+      setEditManualOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f, fiber_g: fib });
       setMacroFlash(true);
       setTimeout(() => setMacroFlash(false), 1500);
       toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
@@ -1108,6 +1115,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       protein_g: parseInt(editManualProtein) || 0,
       carbs_g: parseInt(editManualCarbs) || 0,
       fat_g: parseInt(editManualFat) || 0,
+      fiber_g: parseInt(editManualFiber) || 0,
     };
     const entries = ((log.manual_entries || []) as ManualEntry[]).map(e =>
       e.id === editingManualId ? { ...e, ...patch } : e
@@ -1161,6 +1169,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       protein_g: parseInt(editFoodProtein) || 0,
       carbs_g: parseInt(editFoodCarbs) || 0,
       fat_g: parseInt(editFoodFat) || 0,
+      fiber_g: parseInt(editFoodFiber) || 0,
     };
     meal.detected_foods[editingFood.index] = { ...prevFood, ...patch };
     const updatedAnalysis = recalcAnalysisTotals({ ...a, meals });
@@ -1186,12 +1195,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditFoodProtein(String(food.protein_g || ''));
     setEditFoodCarbs(String(food.carbs_g || ''));
     setEditFoodFat(String(food.fat_g || ''));
+    setEditFoodFiber(String(food.fiber_g || ''));
     setEditFoodOrig({
       portion_g: Number(food.portion_g) || 0,
       calories: Number(food.calories) || 0,
       protein_g: Number(food.protein_g) || 0,
       carbs_g: Number(food.carbs_g) || 0,
       fat_g: Number(food.fat_g) || 0,
+      fiber_g: Number(food.fiber_g) || 0,
     });
   };
 
@@ -1207,6 +1218,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     setEditFoodProtein(String(Math.round(editFoodOrig.protein_g * ratio)));
     setEditFoodCarbs(String(Math.round(editFoodOrig.carbs_g * ratio)));
     setEditFoodFat(String(Math.round(editFoodOrig.fat_g * ratio)));
+    setEditFoodFiber(String(Math.round(editFoodOrig.fiber_g * ratio)));
   };
 
   // Recalculate KBJU from current name+portion via food-suggest AI
@@ -1234,12 +1246,14 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       const p = Math.round((Number(top.protein_g) || 0) * k);
       const c = Math.round((Number(top.carbs_g) || 0) * k);
       const f = Math.round((Number(top.fat_g) || 0) * k);
+      const fib = Math.round((Number(top.fiber_g) || 0) * k);
       setEditFoodCal(String(cal));
       setEditFoodProtein(String(p));
       setEditFoodCarbs(String(c));
       setEditFoodFat(String(f));
+      setEditFoodFiber(String(fib));
       // Reset baseline so future portion-change scales from the new values
-      setEditFoodOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f });
+      setEditFoodOrig({ portion_g: portion, calories: cal, protein_g: p, carbs_g: c, fat_g: f, fiber_g: fib });
       setMacroFlash(true);
       setTimeout(() => setMacroFlash(false), 1500);
       toast({ title: lang === 'en' ? 'Recalculated ✨' : 'Пересчитано ✨' });
@@ -1762,7 +1776,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                   <input value={editFoodName} onChange={e => setEditFoodName(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                     placeholder={lang === 'en' ? 'Food name' : 'Название'} />
-                                  <div className={`grid grid-cols-5 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
+                                  <div className={`grid grid-cols-6 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
                                      <div>
                                       <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
                                       <input type="number" value={editFoodPortion} onChange={e => handlePortionChange(e.target.value)}
@@ -1786,6 +1800,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                     <div>
                                       <label className="text-[8px] text-muted-foreground block mb-0.5">F</label>
                                       <input type="number" value={editFoodFat} onChange={e => setEditFoodFat(e.target.value)}
+                                        className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                    </div>
+                                    <div>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">FIB</label>
+                                      <input type="number" value={editFoodFiber} onChange={e => setEditFoodFiber(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                   </div>
@@ -1828,6 +1847,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                     {f.protein_g != null && <span style={{ color: 'hsl(142, 71%, 45%)' }}>P{f.protein_g}</span>}
                                     {f.carbs_g != null && <span style={{ color: 'hsl(45, 93%, 47%)' }}>C{f.carbs_g}</span>}
                                     {f.fat_g != null && <span style={{ color: 'hsl(280, 65%, 60%)' }}>F{f.fat_g}</span>}
+                                    {f.fiber_g != null && <span style={{ color: 'hsl(160, 60%, 45%)' }}>Fib{f.fiber_g}</span>}
                                   </div>
                                   {(!isReadOnly || isTrainer) && (
                                     <button onClick={() => handleDeleteAiFood(mt.key, i)} className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground/40 hover:text-destructive transition-colors">
@@ -1862,7 +1882,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                               <input value={editManualName} onChange={e => setEditManualName(e.target.value)}
                                 className="w-full bg-background border border-border/50 rounded-lg px-2.5 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
                                 placeholder={lang === 'en' ? 'Food name' : 'Название'} />
-                              <div className={`grid grid-cols-5 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
+                              <div className={`grid grid-cols-6 gap-1.5 rounded-lg transition-shadow ${macroFlash ? 'ring-2 ring-green-400/80 animate-pulse' : ''}`}>
                                 <div>
                                   <label className="text-[8px] text-muted-foreground block mb-0.5">g</label>
                                   <input type="number" value={editManualPortion} onChange={e => handleManualPortionChange(e.target.value)}
@@ -1886,6 +1906,11 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                 <div>
                                   <label className="text-[8px] text-muted-foreground block mb-0.5">F</label>
                                   <input type="number" value={editManualFat} onChange={e => setEditManualFat(e.target.value)}
+                                    className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
+                                </div>
+                                <div>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">FIB</label>
+                                  <input type="number" value={editManualFiber} onChange={e => setEditManualFiber(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
                               </div>
