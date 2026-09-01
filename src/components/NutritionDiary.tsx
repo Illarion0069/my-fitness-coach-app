@@ -1788,22 +1788,22 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                     <div>
-                                      <label className="text-[8px] text-muted-foreground block mb-0.5">P</label>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'P' : 'Б'}</label>
                                       <input type="number" value={editFoodProtein} onChange={e => setEditFoodProtein(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                     <div>
-                                      <label className="text-[8px] text-muted-foreground block mb-0.5">C</label>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'C' : 'У'}</label>
                                       <input type="number" value={editFoodCarbs} onChange={e => setEditFoodCarbs(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                     <div>
-                                      <label className="text-[8px] text-muted-foreground block mb-0.5">F</label>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'F' : 'Ж'}</label>
                                       <input type="number" value={editFoodFat} onChange={e => setEditFoodFat(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
                                     <div>
-                                      <label className="text-[8px] text-muted-foreground block mb-0.5">FIB</label>
+                                      <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'FIB' : 'КЛ'}</label>
                                       <input type="number" value={editFoodFiber} onChange={e => setEditFoodFiber(e.target.value)}
                                         className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                     </div>
@@ -1894,22 +1894,22 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-muted-foreground block mb-0.5">P</label>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'P' : 'Б'}</label>
                                   <input type="number" value={editManualProtein} onChange={e => setEditManualProtein(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-muted-foreground block mb-0.5">C</label>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'C' : 'У'}</label>
                                   <input type="number" value={editManualCarbs} onChange={e => setEditManualCarbs(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-muted-foreground block mb-0.5">F</label>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'F' : 'Ж'}</label>
                                   <input type="number" value={editManualFat} onChange={e => setEditManualFat(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
                                 <div>
-                                  <label className="text-[8px] text-muted-foreground block mb-0.5">FIB</label>
+                                  <label className="text-[8px] text-muted-foreground block mb-0.5">{lang === 'en' ? 'FIB' : 'КЛ'}</label>
                                   <input type="number" value={editManualFiber} onChange={e => setEditManualFiber(e.target.value)}
                                     className="w-full bg-background border border-border/50 rounded-lg px-1.5 py-1 text-[11px] text-foreground focus:outline-none focus:border-primary/50" />
                                 </div>
