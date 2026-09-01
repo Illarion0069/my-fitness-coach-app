@@ -59,7 +59,8 @@ Response format (JSON only, no markdown):
       "calories": 110,
       "protein_g": 18,
       "carbs_g": 2,
-      "fat_g": 4
+      "fat_g": 4,
+      "fiber_g": 0
     }
   ]
 }
@@ -73,6 +74,8 @@ CRITICAL accuracy rules:
 - Include different cooking methods when applicable
 - Sort by most common/popular first
 - Names should be concise (2-4 words)
+- fiber_g = dietary fiber per 100g. Reference: psyllium husk ~85g, wheat bran ~43g, chia ~34g, flax ~27g, beans ~7g, oats ~10g, vegetables ~2-4g, fruit ~2-3g, meat/fish/eggs/dairy/oils = 0.
+- fiber_g must never exceed carbs_g + 5 and never exceed 90.
 - If query is in Russian, prioritize Russian food names; if in English, use English names. Always provide both.`;
 
     const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
@@ -83,6 +86,7 @@ CRITICAL accuracy rules:
       },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-lite",
+        temperature: 0,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: `Search: "${safeQuery}" (user language: ${lang === "en" ? "en" : "ru"})` },
@@ -119,6 +123,7 @@ CRITICAL accuracy rules:
           const protein_g = Math.max(0, Math.min(100, Math.round(Number(s.protein_g) || 0)));
           const carbs_g = Math.max(0, Math.min(100, Math.round(Number(s.carbs_g) || 0)));
           const fat_g = Math.max(0, Math.min(100, Math.round(Number(s.fat_g) || 0)));
+          const fiber_g = Math.max(0, Math.min(90, Math.round(Number(s.fiber_g) || 0)));
           let calories = Math.max(0, Math.round(Number(s.calories) || 0));
           // Recalculate from macros if off by >50%
           const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
@@ -127,7 +132,7 @@ CRITICAL accuracy rules:
           }
           // Per-100g cap at 900 (pure fat is ~884)
           calories = Math.min(900, calories);
-          return { ...s, calories, protein_g, carbs_g, fat_g, portion_g: 100 };
+          return { ...s, calories, protein_g, carbs_g, fat_g, fiber_g, portion_g: 100 };
         });
       }
     } catch {
