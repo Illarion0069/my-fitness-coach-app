@@ -1089,19 +1089,37 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                   <div
                     key={i}
                     onClick={(e) => { if (!m.noToggle) { e.stopPropagation(); setMacroUnit(u => (u === 'g' ? 'pct' : 'g')); } }}
-                    className="rounded-2xl bg-secondary/40 px-2.5 py-2 min-w-0 cursor-pointer active:scale-[0.97] transition-transform"
+                    className={`rounded-2xl bg-secondary/40 min-w-0 cursor-pointer active:scale-[0.97] transition-transform ${m.accent ? 'col-span-2 flex items-center gap-3 px-3 py-2' : 'px-2.5 py-2'}`}
                   >
-                    <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
-                    <div className={`text-[12px] font-extrabold truncate ${m.accent ? 'text-primary' : m.over ? 'text-destructive' : 'text-foreground'}`}>{m.v}</div>
-                    <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                        className={`h-full rounded-full ${m.over ? 'bg-destructive' : 'bg-primary'}`}
-                      />
-                    </div>
-
+                    {m.accent ? (
+                      <>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
+                          <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
+                              transition={{ duration: 0.8, ease: 'easeOut' }}
+                              className="h-full rounded-full bg-primary"
+                            />
+                          </div>
+                        </div>
+                        <span className="font-heading text-[22px] leading-none text-primary shrink-0">{m.v}</span>
+                      </>
+                    ) : (
+                      <>
+                        <div className="text-[9px] font-bold uppercase tracking-[0.12em] text-muted-foreground truncate">{m.l}</div>
+                        <div className={`text-[12px] font-extrabold truncate ${m.over ? 'text-destructive' : 'text-foreground'}`}>{m.v}</div>
+                        <div className="h-1 rounded-full bg-background/70 mt-1.5 overflow-hidden">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(Math.max(m.pct, 0), 100)}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            className={`h-full rounded-full ${m.over ? 'bg-destructive' : 'bg-primary'}`}
+                          />
+                        </div>
+                      </>
+                    )}
                   </div>
                 ))}
               </div>
