@@ -146,9 +146,15 @@ CRITICAL rules for accurate estimation:
             .map((item: Record<string, unknown>) => {
               const portion_g = Math.max(0, Math.min(2000, Math.round(Number(item.portion_g) || 0)));
               let calories = Math.max(0, Math.round(Number(item.calories) || 0));
-              const protein_g = Math.max(0, Math.min(200, Math.round(Number(item.protein_g) || 0)));
-              const carbs_g = Math.max(0, Math.min(500, Math.round(Number(item.carbs_g) || 0)));
-              const fat_g = Math.max(0, Math.min(200, Math.round(Number(item.fat_g) || 0)));
+              // Physical density ceilings — a portion cannot contain more macros than it weighs.
+              const capBy = (v: unknown, perGram: number, hardMax: number) => {
+                const val = Math.max(0, Math.round(Number(v) || 0));
+                const cap = portion_g > 0 ? Math.round(portion_g * perGram) : hardMax;
+                return Math.min(val, cap, hardMax);
+              };
+              const protein_g = capBy(item.protein_g, 0.32, 200);
+              const carbs_g = capBy(item.carbs_g, 0.85, 500);
+              const fat_g = capBy(item.fat_g, 1.0, 200);
               // Sanity: recalculate calories from macros if AI value is wildly off
               const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
               if (macroCalc > 0 && (calories > macroCalc * 1.5 || calories < macroCalc * 0.5)) {
