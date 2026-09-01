@@ -7,7 +7,7 @@ import {
   ShoppingCart, Trophy, Settings, Plus, Calculator,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { computeNutritionTotals } from '@/lib/nutritionTotals';
+import { computeNutritionTotals, FIBER_GOAL_G } from '@/lib/nutritionTotals';
 import { localizeName } from '@/lib/nameTransliterate';
 
 import { useAuth } from '@/contexts/AuthContext';
@@ -258,7 +258,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [measurements, setMeasurements] = useState<any[]>([]);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
-  const [todayMacros, setTodayMacros] = useState<{ protein: number; carbs: number; fat: number }>({ protein: 0, carbs: 0, fat: 0 });
+  const [todayMacros, setTodayMacros] = useState<{ protein: number; carbs: number; fat: number; fiber: number }>({ protein: 0, carbs: 0, fat: 0, fiber: 0 });
   const [todayScore, setTodayScore] = useState<number | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [bookingStep, setBookingStep] = useState<'date' | 'my-sessions'>('my-sessions');
@@ -401,7 +401,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       if (cancelled) return;
       const totals = computeNutritionTotals(data);
       setTodayKcal(totals.calories);
-      setTodayMacros({ protein: Math.round(totals.protein), carbs: Math.round(totals.carbs), fat: Math.round(totals.fat) });
+      setTodayMacros({ protein: Math.round(totals.protein), carbs: Math.round(totals.carbs), fat: Math.round(totals.fat), fiber: Math.round(totals.fiber) });
       const sc = (data as any)?.trainer_override_score ?? (data as any)?.ai_score ?? null;
       setTodayScore(sc == null ? null : Number(sc));
     })();
@@ -1074,6 +1074,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                     { l: lang === 'en' ? 'Protein' : 'Белки', v: fmt(todayMacros.protein, pTarget), pct: pTarget ? (todayMacros.protein / pTarget) * 100 : 0, over: pTarget ? todayMacros.protein > pTarget : false },
                     { l: lang === 'en' ? 'Carbs' : 'Углеводы', v: fmt(todayMacros.carbs, cTarget), pct: cTarget ? (todayMacros.carbs / cTarget) * 100 : 0, over: cTarget ? todayMacros.carbs > cTarget : false },
                     { l: lang === 'en' ? 'Fat' : 'Жиры', v: fmt(todayMacros.fat, fTarget), pct: fTarget ? (todayMacros.fat / fTarget) * 100 : 0, over: fTarget ? todayMacros.fat > fTarget : false },
+                    // Fiber: target is a floor, not a cap — going over is good, so never flagged red.
+                    { l: lang === 'en' ? 'Fiber' : 'Клетчатка', v: fmt(todayMacros.fiber, FIBER_GOAL_G), pct: (todayMacros.fiber / FIBER_GOAL_G) * 100, over: false },
                     {
                       l: lang === 'en' ? 'Score' : 'Оценка',
                       v: todayScore == null ? '—' : `${todayScore >= 90 ? 'A' : todayScore >= 75 ? 'B' : todayScore >= 60 ? 'C' : 'D'} · ${todayScore}`,

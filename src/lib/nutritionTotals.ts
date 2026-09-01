@@ -43,6 +43,9 @@ export interface NutritionTotals {
  *  - tea: 5 kcal / cup
  *  - alcohol: 0.6 kcal / ml (average of wine/beer/spirits mixes)
  */
+/** Daily dietary fiber target (g) — same for all clients. */
+export const FIBER_GOAL_G = 30;
+
 export const LIQUID_KCAL = { coffeeCup: 20, teaCup: 5, alcoholMl: 0.6 } as const;
 
 export function computeLiquidCalories(log: any): number {

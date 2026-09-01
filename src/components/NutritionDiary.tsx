@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo, forwardRef, useCallback } from 'react';
 import { ChevronLeft, ChevronRight, ChevronDown, Camera, Mic, Loader2, Trash2, Plus, Droplets, Coffee, Wine, Minus, Sparkles, Edit3, ImagePlus, Flame, X, Check, PencilLine, HelpCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { computeNutritionTotals } from '@/lib/nutritionTotals';
+import { computeNutritionTotals, FIBER_GOAL_G } from '@/lib/nutritionTotals';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { showAppError } from '@/components/AppErrorDialog';
