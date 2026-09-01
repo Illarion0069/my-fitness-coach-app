@@ -47,6 +47,7 @@ interface DetectedFood {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  fiber_g?: number;
 }
 
 interface ManualEntry {
@@ -57,6 +58,7 @@ interface ManualEntry {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  fiber_g?: number;
   portion_g?: number;
   meal_time?: string;
   created_at: string;
@@ -538,6 +540,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           protein_g: Math.max(0, Math.round(Number(item.protein_g) || 0)),
           carbs_g: Math.max(0, Math.round(Number(item.carbs_g) || 0)),
           fat_g: Math.max(0, Math.round(Number(item.fat_g) || 0)),
+          fiber_g: Math.max(0, Math.round(Number(item.fiber_g) || 0)),
           meal_time: mealTime || undefined,
           created_at: new Date().toISOString(),
           photo_id: photoId,
@@ -878,6 +881,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
       protein_g: Math.max(0, Math.round(i.protein_g || 0)),
       carbs_g: Math.max(0, Math.round(i.carbs_g || 0)),
       fat_g: Math.max(0, Math.round(i.fat_g || 0)),
+      fiber_g: Math.max(0, Math.round((i as any).fiber_g || 0)),
       portion_g: Math.max(0, Math.round(i.portion_g || 0)) || undefined,
       meal_time: mealTime || undefined,
       created_at: new Date().toISOString(),
@@ -1340,6 +1344,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: 'P', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', macroRatio: 0.30 },
     { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: 'C', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', macroRatio: 0.40 },
     { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: 'F', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', macroRatio: 0.30 },
+    { key: 'fiber', label: lang === 'en' ? 'Fiber' : 'Клетчатка', short: lang === 'en' ? 'FIB' : 'КЛ', value: totals.fiber, unit: 'g', color: 'hsl(160, 60%, 40%)', macroRatio: 0, fixedGoal: FIBER_GOAL_G },
   ];
 
   const liquidItems = [
@@ -1465,13 +1470,16 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           </div>
 
           {/* Macro rings — Cal AI style thin rings around/below the main ring */}
-          <div className="flex items-center justify-center gap-6 mt-6">
+          <div className="flex items-center justify-center gap-4 mt-6">
             {macros.map(m => {
-              const goal = (calorieGoal && calorieGoal > 0) ? Math.round((calorieGoal * m.macroRatio) / (m.key === 'fat' ? 9 : 4)) : null;
+              const goal = (m as any).fixedGoal
+                ? (m as any).fixedGoal as number
+                : ((calorieGoal && calorieGoal > 0) ? Math.round((calorieGoal * m.macroRatio) / (m.key === 'fat' ? 9 : 4)) : null);
               const ringMax = goal && goal > 0 ? goal : Math.max(m.value, 1);
               const ringValue = goal && goal > 0 ? Math.min(m.value, goal) : m.value;
               const centerValue = !isToday ? m.value : (goal && goal > 0 ? Math.max(0, goal - m.value) : m.value);
-              const over = goal && goal > 0 && m.value > goal;
+              // Fiber has no upper limit — exceeding the target is a good thing, never red.
+              const over = !(m as any).fixedGoal && !!goal && goal > 0 && m.value > goal;
               return (
                 <div key={m.key} className="flex flex-col items-center">
                   <div className="relative">

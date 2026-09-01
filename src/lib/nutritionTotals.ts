@@ -17,6 +17,7 @@ export interface ManualEntryLike {
   protein_g?: number | null;
   carbs_g?: number | null;
   fat_g?: number | null;
+  fiber_g?: number | null;
   photo_id?: string | null;
   [k: string]: any;
 }
@@ -31,6 +32,7 @@ export interface NutritionTotals {
   protein: number;
   carbs: number;
   fat: number;
+  fiber: number;
 }
 
 /**
@@ -52,7 +54,7 @@ export function computeLiquidCalories(log: any): number {
 }
 
 export function computeNutritionTotals(log: NutritionLogLike | null | undefined): NutritionTotals {
-  let calories = 0, protein = 0, carbs = 0, fat = 0;
+  let calories = 0, protein = 0, carbs = 0, fat = 0, fiber = 0;
 
 
   const analysis: any = log?.ai_analysis;
@@ -64,12 +66,14 @@ export function computeNutritionTotals(log: NutritionLogLike | null | undefined)
       protein  += Number(analysis.total_protein_g) || 0;
       carbs    += Number(analysis.total_carbs_g)   || 0;
       fat      += Number(analysis.total_fat_g)     || 0;
+      fiber    += Number(analysis.total_fiber_g)   || 0;
     } else if (Array.isArray(analysis.meals)) {
       for (const m of analysis.meals) {
         calories += Number(m?.estimated_calories) || 0;
         protein  += Number(m?.protein_g) || 0;
         carbs    += Number(m?.carbs_g)   || 0;
         fat      += Number(m?.fat_g)     || 0;
+        fiber    += Number(m?.fiber_g)   || 0;
       }
     }
   }
@@ -88,6 +92,7 @@ export function computeNutritionTotals(log: NutritionLogLike | null | undefined)
     protein  += Number(e?.protein_g) || 0;
     carbs    += Number(e?.carbs_g)   || 0;
     fat      += Number(e?.fat_g)     || 0;
+    fiber    += Number(e?.fiber_g)   || 0;
   }
 
   // Liquids (coffee / tea / alcohol) always count toward the day's calories.
@@ -99,6 +104,7 @@ export function computeNutritionTotals(log: NutritionLogLike | null | undefined)
     protein: Math.round(protein),
     carbs: Math.round(carbs),
     fat: Math.round(fat),
+    fiber: Math.round(fiber),
   };
 
 }
