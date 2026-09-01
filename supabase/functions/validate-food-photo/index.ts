@@ -95,7 +95,7 @@ If it IS food, identify visible items and estimate REALISTIC nutrition based on 
 {
   "is_food": true,
   "items": [
-    {"name": "item name", "portion_g": 150, "calories": 250, "protein_g": 10, "carbs_g": 30, "fat_g": 8}
+    {"name": "item name", "portion_g": 150, "calories": 250, "protein_g": 10, "carbs_g": 30, "fat_g": 8, "fiber_g": 4}
   ]
 }
 CRITICAL rules for accurate estimation:
@@ -104,6 +104,7 @@ CRITICAL rules for accurate estimation:
 - Cross-check: calories must approximately equal (protein_g * 4) + (carbs_g * 4) + (fat_g * 9). If not, fix the values.
 - PROTEIN SANITY: vegetable salads (incl. Greek salad with feta) ~2-4g protein per 100g, pizza ~11g/100g, pasta dishes ~5-8g/100g, cooked meat/fish ~20-30g/100g, eggs ~13g/100g. Never assign meat-level protein to a vegetable dish.
 - Macros must be physically possible: protein_g ≤ 0.32 × portion_g, fat_g ≤ 1.0 × portion_g, carbs_g ≤ 0.85 × portion_g.
+- FIBER: always return fiber_g (dietary fiber). It is part of carbs_g, never larger than carbs_g and ≤ 0.25 × portion_g. Per 100g: vegetables ~2-3g, leafy salad ~1.5g, legumes ~6-8g, whole grain bread ~7g, fruit ~2-3g, nuts ~7g. Meat, fish, eggs, dairy, oil = 0.
 - Be deterministic: the same photo must always produce the same numbers.
 - A typical meal is 300-700 kcal. Only exceed 800 kcal if the portion is clearly very large or calorie-dense (fried food, large pasta, etc.)
 - A protein shake/smoothie is typically 150-350 kcal per serving (300-500ml)
@@ -155,6 +156,7 @@ CRITICAL rules for accurate estimation:
               const protein_g = capBy(item.protein_g, 0.32, 200);
               const carbs_g = capBy(item.carbs_g, 0.85, 500);
               const fat_g = capBy(item.fat_g, 1.0, 200);
+              const fiber_g = Math.min(capBy(item.fiber_g, 0.25, 100), carbs_g);
               // Sanity: recalculate calories from macros if AI value is wildly off
               const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
               if (macroCalc > 0 && (calories > macroCalc * 1.5 || calories < macroCalc * 0.5)) {
@@ -162,7 +164,7 @@ CRITICAL rules for accurate estimation:
               }
               // Cap single item at 1500 kcal
               calories = Math.min(1500, calories);
-              return { name: String(item.name || "Food"), portion_g, calories, protein_g, carbs_g, fat_g };
+              return { name: String(item.name || "Food"), portion_g, calories, protein_g, carbs_g, fat_g, fiber_g };
             })
         : [];
 

@@ -30,7 +30,7 @@ const systemPrompt = `You convert a person's description of what they ate into a
 Return ONLY valid JSON, no markdown:
 {
   "items": [
-    {"name": "Scrambled eggs", "portion_g": 150, "calories": 220, "protein_g": 18, "carbs_g": 2, "fat_g": 16}
+    {"name": "Scrambled eggs", "portion_g": 150, "calories": 220, "protein_g": 18, "carbs_g": 2, "fat_g": 16, "fiber_g": 1}
   ]
 }
 
@@ -45,6 +45,7 @@ Rules:
 - Reference per 100g/100ml: chicken breast ~165kcal, rice cooked ~130kcal, bread ~265kcal, banana ~89kcal, egg ~155kcal, olive oil ~884kcal, milk ~42kcal, cappuccino ~40kcal, black coffee ~2kcal, tea ~1kcal, orange juice ~45kcal, dry wine ~85kcal, beer ~43kcal.
 - PROTEIN SANITY: protein per 100g is low for most dishes. Vegetable salads (incl. Greek salad with feta) ~2-4g/100g, pizza ~11g/100g, pasta dishes ~5-8g/100g, cooked meat/fish ~20-30g/100g, cheese ~20g/100g, eggs ~13g/100g. Never assign meat-level protein to a vegetable dish. A 250g Greek salad is ~200-230 kcal with ~7g protein, ~13g fat, ~10g carbs.
 - Macros must be physically possible for the portion: protein_g ≤ 0.32 × portion_g, fat_g ≤ 1.0 × portion_g, carbs_g ≤ 0.85 × portion_g.
+- FIBER: always return fiber_g (dietary fiber). It is part of carbs_g, never larger than carbs_g and ≤ 0.25 × portion_g. Reference per 100g: vegetables ~2-3g, leafy salad ~1.5g, legumes/beans ~6-8g, whole grain bread ~7g, cooked oats ~1.7g, cooked rice ~0.4g, fruit ~2-3g, nuts ~7g. Meat, fish, eggs, dairy, oil, coffee, tea, alcohol = 0.
 - Integers only for numeric fields.
 
 - "name" must be in the user's language (ru or en, given below).
@@ -168,6 +169,7 @@ serve(async (req) => {
             const protein_g = capBy(i.protein_g, 0.32, 200);
             const carbs_g = capBy(i.carbs_g, 0.85, 500);
             const fat_g = capBy(i.fat_g, 1.0, 200);
+            const fiber_g = Math.min(capBy(i.fiber_g, 0.25, 100), carbs_g);
             let calories = Math.max(0, Math.round(Number(i.calories) || 0));
             const macroCalc = protein_g * 4 + carbs_g * 4 + fat_g * 9;
             const name = String(i.name || (lang === "en" ? "Food" : "Еда")).slice(0, 80);
@@ -188,6 +190,7 @@ serve(async (req) => {
               calories,
               protein_g,
               carbs_g,
+              fiber_g,
               fat_g,
             };
           })

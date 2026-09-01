@@ -401,7 +401,7 @@ serve(async (req) => {
       manualEntriesText = `\n\nMANUAL ENTRIES (typed by the client, no photos — you MUST include these in your analysis and overall scoring):\n${manualEntries.map((e, i) => {
         const mealType = (e.meal_type as string) || "unknown";
         const mealTime = (e.meal_time as string) || "unknown";
-        return `Entry ${i + 1}: "${e.name}" — meal_type="${mealType}", meal_time="${mealTime}", calories=${e.calories || 0}, protein=${e.protein_g || 0}g, carbs=${e.carbs_g || 0}g, fat=${e.fat_g || 0}g`;
+        return `Entry ${i + 1}: "${e.name}" — meal_type="${mealType}", meal_time="${mealTime}", calories=${e.calories || 0}, protein=${e.protein_g || 0}g, carbs=${e.carbs_g || 0}g, fat=${e.fat_g || 0}g, fiber=${e.fiber_g || 0}g`;
       }).join('\n')}\n\nCRITICAL: Manual entries are REAL meals the client ate. They MUST affect the overall score. Junk food (pizza, burgers, ice cream, fries, etc.) in manual entries should be penalized just as harshly as if you saw it in a photo. Include each manual entry as a separate meal item in your response.`;
     }
 
@@ -678,6 +678,8 @@ serve(async (req) => {
     // --- MACRO BUDGET (consumed vs personalised targets) — drives "add" vs "stop" advice ---
     const consumedCarbs = manualEntries.reduce((s: number, e: any) => s + (Number(e.carbs_g) || 0), 0);
     const consumedFat = manualEntries.reduce((s: number, e: any) => s + (Number(e.fat_g) || 0), 0);
+    const consumedFiber = manualEntries.reduce((s: number, e: any) => s + (Number(e.fiber_g) || 0), 0);
+    const fiberTarget = 30;
     const fatTarget = calorieGoal > 0 ? Math.round((calorieGoal * 0.28) / 9) : 0;
     const carbTarget = calorieGoal > 0 && proteinTarget > 0 && fatTarget > 0
       ? Math.max(0, Math.round((calorieGoal - proteinTarget * 4 - fatTarget * 9) / 4))
@@ -692,7 +694,7 @@ serve(async (req) => {
     const proteinExceeded = proteinTarget > 0 && consumedProtein > proteinTarget;
     const kcalExceeded = remainingKcal !== null && remainingKcal < 0;
 
-    const macroBudgetBlock = `\n\nMACRO BUDGET vs PERSONAL TARGETS (authoritative — never contradict these numbers):\n- protein: ${fmtMacro(consumedProtein, proteinTarget)}\n- carbs: ${fmtMacro(consumedCarbs, carbTarget)}\n- fat: ${fmtMacro(consumedFat, fatTarget)}\n- calories: ${Math.round(consumedKcal)} / ${calorieGoal > 0 ? calorieGoal : "unknown"} kcal${remainingKcal !== null ? ` (${remainingKcal >= 0 ? `${remainingKcal} kcal remaining` : `EXCEEDED by ${Math.abs(remainingKcal)} kcal`})` : ""}\n\nHARD LOGIC RULES — every recommendation MUST be arithmetically consistent with the numbers above:\n- If a macro is already at or above its target, you are FORBIDDEN to recommend adding more of it ("добери белка", "add protein", "180-200 г курицы") — instead say plainly that this macro is already covered/exceeded today.\n- If protein is EXCEEDED: acknowledge it in one short sentence and, if calories are also exceeded, advise a very light or skipped remaining meal (e.g. vegetables + a little fat, or just water/tea), NOT another protein portion.\n- If REMAINING_KCAL_BUDGET is negative, "eat less / stop here" IS the correct advice — do not invent an extra meal to "balance macros". Give the smallest realistic option (or none) and shift real fixes to tomorrow.\n- Only recommend adding a food when the corresponding macro AND the calorie budget still have room; state the room you are filling (e.g. "осталось ~400 ккал и 30 г белка").\n- Portion grams you suggest must actually fit the remaining budget — check the arithmetic before writing the number.${proteinExceeded ? `\n- TODAY: protein is ALREADY EXCEEDED (${Math.round(consumedProtein)} g vs ${proteinTarget} g). Do not suggest any additional protein portion.` : ""}${kcalExceeded ? `\n- TODAY: calories are ALREADY EXCEEDED by ${Math.abs(remainingKcal!)} kcal. Remaining meals must be minimal or skipped; all improvement tips go to TOMORROW.` : ""}`;
+    const macroBudgetBlock = `\n\nMACRO BUDGET vs PERSONAL TARGETS (authoritative — never contradict these numbers):\n- protein: ${fmtMacro(consumedProtein, proteinTarget)}\n- carbs: ${fmtMacro(consumedCarbs, carbTarget)}\n- fat: ${fmtMacro(consumedFat, fatTarget)}\n- fiber: ${Math.round(consumedFiber)} / ${fiberTarget} g (${consumedFiber >= fiberTarget ? "target met" : `${Math.round(fiberTarget - consumedFiber)} g remaining`})\n- calories: ${Math.round(consumedKcal)} / ${calorieGoal > 0 ? calorieGoal : "unknown"} kcal${remainingKcal !== null ? ` (${remainingKcal >= 0 ? `${remainingKcal} kcal remaining` : `EXCEEDED by ${Math.abs(remainingKcal)} kcal`})` : ""}\n\nHARD LOGIC RULES — every recommendation MUST be arithmetically consistent with the numbers above:\n- If a macro is already at or above its target, you are FORBIDDEN to recommend adding more of it ("добери белка", "add protein", "180-200 г курицы") — instead say plainly that this macro is already covered/exceeded today.\n- If protein is EXCEEDED: acknowledge it in one short sentence and, if calories are also exceeded, advise a very light or skipped remaining meal (e.g. vegetables + a little fat, or just water/tea), NOT another protein portion.\n- If REMAINING_KCAL_BUDGET is negative, "eat less / stop here" IS the correct advice — do not invent an extra meal to "balance macros". Give the smallest realistic option (or none) and shift real fixes to tomorrow.\n- Only recommend adding a food when the corresponding macro AND the calorie budget still have room; state the room you are filling (e.g. "осталось ~400 ккал и 30 г белка").\n- FIBER: target is ~30 g/day. If fiber is below ~20 g, name it as a concrete issue and suggest a specific high-fiber addition (vegetables, legumes, berries, whole grains) that fits the remaining calorie budget. If fiber is at/above target, praise it briefly and never nag about vegetables.\n- Portion grams you suggest must actually fit the remaining budget — check the arithmetic before writing the number.${proteinExceeded ? `\n- TODAY: protein is ALREADY EXCEEDED (${Math.round(consumedProtein)} g vs ${proteinTarget} g). Do not suggest any additional protein portion.` : ""}${kcalExceeded ? `\n- TODAY: calories are ALREADY EXCEEDED by ${Math.abs(remainingKcal!)} kcal. Remaining meals must be minimal or skipped; all improvement tips go to TOMORROW.` : ""}`;
 
     const mealContextBlock = `\n\nDAY PROGRESS TRACKING (authoritative — use this, do not guess):\n${mealProgressText}\nCONSUMED_SO_FAR: ${Math.round(consumedKcal)} kcal, ${Math.round(consumedProtein)} g protein\nDAILY_CALORIE_GOAL: ${calorieGoal > 0 ? calorieGoal : "unknown"}\nREMAINING_KCAL_BUDGET: ${remainingKcal !== null ? remainingKcal : "unknown"}\nUPCOMING_MEALS_TODAY: ${upcomingMeals.length ? upcomingMeals.join(", ") : "none"}\nNEXT_MEAL_TO_ADVISE_ON: ${nextMeal}\n\nHARD RULE — recommendations must target NEXT_MEAL_TO_ADVISE_ON:\n- Every tip in boost_potential.tips must be about ${nextMeal === "tomorrow_breakfast" ? "TOMORROW's meals (start with breakfast)" : `the upcoming ${nextMeal} (and later meals today)`}, with concrete foods and grams that fit REMAINING_KCAL_BUDGET and the MACRO BUDGET below.\n- NEVER advise changing a meal that is already LOGGED or MISSED — those are in the past. Comment on them only retrospectively, in past tense.\n- Explicitly name the meal in the tip ("На ужин — ...", "Tomorrow at breakfast — ...").\n- If REMAINING_KCAL_BUDGET is known and small (<250), advise a light vegetable-based option or skipping the meal; if the client is far below budget, advise a full balanced plate.${macroBudgetBlock}`;
 
@@ -794,17 +796,18 @@ serve(async (req) => {
       const n = Number(v);
       return Number.isFinite(n) && n > 0 ? n : 0;
     };
-    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0;
-    const perMealTotals: Record<string, { calories: number; protein_g: number; carbs_g: number; fat_g: number }> = {};
+    let totalCalories = 0, totalProtein = 0, totalCarbs = 0, totalFat = 0, totalFiber = 0;
+    const perMealTotals: Record<string, { calories: number; protein_g: number; carbs_g: number; fat_g: number; fiber_g: number }> = {};
     for (const e of manualEntries) {
       const mt = String((e.meal_type as string) || "snack").toLowerCase();
-      const c = num(e.calories), p = num(e.protein_g), cb = num(e.carbs_g), f = num(e.fat_g);
-      totalCalories += c; totalProtein += p; totalCarbs += cb; totalFat += f;
-      if (!perMealTotals[mt]) perMealTotals[mt] = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+      const c = num(e.calories), p = num(e.protein_g), cb = num(e.carbs_g), f = num(e.fat_g), fb = num(e.fiber_g);
+      totalCalories += c; totalProtein += p; totalCarbs += cb; totalFat += f; totalFiber += fb;
+      if (!perMealTotals[mt]) perMealTotals[mt] = { calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 };
       perMealTotals[mt].calories += c;
       perMealTotals[mt].protein_g += p;
       perMealTotals[mt].carbs_g += cb;
       perMealTotals[mt].fat_g += f;
+      perMealTotals[mt].fiber_g += fb;
     }
     analysis.liquid_calories = liquidCalories;
     analysis.liquids = { water_ml: waterMlLogged, coffee_cups: coffeeCups, tea_cups: teaCups, alcohol_ml: alcoholMl };
@@ -812,6 +815,7 @@ serve(async (req) => {
     analysis.total_protein_g = Math.round(totalProtein);
     analysis.total_carbs_g = Math.round(totalCarbs);
     analysis.total_fat_g = Math.round(totalFat);
+    analysis.total_fiber_g = Math.round(totalFiber);
 
     // Override per-meal calorie/macro totals with manual-entry sums.
     // Keep AI's qualitative fields (score, issues, positives, detected_foods, flags).
@@ -826,10 +830,11 @@ serve(async (req) => {
             protein_g: t.protein_g,
             carbs_g: t.carbs_g,
             fat_g: t.fat_g,
+            fiber_g: t.fiber_g,
           };
         }
         // No manual entry for this meal_type — zero out totals (detected_foods stays for context)
-        return { ...m, estimated_calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0 };
+        return { ...m, estimated_calories: 0, protein_g: 0, carbs_g: 0, fat_g: 0, fiber_g: 0 };
       });
     }
 
