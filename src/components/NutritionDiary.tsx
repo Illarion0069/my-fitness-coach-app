@@ -1355,9 +1355,9 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const photosAtLimit = photos.length >= MAX_PHOTOS_PER_DAY;
 
   const macros = [
-    { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: 'P', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', macroRatio: 0.30 },
-    { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: 'C', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', macroRatio: 0.40 },
-    { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: 'F', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', macroRatio: 0.30 },
+    { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: lang === 'en' ? 'P' : 'Б', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', macroRatio: 0.30 },
+    { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: lang === 'en' ? 'C' : 'У', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', macroRatio: 0.40 },
+    { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: lang === 'en' ? 'F' : 'Ж', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', macroRatio: 0.30 },
     { key: 'fiber', label: lang === 'en' ? 'Fiber' : 'Клетчатка', short: lang === 'en' ? 'FIB' : 'КЛ', value: totals.fiber, unit: 'g', color: 'hsl(160, 60%, 40%)', macroRatio: 0, fixedGoal: FIBER_GOAL_G },
   ];
 
