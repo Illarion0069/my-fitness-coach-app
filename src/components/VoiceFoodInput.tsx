@@ -12,6 +12,7 @@ export interface VoiceFoodItem {
   protein_g: number;
   carbs_g: number;
   fat_g: number;
+  fiber_g?: number;
 }
 
 interface Props {
@@ -229,6 +230,7 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
           protein_g: Math.round(it.protein_g * r),
           carbs_g: Math.round(it.carbs_g * r),
           fat_g: Math.round(it.fat_g * r),
+          fiber_g: Math.round((it.fiber_g || 0) * r),
         };
       });
     });
@@ -386,13 +388,14 @@ export default function VoiceFoodInput({ open, lang, title, onClose, onConfirm }
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-5 gap-1.5">
+                    <div className="grid grid-cols-6 gap-1.5">
                       {([
                         ['portion_g', t(lang, 'g', 'г')],
                         ['calories', t(lang, 'kcal', 'ккал')],
                         ['protein_g', t(lang, 'P', 'Б')],
                         ['carbs_g', t(lang, 'C', 'У')],
                         ['fat_g', t(lang, 'F', 'Ж')],
+                        ['fiber_g', t(lang, 'Fib', 'Кл')],
                       ] as [keyof VoiceFoodItem, string][]).map(([field, label]) => (
                         <div key={String(field)} className="text-center">
                           <input
