@@ -40,6 +40,7 @@ interface SessionRecord {
 interface ProfileRecord {
   user_id: string;
   full_name: string;
+  archived_at: string | null;
 }
 
 interface BlockRecord {
@@ -104,7 +105,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         supabase.from('client_packages').select('*').order('purchased_at', { ascending: false }),
         supabase.from('session_ledger').select('*').order('created_at', { ascending: false }),
         supabase.from('scheduled_sessions').select('id, user_id, session_date, is_recurring, is_deducted, notes'),
-        supabase.from('profiles').select('user_id, full_name'),
+        supabase.from('profiles').select('user_id, full_name, archived_at'),
         supabase.from('trainer_blocks').select('id, block_type, block_date, block_time, duration_minutes, is_recurring, recurrence_day, title, recurring_exceptions'),
       ]);
       setPackages((pkgs || []) as PackageRecord[]);
