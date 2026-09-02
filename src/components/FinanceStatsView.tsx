@@ -331,6 +331,11 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       perClient[userId] = (perClient[userId] || 0) + count;
     });
 
+    // Include active-package clients even with 0 sessions this month
+    packages.filter(p => p.is_active).forEach(p => {
+      if (perClient[p.user_id] === undefined) perClient[p.user_id] = 0;
+    });
+
     const entries = Object.entries(perClient)
       .map(([userId, count]) => {
         const name = profiles.find(p => p.user_id === userId)?.full_name || '?';
@@ -344,11 +349,13 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
       })
       .sort((a, b) => b.count - a.count);
 
+    const withSessions = entries.filter(e => e.count > 0);
     const total = entries.reduce((s, e) => s + e.count, 0);
-    const avg = entries.length > 0 ? (total / entries.length).toFixed(1) : '0';
+    const avg = withSessions.length > 0 ? (total / withSessions.length).toFixed(1) : '0';
 
     return { entries, avg, total };
-  }, [ledger, noPackageSessionCounts, profiles, monthStart, monthEnd]);
+  }, [ledger, noPackageSessionCounts, packages, profiles, monthStart, monthEnd]);
+
 
   // Packages sold this month
   const packagesSold = useMemo(() => {
