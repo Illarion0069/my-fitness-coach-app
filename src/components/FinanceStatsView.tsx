@@ -309,11 +309,17 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Active clients count (including no-package)
+  // Archived clients — excluded from the active list entirely
+  const archivedUserIds = useMemo(() =>
+    new Set(profiles.filter(p => p.archived_at).map(p => p.user_id)),
+  [profiles]);
+
   const activeClientsCount = useMemo(() => {
     const pkgClients = new Set(packages.filter(p => p.is_active).map(p => p.user_id));
     Object.keys(noPackageSessionCounts).forEach(id => pkgClients.add(id));
+    archivedUserIds.forEach(id => pkgClients.delete(id));
     return pkgClients.size;
-  }, [packages, noPackageSessionCounts]);
+  }, [packages, noPackageSessionCounts, archivedUserIds]);
 
   // Client frequency stats — include no-package clients
   const clientFrequency = useMemo(() => {
