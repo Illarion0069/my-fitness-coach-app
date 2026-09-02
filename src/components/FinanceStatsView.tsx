@@ -40,6 +40,7 @@ interface SessionRecord {
 interface ProfileRecord {
   user_id: string;
   full_name: string;
+  archived_at: string | null;
 }
 
 interface BlockRecord {
@@ -104,7 +105,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
         supabase.from('client_packages').select('*').order('purchased_at', { ascending: false }),
         supabase.from('session_ledger').select('*').order('created_at', { ascending: false }),
         supabase.from('scheduled_sessions').select('id, user_id, session_date, is_recurring, is_deducted, notes'),
-        supabase.from('profiles').select('user_id, full_name'),
+        supabase.from('profiles').select('user_id, full_name, archived_at'),
         supabase.from('trainer_blocks').select('id, block_type, block_date, block_time, duration_minutes, is_recurring, recurrence_day, title, recurring_exceptions'),
       ]);
       setPackages((pkgs || []) as PackageRecord[]);
@@ -308,11 +309,17 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
   }, [packages, sessions, noPackageSessionCounts, profiles, monthStart, monthEnd, reloadRevenue]);
 
   // Active clients count (including no-package)
+  // Archived clients — excluded from the active list entirely
+  const archivedUserIds = useMemo(() =>
+    new Set(profiles.filter(p => p.archived_at).map(p => p.user_id)),
+  [profiles]);
+
   const activeClientsCount = useMemo(() => {
     const pkgClients = new Set(packages.filter(p => p.is_active).map(p => p.user_id));
     Object.keys(noPackageSessionCounts).forEach(id => pkgClients.add(id));
+    archivedUserIds.forEach(id => pkgClients.delete(id));
     return pkgClients.size;
-  }, [packages, noPackageSessionCounts]);
+  }, [packages, noPackageSessionCounts, archivedUserIds]);
 
   // Client frequency stats — include no-package clients
   const clientFrequency = useMemo(() => {
@@ -337,6 +344,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
     });
 
     const entries = Object.entries(perClient)
+      .filter(([userId]) => !archivedUserIds.has(userId))
       .map(([userId, count]) => {
         const name = profiles.find(p => p.user_id === userId)?.full_name || '?';
         return {
@@ -354,7 +362,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
     const avg = withSessions.length > 0 ? (total / withSessions.length).toFixed(1) : '0';
 
     return { entries, avg, total };
-  }, [ledger, noPackageSessionCounts, packages, profiles, monthStart, monthEnd]);
+  }, [ledger, noPackageSessionCounts, packages, profiles, monthStart, monthEnd, archivedUserIds]);
 
 
   // Packages sold this month
