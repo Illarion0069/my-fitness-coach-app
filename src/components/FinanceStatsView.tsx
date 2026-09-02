@@ -362,7 +362,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
     const avg = withSessions.length > 0 ? (total / withSessions.length).toFixed(1) : '0';
 
     return { entries, avg, total };
-  }, [ledger, noPackageSessionCounts, packages, profiles, monthStart, monthEnd]);
+  }, [ledger, noPackageSessionCounts, packages, profiles, monthStart, monthEnd, archivedUserIds]);
 
 
   // Packages sold this month
