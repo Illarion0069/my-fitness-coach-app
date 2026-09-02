@@ -344,6 +344,7 @@ const FinanceStatsView = ({ lang }: FinanceStatsViewProps) => {
     });
 
     const entries = Object.entries(perClient)
+      .filter(([userId]) => !archivedUserIds.has(userId))
       .map(([userId, count]) => {
         const name = profiles.find(p => p.user_id === userId)?.full_name || '?';
         return {
