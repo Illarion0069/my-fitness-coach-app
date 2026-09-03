@@ -10,6 +10,7 @@ const NETWORK_NOISE = [
   "networkerror",
   "network request failed",
   "the operation was aborted",
+  "signal is aborted",
   "aborterror",
   "the network connection was lost",
   "importing a module script failed",
