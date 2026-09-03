@@ -229,7 +229,8 @@ Deno.serve(async (req) => {
 
     const TG_TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN");
     const TG_CHAT = Deno.env.get("TELEGRAM_CHAT_ID");
-    if (TG_TOKEN && TG_CHAT) {
+    // В Telegram шлём ТОЛЬКО критичные ошибки — предупреждения копятся в client_errors
+    if (verdict.level === "critical" && TG_TOKEN && TG_CHAT) {
       const text =
         `${title}\n\n` +
         `👤 Кто: ${who}\n` +
