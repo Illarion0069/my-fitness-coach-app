@@ -3,6 +3,7 @@ import { CalendarDays, Plus, X, RotateCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionAdded, sessionCancelled, type BiText } from '@/lib/scheduleNotifications';
+import LocalTimeLine from './LocalTimeLine';
 
 interface ScheduledSession {
   id: string;
@@ -271,10 +272,13 @@ const ClientSchedule = ({ userId, lang, onSessionChange }: Props) => {
       {/* Upcoming one-off */}
       {oneOff.map(s => (
         <div key={s.id} className="flex items-center justify-between bg-secondary/50 rounded-lg px-2.5 py-2">
-          <span className="text-xs">
-            {new Date(s.session_date).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' })}
-            {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
-          </span>
+          <div className="flex flex-col min-w-0">
+            <span className="text-xs">
+              {new Date(s.session_date + 'T12:00:00').toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' })}
+              {s.session_time ? ` ${s.session_time.slice(0, 5)}` : ''}
+            </span>
+            <LocalTimeLine date={s.session_date} time={s.session_time} />
+          </div>
           <button onClick={() => deleteSession(s.id)} className="text-destructive hover:text-destructive/80">
             <X className="w-3 h-3" />
           </button>
