@@ -9,6 +9,8 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { computeNutritionTotals, FIBER_GOAL_G } from '@/lib/nutritionTotals';
 import { localizeName } from '@/lib/nameTransliterate';
+import LocalTimeLine from './LocalTimeLine';
+import { hoursUntilCyprus } from '@/lib/cyprusTime';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -449,8 +451,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const canCancel = (s: ScheduledSession) => {
     if (s.is_recurring) return true;
     if (!s.session_time) return true;
-    const sessionDateTime = new Date(`${s.session_date}T${s.session_time}`);
-    return (sessionDateTime.getTime() - Date.now()) / (1000 * 60 * 60) > 24;
+    return hoursUntilCyprus(s.session_date, s.session_time) > 24;
   };
 
   const handleCancel = async (session: ScheduledSession) => {
@@ -861,7 +862,10 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
                       </>
                     )}
                   </div>
-                  <span className="text-[13px] font-medium flex-1 min-w-0 break-words">{formatSessionDate(s)}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[13px] font-medium block break-words">{formatSessionDate(s)}</span>
+                    {!s.is_recurring && <LocalTimeLine date={s.session_date} time={s.session_time} showHint />}
+                  </div>
 
                   {canCancel(s) ? (
                     confirmCancelId === s.id ? (
