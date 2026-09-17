@@ -109,10 +109,11 @@ Deno.serve(async (req) => {
       let workStart = 7;
       let workEnd = 19;
       let daysOff: number[] = [0];
+      let blockedDates: string[] = [];
 
       const { data: hours } = await supabase
         .from('trainer_working_hours')
-        .select('work_start_hour, work_end_hour, days_off')
+        .select('work_start_hour, work_end_hour, days_off, blocked_dates')
         .eq('trainer_user_id', trainerId)
         .maybeSingle();
 
@@ -120,9 +121,10 @@ Deno.serve(async (req) => {
         workStart = hours.work_start_hour;
         workEnd = hours.work_end_hour;
         daysOff = hours.days_off || [0];
+        blockedDates = ((hours as any).blocked_dates || []).map(String);
       }
 
-      return { trainerId, workStart, workEnd, daysOff };
+      return { trainerId, workStart, workEnd, daysOff, blockedDates };
     };
 
     const getLatestValidPackage = async (userId: string): Promise<PackageRow | null> => {
@@ -260,7 +262,7 @@ Deno.serve(async (req) => {
       }
 
       const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-      if (trainer.daysOff.includes(dayOfWeek) && !trainerViewEnabled) {
+      if ((trainer.daysOff.includes(dayOfWeek) || trainer.blockedDates.includes(date)) && !trainerViewEnabled) {
         return new Response(JSON.stringify({ slots: [], sessionDuration: DEFAULT_DURATION, dayOff: true }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
@@ -404,7 +406,7 @@ Deno.serve(async (req) => {
       }
 
       const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-      if (trainer.daysOff.includes(dayOfWeek)) {
+      if (trainer.daysOff.includes(dayOfWeek) || trainer.blockedDates.includes(date)) {
         return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
           status: 200,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -672,7 +674,7 @@ Deno.serve(async (req) => {
       }
 
       const dayOfWeek = new Date(`${date}T12:00:00`).getDay();
-      if (trainer.daysOff.includes(dayOfWeek)) {
+      if (trainer.daysOff.includes(dayOfWeek) || trainer.blockedDates.includes(date)) {
         return new Response(JSON.stringify({ error: 'Cannot book on a day off' }), {
           status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
