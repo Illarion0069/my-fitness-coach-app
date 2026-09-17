@@ -9,6 +9,8 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { ru, enUS } from 'date-fns/locale';
 import PhoneInput from '@/components/PhoneInput';
 import { trackFunnel } from '@/lib/analytics';
+import LocalTimeLine from './LocalTimeLine';
+import { hoursUntilCyprus } from '@/lib/cyprusTime';
 
 interface BookingModalProps {
   open: boolean;
@@ -907,6 +909,14 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   <p className="text-sm text-muted-foreground mt-1">
                     {selectedDate && format(selectedDate, 'EEEE, d MMMM', { locale })} {lang === 'en' ? 'at' : 'в'} {selectedTime}
                   </p>
+                  {selectedDate && selectedTime && (
+                    <LocalTimeLine
+                      date={format(selectedDate, 'yyyy-MM-dd')}
+                      time={selectedTime}
+                      showHint
+                      className="justify-center"
+                    />
+                  )}
                 </div>
 
                 {completedPendingPayment && selectedPackage && (
@@ -1008,9 +1018,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                 ) : (
                   <div className="space-y-2">
                     {mySessions.map(s => {
-                      const sessionDate = new Date(s.session_date + 'T' + (s.session_time || '00:00') + ':00');
-                      const hoursUntil = (sessionDate.getTime() - Date.now()) / (1000 * 60 * 60);
-                      const canCancel = hoursUntil >= 24;
+                      const canCancel = hoursUntilCyprus(s.session_date, s.session_time || '00:00') >= 24;
 
                       return (
                         <div key={s.id} className="flex items-center justify-between bg-secondary/50 rounded-xl px-4 py-3">
@@ -1021,6 +1029,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                             {s.session_time && (
                               <p className="text-xs text-muted-foreground">{s.session_time.slice(0, 5)}</p>
                             )}
+                            <LocalTimeLine date={s.session_date} time={s.session_time} className="mt-0.5" />
                           </div>
                           {canCancel ? (
                             <button
