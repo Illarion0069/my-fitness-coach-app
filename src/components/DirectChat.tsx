@@ -143,14 +143,16 @@ const Inbox = ({ meId, lang, onOpen }: { meId: string; lang: string; onOpen: (id
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
-    const [{ data: msgs }, { data: profs }, { data: trainers }] = await Promise.all([
+    const [{ data: msgs }, { data: profs }, { data: trainers }, { data: guests }] = await Promise.all([
       supabase.from('direct_messages').select('*').eq('trainer_user_id', meId).order('created_at', { ascending: false }).limit(1000),
       supabase.from('profiles').select('user_id, full_name, archived_at').is('archived_at', null).order('full_name'),
       supabase.from('user_roles').select('user_id').eq('role', 'trainer'),
+      supabase.from('guest_chats').select('id, guest_name').eq('trainer_user_id', meId),
     ]);
     const trainerIds = new Set((trainers || []).map((t) => t.user_id));
     const list = (profs || []).filter((p) => !trainerIds.has(p.user_id) && p.user_id !== meId);
     const names = new Map(list.map((p) => [p.user_id, p.full_name]));
+    for (const g of guests || []) names.set(g.id, `${g.guest_name} · ${lang === 'en' ? 'guest' : 'гость'}`);
     const map = new Map<string, Convo>();
     for (const m of (msgs as Msg[]) || []) {
       let c = map.get(m.client_user_id);
@@ -160,7 +162,7 @@ const Inbox = ({ meId, lang, onOpen }: { meId: string; lang: string; onOpen: (id
     setConvos(Array.from(map.values()));
     setClients(list);
     setLoading(false);
-  }, [meId]);
+  }, [meId, lang]);
 
   useEffect(() => {
     load();
@@ -218,6 +220,123 @@ const Inbox = ({ meId, lang, onOpen }: { meId: string; lang: string; onOpen: (id
   );
 };
 
+/* ───────────── Guest thread (visitor without account) ───────────── */
+const GUEST_KEY = 'guest_chat_token';
+const GuestThread = ({ lang }: { lang: string }) => {
+  const [token, setToken] = useState<string | null>(() => { try { return localStorage.getItem(GUEST_KEY); } catch { return null; } });
+  const [name, setName] = useState('');
+  const [me, setMe] = useState('');
+  const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [text, setText] = useState('');
+  const [busy, setBusy] = useState(false);
+  const endRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  const load = useCallback(async (tk: string) => {
+    const { data, error } = await supabase.functions.invoke('direct-message', { body: { action: 'guest_list', token: tk } });
+    if (error) {
+      const status = (error as { context?: { status?: number } }).context?.status;
+      if (status === 401) { try { localStorage.removeItem(GUEST_KEY); } catch { /* ignore */ } setToken(null); }
+      return;
+    }
+    setMe(data.me);
+    setMsgs((prev) => (prev.length === data.messages.length ? prev : data.messages));
+  }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    load(token);
+    const t = setInterval(() => { if (document.visibilityState === 'visible') load(token); }, 5000);
+    inputRef.current?.focus();
+    return () => clearInterval(t);
+  }, [token, load]);
+
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [msgs.length]);
+
+  const start = async () => {
+    const n = name.trim();
+    if (!n || busy) return;
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke('direct-message', { body: { action: 'guest_start', name: n } });
+    setBusy(false);
+    if (error || !data?.token) { toast.error(lang === 'en' ? 'Could not start chat' : 'Не удалось начать чат'); return; }
+    try { localStorage.setItem(GUEST_KEY, data.token); } catch { /* ignore */ }
+    setMe(data.chat_id);
+    setToken(data.token);
+  };
+
+  const send = async () => {
+    const body = text.trim();
+    if (!body || busy || !token) return;
+    setBusy(true);
+    const { data, error } = await supabase.functions.invoke('direct-message', { body: { action: 'guest_send', token, body } });
+    setBusy(false);
+    if (error || !data?.message) { toast.error(lang === 'en' ? 'Message not sent. Try again.' : 'Сообщение не отправлено. Попробуйте ещё раз.'); return; }
+    setMsgs((p) => [...p, data.message as Msg]);
+    setText('');
+    inputRef.current?.focus();
+  };
+
+  if (!token) {
+    return (
+      <div className="flex-1 flex flex-col justify-center px-6 gap-4">
+        <p className="text-sm text-muted-foreground text-center">
+          {lang === 'en' ? 'Write to Illarion directly — he usually replies quickly. How should he call you?' : 'Напишите Иллариону напрямую — он обычно отвечает быстро. Как к вам обращаться?'}
+        </p>
+        <input
+          autoFocus value={name} onChange={(e) => setName(e.target.value.slice(0, 80))}
+          onKeyDown={(e) => { if (e.key === 'Enter') start(); }}
+          placeholder={lang === 'en' ? 'Your name' : 'Ваше имя'}
+          className="rounded-2xl bg-muted px-4 py-3 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/40"
+        />
+        <button onClick={start} disabled={!name.trim() || busy}
+          className="rounded-2xl bg-primary text-primary-foreground py-3 text-sm font-semibold disabled:opacity-40">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : (lang === 'en' ? 'Start chat' : 'Начать чат')}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2" onTouchMove={(e) => e.stopPropagation()}>
+        {msgs.length === 0 && (
+          <p className="text-center text-sm text-muted-foreground py-10">
+            {lang === 'en' ? 'Ask anything about training, prices or schedule.' : 'Спросите что угодно о тренировках, ценах или расписании.'}
+          </p>
+        )}
+        {msgs.map((m) => {
+          const mine = m.sender_user_id === me;
+          return (
+            <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 ${mine ? 'bg-primary text-primary-foreground rounded-br-md' : 'bg-muted text-foreground rounded-bl-md'}`}>
+                <p className="text-sm whitespace-pre-wrap break-words">{m.body}</p>
+                <p className={`text-[10px] mt-0.5 ${mine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                  {fmtTime(m.created_at, lang)}{mine && m.read_at ? ' · ✓✓' : ''}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+        <div ref={endRef} />
+      </div>
+      <div className="border-t border-border/50 p-3 flex items-end gap-2" style={{ paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 12px)' }}>
+        <textarea
+          ref={inputRef} value={text} rows={1}
+          onChange={(e) => setText(e.target.value.slice(0, 2000))}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+          placeholder={lang === 'en' ? 'Message…' : 'Сообщение…'}
+          className="flex-1 resize-none max-h-32 rounded-2xl bg-muted px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground outline-none focus:ring-2 focus:ring-primary/40"
+        />
+        <button onClick={send} disabled={!text.trim() || busy} aria-label={lang === 'en' ? 'Send' : 'Отправить'}
+          className="w-10 h-10 shrink-0 rounded-full bg-primary text-primary-foreground flex items-center justify-center disabled:opacity-40">
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+        </button>
+      </div>
+    </div>
+  );
+};
+
 /* ───────────── Launcher (floating button + panel) ───────────── */
 const DirectChat = ({ asTrainer }: { asTrainer: boolean }) => {
   const { user } = useAuth();
@@ -244,8 +363,6 @@ const DirectChat = ({ asTrainer }: { asTrainer: boolean }) => {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [meId, asTrainer, refreshUnread]);
-
-  if (!meId) return null;
 
   const title = asTrainer
     ? (active ? active.name : (lang === 'en' ? 'Messages' : 'Сообщения'))
@@ -298,9 +415,9 @@ const DirectChat = ({ asTrainer }: { asTrainer: boolean }) => {
               </div>
               {asTrainer
                 ? (active
-                  ? <Thread key={active.id} clientUserId={active.id} meId={meId} lang={lang} />
-                  : <Inbox meId={meId} lang={lang} onOpen={(id, name) => setActive({ id, name })} />)
-                : <Thread clientUserId={meId} meId={meId} lang={lang} />}
+                  ? <Thread key={active.id} clientUserId={active.id} meId={meId!} lang={lang} />
+                  : <Inbox meId={meId!} lang={lang} onOpen={(id, name) => setActive({ id, name })} />)
+                : meId ? <Thread clientUserId={meId} meId={meId} lang={lang} /> : <GuestThread lang={lang} />}
             </motion.div>
           )}
         </AnimatePresence>,
