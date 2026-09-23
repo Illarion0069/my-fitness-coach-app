@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { reportSecurityEvent } from "../_shared/securityAlert.ts";
+import { notifyClient, trainerChatId } from "../_shared/directChat.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -76,6 +77,42 @@ serve(async (req) => {
     const firstName = message.from?.first_name || "";
     const lastName = message.from?.last_name || "";
     const fullName = `${firstName} ${lastName}`.trim();
+
+    // Trainer replies (Reply) to a chat notification → deliver into the in-app chat
+    const replyToId = message.reply_to_message?.message_id;
+    if (replyToId && text && !text.startsWith("/")) {
+      const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
+      const { data: orig } = await supabase
+        .from("direct_messages")
+        .select("client_user_id, trainer_user_id, is_guest")
+        .eq("trainer_tg_message_id", replyToId)
+        .maybeSingle();
+      if (orig) {
+        const expected = await trainerChatId(supabase, orig.trainer_user_id);
+        if (expected && expected === chatId) {
+          const bodyText = text.slice(0, 2000);
+          const { error } = await supabase.from("direct_messages").insert({
+            client_user_id: orig.client_user_id,
+            trainer_user_id: orig.trainer_user_id,
+            sender_user_id: orig.trainer_user_id,
+            body: bodyText,
+            is_guest: orig.is_guest,
+          });
+          const TOKEN = Deno.env.get("TELEGRAM_BOT_TOKEN")!;
+          if (error) {
+            console.error("reply insert failed", error);
+            await sendTelegramMessage(TOKEN, chatId, "⚠️ Не удалось отправить ответ в чат. Попробуйте ещё раз.");
+          } else {
+            await notifyClient(supabase, orig.client_user_id, orig.is_guest, bodyText);
+            await sendTelegramMessage(TOKEN, chatId, "✅ Ответ отправлен в чат приложения");
+          }
+          return new Response(JSON.stringify({ ok: true }), {
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
 
     // Handle /start command — link telegram chat_id to profile
     if (text.startsWith("/start")) {
