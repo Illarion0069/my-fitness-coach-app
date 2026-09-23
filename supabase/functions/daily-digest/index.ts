@@ -402,8 +402,16 @@ serve(async (req) => {
       L.push(`Кто заходил: ${visitorNames.join(", ")}`);
     }
 
-    if (actionLines.length) {
-      L.push("", "<b>🖐 Что делали клиенты</b>", ...actionLines);
+    L.push("", "<b>🙋 Существующие клиенты — что делали</b>");
+    if (clientLines.length) L.push(...clientLines);
+    else L.push("• Сегодня никто из ваших клиентов в приложение не заходил.");
+
+    L.push("", "<b>🆕 Новые люди — что делали</b>");
+    if (newGuestLines.length) L.push(...newGuestLines);
+    else L.push("• Новых посетителей сегодня не было.");
+
+    if (returningGuestLines.length) {
+      L.push("", "<b>👤 Заходили раньше, но не регистрировались</b>", ...returningGuestLines);
     }
 
     L.push("", "<b>📈 Конверсия</b>");
