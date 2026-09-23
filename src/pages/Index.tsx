@@ -14,6 +14,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import SwipeHint from '@/components/SwipeHint';
 import AppErrorDialog from '@/components/AppErrorDialog';
+import DirectChat from '@/components/DirectChat';
 
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -262,6 +263,9 @@ const AppContent = () => {
       {!showGuide && !effectiveIsTrainer && <SwipeHint />}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
+      {user && !loading && !showGuide && !(isTrainer && clientPreview) && (
+        <DirectChat key={isTrainer ? 't' : 'c'} asTrainer={isTrainer} />
+      )}
 
 
       {optimisticIsTrainer && (
