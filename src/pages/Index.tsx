@@ -263,8 +263,9 @@ const AppContent = () => {
       {!showGuide && !effectiveIsTrainer && <SwipeHint />}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
-      {!loading && !showGuide && !(isTrainer && clientPreview) && (
-        <DirectChat key={isTrainer ? 't' : user ? 'c' : 'g'} asTrainer={!!user && isTrainer} />
+      {/* Chat is only for new visitors (no account) and the trainer — registered clients don't see it */}
+      {!loading && !showGuide && !(isTrainer && clientPreview) && (!user || isTrainer) && (
+        <DirectChat key={isTrainer ? 't' : 'g'} asTrainer={!!user && isTrainer} />
       )}
 
 
