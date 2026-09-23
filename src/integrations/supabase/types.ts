@@ -295,33 +295,45 @@ export type Database = {
       }
       direct_messages: {
         Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_type: string | null
           body: string
           client_user_id: string
           created_at: string
           id: string
           is_guest: boolean
+          is_system: boolean
           read_at: string | null
           sender_user_id: string
           trainer_tg_message_id: number | null
           trainer_user_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
           body: string
           client_user_id: string
           created_at?: string
           id?: string
           is_guest?: boolean
+          is_system?: boolean
           read_at?: string | null
           sender_user_id: string
           trainer_tg_message_id?: number | null
           trainer_user_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_type?: string | null
           body?: string
           client_user_id?: string
           created_at?: string
           id?: string
           is_guest?: boolean
+          is_system?: boolean
           read_at?: string | null
           sender_user_id?: string
           trainer_tg_message_id?: number | null
@@ -475,6 +487,7 @@ export type Database = {
       }
       guest_chats: {
         Row: {
+          closed_at: string | null
           created_at: string
           guest_name: string
           id: string
@@ -482,6 +495,7 @@ export type Database = {
           trainer_user_id: string
         }
         Insert: {
+          closed_at?: string | null
           created_at?: string
           guest_name: string
           id?: string
@@ -489,6 +503,7 @@ export type Database = {
           trainer_user_id: string
         }
         Update: {
+          closed_at?: string | null
           created_at?: string
           guest_name?: string
           id?: string
