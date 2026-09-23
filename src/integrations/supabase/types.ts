@@ -293,6 +293,36 @@ export type Database = {
         }
         Relationships: []
       }
+      direct_messages: {
+        Row: {
+          body: string
+          client_user_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sender_user_id: string
+          trainer_user_id: string
+        }
+        Insert: {
+          body: string
+          client_user_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_user_id: string
+          trainer_user_id: string
+        }
+        Update: {
+          body?: string
+          client_user_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sender_user_id?: string
+          trainer_user_id?: string
+        }
+        Relationships: []
+      }
       flow_course_leads: {
         Row: {
           created_at: string
@@ -1095,6 +1125,10 @@ export type Database = {
       }
       is_my_client: { Args: { _client_user_id: string }; Returns: boolean }
       latest_weight_kg: { Args: { _user_id: string }; Returns: number }
+      mark_direct_messages_read: {
+        Args: { _client_user_id: string }
+        Returns: number
+      }
     }
     Enums: {
       app_role: "admin" | "trainer" | "client"
