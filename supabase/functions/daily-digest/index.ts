@@ -260,7 +260,26 @@ serve(async (req) => {
     if (clientIds.length) {
       const { data: vp } = await supabase
         .from("profiles").select("user_id, full_name").in("user_id", clientIds);
-      for (const p of vp ?? []) visitorNames.push(esc(p.full_name || "Без имени"));
+      for (const p of vp ?? []) {
+        nameById.set(p.user_id, p.full_name || "Без имени");
+        visitorNames.push(esc(p.full_name || "Без имени"));
+      }
+    }
+
+    // Что именно делали клиенты внутри приложения
+    const actionLines: string[] = [];
+    for (const uid of clientIds) {
+      const acts = actionsByUser.get(uid);
+      const top = Array.from(acts?.entries() ?? [])
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([l, c]) => `${esc(l)}${c > 1 ? ` ×${c}` : ""}`);
+      const last = lastSeenByUser.get(uid);
+      actionLines.push(
+        `• ${nm(uid)}${last ? ` (последний вход ${last})` : ""} — ${
+          top.length ? top.join(", ") : "только просмотр экранов"
+        }`,
+      );
     }
 
     const guestsCount = Math.max(0, visitors.size - knownClients.size);
