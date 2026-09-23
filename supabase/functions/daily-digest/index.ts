@@ -171,7 +171,7 @@ serve(async (req) => {
     // ---------- Посещаемость (app_events) ----------
     const [eventsRes, pastEventsRes, staffRes] = await Promise.all([
       supabase.from("app_events")
-        .select("user_id, anon_id, event_type, label, device, created_at")
+        .select("user_id, anon_id, event_type, label, device, referrer, created_at")
         .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc)
         .order("created_at", { ascending: true }).limit(20000),
       supabase.from("app_events")
@@ -203,8 +203,60 @@ serve(async (req) => {
     const deviceCount = new Map<string, number>();
     const deviceSeen = new Set<string>(); // vid|device — считаем устройства по визитёрам
     const funnelReach = new Map<string, Set<string>>();
-    const actionsByUser = new Map<string, Map<string, number>>();
-    const lastSeenByUser = new Map<string, string>();
+    type VisitorStory = {
+      vid: string;
+      userId: string | null;
+      device: string;
+      referrer: string | null;
+      first: string;
+      last: string;
+      steps: string[]; // человекочитаемые действия в порядке появления
+      raw: Set<string>;
+      events: number;
+    };
+    const stories = new Map<string, VisitorStory>();
+    const hhmm = (iso: string) =>
+      new Intl.DateTimeFormat("ru-RU", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+        .format(new Date(iso));
+
+    // Перевод технических меток в понятные слова
+    const ACTION_RULES: Array<[RegExp, string]> = [
+      [/^booking_open$/i, "открыл окно записи на тренировку"],
+      [/^booking_date$/i, "выбрал дату тренировки"],
+      [/^booking_time$/i, "выбрал время тренировки"],
+      [/^booking_payment$/i, "дошёл до выбора оплаты"],
+      [/^booking_done$/i, "завершил запись на тренировку"],
+      [/^signup/i, "зарегистрировался в приложении"],
+      [/^(фото|photo|take a picture|сделать фото)$/i, "загрузил фото еды"],
+      [/(голос|сказать|voice|записать)/i, "добавлял еду голосом"],
+      [/(вручную|manual|добавить блюдо|написать)/i, "добавлял еду вручную текстом"],
+      [/^(подтвердить|confirm|сохранить|save|ок|ok)$/i, "подтвердил запись о еде"],
+      [/(рекоменд|recommend|совет)/i, "читал рекомендации по питанию"],
+      [/(пересчитать|кбжу|калори)/i, "правил калории и состав блюда"],
+      [/^(удалить|delete|убрать)$/i, "удалял позицию из дневника"],
+      [/^(☀️|🍽|🌙|🍎)$/u, "отмечал тип приёма пищи"],
+      [/(вода|жидкост|water)/i, "отмечал выпитую воду"],
+      [/(талия|грудь|бёдра|бедра|рука|нога|вес|замер)/i, "вносил замеры тела"],
+      [/(цен|pricing|buy now|занятий|sessions|пакет|package)/i, "смотрел цены и пакеты занятий"],
+      [/(календар|расписан|schedule|мои тренировки)/i, "смотрел своё расписание"],
+      [/^(пн|вт|ср|чт|пт|сб|вс|сегодня|этот день|завтра)$/i, "листал дни в расписании"],
+      [/^(about|о тренере|обо мне|отзыв|reviews)$/i, "читал раздел о тренере и отзывы"],
+      [/(отправить|не отправлять|отчёт|отчет|report)/i, "решал, отправлять ли отчёт тренеру"],
+      [/^(get started|sign in|войти|next|skip|далее|следующий|próximo)$/i,
+        "проходил первое знакомство с приложением"],
+      [/(тест|assessment|анкет)/i, "проходил анкету о питании и здоровье"],
+      [/(отмен|cancel)/i, "отменял действие"],
+      [/(достижен|achievement|медал)/i, "смотрел свои достижения"],
+      [/(whatsapp|telegram|написать)/i, "писал тренеру в мессенджер"],
+    ];
+
+    const describeAction = (label: string): string | null => {
+      const l = (label || "").trim();
+      if (!l) return null;
+      for (const [re, text] of ACTION_RULES) if (re.test(l)) return text;
+      if (/^\d{1,2}([:.]\d{2})?$/.test(l)) return "выбирал время или дату";
+      return null;
+    };
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
@@ -219,17 +271,23 @@ serve(async (req) => {
         deviceSeen.add(key);
         deviceCount.set(dev, (deviceCount.get(dev) || 0) + 1);
       }
-      if (e.user_id) {
-        lastSeenByUser.set(
-          e.user_id,
-          new Intl.DateTimeFormat("ru-RU", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
-            .format(new Date(e.created_at)),
-        );
-        if (e.event_type !== "screen" && e.label) {
-          if (!actionsByUser.has(e.user_id)) actionsByUser.set(e.user_id, new Map());
-          const m = actionsByUser.get(e.user_id)!;
-          m.set(e.label, (m.get(e.label) || 0) + 1);
-        }
+      let st = stories.get(vid);
+      if (!st) {
+        st = {
+          vid, userId: e.user_id ?? null, device: dev, referrer: e.referrer ?? null,
+          first: hhmm(e.created_at), last: hhmm(e.created_at),
+          steps: [], raw: new Set<string>(), events: 0,
+        };
+        stories.set(vid, st);
+      }
+      if (e.user_id) st.userId = e.user_id;
+      if (e.referrer && !st.referrer) st.referrer = e.referrer;
+      st.last = hhmm(e.created_at);
+      st.events++;
+      if (e.event_type !== "screen") {
+        st.raw.add(String(e.label || "").toLowerCase());
+        const phrase = describeAction(e.label);
+        if (phrase && !st.steps.includes(phrase)) st.steps.push(phrase);
       }
       if (e.event_type === "funnel") {
         if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
@@ -266,21 +324,57 @@ serve(async (req) => {
       }
     }
 
-    // Что именно делали клиенты внутри приложения
-    const actionLines: string[] = [];
-    for (const uid of clientIds) {
-      const acts = actionsByUser.get(uid);
-      const top = Array.from(acts?.entries() ?? [])
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 6)
-        .map(([l, c]) => `${esc(l)}${c > 1 ? ` ×${c}` : ""}`);
-      const last = lastSeenByUser.get(uid);
-      actionLines.push(
-        `• ${nm(uid)}${last ? ` (последний вход ${last})` : ""} — ${
-          top.length ? top.join(", ") : "только просмотр экранов"
-        }`,
-      );
-    }
+    // ---------- Рассказ о каждом визите обычными словами ----------
+    const DEVICE_WORD: Record<string, string> = {
+      iphone: "с iPhone", ipad: "с iPad", android: "с Android-телефона",
+      "android-tablet": "с Android-планшета", tablet: "с планшета", mobile: "с телефона",
+      mac: "с Mac", windows: "с компьютера на Windows", linux: "с компьютера",
+      desktop: "с компьютера",
+    };
+
+    const goalOf = (st: VisitorStory): string => {
+      const has = (re: RegExp) => Array.from(st.raw).some((l) => re.test(l));
+      const stepsText = st.steps.join(" ");
+      if (/завершил запись/.test(stepsText)) return "записался на тренировку — цель достигнута";
+      if (/оплат/.test(stepsText)) return "дошёл до оплаты, но бронь не подтвердил";
+      if (/выбрал время|выбрал дату/.test(stepsText)) return "подбирал удобное время, но записаться не закончил";
+      if (/открыл окно записи/.test(stepsText)) return "хотел записаться, но закрыл окно сразу";
+      if (/подтвердил запись о еде|загрузил фото еды|голосом|вручную/.test(stepsText))
+        return "вёл дневник питания";
+      if (/рекомендации по питанию/.test(stepsText)) return "разбирался в рекомендациях по питанию";
+      if (/замеры тела/.test(stepsText)) return "заносил свои замеры";
+      if (/цены и пакеты/.test(stepsText)) return "изучал стоимость занятий";
+      if (/расписани/.test(stepsText)) return "проверял, когда у него тренировка";
+      if (/анкету/.test(stepsText)) return "заполнял анкету";
+      if (has(/./) === false && st.events <= 2) return "просто открыл приложение и вышел";
+      return "походил по приложению без конкретного действия";
+    };
+
+    const storyLine = (st: VisitorStory, title: string): string => {
+      const dev = DEVICE_WORD[st.device] || "с неизвестного устройства";
+      const when = st.first === st.last ? `в ${st.first}` : `с ${st.first} до ${st.last}`;
+      const what = st.steps.length
+        ? st.steps.slice(0, 6).join(", ")
+        : "только смотрел экраны, ничего не нажимал";
+      return `• <b>${title}</b> зашёл ${when} ${dev}: ${what}. Похоже, ${goalOf(st)}.`;
+    };
+
+    const allStories = Array.from(stories.values());
+    const clientStories = allStories
+      .filter((s) => s.userId)
+      .sort((a, b) => a.first.localeCompare(b.first));
+    const newGuestStories = allStories
+      .filter((s) => !s.userId && newVisitors.has(s.vid))
+      .sort((a, b) => a.first.localeCompare(b.first));
+    const returningGuestStories = allStories
+      .filter((s) => !s.userId && !newVisitors.has(s.vid))
+      .sort((a, b) => a.first.localeCompare(b.first));
+
+    const clientLines = clientStories.map((s) => storyLine(s, nameById.get(s.userId!) || "Клиент"));
+    const newGuestLines = newGuestStories.map((s, i) =>
+      storyLine(s, `Новый гость №${i + 1}${s.referrer ? ` (из «${esc(s.referrer)}»)` : ""}`));
+    const returningGuestLines = returningGuestStories.map((s, i) =>
+      storyLine(s, `Гость без входа №${i + 1}${s.referrer ? ` (из «${esc(s.referrer)}»)` : ""}`));
 
     const guestsCount = Math.max(0, visitors.size - knownClients.size);
 
@@ -308,8 +402,16 @@ serve(async (req) => {
       L.push(`Кто заходил: ${visitorNames.join(", ")}`);
     }
 
-    if (actionLines.length) {
-      L.push("", "<b>🖐 Что делали клиенты</b>", ...actionLines);
+    L.push("", "<b>🙋 Существующие клиенты — что делали</b>");
+    if (clientLines.length) L.push(...clientLines);
+    else L.push("• Сегодня никто из ваших клиентов в приложение не заходил.");
+
+    L.push("", "<b>🆕 Новые люди — что делали</b>");
+    if (newGuestLines.length) L.push(...newGuestLines);
+    else L.push("• Новых посетителей сегодня не было.");
+
+    if (returningGuestLines.length) {
+      L.push("", "<b>👤 Заходили раньше, но не регистрировались</b>", ...returningGuestLines);
     }
 
     L.push("", "<b>📈 Конверсия</b>");
