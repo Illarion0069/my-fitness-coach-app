@@ -203,6 +203,8 @@ serve(async (req) => {
     const deviceCount = new Map<string, number>();
     const deviceSeen = new Set<string>(); // vid|device — считаем устройства по визитёрам
     const funnelReach = new Map<string, Set<string>>();
+    const actionsByUser = new Map<string, Map<string, number>>();
+    const lastSeenByUser = new Map<string, string>();
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
@@ -216,6 +218,18 @@ serve(async (req) => {
       if (!deviceSeen.has(key)) {
         deviceSeen.add(key);
         deviceCount.set(dev, (deviceCount.get(dev) || 0) + 1);
+      }
+      if (e.user_id) {
+        lastSeenByUser.set(
+          e.user_id,
+          new Intl.DateTimeFormat("ru-RU", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+            .format(new Date(e.created_at)),
+        );
+        if (e.event_type !== "screen" && e.label) {
+          if (!actionsByUser.has(e.user_id)) actionsByUser.set(e.user_id, new Map());
+          const m = actionsByUser.get(e.user_id)!;
+          m.set(e.label, (m.get(e.label) || 0) + 1);
+        }
       }
       if (e.event_type === "funnel") {
         if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
@@ -246,7 +260,26 @@ serve(async (req) => {
     if (clientIds.length) {
       const { data: vp } = await supabase
         .from("profiles").select("user_id, full_name").in("user_id", clientIds);
-      for (const p of vp ?? []) visitorNames.push(esc(p.full_name || "Без имени"));
+      for (const p of vp ?? []) {
+        nameById.set(p.user_id, p.full_name || "Без имени");
+        visitorNames.push(esc(p.full_name || "Без имени"));
+      }
+    }
+
+    // Что именно делали клиенты внутри приложения
+    const actionLines: string[] = [];
+    for (const uid of clientIds) {
+      const acts = actionsByUser.get(uid);
+      const top = Array.from(acts?.entries() ?? [])
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 6)
+        .map(([l, c]) => `${esc(l)}${c > 1 ? ` ×${c}` : ""}`);
+      const last = lastSeenByUser.get(uid);
+      actionLines.push(
+        `• ${nm(uid)}${last ? ` (последний вход ${last})` : ""} — ${
+          top.length ? top.join(", ") : "только просмотр экранов"
+        }`,
+      );
     }
 
     const guestsCount = Math.max(0, visitors.size - knownClients.size);
@@ -273,6 +306,10 @@ serve(async (req) => {
     );
     if (visitorNames.length) {
       L.push(`Кто заходил: ${visitorNames.join(", ")}`);
+    }
+
+    if (actionLines.length) {
+      L.push("", "<b>🖐 Что делали клиенты</b>", ...actionLines);
     }
 
     L.push("", "<b>📈 Конверсия</b>");
