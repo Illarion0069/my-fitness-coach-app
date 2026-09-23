@@ -203,6 +203,8 @@ serve(async (req) => {
     const deviceCount = new Map<string, number>();
     const deviceSeen = new Set<string>(); // vid|device — считаем устройства по визитёрам
     const funnelReach = new Map<string, Set<string>>();
+    const actionsByUser = new Map<string, Map<string, number>>();
+    const lastSeenByUser = new Map<string, string>();
 
     for (const e of events) {
       const vid = e.user_id || e.anon_id;
@@ -216,6 +218,18 @@ serve(async (req) => {
       if (!deviceSeen.has(key)) {
         deviceSeen.add(key);
         deviceCount.set(dev, (deviceCount.get(dev) || 0) + 1);
+      }
+      if (e.user_id) {
+        lastSeenByUser.set(
+          e.user_id,
+          new Intl.DateTimeFormat("ru-RU", { timeZone: TZ, hour: "2-digit", minute: "2-digit" })
+            .format(new Date(e.created_at)),
+        );
+        if (e.event_type !== "screen" && e.label) {
+          if (!actionsByUser.has(e.user_id)) actionsByUser.set(e.user_id, new Map());
+          const m = actionsByUser.get(e.user_id)!;
+          m.set(e.label, (m.get(e.label) || 0) + 1);
+        }
       }
       if (e.event_type === "funnel") {
         if (!funnelReach.has(e.label)) funnelReach.set(e.label, new Set());
