@@ -263,8 +263,8 @@ const AppContent = () => {
       {!showGuide && !effectiveIsTrainer && <SwipeHint />}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
-      {user && !loading && !showGuide && (effectiveIsTrainer ? !clientPreview : true) && (
-        <DirectChat asTrainer={effectiveIsTrainer} />
+      {user && !loading && !showGuide && !(isTrainer && clientPreview) && (
+        <DirectChat key={isTrainer ? 't' : 'c'} asTrainer={isTrainer} />
       )}
 
 
