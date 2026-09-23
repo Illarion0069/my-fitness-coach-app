@@ -308,6 +308,10 @@ serve(async (req) => {
       L.push(`Кто заходил: ${visitorNames.join(", ")}`);
     }
 
+    if (actionLines.length) {
+      L.push("", "<b>🖐 Что делали клиенты</b>", ...actionLines);
+    }
+
     L.push("", "<b>📈 Конверсия</b>");
     L.push(
       `• Открыли запись: <b>${bookingOpen}</b> (${pct(bookingOpen, visitors.size)}% от визитов)\n` +
