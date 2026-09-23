@@ -299,8 +299,10 @@ export type Database = {
           client_user_id: string
           created_at: string
           id: string
+          is_guest: boolean
           read_at: string | null
           sender_user_id: string
+          trainer_tg_message_id: number | null
           trainer_user_id: string
         }
         Insert: {
@@ -308,8 +310,10 @@ export type Database = {
           client_user_id: string
           created_at?: string
           id?: string
+          is_guest?: boolean
           read_at?: string | null
           sender_user_id: string
+          trainer_tg_message_id?: number | null
           trainer_user_id: string
         }
         Update: {
@@ -317,8 +321,10 @@ export type Database = {
           client_user_id?: string
           created_at?: string
           id?: string
+          is_guest?: boolean
           read_at?: string | null
           sender_user_id?: string
+          trainer_tg_message_id?: number | null
           trainer_user_id?: string
         }
         Relationships: []
@@ -464,6 +470,30 @@ export type Database = {
           status?: string
           trainer_user_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      guest_chats: {
+        Row: {
+          created_at: string
+          guest_name: string
+          id: string
+          token_hash: string
+          trainer_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          guest_name: string
+          id?: string
+          token_hash: string
+          trainer_user_id: string
+        }
+        Update: {
+          created_at?: string
+          guest_name?: string
+          id?: string
+          token_hash?: string
+          trainer_user_id?: string
         }
         Relationships: []
       }
