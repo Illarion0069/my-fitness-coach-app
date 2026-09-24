@@ -41,12 +41,10 @@ export async function notifyTrainer(
   _isGuest = true,
 ) {
   const chat = await trainerChatId(admin, msg.trainer_user_id);
-  const link = `${APP_URL}/?chat=${msg.client_user_id}`;
   const text = msg.body || (msg.attachment_name ? `📎 ${msg.attachment_name}` : "📎 Файл");
   const mid = await tgSend(
     chat,
-    `🆕 Новый посетитель <b>${escHtml(who)}</b>:\n\n${escHtml(text)}`,
-    { reply_markup: { inline_keyboard: [[{ text: "💬 Открыть чат", url: link }]] } },
+    `💬 Новое сообщение в чате от посетителя <b>${escHtml(who)}</b>:\n\n${escHtml(text)}\n\nОтветить можно в приложении: админ-панель → «Запросы в чат».`,
   );
   if (mid) await admin.from("direct_messages").update({ trainer_tg_message_id: mid }).eq("id", msg.id);
 }

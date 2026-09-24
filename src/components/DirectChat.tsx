@@ -413,21 +413,18 @@ const DirectChat = ({ asTrainer }: { asTrainer: boolean }) => {
     return () => { supabase.removeChannel(ch); };
   }, [meId, asTrainer, refreshUnread]);
 
-  // Deep link from Telegram: /?chat=<guest chat id> opens that conversation directly
+  // Opened from the admin panel "chat requests" block
   useEffect(() => {
     if (!asTrainer || !meId) return;
-    const params = new URLSearchParams(window.location.search);
-    const id = params.get('chat');
-    if (!id || !/^[0-9a-f-]{36}$/i.test(id)) return;
-    (async () => {
+    const openChat = async (id: string) => {
       const { data } = await supabase.from('guest_chats').select('id, guest_name, closed_at').eq('id', id).maybeSingle();
       if (!data) return;
       setActive({ id: data.id, name: data.guest_name, closed: !!data.closed_at });
       setOpen(true);
-      params.delete('chat');
-      const qs = params.toString();
-      window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
-    })();
+    };
+    const onEvt = (e: Event) => { const id = (e as CustomEvent).detail?.id; if (id) openChat(id); };
+    window.addEventListener('open-direct-chat', onEvt);
+    return () => window.removeEventListener('open-direct-chat', onEvt);
   }, [asTrainer, meId]);
 
   const title = asTrainer
