@@ -10,6 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 import FinanceStatsView from '@/components/FinanceStatsView';
+import GuestChatRequests from '@/components/GuestChatRequests';
 
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from '@/components/AvatarTierBadge';
 
@@ -412,6 +413,7 @@ const AdminSection = () => {
   return (
     <section className="min-h-screen bg-background px-5 pb-24" style={{ paddingTop: 'max(env(safe-area-inset-top, 20px), 20px)' }}>
       <div className="max-w-lg mx-auto">
+        <GuestChatRequests />
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
             {viewMode === 'calendar' ? (
