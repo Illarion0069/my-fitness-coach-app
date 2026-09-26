@@ -10,7 +10,7 @@ import DraggableClientRow from '@/components/DraggableClientRow';
 import TrainerCalendar from '@/components/TrainerCalendar';
 import ClientDetailAccordion from '@/components/ClientDetailAccordion';
 import FinanceStatsView from '@/components/FinanceStatsView';
-import GuestChatRequests from '@/components/GuestChatRequests';
+// import GuestChatRequests from '@/components/GuestChatRequests'; // frozen: chat feature disabled for now
 
 import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from '@/components/AvatarTierBadge';
 

@@ -14,7 +14,7 @@ import OnboardingModal from '@/components/OnboardingModal';
 import AppGuide from '@/components/AppGuide';
 import SwipeHint from '@/components/SwipeHint';
 import AppErrorDialog from '@/components/AppErrorDialog';
-import DirectChat from '@/components/DirectChat';
+// import DirectChat from '@/components/DirectChat'; // frozen: chat feature disabled for now
 
 
 import { AnimatePresence, motion } from 'framer-motion';
