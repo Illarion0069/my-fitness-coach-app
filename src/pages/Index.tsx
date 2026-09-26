@@ -263,10 +263,11 @@ const AppContent = () => {
       {!showGuide && !effectiveIsTrainer && <SwipeHint />}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
-      {/* Chat is only for new visitors (no account) and the trainer — registered clients don't see it */}
-      {!loading && !showGuide && !(isTrainer && clientPreview) && (!user || isTrainer) && (
+      {/* Frozen: chat feature disabled for now — DirectChat removed from UI, code kept for later */}
+      {/* {!loading && !showGuide && !(isTrainer && clientPreview) && (!user || isTrainer) && (
         <DirectChat key={isTrainer ? 't' : 'g'} asTrainer={!!user && isTrainer} />
-      )}
+      )} */}
+
 
 
       {optimisticIsTrainer && (
