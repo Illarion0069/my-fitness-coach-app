@@ -11,6 +11,8 @@ import veronikaBefore from '@/assets/transformation-veronika-before.jpeg';
 import veronikaAfter from '@/assets/transformation-veronika-after.jpeg';
 import pavelBefore from '@/assets/transformation-pavel-before.jpeg';
 import pavelAfter from '@/assets/transformation-pavel-after.jpeg';
+import evgeniyBefore from '@/assets/transformation-evgeniy-before.jpeg';
+import evgeniyAfter from '@/assets/transformation-evgeniy-after.jpeg';
 import {
   Accordion,
   AccordionContent,
@@ -22,6 +24,7 @@ const transformationPhotos: Record<number, { before: string; after: string }> = 
   0: { before: nataliaBefore, after: nataliaAfter },
   1: { before: pavelBefore, after: pavelAfter },
   2: { before: veronikaBefore, after: veronikaAfter },
+  3: { before: evgeniyBefore, after: evgeniyAfter },
 };
 
 const reasons = [
