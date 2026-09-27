@@ -212,6 +212,16 @@ export const translations = {
         duration: { en: '2 months', ru: '2 месяца' },
         metric: '-8 cm',
       },
+      {
+        name: { en: 'Evgeniy V.', ru: 'Евгений В.' },
+        result: { en: 'Lean, athletic, functional body', ru: 'Подтянутое, атлетичное, функциональное тело' },
+        desc: {
+          en: 'Trained functionally, mostly online. Proved that remote training with the right program and discipline delivers real, visible results.',
+          ru: 'Тренировался функционально, большую часть времени онлайн. Доказал, что дистанционные тренировки с правильной программой и дисциплиной дают реальный, видимый результат.',
+        },
+        duration: { en: 'Mostly online', ru: 'В основном онлайн' },
+        metric: '💪',
+      },
     ],
   },
   reviews: {
