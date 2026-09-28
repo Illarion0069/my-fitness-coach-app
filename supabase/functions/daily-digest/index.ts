@@ -47,7 +47,6 @@ serve(async (req) => {
     const dayEndUtc = new Date(`${day}T23:59:59.999+03:00`).toISOString();
 
     const [
-      sessionsRes,
       newProfilesRes,
       guestRes,
       nutritionRes,
@@ -56,11 +55,7 @@ serve(async (req) => {
       achievementsRes,
       testsRes,
       packagesRes,
-      ledgerRes,
     ] = await Promise.all([
-      supabase.from("scheduled_sessions")
-        .select("id, user_id, session_time, is_recurring, is_deducted")
-        .eq("session_date", day),
       supabase.from("profiles")
         .select("user_id, full_name, preferred_language, created_at")
         .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc),
@@ -81,12 +76,8 @@ serve(async (req) => {
       supabase.from("client_packages")
         .select("user_id, total_sessions, used_sessions, is_active")
         .eq("is_active", true),
-      supabase.from("session_ledger")
-        .select("user_id, delta, reason")
-        .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc),
     ]);
 
-    const sessions = sessionsRes.data ?? [];
     const newProfiles = newProfilesRes.data ?? [];
     const guests = guestRes.data ?? [];
     const nutrition = nutritionRes.data ?? [];
@@ -95,18 +86,13 @@ serve(async (req) => {
     const achievements = achievementsRes.data ?? [];
     const tests = testsRes.data ?? [];
     const packages = packagesRes.data ?? [];
-    const ledger = ledgerRes.data ?? [];
-
-    // Resolve names for all mentioned users
     const ids = Array.from(new Set([
-      ...sessions.map((s: any) => s.user_id),
       ...nutrition.map((n: any) => n.user_id),
       ...photos.map((p: any) => p.user_id),
       ...measurements.map((m: any) => m.user_id),
       ...achievements.map((a: any) => a.user_id),
       ...tests.map((t: any) => t.user_id),
       ...packages.map((p: any) => p.user_id),
-      ...ledger.map((l: any) => l.user_id),
     ].filter(Boolean)));
 
     const nameById = new Map<string, string>();
@@ -116,15 +102,6 @@ serve(async (req) => {
       for (const p of profs ?? []) nameById.set(p.user_id, p.full_name || "Без имени");
     }
     const nm = (id: string) => esc(nameById.get(id) || "клиент");
-
-    // --- Тренировки ---
-    const sessionLines = sessions
-      .sort((a: any, b: any) => String(a.session_time).localeCompare(String(b.session_time)))
-      .map((s: any) => {
-        const t = s.session_time ? String(s.session_time).slice(0, 5) : "—";
-        const mark = s.is_deducted ? "✅" : "🕐";
-        return `${mark} ${t} — ${nm(s.user_id)}${s.is_recurring ? " (серия)" : ""}`;
-      });
 
     // --- Активность в приложении ---
     const photoByUser = new Map<string, number>();
@@ -149,17 +126,13 @@ serve(async (req) => {
       }
     }
 
-    // --- Остатки и долги ---
+    // --- Долги ---
     const debts: string[] = [];
-    const lowBalance: string[] = [];
     for (const p of packages) {
       const left = (p.total_sessions ?? 0) - (p.used_sessions ?? 0);
       if (left < 0) debts.push(`• ${nm(p.user_id)} — долг ${Math.abs(left)}`);
-      else if (left <= 1) lowBalance.push(`• ${nm(p.user_id)} — осталось ${left}`);
     }
 
-    const deducted = ledger.filter((l: any) => l.delta < 0).length;
-    const refunded = ledger.filter((l: any) => l.delta > 0).length;
 
     const activeUsers = new Set([
       ...nutrition.map((n: any) => n.user_id),
@@ -386,7 +359,6 @@ serve(async (req) => {
     L.push(`📊 <b>Итоги дня — ${esc(dayLabel)}</b>`);
     L.push("");
     L.push(
-      `🏋️ Тренировок: <b>${sessions.length}</b>  •  ` +
       `🆕 Регистраций: <b>${newProfiles.length}</b>  •  ` +
       `📱 Активных в приложении: <b>${activeUsers.size}</b>`,
     );
@@ -425,11 +397,6 @@ serve(async (req) => {
       L.push("", "<b>💻 Устройства</b>", ...deviceLines);
     }
 
-    if (sessionLines.length) {
-      L.push("", "<b>Тренировки</b>", ...sessionLines);
-    } else {
-      L.push("", "<b>Тренировки</b>", "— сегодня не было");
-    }
 
     if (newProfiles.length) {
       L.push("", "<b>Новые клиенты</b>", ...newProfiles.map((p: any) =>
@@ -460,12 +427,7 @@ serve(async (req) => {
         `• ${nm(a.user_id)} — ${esc(a.title_ru)}`));
     }
 
-    if (deducted || refunded) {
-      L.push("", `<b>Списания</b>: -${deducted} / возвраты: +${refunded}`);
-    }
-
     if (debts.length) L.push("", "🔴 <b>Долги</b>", ...debts);
-    if (lowBalance.length) L.push("", "⚠️ <b>Заканчиваются занятия</b>", ...lowBalance);
 
     // ---------- Вывод ----------
     const verdict: string[] = [];
@@ -489,7 +451,6 @@ serve(async (req) => {
       verdict.push("Заходили только знакомые пользователи, попыток брони не было.");
     }
     if (debts.length) verdict.push(`Есть долги по занятиям: ${debts.length} — стоит напомнить об оплате.`);
-    if (lowBalance.length) verdict.push(`У ${lowBalance.length} клиентов заканчивается пакет — момент для продления.`);
 
     L.push("", "🧠 <b>Вывод</b>", ...verdict.map((v) => `• ${v}`));
 
@@ -539,7 +500,7 @@ serve(async (req) => {
       }
     }
 
-    return new Response(JSON.stringify({ ok: true, date: day, sessions: sessions.length }), {
+    return new Response(JSON.stringify({ ok: true, date: day }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
