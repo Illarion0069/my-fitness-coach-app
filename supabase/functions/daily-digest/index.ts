@@ -86,18 +86,13 @@ serve(async (req) => {
     const achievements = achievementsRes.data ?? [];
     const tests = testsRes.data ?? [];
     const packages = packagesRes.data ?? [];
-    const ledger = ledgerRes.data ?? [];
-
-    // Resolve names for all mentioned users
     const ids = Array.from(new Set([
-      ...sessions.map((s: any) => s.user_id),
       ...nutrition.map((n: any) => n.user_id),
       ...photos.map((p: any) => p.user_id),
       ...measurements.map((m: any) => m.user_id),
       ...achievements.map((a: any) => a.user_id),
       ...tests.map((t: any) => t.user_id),
       ...packages.map((p: any) => p.user_id),
-      ...ledger.map((l: any) => l.user_id),
     ].filter(Boolean)));
 
     const nameById = new Map<string, string>();
