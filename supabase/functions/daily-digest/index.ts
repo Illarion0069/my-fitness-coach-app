@@ -386,7 +386,6 @@ serve(async (req) => {
     L.push(`📊 <b>Итоги дня — ${esc(dayLabel)}</b>`);
     L.push("");
     L.push(
-      `🏋️ Тренировок: <b>${sessions.length}</b>  •  ` +
       `🆕 Регистраций: <b>${newProfiles.length}</b>  •  ` +
       `📱 Активных в приложении: <b>${activeUsers.size}</b>`,
     );
@@ -425,11 +424,6 @@ serve(async (req) => {
       L.push("", "<b>💻 Устройства</b>", ...deviceLines);
     }
 
-    if (sessionLines.length) {
-      L.push("", "<b>Тренировки</b>", ...sessionLines);
-    } else {
-      L.push("", "<b>Тренировки</b>", "— сегодня не было");
-    }
 
     if (newProfiles.length) {
       L.push("", "<b>Новые клиенты</b>", ...newProfiles.map((p: any) =>
@@ -460,12 +454,7 @@ serve(async (req) => {
         `• ${nm(a.user_id)} — ${esc(a.title_ru)}`));
     }
 
-    if (deducted || refunded) {
-      L.push("", `<b>Списания</b>: -${deducted} / возвраты: +${refunded}`);
-    }
-
     if (debts.length) L.push("", "🔴 <b>Долги</b>", ...debts);
-    if (lowBalance.length) L.push("", "⚠️ <b>Заканчиваются занятия</b>", ...lowBalance);
 
     // ---------- Вывод ----------
     const verdict: string[] = [];
@@ -489,7 +478,6 @@ serve(async (req) => {
       verdict.push("Заходили только знакомые пользователи, попыток брони не было.");
     }
     if (debts.length) verdict.push(`Есть долги по занятиям: ${debts.length} — стоит напомнить об оплате.`);
-    if (lowBalance.length) verdict.push(`У ${lowBalance.length} клиентов заканчивается пакет — момент для продления.`);
 
     L.push("", "🧠 <b>Вывод</b>", ...verdict.map((v) => `• ${v}`));
 
