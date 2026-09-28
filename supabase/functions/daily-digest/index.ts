@@ -47,7 +47,6 @@ serve(async (req) => {
     const dayEndUtc = new Date(`${day}T23:59:59.999+03:00`).toISOString();
 
     const [
-      sessionsRes,
       newProfilesRes,
       guestRes,
       nutritionRes,
@@ -56,11 +55,7 @@ serve(async (req) => {
       achievementsRes,
       testsRes,
       packagesRes,
-      ledgerRes,
     ] = await Promise.all([
-      supabase.from("scheduled_sessions")
-        .select("id, user_id, session_time, is_recurring, is_deducted")
-        .eq("session_date", day),
       supabase.from("profiles")
         .select("user_id, full_name, preferred_language, created_at")
         .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc),
