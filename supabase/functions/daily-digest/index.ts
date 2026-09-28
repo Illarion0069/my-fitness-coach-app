@@ -117,15 +117,6 @@ serve(async (req) => {
     }
     const nm = (id: string) => esc(nameById.get(id) || "клиент");
 
-    // --- Тренировки ---
-    const sessionLines = sessions
-      .sort((a: any, b: any) => String(a.session_time).localeCompare(String(b.session_time)))
-      .map((s: any) => {
-        const t = s.session_time ? String(s.session_time).slice(0, 5) : "—";
-        const mark = s.is_deducted ? "✅" : "🕐";
-        return `${mark} ${t} — ${nm(s.user_id)}${s.is_recurring ? " (серия)" : ""}`;
-      });
-
     // --- Активность в приложении ---
     const photoByUser = new Map<string, number>();
     for (const p of photos) photoByUser.set(p.user_id, (photoByUser.get(p.user_id) || 0) + 1);
@@ -149,17 +140,13 @@ serve(async (req) => {
       }
     }
 
-    // --- Остатки и долги ---
+    // --- Долги ---
     const debts: string[] = [];
-    const lowBalance: string[] = [];
     for (const p of packages) {
       const left = (p.total_sessions ?? 0) - (p.used_sessions ?? 0);
       if (left < 0) debts.push(`• ${nm(p.user_id)} — долг ${Math.abs(left)}`);
-      else if (left <= 1) lowBalance.push(`• ${nm(p.user_id)} — осталось ${left}`);
     }
 
-    const deducted = ledger.filter((l: any) => l.delta < 0).length;
-    const refunded = ledger.filter((l: any) => l.delta > 0).length;
 
     const activeUsers = new Set([
       ...nutrition.map((n: any) => n.user_id),
