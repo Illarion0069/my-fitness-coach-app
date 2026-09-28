@@ -76,12 +76,8 @@ serve(async (req) => {
       supabase.from("client_packages")
         .select("user_id, total_sessions, used_sessions, is_active")
         .eq("is_active", true),
-      supabase.from("session_ledger")
-        .select("user_id, delta, reason")
-        .gte("created_at", dayStartUtc).lte("created_at", dayEndUtc),
     ]);
 
-    const sessions = sessionsRes.data ?? [];
     const newProfiles = newProfilesRes.data ?? [];
     const guests = guestRes.data ?? [];
     const nutrition = nutritionRes.data ?? [];
