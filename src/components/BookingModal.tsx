@@ -649,8 +649,34 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
               </div>
             )}
 
-            {/* === GUEST INFO STEP === */}
-            {step === 'guest-info' && selectedDate && selectedTime && (
+            {/* === INLINE CONFIRM for clients with a package === */}
+            {step === 'date' && user && selectedDate && selectedTime && hasActivePackage === true && (
+              <div id="booking-action" className="mt-5 space-y-3">
+                <div className="bg-secondary/50 rounded-2xl p-4 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5 text-primary" />
+                  </div>
+                  <p className="text-sm font-bold capitalize">
+                    {format(selectedDate, 'EEEE, d MMMM', { locale })} · {selectedTime}
+                  </p>
+                </div>
+                <p className="text-[11px] text-muted-foreground">
+                  ⚠️ {lang === 'en'
+                    ? 'Free cancellation up to 24 hours before the session.'
+                    : 'Бесплатная отмена за 24 часа до тренировки.'}
+                </p>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleBook(); }}
+                  disabled={loading}
+                  className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (lang === 'en' ? 'Book' : 'Записаться')}
+                </button>
+              </div>
+            )}
+
+            {/* === GUEST INFO (inline under time) === */}
+            {(step === 'date' || step === 'guest-info') && !user && selectedDate && selectedTime && (
               <div className="space-y-5">
                 <div className="bg-secondary/50 rounded-2xl p-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
