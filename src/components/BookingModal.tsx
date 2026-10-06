@@ -260,20 +260,24 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     return hasRemaining;
   }, [user]);
 
+  const scrollToAction = (id: string) => {
+    setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+  };
+
   const handleTimeSelect = async (time: string) => {
     trackFunnel('booking_time');
     setSelectedTime(time);
     if (!user) {
-      // Guest flow: collect name + phone
+      // Guest flow: name + phone inline under the time
       trackFunnel('booking_payment');
-      setStep('guest-info');
+      scrollToAction('booking-action');
       return;
     }
     setLoading(true);
     const has = await checkActivePackage();
     setLoading(false);
     if (has) {
-      setStep('confirm');
+      scrollToAction('booking-action');
     } else {
       setSelectedPackage(null);
       setPaymentOpened(false);
@@ -288,8 +292,52 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     setSelectedDate(day);
     setSelectedTime(null);
     fetchSlots(day);
-    setStep('time');
+    scrollToAction('booking-times');
   };
+
+  const handleQuickSlot = (dateStr: string, time: string) => {
+    const day = new Date(`${dateStr}T12:00:00`);
+    trackFunnel('booking_date');
+    setSelectedDate(day);
+    setCurrentMonth(day);
+    fetchSlots(day);
+    handleTimeSelect(time);
+  };
+
+  // Nearest free slots (up to 4, next 14 days)
+  const [nearestSlots, setNearestSlots] = useState<{ date: string; time: string }[]>([]);
+  const [nearestLoading, setNearestLoading] = useState(false);
+  useEffect(() => {
+    if (!open || (initialStep && initialStep !== 'date')) return;
+    let cancelled = false;
+    (async () => {
+      setNearestLoading(true);
+      const found: { date: string; time: string }[] = [];
+      for (let i = 0; i < 14 && found.length < 4; i++) {
+        const d = new Date();
+        d.setHours(12, 0, 0, 0);
+        d.setDate(d.getDate() + i);
+        const ds = format(d, 'yyyy-MM-dd');
+        if (trainerDaysOff.includes(getDay(d)) || trainerBlockedDates.includes(ds)) continue;
+        try {
+          const { data } = await supabase.functions.invoke('book-session', {
+            body: { action: 'getSlots', date: ds, forceClientView },
+          });
+          if (cancelled) return;
+          if (data?.dayOff) continue;
+          for (const s of (data?.slots || []) as TimeSlot[]) {
+            if (found.length >= 4) break;
+            if (s.available && (s.booked ?? 0) === 0 && hoursUntilCyprus(ds, s.time) > 3) {
+              found.push({ date: ds, time: s.time });
+            }
+          }
+        } catch { /* ignore */ }
+      }
+      if (!cancelled) { setNearestSlots(found); setNearestLoading(false); }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, trainerBlockedDates.join(',')]);
 
   const handleBook = async (options?: { goToPaymentDoneAfter?: boolean }) => {
     if (!selectedDate || !selectedTime) return;
@@ -464,7 +512,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   </button>
                 )}
                 {step === 'payment' && (
-                  <button onClick={() => setStep('time')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+                  <button onClick={() => setStep('date')} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
                 )}
@@ -489,7 +537,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             {/* Step indicators */}
             {step !== 'done' && step !== 'my-sessions' && (
               <div className="flex gap-1 mt-3">
-                {(!user ? ['date', 'time', 'guest-info', 'confirm'] : hasActivePackage === false ? ['date', 'time', 'payment', 'confirm'] : ['date', 'time', 'confirm']).map((s, i, arr) => (
+                {(hasActivePackage === false && user ? ['date', 'payment'] : ['date']).map((s, i, arr) => (
                   <div
                     key={s}
                     className={`h-1 flex-1 rounded-full transition-colors ${
@@ -514,6 +562,37 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     <CalendarDays className="w-3.5 h-3.5" />
                     {lang === 'en' ? 'View my upcoming sessions' : 'Мои предстоящие записи'}
                   </button>
+                )}
+
+                {/* Nearest free slots — one tap */}
+                {(nearestLoading || nearestSlots.length > 0) && (
+                  <div className="mb-5">
+                    <p className="text-xs font-semibold text-muted-foreground mb-2">
+                      {lang === 'en' ? '⚡ Nearest free slots' : '⚡ Ближайшие свободные окна'}
+                    </p>
+                    {nearestLoading ? (
+                      <div className="flex justify-center py-3"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {nearestSlots.map(s => {
+                          const d = new Date(`${s.date}T12:00:00`);
+                          const active = selectedDate && format(selectedDate, 'yyyy-MM-dd') === s.date && selectedTime === s.time;
+                          return (
+                            <button
+                              key={`${s.date}-${s.time}`}
+                              onClick={() => handleQuickSlot(s.date, s.time)}
+                              className={`py-2.5 px-3 rounded-xl text-sm font-semibold text-left transition-all ${active ? 'bg-primary text-primary-foreground' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
+                            >
+                              <span className="capitalize">{isToday(d) ? (lang === 'en' ? 'Today' : 'Сегодня') : format(d, 'EEE, d MMM', { locale })}</span> · {s.time}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <p className="text-[10px] text-muted-foreground/60 mt-3">
+                      {lang === 'en' ? 'Or pick any date below' : 'Или выберите любую дату ниже'}
+                    </p>
+                  </div>
                 )}
 
                 {/* Month nav */}
@@ -577,7 +656,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   })}
                 </div>
 
-                {!user && (
+                {!user && !selectedDate && (
                   <p className="text-xs text-primary/70 text-center mt-4 font-medium">
                     {lang === 'en' ? '✨ No account needed — just pick a date!' : '✨ Аккаунт не нужен — просто выберите дату!'}
                   </p>
@@ -585,9 +664,9 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
               </div>
             )}
 
-            {/* === TIME STEP === */}
-            {step === 'time' && selectedDate && (
-              <div>
+            {/* === TIME (inline under calendar) === */}
+            {(step === 'date' || step === 'time') && selectedDate && (
+              <div id="booking-times" className="mt-5 pt-4 border-t border-border/30">
                 <p className="text-sm text-muted-foreground mb-2">
                   {format(selectedDate, 'EEEE, d MMMM', { locale })}
                 </p>
@@ -677,7 +756,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
 
             {/* === GUEST INFO (inline under time) === */}
             {(step === 'date' || step === 'guest-info') && !user && selectedDate && selectedTime && (
-              <div className="space-y-5">
+              <div id="booking-action" className="space-y-5 mt-5">
                 <div className="bg-secondary/50 rounded-2xl p-4 flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
                     <CalendarDays className="w-5 h-5 text-primary" />
