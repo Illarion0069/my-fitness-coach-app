@@ -737,13 +737,18 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       });
                       return;
                     }
-                    setStep('confirm');
+                    handleBook();
                   }}
-                  disabled={!guestName.trim() || !guestPhone.trim()}
+                  disabled={loading || !guestName.trim() || !guestPhone.trim()}
                   className="w-full gradient-primary text-primary-foreground font-bold py-4 rounded-2xl text-base glow-primary hover:scale-[1.02] transition-transform active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  {lang === 'en' ? 'Continue' : 'Продолжить'}
+                  {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (lang === 'en' ? 'Book' : 'Записаться')}
                 </button>
+                <p className="text-[10px] text-muted-foreground/70 text-center">
+                  {lang === 'en'
+                    ? 'Single session 100€ — paid before the session via Revolut or cash.'
+                    : 'Разовая тренировка 100€ — оплата перед тренировкой через Revolut или наличными.'}
+                </p>
               </div>
             )}
 
