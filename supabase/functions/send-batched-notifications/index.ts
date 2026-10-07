@@ -6,7 +6,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const BATCH_DELAY_SECONDS = 60;
+const BATCH_DELAY_SECONDS = 180;
 
 const escapeHtml = (s: string): string =>
   s ? s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') : s;
