@@ -81,12 +81,12 @@ export function sessionMoved(opts: {
   if (opts.wholeSeries) {
     const d = new Date(opts.date + 'T12:00:00');
     const dayEn = d.toLocaleDateString('en-US', { weekday: 'long' });
-    const dayRu = ['воскресенье', 'понедельник', 'вторник', 'среду', 'четверг', 'пятницу', 'субботу'][d.getDay()];
+    const dayRu = ['каждое воскресенье', 'каждый понедельник', 'каждый вторник', 'каждую среду', 'каждый четверг', 'каждую пятницу', 'каждую субботу'][d.getDay()];
     const fromEn = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long' });
     const fromRu = d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
     return {
       en: `🔄 <b>Session time changed</b>\n📆 Every ${dayEn} from ${fromEn}\n🕐 New time: ${time}`,
-      ru: `🔄 <b>Время тренировки изменено</b>\n📆 Каждую ${dayRu} с ${fromRu}\n🕐 Новое время: ${time}`,
+      ru: `🔄 <b>Время тренировки изменено</b>\n📆 ${dayRu[0].toUpperCase() + dayRu.slice(1)} с ${fromRu}\n🕐 Новое время: ${time}`,
     };
   }
   return {
