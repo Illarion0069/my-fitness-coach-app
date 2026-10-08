@@ -23,10 +23,11 @@ import {
 } from '@/components/ui/accordion';
 
 const transformationPhotos: Record<number, { before: string; after: string }> = {
-  0: { before: evgeniyBefore, after: evgeniyAfter },
-  1: { before: nataliaBefore, after: nataliaAfter },
-  2: { before: pavelBefore, after: pavelAfter },
-  3: { before: veronikaBefore, after: veronikaAfter },
+  0: { before: daniilBefore, after: daniilAfter },
+  1: { before: evgeniyBefore, after: evgeniyAfter },
+  2: { before: nataliaBefore, after: nataliaAfter },
+  3: { before: pavelBefore, after: pavelAfter },
+  4: { before: veronikaBefore, after: veronikaAfter },
 };
 
 const reasons = [
