@@ -184,6 +184,8 @@ const AppContent = () => {
     const bookParam = params.get('book');
     if (bookParam) {
       setShowBooking(true);
+      // Skip the onboarding guide so ad visitors land straight on the booking form
+      setShowGuide(false);
       const url = new URL(window.location.href);
       url.searchParams.delete('book');
       window.history.replaceState(null, '', url.pathname + url.search + url.hash);
