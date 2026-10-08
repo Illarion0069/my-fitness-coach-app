@@ -13,6 +13,8 @@ import pavelBefore from '@/assets/transformation-pavel-before.jpeg';
 import pavelAfter from '@/assets/transformation-pavel-after.jpeg';
 import evgeniyBefore from '@/assets/transformation-evgeniy-before.jpeg';
 import evgeniyAfter from '@/assets/transformation-evgeniy-after.jpeg';
+import daniilBefore from '@/assets/transformation-daniil-before.jpeg';
+import daniilAfter from '@/assets/transformation-daniil-after.jpeg';
 import {
   Accordion,
   AccordionContent,
@@ -21,10 +23,11 @@ import {
 } from '@/components/ui/accordion';
 
 const transformationPhotos: Record<number, { before: string; after: string }> = {
-  0: { before: evgeniyBefore, after: evgeniyAfter },
-  1: { before: nataliaBefore, after: nataliaAfter },
-  2: { before: pavelBefore, after: pavelAfter },
-  3: { before: veronikaBefore, after: veronikaAfter },
+  0: { before: daniilBefore, after: daniilAfter },
+  1: { before: evgeniyBefore, after: evgeniyAfter },
+  2: { before: nataliaBefore, after: nataliaAfter },
+  3: { before: pavelBefore, after: pavelAfter },
+  4: { before: veronikaBefore, after: veronikaAfter },
 };
 
 const reasons = [

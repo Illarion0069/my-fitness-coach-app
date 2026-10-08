@@ -183,6 +183,16 @@ export const translations = {
     subtitle: { en: 'Real results from real people', ru: 'Реальные результаты реальных людей' },
     items: [
       {
+        name: { en: 'Daniil', ru: 'Даниил' },
+        result: { en: 'From zero to confident technique', ru: 'С нуля до уверенной техники' },
+        desc: {
+          en: 'A young athlete who came in with no training experience at all. Learned clean technique from scratch, built strength and confidence — and looks fantastic now. Keeps training and progressing to this day.',
+          ru: 'Парень, который пришёл совсем без опыта тренировок. С нуля поставил технику, набрал силу и уверенность — теперь выглядит шикарно. Успешно продолжает тренироваться и прогрессировать.',
+        },
+        duration: { en: 'Training to this day', ru: 'Тренируется до сих пор' },
+        metric: '💪',
+      },
+      {
         name: { en: 'Evgeniy V.', ru: 'Евгений В.' },
         result: { en: 'Lean, athletic, functional body', ru: 'Подтянутое, атлетичное, функциональное тело' },
         desc: {
