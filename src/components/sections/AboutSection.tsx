@@ -13,6 +13,8 @@ import pavelBefore from '@/assets/transformation-pavel-before.jpeg';
 import pavelAfter from '@/assets/transformation-pavel-after.jpeg';
 import evgeniyBefore from '@/assets/transformation-evgeniy-before.jpeg';
 import evgeniyAfter from '@/assets/transformation-evgeniy-after.jpeg';
+import daniilBefore from '@/assets/transformation-daniil-before.jpeg';
+import daniilAfter from '@/assets/transformation-daniil-after.jpeg';
 import {
   Accordion,
   AccordionContent,
