@@ -865,8 +865,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       ? 'Intro consultation 50€ — we get to know each other, discuss your goals and try a few exercises. Paid on the spot via Revolut or cash.'
                       : 'Знакомство 50€ — обсудим цели и попробуем упражнения. Оплата на месте через Revolut или наличными.')
                     : (lang === 'en'
-                      ? 'Single session 100€ — paid before the session via Revolut or cash.'
-                      : 'Разовая тренировка 100€ — оплата перед тренировкой через Revolut или наличными.')}
+                      ? 'Single session 100€ — you can pay on the spot after the workout via Revolut or cash.'
+                      : 'Разовая тренировка 100€ — можно оплатить уже на месте после тренировки через Revolut или наличными.')}
                 </p>
                 <a
                   href={`https://wa.me/35795144819?text=${encodeURIComponent(lang === 'en' ? 'Hi! I have a question about training.' : 'Здравствуйте! У меня вопрос о тренировках.')}`}
@@ -1025,8 +1025,8 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     </div>
                     <p className="text-[10px] text-muted-foreground/70">
                       {lang === 'en'
-                        ? 'Payment is made before the session via Revolut or cash.'
-                        : 'Оплата производится перед тренировкой через Revolut или наличными.'}
+                        ? 'You can pay on the spot after the workout via Revolut or cash.'
+                        : 'Можно оплатить уже на месте после тренировки через Revolut или наличными.'}
                     </p>
                   </div>
                 )}
