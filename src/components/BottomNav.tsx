@@ -22,13 +22,13 @@ const BottomNav = ({ active, onNavigate, showAdmin = false, showShop = false }: 
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-2xl border-t border-border/50" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-      <div className="flex items-center justify-around h-16 max-w-lg mx-auto">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-2xl border-t border-border/50 md:bottom-auto md:top-3 md:left-1/2 md:right-auto md:-translate-x-1/2 md:border md:rounded-full md:px-2 md:shadow-lg" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+      <div className="flex items-center justify-around h-16 max-w-lg mx-auto md:h-11 md:gap-1">
         {items.map((item) => (
           <button
             key={item.id}
             onClick={() => onNavigate(item.id)}
-            className={`flex flex-col items-center gap-0.5 px-3 py-1.5 rounded-xl transition-all duration-200 ${
+            className={`flex flex-col md:flex-row items-center gap-0.5 md:gap-2 px-3 md:px-4 py-1.5 rounded-xl transition-all duration-200 ${
               active === item.id
                 ? 'text-primary'
                 : 'text-muted-foreground hover:text-foreground'
@@ -40,7 +40,7 @@ const BottomNav = ({ active, onNavigate, showAdmin = false, showShop = false }: 
                 <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-primary" />
               )}
             </div>
-            <span className="text-[10px] font-semibold">{item.label}</span>
+            <span className="text-[10px] md:text-sm font-semibold">{item.label}</span>
           </button>
         ))}
       </div>

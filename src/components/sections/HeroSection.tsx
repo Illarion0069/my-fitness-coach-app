@@ -275,7 +275,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
             </h2>
             <span className="h-px flex-1 ml-3 bg-border/40" />
           </div>
-          <div className="grid grid-cols-2 auto-rows-[minmax(0,1fr)] gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[minmax(0,1fr)] gap-3">
             {workouts.items.slice(0, 4).map((item, i) => (
               <motion.div
                 key={i}

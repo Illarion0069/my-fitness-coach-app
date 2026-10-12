@@ -57,6 +57,7 @@ const AppContent = () => {
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
   const [showGuide, setShowGuide] = useState(() => {
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) return false;
     return !localStorage.getItem('app_guide_v2_seen') && !localStorage.getItem('user_role_hint');
   });
   const containerRef = useRef<HTMLDivElement>(null);
@@ -234,6 +235,7 @@ const AppContent = () => {
             animate="center"
             exit="exit"
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
+            className="md:max-w-5xl md:mx-auto md:pt-14"
           >
             <Suspense fallback={
               <div className="min-h-screen bg-background px-5 pt-6 pb-28 space-y-4">
@@ -262,7 +264,7 @@ const AppContent = () => {
         </div>
       )}
       <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
-      {!showGuide && !effectiveIsTrainer && <SwipeHint />}
+      {!showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
       {/* Frozen: chat feature disabled for now — DirectChat removed from UI, code kept for later */}
