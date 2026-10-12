@@ -508,7 +508,10 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
           exit={{ y: '100%' }}
           transition={{ type: 'spring', damping: 25, stiffness: 300 }}
           onClick={e => e.stopPropagation()}
-          className="bg-card w-full max-w-md rounded-t-3xl sm:rounded-3xl max-h-[85vh] min-h-[60vh] overflow-y-auto border border-border/50 shadow-2xl flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label={lang === 'en' ? 'Booking' : 'Бронирование'}
+          className="bg-card w-full max-w-md md:max-w-2xl rounded-t-3xl sm:rounded-3xl md:rounded-lg max-h-[85vh] min-h-[60vh] md:min-h-0 overflow-y-auto border border-border/50 shadow-2xl flex flex-col"
         >
           {/* Header */}
           <div className="sticky top-0 bg-card/95 backdrop-blur-md z-10 px-5 pt-5 pb-3 border-b border-border/30">
@@ -547,7 +550,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   }
                 </h2>
               </div>
-              <button onClick={handleModalClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
+              <button aria-label={lang === 'en' ? 'Close booking' : 'Закрыть запись'} onClick={handleModalClose} className="w-8 h-8 rounded-xl flex items-center justify-center hover:bg-secondary transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -567,7 +570,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             )}
           </div>
 
-          <div className="p-5 flex-1 pb-40">
+          <div className="p-5 md:p-8 flex-1 pb-40 md:pb-8">
             {/* === DATE STEP === */}
             {step === 'date' && (
               <div>
@@ -656,7 +659,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                         key={day.toISOString()}
                         disabled={past || !inMonth || isDayOff || isBlocked}
                         onClick={() => handleDateSelect(day)}
-                        className={`aspect-square rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
+                        className={`aspect-square md:aspect-auto md:h-12 rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                           selected
                             ? 'bg-primary text-primary-foreground shadow-md'
                             : today && !isDayOff

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, UserRound, MessageCircle } from 'lucide-react';
+import { ChevronDown, UserRound, MessageCircle, Flame, Dumbbell, StretchHorizontal, Zap, HeartPulse } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-avatar.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -32,6 +32,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
     return name.slice(0, 2).toUpperCase() || '?';
   };
   const workouts = translations.workouts;
+  const workoutIcons = [Flame, Dumbbell, StretchHorizontal, Zap];
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [showContactOptions, setShowContactOptions] = useState(false);
 
@@ -286,7 +287,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 whileHover={{ y: -3 }}
                 className={`workout-card-expanded bg-card rounded-3xl md:rounded-lg p-4 md:p-5 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 md:col-span-1 bg-gradient-to-br from-card to-primary/5' : ''}`}
               >
-                <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>{item.icon}</div>
+                <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}><span className="md:hidden">{item.icon}</span><span className="hidden md:block text-primary">{(() => { const Icon = workoutIcons[i]; return Icon ? <Icon className="w-7 h-7 mb-4" /> : null; })()}</span></div>
                 <h3 className={`font-bold text-foreground mb-1 md:text-xl ${i === 0 ? 'text-base' : 'text-[13px]'}`}>{t(item.name)}</h3>
                 <AnimatePresence mode="wait">
                   {expandedCard === i ? (
@@ -338,7 +339,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               className="workout-card-expanded bg-card rounded-3xl md:rounded-lg p-4 md:p-5 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{workouts.items[4].icon}</span>
+                <span className="text-2xl md:hidden">{workouts.items[4].icon}</span><HeartPulse className="hidden md:block w-7 h-7 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
                   <h3 className="text-[13px] md:text-xl font-bold text-foreground">{t(workouts.items[4].name)}</h3>
                   <AnimatePresence mode="wait">
