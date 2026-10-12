@@ -3,6 +3,7 @@ import BookingModal from '@/components/BookingModal';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
+import DesktopHeader from '@/components/DesktopHeader';
 import ConnectionSplash from '@/components/ConnectionSplash';
 // import ChatAssistant from '@/components/ChatAssistant'; // frozen: chat assistant is disabled for now
 
@@ -56,6 +57,8 @@ const AppContent = () => {
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 768px)').matches);
+  const [desktopAnchor, setDesktopAnchor] = useState('home');
   const [showGuide, setShowGuide] = useState(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) return false;
     return !localStorage.getItem('app_guide_v2_seen') && !localStorage.getItem('user_role_hint');
@@ -71,12 +74,47 @@ const AppContent = () => {
 
   const canSeeShop = SHOP_PUBLIC || optimisticIsTrainer;
   const showShopInNav = canSeeShop && !clientPreview;
+  const publicDesktop = isDesktop && !user && !optimisticIsTrainer;
+  const singlePageDesktop = publicDesktop && ['home', 'pricing', 'about'].includes(activeSection);
+
+  useEffect(() => {
+    const query = window.matchMedia('(min-width: 768px)');
+    const update = () => setIsDesktop(query.matches);
+    query.addEventListener('change', update);
+    return () => query.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!singlePageDesktop) return;
+    const container = containerRef.current;
+    if (!container) return;
+    const update = () => {
+      const top = container.getBoundingClientRect().top;
+      let current = 'home';
+      for (const section of ['home', 'pricing', 'about']) {
+        const element = document.getElementById(`desktop-${section}`);
+        if (element && element.getBoundingClientRect().top <= top + 160) current = section;
+      }
+      setDesktopAnchor(current);
+    };
+    container.addEventListener('scroll', update, { passive: true });
+    update();
+    return () => container.removeEventListener('scroll', update);
+  }, [singlePageDesktop]);
 
   const sections = ['home', 'pricing', ...(showShopInNav ? ['shop'] : []), 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
   const routableSections = [...sections, 'test', ...(canSeeShop && !showShopInNav ? ['shop'] : [])];
 
   const handleNavigate = (section: string) => {
     if (!routableSections.includes(section)) section = 'home';
+    if (publicDesktop && ['home', 'pricing', 'about'].includes(section)) {
+      setDesktopAnchor(section);
+      setActiveSection('home');
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        document.getElementById(`desktop-${section}`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+      }));
+      return;
+    }
     const currentIdx = routableSections.indexOf(activeSection);
     const nextIdx = routableSections.indexOf(section);
     setSwipeDirection(nextIdx > currentIdx ? 1 : -1);
@@ -85,6 +123,7 @@ const AppContent = () => {
   };
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
+    if (isDesktop) return;
     const currentIdx = sections.indexOf(activeSection);
     if (currentIdx === -1) return;
     if (direction === 'left' && currentIdx < sections.length - 1) {
@@ -94,7 +133,7 @@ const AppContent = () => {
       setSwipeDirection(-1);
       setActiveSection(sections[currentIdx - 1]);
     }
-  }, [activeSection, sections]);
+  }, [activeSection, sections, isDesktop]);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -219,6 +258,7 @@ const AppContent = () => {
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
+      {publicDesktop && <DesktopHeader active={singlePageDesktop ? desktopAnchor : activeSection} onNavigate={handleNavigate} onBook={() => setShowBooking(true)} onSignIn={() => setShowWelcome(true)} showShop={showShopInNav} />}
       <div
         ref={containerRef}
         className="flex-1 overflow-y-auto overflow-x-hidden"
@@ -228,14 +268,14 @@ const AppContent = () => {
       >
         <AnimatePresence mode="wait" custom={swipeDirection}>
           <motion.div
-            key={activeSection}
+            key={singlePageDesktop ? 'desktop-public' : activeSection}
             custom={swipeDirection}
             variants={slideVariants}
-            initial="enter"
+            initial={singlePageDesktop ? false : 'enter'}
             animate="center"
             exit="exit"
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
-            className="md:max-w-5xl md:mx-auto md:pt-14"
+            className={publicDesktop ? 'w-full' : 'w-full md:pt-16'}
           >
             <Suspense fallback={
               <div className="min-h-screen bg-background px-5 pt-6 pb-28 space-y-4">
@@ -249,12 +289,18 @@ const AppContent = () => {
                 <div className="h-40 rounded-2xl bg-muted/20 animate-pulse mt-3" />
               </div>
             }>
-              {renderSection()}
+              {singlePageDesktop ? (
+                <main>
+                  <div id="desktop-home"><HeroSection onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} /></div>
+                  <div id="desktop-pricing"><PricingSection integrated /></div>
+                  <div id="desktop-about"><AboutSection compact onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} /></div>
+                </main>
+              ) : renderSection()}
             </Suspense>
           </motion.div>
         </AnimatePresence>
       </div>
-      {activeSection !== 'home' && activeSection !== 'admin' && (
+      {!publicDesktop && activeSection !== 'home' && activeSection !== 'admin' && (
         <div
           className="fixed right-3 z-[90] flex items-center gap-2"
           style={{ top: 'max(env(safe-area-inset-top, 8px), 8px)' }}
@@ -263,7 +309,7 @@ const AppContent = () => {
           <LanguageSwitch />
         </div>
       )}
-      <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />
+      {!publicDesktop && <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />}
       {!showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}

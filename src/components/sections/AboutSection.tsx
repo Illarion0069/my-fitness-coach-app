@@ -21,6 +21,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
 
 const transformationPhotos: Record<number, { before: string; after: string }> = {
   0: { before: daniilBefore, after: daniilAfter },
@@ -161,9 +162,10 @@ const fade = (delay = 0) => ({
 interface AboutSectionProps {
   onNavigate?: (section: string) => void;
   onBookClick?: () => void;
+  compact?: boolean;
 }
 
-const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
+const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSectionProps) => {
   const { t, lang } = useLanguage();
   const { profile } = useAuth();
   const about = translations.about;
@@ -184,6 +186,89 @@ const AboutSection = ({ onNavigate, onBookClick }: AboutSectionProps) => {
     if (onBookClick) onBookClick();
     else if (onNavigate) onNavigate('pricing');
   };
+
+  if (compact) {
+    return (
+      <section className="border-t border-border px-8 py-12 xl:px-14">
+        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] items-center gap-10 xl:gap-16">
+          <img src={trainerPhoto} alt="Illarion Ientin" loading="lazy" className="w-full h-80 object-cover object-top rounded-lg" />
+          <div className="min-w-0">
+            <p className="text-sm text-primary font-bold mb-2">{t(about.title)}</p>
+            <h2 className="font-heading text-5xl mb-4">{lang === 'en' ? 'Illarion Ientin' : 'Илларион Ентин'}</h2>
+            <p className="text-base text-muted-foreground leading-relaxed max-w-3xl">{t(about.bio)}</p>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-border py-4 my-5">
+              {about.certs.map(cert => <span key={cert} className="flex items-center gap-2 text-sm font-bold"><Award className="w-4 h-4 text-primary" />{cert}</span>)}
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <Button onClick={handleBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
+              <Button variant="outline" asChild><a href="https://wa.me/35795144819" target="_blank" rel="noopener noreferrer"><MessageCircle />WhatsApp</a></Button>
+              <Button variant="ghost" asChild><a href="https://t.me/fitnesslimassol" target="_blank" rel="noopener noreferrer"><Send />Telegram</a></Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-12">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <h2 className="font-heading text-3xl">{t(transformations.title)}</h2>
+            <div className="flex gap-2">
+              <Button variant="outline" size="icon" aria-label={lang === 'en' ? 'Previous transformation' : 'Предыдущая трансформация'} title={lang === 'en' ? 'Previous' : 'Назад'} onClick={() => setActiveTransformation((activeTransformation - 1 + transformations.items.length) % transformations.items.length)}><ChevronLeft /></Button>
+              <Button variant="outline" size="icon" aria-label={lang === 'en' ? 'Next transformation' : 'Следующая трансформация'} title={lang === 'en' ? 'Next' : 'Вперёд'} onClick={() => setActiveTransformation((activeTransformation + 1) % transformations.items.length)}><ChevronRight /></Button>
+            </div>
+          </div>
+          {currentTransform && currentPhotos && (
+            <div className="grid grid-cols-2 gap-8 items-center" aria-live="polite">
+              <div className="grid grid-cols-2 gap-3">
+                {[{ src: currentPhotos.before, label: lang === 'en' ? 'Before' : 'До' }, { src: currentPhotos.after, label: lang === 'en' ? 'After' : 'После' }].map(photo => (
+                  <figure key={photo.label} className="relative overflow-hidden rounded-lg">
+                    <img src={photo.src} alt={`${t(currentTransform.name)} — ${photo.label}`} loading="lazy" className="w-full h-72 object-cover object-top" />
+                    <figcaption className="absolute left-3 bottom-3 bg-background/90 text-foreground rounded px-3 py-1 text-xs font-bold">{photo.label}</figcaption>
+                  </figure>
+                ))}
+              </div>
+              <div>
+                <p className="text-primary text-sm font-bold mb-2">{activeTransformation + 1} / {transformations.items.length}</p>
+                <h3 className="font-heading text-3xl mb-2">{t(currentTransform.name)}</h3>
+                <p className="text-primary font-bold mb-3">{t(currentTransform.result)}</p>
+                <p className="text-muted-foreground leading-relaxed">{t(currentTransform.desc)}</p>
+                {(currentTransform.metric || t(currentTransform.duration)) && <p className="text-sm text-muted-foreground mt-4">{[currentTransform.metric, t(currentTransform.duration)].filter(Boolean).join(' · ')}</p>}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="mt-12 border-t border-border pt-8">
+          <div className="flex items-center justify-between gap-4 mb-5">
+            <h2 className="font-heading text-3xl">{t(reviews.title)}</h2>
+            <Button variant="link" asChild><a href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7" target="_blank" rel="noopener noreferrer"><Star className="fill-primary" />5.0 · Google<ArrowUpRight /></a></Button>
+          </div>
+          <div className="grid grid-cols-3 gap-5">
+            {reviews.items.slice(0, 3).map((review, i) => (
+              <article key={i} className="bg-card border border-border rounded-lg p-5">
+                <div className="flex gap-1 mb-3">{Array.from({ length: review.rating }, (_, j) => <Star key={j} className="w-3 h-3 fill-primary text-primary" />)}</div>
+                <p className="text-sm text-muted-foreground leading-relaxed line-clamp-4">{t(review.desc)}</p>
+                <p className="text-sm font-bold mt-4">{t(review.name)}</p>
+              </article>
+            ))}
+          </div>
+        </div>
+
+        <details className="border-y border-border mt-8 py-4">
+          <summary className="cursor-pointer font-bold text-base">{lang === 'en' ? 'Frequently asked questions' : 'Частые вопросы'}</summary>
+          <Accordion type="single" collapsible className="grid grid-cols-2 gap-x-8 mt-3">
+            {faq.map((item, i) => <AccordionItem key={i} value={`compact-${i}`}><AccordionTrigger className="text-left text-sm">{t(item.q)}</AccordionTrigger><AccordionContent className="text-muted-foreground">{t(item.a)}</AccordionContent></AccordionItem>)}
+          </Accordion>
+        </details>
+        <footer className="flex flex-wrap justify-between items-center gap-4 pt-6">
+          <div><p className="font-heading text-xl">Reload Fitness · Limassol</p><p className="text-sm text-muted-foreground mt-1">{t(contact.address)}</p></div>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" asChild><a href="tel:+35795144819"><Phone />{contact.phone}</a></Button>
+            <Button variant="outline" asChild><a href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7" target="_blank" rel="noopener noreferrer"><MapPin />{lang === 'en' ? 'Open in Maps' : 'Открыть карту'}</a></Button>
+            {[{ icon: Instagram, href: 'https://www.instagram.com/illarion_ientin/', label: 'Instagram' }, { icon: Facebook, href: 'https://www.facebook.com/illarion.ientin/', label: 'Facebook' }, { icon: Bot, href: botLink, label: 'Telegram Bot' }].map(link => <Button key={link.label} variant="ghost" size="icon" asChild><a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label} title={link.label}><link.icon /></a></Button>)}
+          </div>
+        </footer>
+      </section>
+    );
+  }
 
   return (
     <section className="min-h-screen pb-32" style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 0px)' }}>
