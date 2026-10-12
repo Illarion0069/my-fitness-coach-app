@@ -111,6 +111,23 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   const [internalOpen, setInternalOpen] = useState(false);
   const [guestName, setGuestName] = useState('');
   const [guestPhone, setGuestPhone] = useState('');
+  const [guestKind, setGuestKind] = useState<'consultation' | 'session'>('consultation');
+  const leadSentRef = useRef(false);
+  const sendGuestLead = () => {
+    if (leadSentRef.current || user) return;
+    if (guestPhone.replace(/\D/g, '').length < 7 || !selectedDate || !selectedTime) return;
+    leadSentRef.current = true;
+    trackFunnel('booking_phone');
+    void supabase.functions.invoke('book-session', {
+      body: {
+        action: 'guestLead',
+        date: format(selectedDate, 'yyyy-MM-dd'),
+        time: selectedTime,
+        guest_name: guestName.trim().slice(0, 80),
+        guest_phone: `${guestCountryCode}${guestPhone.trim()}`.slice(0, 30),
+      },
+    }).catch(() => {});
+  };
   const [guestCountryCode, setGuestCountryCode] = useState('+357');
 
   const COUNTRY_CODES = [
@@ -360,6 +377,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             time: selectedTime,
             guest_name: guestName.trim(),
             guest_phone: `${guestCountryCode}${guestPhone.trim()}`,
+            kind: guestKind,
           },
         });
         if (error || data?.error) {
@@ -793,7 +811,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     </div>
                   </div>
 
-                  <div>
+                  <div onBlur={sendGuestLead}>
                     <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                       {lang === 'en' ? 'Phone number' : 'Номер телефона'}
                     </label>
@@ -805,6 +823,24 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                       countryCodes={COUNTRY_CODES}
                     />
                   </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { id: 'consultation', en: 'Intro consultation', ru: 'Знакомство', sub: { en: '1 hour · 50€', ru: '1 час · 50€' } },
+                    { id: 'session', en: 'Training session', ru: 'Тренировка', sub: { en: '1 hour · 100€', ru: '1 час · 100€' } },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.id}
+                      type="button"
+                      data-track={`guest_kind_${o.id}`}
+                      onClick={() => setGuestKind(o.id)}
+                      className={`rounded-xl border p-3 text-left transition-colors ${guestKind === o.id ? 'border-primary bg-primary/10' : 'border-border bg-background'}`}
+                    >
+                      <p className="text-sm font-bold">{lang === 'en' ? o.en : o.ru}</p>
+                      <p className="text-xs text-muted-foreground">{lang === 'en' ? o.sub.en : o.sub.ru}</p>
+                    </button>
+                  ))}
                 </div>
 
                 <button
@@ -824,10 +860,23 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                   {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (lang === 'en' ? 'Book' : 'Записаться')}
                 </button>
                 <p className="text-[10px] text-muted-foreground/70 text-center">
-                  {lang === 'en'
-                    ? 'Single session 100€ — paid before the session via Revolut or cash.'
-                    : 'Разовая тренировка 100€ — оплата перед тренировкой через Revolut или наличными.'}
+                  {guestKind === 'consultation'
+                    ? (lang === 'en'
+                      ? 'Intro consultation 50€ — we get to know each other, discuss your goals and try a few exercises. Paid on the spot via Revolut or cash.'
+                      : 'Знакомство 50€ — обсудим цели и попробуем упражнения. Оплата на месте через Revolut или наличными.')
+                    : (lang === 'en'
+                      ? 'Single session 100€ — paid before the session via Revolut or cash.'
+                      : 'Разовая тренировка 100€ — оплата перед тренировкой через Revolut или наличными.')}
                 </p>
+                <a
+                  href={`https://wa.me/35795144819?text=${encodeURIComponent(lang === 'en' ? 'Hi! I have a question about training.' : 'Здравствуйте! У меня вопрос о тренировках.')}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-track="booking_whatsapp"
+                  className="block w-full text-center border border-border rounded-2xl py-3 text-sm font-semibold"
+                >
+                  {lang === 'en' ? '💬 Not sure yet? Ask on WhatsApp' : '💬 Есть вопросы? Напишите в WhatsApp'}
+                </a>
               </div>
             )}
 
