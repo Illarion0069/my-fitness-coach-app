@@ -21,9 +21,9 @@ const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: Deskt
     ...(showShop ? [{ id: 'shop', label: lang === 'en' ? 'Shop' : 'Магазин' }] : []),
   ];
   return (
-    <header className="sticky top-0 z-50 hidden shrink-0 items-center justify-between gap-4 border-b border-border bg-background/95 px-8 py-4 backdrop-blur-xl md:flex xl:px-14">
-      <Button variant="ghost" onClick={() => onNavigate('home')} className="px-0 font-heading text-2xl hover:bg-transparent hover:text-primary">Limassol Fitness</Button>
-      <nav aria-label={lang === 'en' ? 'Main navigation' : 'Основное меню'} className="flex items-center gap-1">
+    <header className="sticky top-0 z-50 hidden shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background/95 px-6 py-3 backdrop-blur-xl md:flex lg:flex-nowrap lg:px-8 lg:py-4 xl:px-14">
+      <Button variant="ghost" onClick={() => onNavigate('home')} className="shrink-0 px-0 font-heading text-2xl hover:bg-transparent hover:text-primary">Limassol Fitness</Button>
+      <nav aria-label={lang === 'en' ? 'Main navigation' : 'Основное меню'} className="order-3 flex w-full justify-center items-center gap-1 lg:order-none lg:w-auto">
         {links.map(link => (
           <Button key={link.id} variant="ghost" aria-current={active === link.id ? 'location' : undefined} onClick={() => onNavigate(link.id)} className={active === link.id ? 'text-primary' : 'text-muted-foreground'}>{link.label}</Button>
         ))}

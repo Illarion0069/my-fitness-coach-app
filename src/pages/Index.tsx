@@ -291,7 +291,7 @@ const AppContent = () => {
             }>
               {singlePageDesktop ? (
                 <main>
-                  <div id="desktop-home"><HeroSection onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} /></div>
+                  <div id="desktop-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} /></div>
                   <div id="desktop-pricing"><PricingSection integrated /></div>
                   <div id="desktop-about"><AboutSection compact onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} /></div>
                 </main>

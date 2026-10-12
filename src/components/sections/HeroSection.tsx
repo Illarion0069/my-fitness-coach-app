@@ -15,9 +15,10 @@ interface HeroSectionProps {
   onNavigate: (section: string) => void;
   onProfileClick: () => void;
   clientPreview?: boolean;
+  integrated?: boolean;
 }
 
-const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionProps) => {
+const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = false }: HeroSectionProps) => {
   const { t, lang, setLang } = useLanguage();
   const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
@@ -88,7 +89,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
   return (
     <section className="desktop-home relative min-h-screen md:min-h-0 flex flex-col bg-background">
       {/* Top bar */}
-      <div className="flex md:hidden items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
+      <div className={`flex ${integrated ? 'md:hidden' : ''} items-center justify-between px-5 pt-safe pb-2`} style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
         <span className="font-heading uppercase text-base tracking-[0.18em] text-foreground">Limassol Fitness</span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
