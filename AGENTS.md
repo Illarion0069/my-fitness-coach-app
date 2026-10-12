@@ -1,0 +1,3 @@
+# Architecture rules
+- Compose the desktop public website from the existing home, pricing and about sections with anchor navigation; retain section-based navigation for mobile and authenticated workflows to preserve app state and booking behavior.
+- Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.
