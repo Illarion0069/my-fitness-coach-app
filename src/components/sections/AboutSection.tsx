@@ -219,8 +219,8 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
             <div className="grid grid-cols-2 gap-8 items-center" aria-live="polite">
               <div className="grid grid-cols-2 gap-3">
                 {[{ src: currentPhotos.before, label: lang === 'en' ? 'Before' : 'До' }, { src: currentPhotos.after, label: lang === 'en' ? 'After' : 'После' }].map(photo => (
-                  <figure key={photo.label} className="relative overflow-hidden rounded-lg">
-                    <img src={photo.src} alt={`${t(currentTransform.name)} — ${photo.label}`} loading="lazy" className="w-full h-72 object-cover object-top" />
+                  <figure key={photo.label} className="relative overflow-hidden rounded-lg bg-muted">
+                    <img src={photo.src} alt={`${t(currentTransform.name)} — ${photo.label}`} loading="lazy" className="w-full h-[28rem] object-contain" />
                     <figcaption className="absolute left-3 bottom-3 bg-background/90 text-foreground rounded px-3 py-1 text-xs font-bold">{photo.label}</figcaption>
                   </figure>
                 ))}
