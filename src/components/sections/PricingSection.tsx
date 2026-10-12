@@ -3,17 +3,17 @@ import { Check, Crown, AlertCircle, ArrowRight, MessageSquare } from 'lucide-rea
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
 
-const PricingSection = () => {
+const PricingSection = ({ integrated = false }: { integrated?: boolean }) => {
   const { t, lang } = useLanguage();
   const pricing = translations.pricing;
 
   return (
-    <section className="min-h-screen px-5 pb-28" style={{ paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
+    <section className={integrated ? 'px-8 py-12 xl:px-14 border-t border-border' : 'min-h-screen px-5 pb-28 md:px-8 md:pb-12 md:min-h-0'} style={integrated ? undefined : { paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
-        className="text-2xl font-extrabold uppercase tracking-tight mb-2"
+        className="text-2xl md:text-4xl font-extrabold uppercase tracking-normal mb-2"
       >
         {t(pricing.title)}
       </motion.h2>
@@ -22,13 +22,13 @@ const PricingSection = () => {
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         viewport={{ once: true }}
-        className="flex items-start gap-2.5 bg-card rounded-xl p-3.5 mb-6 border border-border/50"
+        className="flex items-start gap-2.5 py-3.5 mb-6 border-b border-border/50"
       >
         <AlertCircle className="w-4 h-4 text-primary mt-0.5 shrink-0" />
         <p className="text-xs text-muted-foreground">{t(pricing.gymNote)}</p>
       </motion.div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {pricing.packages.map((pkg, i) => {
           const isConsultation = 'isConsultation' in pkg && pkg.isConsultation;
           const hasLabel = 'label' in pkg;
@@ -41,7 +41,7 @@ const PricingSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              className={`bg-card rounded-2xl p-5 relative overflow-hidden border ${
+              className={`bg-card rounded-2xl md:rounded-lg p-5 md:p-6 relative overflow-hidden border flex flex-col ${
                 'popular' in pkg && pkg.popular ? 'border-primary/50 glow-primary' : 'border-border/50'
               }`}
             >
@@ -52,7 +52,7 @@ const PricingSection = () => {
                 </div>
               )}
 
-              <div className="flex items-end justify-between mb-4">
+              <div className="flex flex-wrap items-end justify-between gap-3 mb-4 mt-2">
                 <div>
                   {isConsultation ? (
                     <>
@@ -104,7 +104,7 @@ const PricingSection = () => {
                 href="https://revolut.me/illarion"
                 target="_blank"
                 rel="noopener noreferrer"
-                className={`group flex items-center justify-center gap-2 w-full py-3.5 rounded-xl text-sm font-bold transition-all ${
+                className={`group flex items-center justify-center gap-2 w-full mt-auto py-3.5 rounded-xl md:rounded-md text-sm font-bold transition-all ${
                   'popular' in pkg && pkg.popular
                     ? 'gradient-primary text-primary-foreground glow-primary hover:scale-[1.02]'
                     : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'

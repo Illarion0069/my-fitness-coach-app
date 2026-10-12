@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, UserRound, MessageCircle } from 'lucide-react';
+import { ChevronDown, UserRound, MessageCircle, Flame, Dumbbell, StretchHorizontal, Zap, HeartPulse } from 'lucide-react';
 import trainerPhoto from '@/assets/trainer-avatar.jpg';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { translations } from '@/i18n/translations';
@@ -15,9 +15,10 @@ interface HeroSectionProps {
   onNavigate: (section: string) => void;
   onProfileClick: () => void;
   clientPreview?: boolean;
+  integrated?: boolean;
 }
 
-const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionProps) => {
+const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = false }: HeroSectionProps) => {
   const { t, lang, setLang } = useLanguage();
   const { user, profile, isTrainer } = useAuth();
   const hero = translations.hero;
@@ -32,6 +33,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
     return name.slice(0, 2).toUpperCase() || '?';
   };
   const workouts = translations.workouts;
+  const workoutIcons = [Flame, Dumbbell, StretchHorizontal, Zap];
   const [expandedCard, setExpandedCard] = useState<number | null>(null);
   const [showContactOptions, setShowContactOptions] = useState(false);
 
@@ -85,9 +87,9 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
   }
 
   return (
-    <section className="relative min-h-screen flex flex-col bg-background">
+    <section className="desktop-home relative min-h-screen md:min-h-0 flex flex-col bg-background">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-5 pt-safe pb-2" style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
+      <div className={`flex ${integrated ? 'md:hidden' : ''} items-center justify-between px-5 pt-safe pb-2`} style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
         <span className="font-heading uppercase text-base tracking-[0.18em] text-foreground">Limassol Fitness</span>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -118,13 +120,13 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
         </div>
       </div>
 
-      <div className="flex-1 flex flex-col items-center px-5">
+      <div className="flex-1 flex flex-col items-center px-5 md:px-8 xl:px-14 md:pt-8">
         {/* Circular trainer photo with glow — clickable to contact */}
         <motion.div
           initial={{ opacity: 0, scale: 0.8 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.6 }}
-          className="mt-6 mb-2 flex flex-col items-center"
+          className="mt-6 mb-2 md:mt-2 md:mb-5 flex flex-col items-center"
         >
           <div className="relative">
           {/* Messenger bubbles + chat badge: swap with mode="wait" */}
@@ -226,7 +228,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-center mb-4"
         >
-          <h1 className={`uppercase tracking-tight font-heading leading-[1] ${lang === 'ru' ? 'text-[1.6rem]' : 'text-4xl'}`}>
+          <h1 className={`uppercase tracking-normal font-heading leading-[1] ${lang === 'ru' ? 'text-[1.6rem] md:text-5xl' : 'text-4xl md:text-6xl'}`}>
             <span className="block text-primary font-extrabold">{t(hero.title.line1)}</span>
             <span className="block text-muted-foreground/80 font-light italic normal-case tracking-normal text-[0.55em] mt-1 mb-1">{t(hero.title.line2)}</span>
             <span className="block text-foreground font-extrabold">{t(hero.title.line3)}</span>
@@ -240,7 +242,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           transition={{ delay: 0.35, duration: 0.5 }}
           className="text-center mb-6"
         >
-          <p className={`text-muted-foreground ${lang === 'ru' ? 'text-[11px]' : 'text-sm'}`}>{t(hero.subtitle)}</p>
+          <p className={`text-muted-foreground md:text-base ${lang === 'ru' ? 'text-[11px]' : 'text-sm'}`}>{t(hero.subtitle)}</p>
           <p className="text-xs text-muted-foreground/70 mt-1">— {t(hero.trainer)}</p>
         </motion.div>
 
@@ -267,15 +269,15 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65, duration: 0.5 }}
-          className="w-full pb-28 mt-12"
+          className="w-full pb-28 md:pb-12 mt-12 md:mt-8"
         >
           <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-xs font-extrabold text-muted-foreground uppercase tracking-[0.2em]">
+            <h2 className="text-xs md:text-xl font-extrabold text-muted-foreground uppercase tracking-normal">
               {t(workouts.title)}
             </h2>
             <span className="h-px flex-1 ml-3 bg-border/40" />
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[minmax(0,1fr)] gap-3">
+          <div className="desktop-workouts grid grid-cols-2 md:grid-cols-4 auto-rows-[minmax(0,1fr)] gap-3 md:gap-4">
             {workouts.items.slice(0, 4).map((item, i) => (
               <motion.div
                 key={i}
@@ -284,10 +286,10 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                 transition={{ delay: 0.7 + i * 0.05 }}
                 onClick={() => setExpandedCard(expandedCard === i ? null : i)}
                 whileHover={{ y: -3 }}
-                className={`workout-card-expanded bg-card rounded-3xl p-4 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 bg-gradient-to-br from-card to-primary/5' : ''}`}
+                className={`workout-card-expanded bg-card rounded-3xl md:rounded-lg p-4 md:p-5 border border-border/50 hover:border-primary/40 hover:shadow-[0_10px_30px_-12px_hsl(var(--primary)/0.35)] transition-all cursor-pointer select-none ${i === 0 || i === 3 ? 'col-span-2 md:col-span-1 bg-gradient-to-br from-card to-primary/5' : ''}`}
               >
-                <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}>{item.icon}</div>
-                <h3 className={`font-bold text-foreground mb-1 ${i === 0 ? 'text-base' : 'text-[13px]'}`}>{t(item.name)}</h3>
+                <div className={`mb-2 ${i === 0 ? 'text-3xl' : 'text-2xl'}`}><span className="md:hidden">{item.icon}</span><span className="hidden md:block text-primary">{(() => { const Icon = workoutIcons[i]; return Icon ? <Icon className="w-7 h-7 mb-4" /> : null; })()}</span></div>
+                <h3 className={`font-bold text-foreground mb-1 md:text-xl ${i === 0 ? 'text-base' : 'text-[13px]'}`}>{t(item.name)}</h3>
                 <AnimatePresence mode="wait">
                   {expandedCard === i ? (
                     <motion.div
@@ -319,7 +321,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                       key="collapsed"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
-                      className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2"
+                      className="text-[11px] md:text-sm text-muted-foreground leading-relaxed line-clamp-2"
                     >
                       {t(item.desc)}
                     </motion.p>
@@ -335,12 +337,12 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.9 }}
               onClick={() => setExpandedCard(expandedCard === 4 ? null : 4)}
-              className="workout-card-expanded bg-card rounded-3xl p-4 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
+              className="workout-card-expanded bg-card rounded-3xl md:rounded-lg p-4 md:p-5 border border-border/50 hover:border-primary/30 transition-all cursor-pointer select-none mt-3"
             >
               <div className="flex items-center gap-3">
-                <span className="text-2xl">{workouts.items[4].icon}</span>
+                <span className="text-2xl md:hidden">{workouts.items[4].icon}</span><HeartPulse className="hidden md:block w-7 h-7 text-primary shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-[13px] font-bold text-foreground">{t(workouts.items[4].name)}</h3>
+                  <h3 className="text-[13px] md:text-xl font-bold text-foreground">{t(workouts.items[4].name)}</h3>
                   <AnimatePresence mode="wait">
                     {expandedCard === 4 ? (
                       <motion.div
@@ -367,7 +369,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
                         </div>
                       </motion.div>
                     ) : (
-                      <motion.p key="col" className="text-[11px] text-muted-foreground line-clamp-1 mt-0.5">
+                      <motion.p key="col" className="text-[11px] md:text-sm text-muted-foreground line-clamp-1 mt-0.5">
                         {t(workouts.items[4].desc)}
                       </motion.p>
                     )}
@@ -378,7 +380,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview }: HeroSectionP
           )}
 
           {/* Scroll hint */}
-          <div className="flex justify-center mt-4">
+          <div className="flex md:hidden justify-center mt-4">
             <ChevronDown className="w-5 h-5 text-muted-foreground/30 animate-bounce" />
           </div>
         </motion.div>
