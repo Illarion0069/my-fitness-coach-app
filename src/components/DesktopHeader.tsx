@@ -1,5 +1,7 @@
-import { Calendar, UserRound } from 'lucide-react';
+import { useState } from 'react';
+import { Calendar, MessageCircle, Send, UserRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import ThemeToggle from '@/components/ThemeToggle';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import { useLanguage } from '@/contexts/LanguageContext';
