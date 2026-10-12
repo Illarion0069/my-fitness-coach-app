@@ -30,6 +30,7 @@ const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: Deskt
         {links.map(link => (
           <Button key={link.id} variant="ghost" aria-current={active === link.id ? 'location' : undefined} onClick={() => onNavigate(link.id)} className={active === link.id ? 'text-primary' : 'text-muted-foreground'}>{link.label}</Button>
         ))}
+        <Button variant="ghost" onClick={() => setContactsOpen(true)} className="text-muted-foreground">{lang === 'en' ? 'Contacts' : 'Контакты'}</Button>
       </nav>
       <div className="flex items-center gap-2">
         <ThemeToggle />
