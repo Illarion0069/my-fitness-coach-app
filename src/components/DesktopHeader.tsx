@@ -16,6 +16,7 @@ interface DesktopHeaderProps {
 
 const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: DesktopHeaderProps) => {
   const { lang } = useLanguage();
+  const [contactsOpen, setContactsOpen] = useState(false);
   const links = [
     { id: 'home', label: lang === 'en' ? 'Training' : 'Тренировки' },
     { id: 'pricing', label: lang === 'en' ? 'Pricing' : 'Цены' },
