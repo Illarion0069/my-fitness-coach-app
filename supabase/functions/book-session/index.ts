@@ -653,8 +653,39 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (action === 'guestLead') {
+      const { date, time, guest_name, guest_phone } = body;
+      const phone = String(guest_phone || '').slice(0, 30);
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 7 || !/^\d{4}-\d{2}-\d{2}$/.test(String(date)) || !/^\d{2}:\d{2}$/.test(String(time))) {
+        return new Response(JSON.stringify({ error: 'Invalid payload' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      const name = String(guest_name || '').replace(/[*_`\[\]]/g, '').slice(0, 80) || '—';
+      try {
+        const telegramToken = Deno.env.get('TELEGRAM_BOT_TOKEN');
+        const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
+        if (telegramToken && chatId) {
+          const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+          const msg = `⏳ Человек выбирает время записи\n\n👤 ${name}\n📞 ${phone}\n📅 ${dateFormatted} · ${time}\n\nОставил телефон, но ещё не нажал «Записаться». Если запись не придёт в ближайшие минуты — можно ему написать.`;
+          await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg }),
+          });
+        }
+      } catch (e) {
+        console.error('Lead notification failed:', e);
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'guestBook') {
       const { date, time, guest_name, guest_phone } = body;
+      const kindLabel = body.kind === 'session' ? 'Тренировка 100€' : 'Знакомство-консультация 50€';
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !time || !/^\d{2}:\d{2}$/.test(time)) {
         return new Response(JSON.stringify({ error: 'Invalid booking payload' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -735,6 +766,7 @@ Deno.serve(async (req) => {
           session_time: time,
           trainer_user_id: trainer.trainerId,
           status: 'pending',
+          notes: kindLabel,
         });
 
 
@@ -750,7 +782,7 @@ Deno.serve(async (req) => {
         const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
         if (telegramToken && chatId) {
           const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
-          const msg = `🆕 *Новая гостевая запись!*\n\n👤 ${guest_name.trim()}\n📞 ${guest_phone.trim()}\n📅 ${dateFormatted}\n🕐 ${time}\n\n⚠️ Клиент не зарегистрирован`;
+          const msg = `🆕 *Новая гостевая запись!*\n\n👤 ${guest_name.trim()}\n📞 ${guest_phone.trim()}\n📅 ${dateFormatted}\n🕐 ${time}\n💶 ${kindLabel}\n\n⚠️ Клиент не зарегистрирован`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
