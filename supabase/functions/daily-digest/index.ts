@@ -160,8 +160,18 @@ serve(async (req) => {
       if (e.user_id && staffIds.has(e.user_id) && e.anon_id) staffAnon.add(e.anon_id);
     }
     // Трафик тренера/админа не считаем как посещения клиентов
+    // Роботы: без аккаунта, только открытие страниц (ни одного нажатия) и с компьютера Windows/Linux
+    const anonActs = new Map<string, { clicks: number; pc: boolean }>();
+    for (const e of rawEvents) {
+      if (e.user_id || !e.anon_id) continue;
+      const a = anonActs.get(e.anon_id) ?? { clicks: 0, pc: false };
+      if (e.event_type !== "screen") a.clicks++;
+      if (["windows", "linux", "desktop"].includes(e.device)) a.pc = true;
+      anonActs.set(e.anon_id, a);
+    }
+    const botAnon = new Set([...anonActs].filter(([, a]) => a.clicks === 0 && a.pc).map(([id]) => id));
     const events = rawEvents.filter(
-      (e: any) => !(e.user_id && staffIds.has(e.user_id)) && !staffAnon.has(e.anon_id),
+      (e: any) => !(e.user_id && staffIds.has(e.user_id)) && !staffAnon.has(e.anon_id) && !botAnon.has(e.anon_id),
     );
 
     const seenBefore = new Set<string>();

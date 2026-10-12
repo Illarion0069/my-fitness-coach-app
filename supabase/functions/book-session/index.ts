@@ -766,6 +766,7 @@ Deno.serve(async (req) => {
           session_time: time,
           trainer_user_id: trainer.trainerId,
           status: 'pending',
+          notes: kindLabel,
         });
 
 
@@ -781,7 +782,7 @@ Deno.serve(async (req) => {
         const chatId = Deno.env.get('TELEGRAM_CHAT_ID');
         if (telegramToken && chatId) {
           const dateFormatted = new Date(`${date}T12:00:00`).toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
-          const msg = `🆕 *Новая гостевая запись!*\n\n👤 ${guest_name.trim()}\n📞 ${guest_phone.trim()}\n📅 ${dateFormatted}\n🕐 ${time}\n\n⚠️ Клиент не зарегистрирован`;
+          const msg = `🆕 *Новая гостевая запись!*\n\n👤 ${guest_name.trim()}\n📞 ${guest_phone.trim()}\n📅 ${dateFormatted}\n🕐 ${time}\n💶 ${kindLabel}\n\n⚠️ Клиент не зарегистрирован`;
           await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

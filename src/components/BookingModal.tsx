@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, CalendarDays, Clock, Check, Loader2, CreditCard, Package, User, Phone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
