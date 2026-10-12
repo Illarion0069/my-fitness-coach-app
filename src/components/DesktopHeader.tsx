@@ -38,6 +38,26 @@ const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: Deskt
         <Button variant="ghost" onClick={onSignIn} aria-label={lang === 'en' ? 'Sign In' : 'Войти'} title={lang === 'en' ? 'Sign In' : 'Войти'} size="icon"><UserRound /></Button>
         <Button onClick={onBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
       </div>
+      <Dialog open={contactsOpen} onOpenChange={setContactsOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-2xl">{lang === 'en' ? 'Contact me' : 'Связаться со мной'}</DialogTitle>
+            <DialogDescription>{lang === 'en' ? 'Write in any messenger — I reply fast.' : 'Напишите в любой мессенджер — отвечаю быстро.'}</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-3 pt-2">
+            <Button asChild size="lg" className="w-full justify-start gap-3">
+              <a href={`https://wa.me/35795144819?text=${encodeURIComponent(lang === 'en' ? 'Hi! I have a question about training.' : 'Здравствуйте! У меня вопрос о тренировках.')}`} target="_blank" rel="noopener noreferrer">
+                <MessageCircle />WhatsApp
+              </a>
+            </Button>
+            <Button asChild size="lg" variant="secondary" className="w-full justify-start gap-3">
+              <a href="https://t.me/fitnesslimassol" target="_blank" rel="noopener noreferrer">
+                <Send />Telegram
+              </a>
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </header>
   );
 };
