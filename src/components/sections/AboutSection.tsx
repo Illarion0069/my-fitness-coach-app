@@ -176,6 +176,10 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
     ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
     : 'https://t.me/LimassolFitness_bot';
 
+  const whatsappLink = `https://wa.me/35795144819?text=${encodeURIComponent(
+    lang === 'en' ? 'Hi Illarion! I would like to arrange a training session.' : 'Привет, Илларион! Хочу записаться на тренировку.',
+  )}`;
+
 
 
   const handleBook = () => {
@@ -256,7 +260,8 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
         <footer className="flex flex-wrap justify-between items-center gap-4 pt-6">
           <div><p className="font-heading text-xl">Reload Fitness · Limassol</p><p className="text-sm text-muted-foreground mt-1">{t(contact.address)}</p></div>
           <div className="flex flex-wrap gap-2">
-            <Button variant="ghost" asChild><a href="tel:+35795144819"><Phone />{contact.phone}</a></Button>
+            <Button variant="ghost" asChild><a href={whatsappLink} target="_blank" rel="noopener noreferrer" title={lang === 'en' ? 'Write or call on WhatsApp' : 'Написать или позвонить в WhatsApp'} aria-label={lang === 'en' ? 'Write or call on WhatsApp' : 'Написать или позвонить в WhatsApp'}><MessageCircle />{contact.phone}</a></Button>
+            <Button variant="ghost" asChild><a href="https://t.me/Illarion_Ientin" target="_blank" rel="noopener noreferrer" title={lang === 'en' ? 'Write on Telegram' : 'Написать в Telegram'} aria-label={lang === 'en' ? 'Write on Telegram' : 'Написать в Telegram'}><Send /></a></Button>
             <Button variant="outline" asChild><a href="https://maps.app.goo.gl/WYfEfPT6yYauYg3j7" target="_blank" rel="noopener noreferrer"><MapPin />{lang === 'en' ? 'Open in Maps' : 'Открыть карту'}</a></Button>
             {[{ icon: Instagram, href: 'https://www.instagram.com/illarion_ientin/', label: 'Instagram' }, { icon: Facebook, href: 'https://www.facebook.com/illarion.ientin/', label: 'Facebook' }, { icon: Bot, href: botLink, label: 'Telegram Bot' }].map(link => <Button key={link.label} variant="ghost" size="icon" asChild><a href={link.href} target="_blank" rel="noopener noreferrer" aria-label={link.label} title={link.label}><link.icon /></a></Button>)}
           </div>
