@@ -47,8 +47,10 @@ export function looksMalicious(value: string): boolean {
   const patterns = [
     "<script",
     "javascript:",
-    "onerror=",
-    "onload=",
+    "onerror=\"",
+    "onload=\"",
+    "onerror='",
+    "onload='",
     "union select",
     "select * from",
     "drop table",
