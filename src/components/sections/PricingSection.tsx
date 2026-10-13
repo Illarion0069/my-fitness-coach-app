@@ -28,7 +28,7 @@ const PricingSection = ({ integrated = false }: { integrated?: boolean }) => {
         <p className="text-xs text-muted-foreground">{t(pricing.gymNote)}</p>
       </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className={integrated ? 'flex flex-wrap justify-center gap-4' : 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'}>
         {pricing.packages.map((pkg, i) => {
           const isConsultation = 'isConsultation' in pkg && pkg.isConsultation;
           const hasLabel = 'label' in pkg;
@@ -41,6 +41,7 @@ const PricingSection = ({ integrated = false }: { integrated?: boolean }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
+              style={integrated ? { width: 'calc((100% - 2rem) / 3)' } : undefined}
               className={`bg-card rounded-2xl md:rounded-lg p-5 md:p-6 relative overflow-hidden border flex flex-col ${
                 'popular' in pkg && pkg.popular ? 'border-primary/50 glow-primary' : 'border-border/50'
               }`}
