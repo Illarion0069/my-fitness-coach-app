@@ -195,8 +195,8 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
             <p className="text-sm text-primary font-bold mb-2">{t(about.title)}</p>
             <h2 className="font-heading text-5xl mb-4">{lang === 'en' ? 'Illarion Ientin' : 'Илларион Ентин'}</h2>
             <p className="text-base text-muted-foreground leading-relaxed">{t(about.bio)}</p>
-            <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-3 border-y border-border py-4 my-5 w-full">
-              {about.certs.map(cert => <span key={cert} className="flex items-center gap-2 text-sm font-bold"><Award className="w-4 h-4 text-primary" />{cert}</span>)}
+            <div className="flex flex-wrap justify-center items-center gap-x-3.5 gap-y-2 border-y border-border py-4 my-5 w-full">
+              {about.certs.map(cert => <span key={cert} className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-bold"><Award className="w-3.5 h-3.5 text-primary shrink-0" />{cert}</span>)}
             </div>
             <div className="flex flex-wrap justify-center gap-3">
               <Button onClick={handleBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
