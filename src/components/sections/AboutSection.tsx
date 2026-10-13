@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Award, Shield, Target, Handshake, Gem, Star, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, ChevronLeft, ChevronRight, Sparkles, Dumbbell, Activity, HeartPulse, Languages, Clock, ChevronDown, Calendar, Building2 } from 'lucide-react';
+import { Award, Shield, Target, Handshake, Gem, Star, Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot, Sparkles, Dumbbell, Activity, HeartPulse, Languages, Clock, ChevronDown, Calendar, Building2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { translations } from '@/i18n/translations';
@@ -172,15 +171,12 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
   const reviews = translations.reviews;
   const contact = translations.contact;
   const transformations = translations.transformations;
-  const [activeTransformation, setActiveTransformation] = useState(0);
 
   const botLink = profile?.telegram_link_code
     ? `https://t.me/LimassolFitness_bot?start=${profile.telegram_link_code}`
     : 'https://t.me/LimassolFitness_bot';
 
 
-  const currentTransform = transformations.items[activeTransformation];
-  const currentPhotos = transformationPhotos[activeTransformation];
 
   const handleBook = () => {
     if (onBookClick) onBookClick();
@@ -191,7 +187,6 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
     return (
       <section className="border-t border-border px-8 py-12 xl:px-14">
         <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
-          <img src={trainerPhoto} alt="Illarion Ientin" loading="lazy" className="w-72 h-80 object-cover object-top rounded-lg mb-7" />
           <div className="min-w-0 flex flex-col items-center">
             <p className="text-sm text-primary font-bold mb-2">{t(about.title)}</p>
             <h2 className="font-heading text-5xl mb-4">{lang === 'en' ? 'Illarion Ientin' : 'Илларион Ентин'}</h2>
@@ -208,32 +203,32 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
         </div>
 
         <div className="mt-12">
-          <div className="flex items-center justify-between gap-4 mb-5">
+          <div className="text-center mb-6">
             <h2 className="font-heading text-3xl">{t(transformations.title)}</h2>
-            <div className="flex gap-2">
-              <Button variant="outline" size="icon" aria-label={lang === 'en' ? 'Previous transformation' : 'Предыдущая трансформация'} title={lang === 'en' ? 'Previous' : 'Назад'} onClick={() => setActiveTransformation((activeTransformation - 1 + transformations.items.length) % transformations.items.length)}><ChevronLeft /></Button>
-              <Button variant="outline" size="icon" aria-label={lang === 'en' ? 'Next transformation' : 'Следующая трансформация'} title={lang === 'en' ? 'Next' : 'Вперёд'} onClick={() => setActiveTransformation((activeTransformation + 1) % transformations.items.length)}><ChevronRight /></Button>
-            </div>
+            <p className="text-sm text-muted-foreground mt-1">{t(transformations.subtitle)}</p>
           </div>
-          {currentTransform && currentPhotos && (
-            <div className="grid grid-cols-2 gap-8 items-center" aria-live="polite">
-              <div className="grid grid-cols-2 gap-3">
-                {[{ src: currentPhotos.before, label: lang === 'en' ? 'Before' : 'До' }, { src: currentPhotos.after, label: lang === 'en' ? 'After' : 'После' }].map(photo => (
-                  <figure key={photo.label} className="relative overflow-hidden rounded-lg bg-muted">
-                    <img src={photo.src} alt={`${t(currentTransform.name)} — ${photo.label}`} loading="lazy" className="w-full h-[28rem] object-contain" />
-                    <figcaption className="absolute left-3 bottom-3 bg-background/90 text-foreground rounded px-3 py-1 text-xs font-bold">{photo.label}</figcaption>
-                  </figure>
-                ))}
-              </div>
-              <div>
-                <p className="text-primary text-sm font-bold mb-2">{activeTransformation + 1} / {transformations.items.length}</p>
-                <h3 className="font-heading text-3xl mb-2">{t(currentTransform.name)}</h3>
-                <p className="text-primary font-bold mb-3">{t(currentTransform.result)}</p>
-                <p className="text-muted-foreground leading-relaxed">{t(currentTransform.desc)}</p>
-                {(currentTransform.metric || t(currentTransform.duration)) && <p className="text-sm text-muted-foreground mt-4">{[currentTransform.metric, t(currentTransform.duration)].filter(Boolean).join(' · ')}</p>}
-              </div>
-            </div>
-          )}
+          <div className="flex flex-wrap justify-center gap-5">
+            {transformations.items.map((item, i) => {
+              const photos = transformationPhotos[i];
+              if (!photos) return null;
+              return (
+                <article key={i} className="flex-none w-[calc((100%-2.5rem)/3)] bg-card border border-border rounded-lg p-4">
+                  <div className="grid grid-cols-2 gap-2">
+                    {[{ src: photos.before, label: lang === 'en' ? 'Before' : 'До' }, { src: photos.after, label: lang === 'en' ? 'After' : 'После' }].map(photo => (
+                      <figure key={photo.label} className="relative overflow-hidden rounded-md bg-muted">
+                        <img src={photo.src} alt={`${t(item.name)} — ${photo.label}`} loading="lazy" className="w-full h-56 object-contain" />
+                        <figcaption className="absolute left-2 bottom-2 bg-background/90 text-foreground rounded px-2 py-0.5 text-[10px] font-bold">{photo.label}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                  <h3 className="font-heading text-xl mt-3">{t(item.name)}</h3>
+                  <p className="text-primary text-sm font-bold mt-1">{t(item.result)}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed mt-2 line-clamp-3">{t(item.desc)}</p>
+                  {(item.metric || t(item.duration)) && <p className="text-[11px] text-muted-foreground mt-2">{[item.metric, t(item.duration)].filter(Boolean).join(' · ')}</p>}
+                </article>
+              );
+            })}
+          </div>
         </div>
 
         <div className="mt-12 border-t border-border pt-8">
