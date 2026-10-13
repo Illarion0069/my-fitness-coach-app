@@ -330,8 +330,8 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = f
               </motion.div>
             ))}
           </div>
-          {/* 5th workout card full-width */}
-          {workouts.items[4] && (
+          {/* 5th workout card full-width — hidden on the integrated desktop single-page (desktop only keeps 4 in a row) */}
+          {!integrated && workouts.items[4] && (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}

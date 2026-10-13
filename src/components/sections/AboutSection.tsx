@@ -190,16 +190,16 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
   if (compact) {
     return (
       <section className="border-t border-border px-8 py-12 xl:px-14">
-        <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,2fr)] items-center gap-10 xl:gap-16">
-          <img src={trainerPhoto} alt="Illarion Ientin" loading="lazy" className="w-full h-80 object-cover object-top rounded-lg" />
-          <div className="min-w-0">
+        <div className="flex flex-col items-center text-center max-w-3xl mx-auto">
+          <img src={trainerPhoto} alt="Illarion Ientin" loading="lazy" className="w-72 h-80 object-cover object-top rounded-lg mb-7" />
+          <div className="min-w-0 flex flex-col items-center">
             <p className="text-sm text-primary font-bold mb-2">{t(about.title)}</p>
             <h2 className="font-heading text-5xl mb-4">{lang === 'en' ? 'Illarion Ientin' : 'Илларион Ентин'}</h2>
-            <p className="text-base text-muted-foreground leading-relaxed max-w-3xl">{t(about.bio)}</p>
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3 border-y border-border py-4 my-5">
+            <p className="text-base text-muted-foreground leading-relaxed">{t(about.bio)}</p>
+            <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-3 border-y border-border py-4 my-5 w-full">
               {about.certs.map(cert => <span key={cert} className="flex items-center gap-2 text-sm font-bold"><Award className="w-4 h-4 text-primary" />{cert}</span>)}
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap justify-center gap-3">
               <Button onClick={handleBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
               <Button variant="outline" asChild><a href="https://wa.me/35795144819" target="_blank" rel="noopener noreferrer"><MessageCircle />WhatsApp</a></Button>
               <Button variant="ghost" asChild><a href="https://t.me/fitnesslimassol" target="_blank" rel="noopener noreferrer"><Send />Telegram</a></Button>
