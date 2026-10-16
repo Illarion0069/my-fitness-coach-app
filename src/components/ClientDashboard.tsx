@@ -258,6 +258,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const [measurements, setMeasurements] = useState<any[]>([]);
+  const [testsLoaded, setTestsLoaded] = useState(false);
+  const [testsReload, setTestsReload] = useState(0);
   const [testResults, setTestResults] = useState<{ overall_percentage: number; created_at: string; test_type?: string | null }[]>([]);
   const [todayKcal, setTodayKcal] = useState<number>(0);
   const [todayMacros, setTodayMacros] = useState<{ protein: number; carbs: number; fat: number; fiber: number }>({ protein: 0, carbs: 0, fat: 0, fiber: 0 });
@@ -360,6 +362,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         .from('test_results').select('overall_percentage, created_at, test_type').eq('user_id', user.id)
         .order('created_at', { ascending: true }).limit(20);
       setTestResults((data || []) as any);
+      setTestsLoaded(true);
     };
 
 
@@ -930,21 +933,13 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         {/* ═══════════ Test #1 banner (baseline not yet taken) ═══════════ */}
         {(() => {
           const hasBaseline = testResults.some(t => t.test_type === 'baseline' || !t.test_type);
-          const dismissed = typeof window !== 'undefined' && localStorage.getItem('test1_banner_dismissed') === '1';
-          if (hasBaseline || dismissed) return null;
+          if (!testsLoaded || hasBaseline) return null;
           return (
             <motion.div
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               className="relative overflow-hidden rounded-2xl p-4 mb-4 border border-primary/30 bg-gradient-to-br from-primary/15 via-card to-card"
             >
-              <button
-                onClick={() => { localStorage.setItem('test1_banner_dismissed', '1'); setTestResults(t => [...t]); }}
-                aria-label="dismiss"
-                className="absolute top-2 right-2 w-6 h-6 rounded-full bg-background/60 text-muted-foreground hover:text-foreground flex items-center justify-center text-xs"
-              >
-                ×
-              </button>
               <div className="flex items-start gap-3">
                 <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center glow-primary shrink-0">
                   <ClipboardCheck className="w-5 h-5 text-primary-foreground" />
@@ -1363,7 +1358,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
       <FullscreenModule
         open={testsOpen}
-        onClose={() => { setTestsOpen(false); setTestsInitial(null); }}
+        onClose={() => { setTestsOpen(false); setTestsInitial(null); setTestsReload(n => n + 1); }}
         title={lang === 'en' ? 'Health Tests' : 'Тесты здоровья'}
         icon={<ClipboardCheck className="w-5 h-5 text-primary" />}
       >
@@ -1371,7 +1366,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
           userId={user.id}
           lang={lang}
           initialTest={testsInitial}
-          onAllDone={() => { setTestsOpen(false); setTestsInitial(null); }}
+          onAllDone={() => { setTestsOpen(false); setTestsInitial(null); setTestsReload(n => n + 1); }}
         />
       </FullscreenModule>
 
