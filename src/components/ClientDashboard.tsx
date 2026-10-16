@@ -394,6 +394,14 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
+  // Re-check tests after the test window closes so the banner hides once Test #1 is done
+  useEffect(() => {
+    if (!user || testsReload === 0) return;
+    supabase.from('test_results').select('overall_percentage, created_at, test_type').eq('user_id', user.id)
+      .order('created_at', { ascending: true }).limit(20)
+      .then(({ data }) => setTestResults((data || []) as any));
+  }, [testsReload, user]);
+
   // ─── Today's nutrition totals (refetch on modal close / realtime / tab focus) ───
   useEffect(() => {
     if (!user) return;
