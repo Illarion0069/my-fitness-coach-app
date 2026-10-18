@@ -27,6 +27,9 @@
     --input: 0 0% 92%;
     --ring: 8 85% 54%;
     --radius: 1rem;
+    --body-surface: 32 13% 72%;
+    --body-light: 0 0% 100%;
+    --body-ghost: 170 30% 45%;
 
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 0 0% 8%;
@@ -58,6 +61,9 @@
     --border: 0 0% 16%;
     --input: 0 0% 16%;
     --ring: 8 85% 58%;
+    --body-surface: 32 13% 72%;
+    --body-light: 0 0% 100%;
+    --body-ghost: 170 35% 65%;
 
     --sidebar-background: 0 0% 5%;
     --sidebar-foreground: 30 20% 92%;
