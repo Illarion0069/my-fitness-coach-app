@@ -2,4 +2,4 @@
 - Compose the desktop public website from the existing home, pricing and about sections with anchor navigation; retain section-based navigation for mobile and authenticated workflows to preserve app state and booking behavior.
 - Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.
 - Open the lazy-loaded body-model pilot through Body Measurements in the allowlisted trainer's own client view; use read-only measurement props and local-only demonstration state so no client rollout or data writes occur.
-- Use a sourced CC0 anatomical mesh with smooth continuous regional circumference deformation for the body viewer; treat shapes as illustrative rather than scanned anatomy because tape measurements cannot reconstruct physique.
+- Render the body viewer as a locally bundled 2D anatomy illustration with smooth regional circumference deformation and accessible region controls; treat shapes as illustrative rather than scanned anatomy because tape measurements cannot reconstruct physique.
