@@ -28,6 +28,7 @@ interface Props {
   measurements: Measurement[];
   lang: string;
   editable?: boolean;
+  initialAdd?: boolean;
   onChanged?: () => void;
   /** Target user whose measurements are recorded — enables the "Add measurement" form */
   userId?: string;
@@ -55,7 +56,7 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
-const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId }: Props) => {
+const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId, initialAdd = false }: Props) => {
   const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
   const [timeRange, setTimeRange] = useState('all');
@@ -63,7 +64,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
   const [allOpen, setAllOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(initialAdd);
   const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [newValues, setNewValues] = useState<Record<string, string>>({});
 

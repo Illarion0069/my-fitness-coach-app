@@ -14,16 +14,25 @@ function tokenColor(name: string) {
 }
 
 function deformation(x: number, y: number, z: number, values: BodyValues, baseline: BodyValues): [number, number, number] {
-  const region = bodyRegion(x, y);
-  if (!region) return [x, y, z];
-  const ratio = bodyRatio(values[region], baseline[region]);
-  // Local radial changes preserve height and leave joints, hands and head stable.
-  const centers: Partial<Record<BodyMetric, number>> = { chest_cm: 1.55, waist_cm: 1.30, hips_cm: 1.09, left_arm_cm: 1.42, right_arm_cm: 1.42, left_leg_cm: 0.81, right_leg_cm: 0.81 };
-  const center = centers[region] ?? y;
-  const falloff = Math.exp(-Math.pow((y - center) / (region.includes('leg') ? 0.24 : 0.16), 2));
-  const scale = 1 + (ratio - 1) * falloff;
-  const axis = region.includes('arm') ? Math.sign(x) * (0.37 + (1.55 - y) * 0.46) : region.includes('leg') ? Math.sign(x) * 0.13 : 0;
-  return [axis + (x - axis) * scale, y, z * scale];
+  // Continuous influence fields avoid seams at waist/chest and limb boundaries.
+  const smooth = (low: number, high: number, value: number) => {
+    const t = Math.max(0, Math.min(1, (value - low) / (high - low)));
+    return t * t * (3 - 2 * t);
+  };
+  const bell = (center: number, width: number) => Math.exp(-Math.pow((y - center) / width, 2));
+  const armWeight = smooth(0.27, 0.40, Math.abs(x)) * smooth(0.98, 1.14, y) * (1 - smooth(1.63, 1.78, y));
+  const legWeight = 1 - smooth(0.94, 1.08, y);
+  const torsoWeight = (1 - armWeight) * (1 - legWeight);
+  const chest = bell(1.55, 0.17), waist = bell(1.30, 0.17), hips = bell(1.09, 0.14);
+  const total = Math.max(1, chest + waist + hips);
+  const torsoScale = ((bodyRatio(values.chest_cm, baseline.chest_cm) - 1) * chest + (bodyRatio(values.waist_cm, baseline.waist_cm) - 1) * waist + (bodyRatio(values.hips_cm, baseline.hips_cm) - 1) * hips) / total;
+  const arm = x > 0 ? 'left_arm_cm' : 'right_arm_cm';
+  const leg = x > 0 ? 'left_leg_cm' : 'right_leg_cm';
+  const armScale = (bodyRatio(values[arm], baseline[arm]) - 1) * bell(1.42, 0.16) * armWeight;
+  const legScale = (bodyRatio(values[leg], baseline[leg]) - 1) * bell(0.81, 0.24) * legWeight;
+  const armAxis = Math.sign(x) * (0.37 + (1.55 - y) * 0.46);
+  const legAxis = Math.sign(x) * 0.13;
+  return [x + x * torsoScale * torsoWeight + (x - armAxis) * armScale + (x - legAxis) * legScale, y, z * (1 + torsoScale * torsoWeight + armScale + legScale)];
 }
 
 function Anatomy({ values, baseline, selected, onSelect, compare, palette }: SceneProps & { palette: Palette }) {
@@ -32,7 +41,33 @@ function Anatomy({ values, baseline, selected, onSelect, compare, palette }: Sce
     let found: BufferGeometry | undefined;
     scene.traverse(object => { if (!found && object instanceof Mesh) found = object.geometry; });
     if (!found) throw new Error('Body mesh missing');
-    return found;
+    const smoothGeometry = found.clone();
+    const positions = smoothGeometry.getAttribute('position');
+    const indices = smoothGeometry.getIndex();
+    if (indices) {
+      const neighbors = Array.from({ length: positions.count }, () => new Set<number>());
+      for (let i = 0; i < indices.count; i += 3) {
+        const triangle = [indices.getX(i), indices.getX(i + 1), indices.getX(i + 2)];
+        for (const vertex of triangle) for (const other of triangle) if (other !== vertex) neighbors[vertex].add(other);
+      }
+      // Gentle topology-aware smoothing, without adding triangles on phones.
+      for (let pass = 0; pass < 4; pass++) {
+        const next = new Float32Array(positions.array);
+        for (let vertex = 0; vertex < positions.count; vertex++) {
+          const adjacent = neighbors[vertex];
+          if (!adjacent.size) continue;
+          for (let axis = 0; axis < 3; axis++) {
+            let sum = 0;
+            adjacent.forEach(other => { sum += positions.array[other * 3 + axis]; });
+            next[vertex * 3 + axis] += (sum / adjacent.size - positions.array[vertex * 3 + axis]) * 0.28;
+          }
+        }
+        positions.array.set(next);
+      }
+      positions.needsUpdate = true;
+      smoothGeometry.computeVertexNormals();
+    }
+    return smoothGeometry;
   }, [scene]);
   const geometry = useMemo(() => source.clone(), [source]);
   const baselineGeometry = useMemo(() => source.clone(), [source]);
@@ -47,14 +82,20 @@ function Anatomy({ values, baseline, selected, onSelect, compare, palette }: Sce
     for (let i = 0; i < original.length; i += 3) {
       const [x, y, z] = deformation(original[i], original[i + 1], original[i + 2], values, baseline);
       target.current[i] = x; target.current[i + 1] = y; target.current[i + 2] = z;
-      const color = bodyRegion(original[i], original[i + 1]) === selected ? active : muted;
+      const color = muted.clone();
+      if (bodyRegion(original[i], original[i + 1]) === selected) {
+        const centers: Partial<Record<BodyMetric, number>> = { chest_cm: 1.55, waist_cm: 1.30, hips_cm: 1.09, left_arm_cm: 1.42, right_arm_cm: 1.42, left_leg_cm: 0.81, right_leg_cm: 0.81 };
+        const center = centers[selected];
+        const intensity = center == null ? 0 : Math.exp(-Math.pow((original[i + 1] - center) / 0.10, 4));
+        color.lerp(active, intensity);
+      }
       color.toArray(colors, i);
     }
     geometry.setAttribute('color', new BufferAttribute(colors, 3));
     changed.current = true;
   }, [values, baseline, selected, palette, geometry, original]);
 
-  useEffect(() => () => { geometry.dispose(); baselineGeometry.dispose(); }, [geometry, baselineGeometry]);
+  useEffect(() => () => { geometry.dispose(); baselineGeometry.dispose(); source.dispose(); }, [geometry, baselineGeometry, source]);
   useFrame((_, rawDelta) => {
     if (!changed.current) return;
     const position = geometry.getAttribute('position');
@@ -80,7 +121,7 @@ function Anatomy({ values, baseline, selected, onSelect, compare, palette }: Sce
       const region = bodyRegion(local.x, local.y);
       if (region) onSelect(region);
     }} onPointerOver={() => { document.body.style.cursor = 'pointer'; }} onPointerOut={() => { document.body.style.cursor = ''; }}>
-      <meshStandardMaterial vertexColors roughness={0.5} metalness={0.12} />
+      <meshStandardMaterial vertexColors roughness={0.62} metalness={0.03} />
     </mesh>
   </group>;
 }
@@ -94,7 +135,7 @@ function CameraControl({ view }: { view: number }) {
     control.target.copy(new Vector3(0, 0, 0));
     control.update();
   }, [view]);
-  return <OrbitControls ref={controls} enablePan={false} minDistance={2.6} maxDistance={5.5} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI * 2 / 3} />;
+  return <OrbitControls ref={controls} enablePan={false} enableDamping dampingFactor={0.12} rotateSpeed={0.7} minDistance={2.6} maxDistance={5.5} minPolarAngle={Math.PI / 3} maxPolarAngle={Math.PI * 2 / 3} />;
 }
 
 class SceneBoundary extends Component<{ children: ReactNode; lang: string }, { failed: boolean }> {
