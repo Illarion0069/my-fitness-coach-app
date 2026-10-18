@@ -82,7 +82,13 @@ function Anatomy({ values, baseline, selected, onSelect, compare, palette }: Sce
     for (let i = 0; i < original.length; i += 3) {
       const [x, y, z] = deformation(original[i], original[i + 1], original[i + 2], values, baseline);
       target.current[i] = x; target.current[i + 1] = y; target.current[i + 2] = z;
-      const color = bodyRegion(original[i], original[i + 1]) === selected ? active : muted;
+      const color = muted.clone();
+      if (bodyRegion(original[i], original[i + 1]) === selected) {
+        const centers: Partial<Record<BodyMetric, number>> = { chest_cm: 1.55, waist_cm: 1.30, hips_cm: 1.09, left_arm_cm: 1.42, right_arm_cm: 1.42, left_leg_cm: 0.81, right_leg_cm: 0.81 };
+        const center = centers[selected];
+        const intensity = center == null ? 0 : Math.exp(-Math.pow((original[i + 1] - center) / 0.10, 4));
+        color.lerp(active, intensity);
+      }
       color.toArray(colors, i);
     }
     geometry.setAttribute('color', new BufferAttribute(colors, 3));
