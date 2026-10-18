@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, RotateCcw, RotateCw, Play, Pause, Scan, Info, Plus, Minus } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Play, Pause, Scan, Info, Plus, Minus } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import HintDot, { markHintSeen } from '@/components/HintDot';
 import { BODY_METRICS, DEMO_BODY_HISTORY, formatBodyDate, interpolateBody, type BodyMeasurement, type BodyMetric } from '@/lib/bodyModel';
-import BodyScene from './BodyScene';
+import BodyAnatomy2D from './BodyAnatomy2D';
 
 export default function BodyModelPilot({ measurements, lang, name, onClose, onAdd }: { measurements: BodyMeasurement[]; lang: string; name: string; onClose: () => void; onAdd: () => void }) {
   const en = lang === 'en';
@@ -17,7 +17,7 @@ export default function BodyModelPilot({ measurements, lang, name, onClose, onAd
   const [position, setPosition] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [compare, setCompare] = useState(false);
-  const [view, setView] = useState(0);
+  const [zoomed, setZoomed] = useState(false);
   const [sandbox, setSandbox] = useState(DEMO_BODY_HISTORY.map(row => ({ ...row })));
   const reduced = useRef(window.matchMedia('(prefers-reduced-motion: reduce)').matches);
   const history = useMemo(() => demo ? sandbox : [...measurements].sort((a, b) => a.measured_at.localeCompare(b.measured_at)), [demo, sandbox, measurements]);
@@ -76,20 +76,17 @@ export default function BodyModelPilot({ measurements, lang, name, onClose, onAd
     </div>
     <main className="grid md:grid-cols-[minmax(0,1fr)_340px] lg:grid-cols-[minmax(0,1fr)_400px] gap-4 md:gap-10 px-4 md:px-10 flex-1 min-h-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="relative min-w-0">
-        <div className="absolute top-5 left-1 z-10 flex items-center gap-2">
+        <div className="flex items-center justify-between gap-2 py-2">
+          <div className="flex items-center gap-2">
           <Scan className="w-4 h-4 text-primary"/><span className="text-xs text-muted-foreground">{en ? 'Anatomical view' : 'Анатомическая модель'}</span>
+          </div>
+          <Button variant="ghost" size="icon" className="min-h-11 min-w-11" aria-label={zoomed ? (en ? 'Reduce anatomy' : 'Уменьшить модель') : (en ? 'Enlarge anatomy' : 'Увеличить модель')} title={zoomed ? (en ? 'Reduce anatomy' : 'Уменьшить модель') : (en ? 'Enlarge anatomy' : 'Увеличить модель')} onClick={() => setZoomed(current => !current)}>{zoomed ? <ZoomOut /> : <ZoomIn />}</Button>
         </div>
-        <div className="h-[clamp(240px,42svh,380px)] md:h-[min(65vh,760px)] md:min-h-[360px] w-full" data-testid="body-scene">
-          {values && baseline ? <BodyScene values={values} baseline={baseline} selected={selected} onSelect={key => { setSelected(key); markHintSeen('body-pilot-zones'); }} compare={compare} view={view} lang={lang} /> : <div className="h-full flex items-center justify-center text-muted-foreground">{en ? 'No measurements yet' : 'Замеров пока нет'}</div>}
+        <div className={`${zoomed ? 'h-[min(65svh,580px)] md:h-[min(78vh,900px)]' : 'h-[clamp(280px,45svh,420px)] md:h-[min(65vh,760px)]'} md:min-h-[360px] w-full`} data-testid="body-scene">
+          {values && baseline ? <BodyAnatomy2D values={values} baseline={baseline} selected={selected} onSelect={key => { setSelected(key); markHintSeen('body-pilot-zones'); }} compare={compare} lang={lang} /> : <div className="h-full flex items-center justify-center text-muted-foreground">{en ? 'No measurements yet' : 'Замеров пока нет'}</div>}
         </div>
         <HintDot id="body-pilot-zones" en="Tap a body region" ru="Нажмите на часть тела" className="left-1/2 top-20" side="right" />
 <div className="border-t border-border py-3" aria-live="polite"><div><p className="text-xs text-muted-foreground uppercase">{en ? 'Selected measurement' : 'Выбранный замер'}</p><h3 className="text-xl mt-1 tracking-normal" data-testid="body-selected-region">{en ? metric.en : metric.ru}</h3><div className="flex items-baseline gap-2 mt-2"><span className="text-3xl md:text-5xl font-heading" data-testid="body-selected-value">{value == null ? '—' : Number(value.toFixed(1))}</span><span className="text-sm text-muted-foreground">{unit}</span>{delta != null && <span className="text-sm text-primary ml-auto">{delta > 0 ? '+' : ''}{Number(delta.toFixed(1))} {unit}</span>}</div><p className="text-xs text-muted-foreground mt-2">{en ? metric.hintEn : metric.hintRu}</p></div></div>
-        <div className="flex justify-center gap-2 mt-0 relative z-10">
-          <Button variant="secondary" size="icon" className="min-h-11 min-w-11" title={en ? 'Rotate left' : 'Повернуть влево'} aria-label={en ? 'Rotate left' : 'Повернуть влево'} onClick={() => setView(current => current - Math.PI / 2)}><RotateCcw /></Button>
-          <Button variant="secondary" size="sm" onClick={() => setView(0)}>{en ? 'Front' : 'Спереди'}</Button>
-          <Button variant="secondary" size="sm" onClick={() => setView(Math.PI)}>{en ? 'Back' : 'Сзади'}</Button>
-          <Button variant="secondary" size="icon" className="min-h-11 min-w-11" title={en ? 'Rotate right' : 'Повернуть вправо'} aria-label={en ? 'Rotate right' : 'Повернуть вправо'} onClick={() => setView(current => current + Math.PI / 2)}><RotateCw /></Button>
-        </div>
         <div className="flex items-center justify-center gap-3 py-4"><Switch id="compare-body" checked={compare} onCheckedChange={setCompare} /><label htmlFor="compare-body" className="text-xs text-muted-foreground">{en ? 'Starting silhouette' : 'Контур первого замера'}</label></div>
         <div className="border-t border-border py-3 space-y-3">
           <div className="flex items-center justify-between gap-3"><p className="text-sm font-medium">{left ? formatBodyDate(left.measured_at, lang) : '—'}</p><Button size="icon" className="min-h-11 min-w-11" variant="outline" disabled={max === 0 || reduced.current} aria-label={playing ? (en ? 'Pause history' : 'Остановить историю') : (en ? 'Play history' : 'Воспроизвести историю')} onClick={() => { if (!playing) setPosition(0); setPlaying(current => !current); }}>{playing ? <Pause /> : <Play />}</Button></div>
