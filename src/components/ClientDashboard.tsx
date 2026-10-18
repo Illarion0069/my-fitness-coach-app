@@ -273,7 +273,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
   // Fullscreen module states
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
-  const [bodyPilotOpen, setBodyPilotOpen] = useState(false);
+  const [measurementsEditorOpen, setMeasurementsEditorOpen] = useState(false);
   const bodyPilotAvailable = !authLoading && canViewBodyPilot(user?.id, isTrainer, forceClientView);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
@@ -1224,7 +1224,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             </div>
 
             <button
-              onClick={(e) => { e.stopPropagation(); setMeasurementsOpen(true); }}
+              onClick={(e) => { e.stopPropagation(); if (bodyPilotAvailable) { setMeasurementsOpen(true); setMeasurementsEditorOpen(true); } else setMeasurementsOpen(true); }}
               className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -1234,12 +1234,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         </motion.div>
 
         {/* Achievements moved to the avatar badge (tap the medal) */}
-        {bodyPilotAvailable && (
-          <Button variant="outline" className="w-full border-primary/40 text-primary" onClick={() => setBodyPilotOpen(true)}>
-            <Activity className="w-4 h-4" />
-            {lang === 'en' ? '3D body · private pilot' : '3D тело · личный тест'}
-          </Button>
-        )}
+
 
 
         {/* ═══════════ Contact Trainer ═══════════ */}
@@ -1337,14 +1332,15 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       </AnimatePresence>
 
       {/* ═══════════ Fullscreen Modules ═══════════ */}
-      {bodyPilotAvailable && bodyPilotOpen && (
+      {bodyPilotAvailable && measurementsOpen && (
         <Suspense fallback={<div className="fixed inset-0 z-[220] bg-background flex items-center justify-center text-muted-foreground">{lang === 'en' ? 'Loading body…' : 'Загрузка модели…'}</div>}>
-          <BodyModelPilot measurements={measurements} lang={lang} name={profile?.full_name ?? ''} onClose={() => setBodyPilotOpen(false)} />
+          <BodyModelPilot measurements={measurements} lang={lang} name={profile?.full_name ?? ''} onClose={() => setMeasurementsOpen(false)} onAdd={() => setMeasurementsEditorOpen(true)} />
         </Suspense>
       )}
-      {measurementsOpen && (
+      {(bodyPilotAvailable ? measurementsEditorOpen : measurementsOpen) && (
         <BodyMeasurementsDetail
-          open={measurementsOpen}
+          open={bodyPilotAvailable ? measurementsEditorOpen : measurementsOpen}
+          initialAdd={bodyPilotAvailable}
           measurements={measurements}
           lang={lang}
           userId={user.id}
@@ -1359,7 +1355,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             setMeasurements(data || []);
             setCalorieGoal((prof as any)?.daily_calorie_goal || null);
           }}
-          onClose={() => setMeasurementsOpen(false)}
+          onClose={() => bodyPilotAvailable ? setMeasurementsEditorOpen(false) : setMeasurementsOpen(false)}
         />
       )}
 
