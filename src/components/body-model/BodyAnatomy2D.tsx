@@ -43,13 +43,13 @@ export default function BodyAnatomy2D({ values, baseline, selected, onSelect, co
     // Inverse horizontal warp with smooth influence fields: keeps muscle detail and avoids cut seams.
     for (let y = 0; y < HEIGHT; y++) {
       const normalizedY = y / HEIGHT;
-      const bell = (center: number, width: number) => Math.exp(-((normalizedY - center) / width) ** 2);
+      const bell = (center: number, width: number) => Math.exp(-(((normalizedY - center) / width) ** 2));
       const torso = ratios.chest_cm * bell(.23, .07) + ratios.waist_cm * bell(.37, .06) + ratios.hips_cm * bell(.47, .06);
       const arms = bell(.29, .075), legs = bell(.60, .10);
       for (let x = 0; x < WIDTH; x++) {
         const nx = (x / WIDTH - .5) * 2;
-        const armInfluence = Math.exp(-((Math.abs(nx) - .42) / .13) ** 4) * arms;
-        const torsoInfluence = Math.exp(-(nx / .34) ** 6);
+        const armInfluence = Math.exp(-(((Math.abs(nx) - .42) / .13) ** 4)) * arms;
+        const torsoInfluence = Math.exp(-((nx / .34) ** 6));
         const arm = nx < 0 ? ratios.right_arm_cm : ratios.left_arm_cm;
         const leg = nx < 0 ? ratios.right_leg_cm : ratios.left_leg_cm;
         const axis = nx < 0 ? -.16 : .16;
