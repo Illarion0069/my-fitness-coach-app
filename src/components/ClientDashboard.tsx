@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, ClipboardCheck, Camera,
@@ -29,6 +29,10 @@ import AvatarTierBadge, { highestTierFromKeys, tierRingClass, type Tier } from '
 import SessionLedgerHistory from './SessionLedgerHistory';
 import HintDot, { markHintSeen } from './HintDot';
 import ClientSettings from './ClientSettings';
+import { Button } from '@/components/ui/button';
+import { canViewBodyPilot } from '@/lib/bodyModel';
+
+const BodyModelPilot = lazy(() => import('./body-model/BodyModelPilot'));
 
 
 /* ──────────────────────── Sparkline ──────────────────────── */
@@ -237,7 +241,7 @@ interface ClientDashboardProps {
 }
 
 const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboardProps) => {
-  const { user, profile, signOut, refreshProfile } = useAuth();
+  const { user, profile, isTrainer, loading: authLoading, signOut, refreshProfile } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
 
@@ -269,6 +273,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
   // Fullscreen module states
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
+  const [bodyPilotOpen, setBodyPilotOpen] = useState(false);
+  const bodyPilotAvailable = !authLoading && canViewBodyPilot(user?.id, isTrainer, forceClientView);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
@@ -1228,6 +1234,12 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
         </motion.div>
 
         {/* Achievements moved to the avatar badge (tap the medal) */}
+        {bodyPilotAvailable && (
+          <Button variant="outline" className="w-full border-primary/40 text-primary" onClick={() => setBodyPilotOpen(true)}>
+            <Activity className="w-4 h-4" />
+            {lang === 'en' ? '3D body · private pilot' : '3D тело · личный тест'}
+          </Button>
+        )}
 
 
         {/* ═══════════ Contact Trainer ═══════════ */}
@@ -1325,6 +1337,11 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       </AnimatePresence>
 
       {/* ═══════════ Fullscreen Modules ═══════════ */}
+      {bodyPilotAvailable && bodyPilotOpen && (
+        <Suspense fallback={<div className="fixed inset-0 z-[220] bg-background flex items-center justify-center text-muted-foreground">{lang === 'en' ? 'Loading body…' : 'Загрузка модели…'}</div>}>
+          <BodyModelPilot measurements={measurements} lang={lang} name={profile?.full_name ?? ''} onClose={() => setBodyPilotOpen(false)} />
+        </Suspense>
+      )}
       {measurementsOpen && (
         <BodyMeasurementsDetail
           open={measurementsOpen}
