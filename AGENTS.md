@@ -1,3 +1,5 @@
 # Architecture rules
 - Compose the desktop public website from the existing home, pricing and about sections with anchor navigation; retain section-based navigation for mobile and authenticated workflows to preserve app state and booking behavior.
 - Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.
+- Keep the body-model pilot lazy-loaded in the allowlisted trainer's own client view; use read-only measurement props and local-only demonstration state so no client rollout or data writes occur.
+- Use a sourced CC0 anatomical mesh with regional circumference deformation for the body viewer; treat shapes as illustrative rather than scanned anatomy because tape measurements cannot reconstruct physique.
