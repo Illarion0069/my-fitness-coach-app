@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Play, Pause, Scan, Info, Plus, Minus, UserRound, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Play, Pause, Scan, Info, Plus, Minus, RotateCcw } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
