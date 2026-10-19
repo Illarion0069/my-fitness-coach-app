@@ -1224,7 +1224,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             </div>
 
             <button
-              onClick={(e) => { e.stopPropagation(); if (bodyPilotAvailable) { setMeasurementsOpen(true); setMeasurementsEditorOpen(true); } else setMeasurementsOpen(true); }}
+              onClick={(e) => { e.stopPropagation(); setMeasurementsOpen(true); }}
               className="mt-3 w-full flex items-center justify-center gap-2 rounded-2xl border border-primary/50 text-primary py-2.5 text-[12px] font-bold hover:bg-primary/10 transition-colors"
             >
               <Plus className="w-4 h-4" />
@@ -1334,7 +1334,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       {/* ═══════════ Fullscreen Modules ═══════════ */}
       {bodyPilotAvailable && measurementsOpen && (
         <Suspense fallback={<div className="fixed inset-0 z-[220] bg-background flex items-center justify-center text-muted-foreground">{lang === 'en' ? 'Loading body…' : 'Загрузка модели…'}</div>}>
-          <BodyModelPilot measurements={measurements} lang={lang} name={profile?.full_name ?? ''} onClose={() => setMeasurementsOpen(false)} onAdd={() => setMeasurementsEditorOpen(true)} />
+          <BodyModelPilot gender={profile?.gender} measurements={measurements} lang={lang} name={profile?.full_name ?? ''} onClose={() => setMeasurementsOpen(false)} onAdd={() => setMeasurementsEditorOpen(true)} />
         </Suspense>
       )}
       {(bodyPilotAvailable ? measurementsEditorOpen : measurementsOpen) && (

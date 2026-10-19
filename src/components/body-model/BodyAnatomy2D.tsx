@@ -70,7 +70,7 @@ export default function BodyAnatomy2D({ values, baseline, selected, onSelect, co
   if (failed) return <div className="h-full flex items-center justify-center text-muted-foreground">{lang === 'en' ? 'Anatomical image unavailable' : 'Анатомическая модель недоступна'}</div>;
   return <div className="h-full flex justify-center" data-testid="body-anatomy-2d" data-silhouette={silhouette}>
     <div className="relative h-full aspect-[2/3] max-w-full anatomy-stage">
-      {compare && <img src={anatomy} width={1024} height={1536} loading="lazy" alt="" className="absolute inset-0 h-full w-full object-contain opacity-25 scale-x-110 transition-opacity" />}
+      {compare && <img src={anatomy} width={1024} height={1536} loading="lazy" alt="" className="absolute inset-0 h-full w-full object-contain opacity-25 transition-opacity" />}
       <canvas ref={canvas} width={WIDTH} height={HEIGHT} role="img" aria-label={lang === 'en' ? `${silhouette} muscular anatomy` : `Мышечная анатомия: ${silhouette === 'female' ? 'женщина' : 'мужчина'}`} className="relative h-full w-full" />
       {!pixels && <div className="absolute inset-0 flex items-center justify-center text-xs text-muted-foreground animate-pulse">{lang === 'en' ? 'Loading anatomy…' : 'Загрузка анатомии…'}</div>}
       {zone && <svg viewBox="0 0 100 150" className="absolute inset-0 h-full w-full pointer-events-none text-primary anatomy-selection" aria-hidden="true">

@@ -8,6 +8,7 @@ interface Profile {
   full_name: string;
   email: string;
   phone: string;
+  gender: string | null;
   telegram_link_code: string | null;
   telegram_chat_id: string | null;
 }
@@ -38,6 +39,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       full_name: profileData.full_name,
       email: profileData.email,
       phone: profileData.phone,
+      gender: profileData.gender ?? null,
       telegram_link_code: profileData.telegram_link_code,
       telegram_chat_id: profileData.telegram_chat_id,
     } : null);
