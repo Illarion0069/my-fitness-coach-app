@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ZoomIn, ZoomOut, Play, Pause, Scan, Info, Plus, Minus, Mars, Venus, RotateCcw } from 'lucide-react';
+import { ArrowLeft, ZoomIn, ZoomOut, Play, Pause, Scan, Info, Plus, Minus, UserRound, RotateCcw } from 'lucide-react';
 import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
@@ -75,7 +75,7 @@ export default function BodyModelPilot({ measurements, lang, name, gender, onClo
         <Button size="sm" variant={!demo ? 'default' : 'ghost'} aria-pressed={!demo} onClick={() => setDemo(false)}>{en ? 'My measurements' : 'Мои замеры'}</Button>
         <Button size="sm" variant={demo ? 'default' : 'ghost'} aria-pressed={demo} onClick={() => setDemo(true)}>{en ? 'Demo' : 'Демонстрация'}</Button>
       </div>
-      <div className="flex items-center gap-2"><Button variant={silhouette === 'male' ? 'secondary' : 'ghost'} size="icon" aria-label={en ? 'Male silhouette' : 'Мужской силуэт'} title={en ? 'Male silhouette' : 'Мужской силуэт'} aria-pressed={silhouette === 'male'} onClick={() => setSilhouette('male')}><Mars /></Button><Button variant={silhouette === 'female' ? 'secondary' : 'ghost'} size="icon" aria-label={en ? 'Female silhouette' : 'Женский силуэт'} title={en ? 'Female silhouette' : 'Женский силуэт'} aria-pressed={silhouette === 'female'} onClick={() => setSilhouette('female')}><Venus /></Button><span className="text-xs text-muted-foreground">{silhouette === 'female' ? (en ? 'Female' : 'Женщина') : silhouette === 'male' ? (en ? 'Male' : 'Мужчина') : (en ? 'Select silhouette' : 'Выберите силуэт')}</span></div>
+       <div className="flex items-center gap-2"><Button variant={silhouette === 'male' ? 'secondary' : 'ghost'} size="icon" aria-label={en ? 'Male silhouette' : 'Мужской силуэт'} title={en ? 'Male silhouette' : 'Мужской силуэт'} aria-pressed={silhouette === 'male'} onClick={() => setSilhouette('male')}><span className="text-2xl" aria-hidden="true">♂</span></Button><Button variant={silhouette === 'female' ? 'secondary' : 'ghost'} size="icon" aria-label={en ? 'Female silhouette' : 'Женский силуэт'} title={en ? 'Female silhouette' : 'Женский силуэт'} aria-pressed={silhouette === 'female'} onClick={() => setSilhouette('female')}><span className="text-2xl" aria-hidden="true">♀</span></Button><span className="text-xs text-muted-foreground">{silhouette === 'female' ? (en ? 'Female' : 'Женщина') : silhouette === 'male' ? (en ? 'Male' : 'Мужчина') : (en ? 'Select silhouette' : 'Выберите силуэт')}</span></div>
        <p className="text-xs text-muted-foreground hidden md:block">{demo ? (en ? 'Sample values · not saved to your profile' : 'Примерные данные · не сохраняются в профиль') : (en ? `${history.length} saved measurement(s)` : `Сохранённых замеров: ${history.length}`)}</p>
     </div>
     <main className="grid md:grid-cols-[minmax(0,1fr)_340px] lg:grid-cols-[minmax(0,1fr)_400px] gap-4 md:gap-10 px-4 md:px-10 flex-1 min-h-0 pb-[max(1rem,env(safe-area-inset-bottom))]">
