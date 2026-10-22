@@ -53,6 +53,8 @@ const AppContent = () => {
   const [activeSection, setActiveSection] = useState(getInitialSection);
   const [showWelcome, setShowWelcome] = useState(false);
   const [showBooking, setShowBooking] = useState(false);
+  // True when the modal was opened by the ?book=1 deep link (ads/GBP), not a user click
+  const [bookingAutoOpened, setBookingAutoOpened] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [swipeDirection, setSwipeDirection] = useState(0);
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
@@ -223,6 +225,7 @@ const AppContent = () => {
     const params = new URLSearchParams(window.location.search);
     const bookParam = params.get('book');
     if (bookParam) {
+      setBookingAutoOpened(true);
       setShowBooking(true);
       // Skip the onboarding guide so ad visitors land straight on the booking form
       setShowGuide(false);
@@ -379,6 +382,7 @@ const AppContent = () => {
           }
         }}
         forceClientView={clientPreview}
+        openSource={bookingAutoOpened ? 'auto' : 'click'}
       />
 
       {showGuide && (
