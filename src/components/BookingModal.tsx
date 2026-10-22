@@ -260,6 +260,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       }
     } catch {
       setSlots([]);
+      trackFunnel('booking_error', { reason: 'slots_load' });
     }
     setLoading(false);
   };
@@ -400,6 +401,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         });
         if (error || data?.error) {
           const err = data?.error;
+          trackFunnel('booking_error', { reason: `guest_submit:${err || error?.message || 'unknown'}`.slice(0, 80) });
           if (err === 'duplicate_slot' || err === 'duplicate_pending') {
             const ex = data?.existing;
             const dateStr = ex ? new Date(`${ex.date}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
@@ -419,11 +421,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             });
           }
         } else {
-          trackFunnel('booking_done');
+          trackBookingDone();
           setStep('done');
         }
 
       } catch (e: any) {
+        trackFunnel('booking_error', { reason: `guest_exception:${e?.message || 'unknown'}`.slice(0, 80) });
         toast({ title: 'Error', description: e.message, variant: 'destructive' });
       }
       setLoading(false);
@@ -448,6 +451,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       });
       if (error || data?.error) {
         const msg = data?.error || error?.message || '';
+        trackFunnel('booking_error', { reason: `submit:${msg || 'unknown'}`.slice(0, 80) });
         if (msg.includes('Unauthorized') || msg.includes('401')) {
           toast({
             title: lang === 'en' ? 'Session expired' : 'Сессия истекла',
@@ -478,10 +482,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         if (options?.goToPaymentDoneAfter) {
           setCompletedPendingPayment(true);
         }
-        trackFunnel('booking_done');
+        trackBookingDone();
           setStep('done');
       }
     } catch (e: any) {
+      trackFunnel('booking_error', { reason: `exception:${e?.message || 'unknown'}`.slice(0, 80) });
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
     setLoading(false);
