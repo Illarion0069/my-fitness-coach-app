@@ -259,6 +259,13 @@ serve(async (req) => {
       ? `\n\n🔻 Основной отвал: <b>${esc(worstDrop.from)} → ${esc(worstDrop.to)}</b> — потеряли ${worstDrop.lost} чел. (${worstDrop.pct}%)`
       : "";
 
+    // Открытия по прямой ссылке (?book=1) считаем отдельно от нажатий кнопки
+    const autoOpen = reach("booking_open_auto");
+    const bookingErrors = funnelReach.get("booking_error")?.size || 0;
+    const funnelExtra =
+      (autoOpen ? `\n• Открыли по прямой ссылке (реклама/GBP): <b>${autoOpen}</b>` : "") +
+      (bookingErrors ? `\n• Столкнулись с ошибкой при записи: <b>${bookingErrors}</b>` : "");
+
     const fmtTop = (m: Map<string, number>, n = 8) =>
       top(m, n).map(([l, c], i) => `${i + 1}. ${esc(String(l))} — ${c}`).join("\n") || "—";
 
@@ -354,7 +361,7 @@ serve(async (req) => {
         `👥 Уникальных: <b>${visitorsAll.size}</b> ` +
         `(клиенты: ${visitorsClients.size}, из них новые: ${visitorsNew.size}; гости: ${visitorsGuests.size})\n` +
         `👆 Действий всего: <b>${events.length}</b>${deviceLine ? `\n📱 ${esc(deviceLine)}` : ""}${sourcesBlock}\n\n` +
-        `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}\n\n` +
+        `<b>🚀 Воронка: визит → тренировка</b>\n${funnelLines.join("\n")}${bottleneck}${funnelExtra}\n\n` +
         `<b>Регистрация</b>\n${signupLines}\n\n` +
         (newcomerBlocks.length
           ? `<b>🆕 Новые и гости — детально</b>\n${newcomerBlocks.join("\n\n")}\n\n`

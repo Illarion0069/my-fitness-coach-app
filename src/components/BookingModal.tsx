@@ -20,6 +20,8 @@ interface BookingModalProps {
   initialStep?: 'date' | 'my-sessions';
   forceClientView?: boolean;
   restorePendingPayment?: boolean;
+  /** 'auto' = opened by a deep link (?book=1), not by a user click — tracked separately in the funnel */
+  openSource?: 'click' | 'auto';
 }
 
 interface TimeSlot {
@@ -86,7 +88,16 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false, restorePendingPayment = false }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false, restorePendingPayment = false, openSource = 'click' }: BookingModalProps) => {
+  // Funnel guards: count each modal opening once and each successful booking once,
+  // so the daily report isn't inflated by re-renders or double submits.
+  const openTrackedRef = useRef(false);
+  const doneTrackedRef = useRef(false);
+  const trackBookingDone = () => {
+    if (doneTrackedRef.current) return;
+    doneTrackedRef.current = true;
+    trackFunnel('booking_done');
+  };
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -186,7 +197,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     }
     if (open) {
       const startStep = initialStep || 'date';
-      if (startStep !== 'my-sessions') trackFunnel('booking_open');
+      doneTrackedRef.current = false;
+      if (startStep !== 'my-sessions' && !openTrackedRef.current) {
+        openTrackedRef.current = true;
+        trackFunnel(openSource === 'auto' ? 'booking_open_auto' : 'booking_open');
+      }
       setStep(startStep);
       setCurrentMonth(new Date());
       setSelectedDate(null);
@@ -201,8 +216,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       if (startStep === 'my-sessions') {
         fetchMySessions();
       }
+    } else {
+      // Next opening counts as a new visit in the funnel
+      openTrackedRef.current = false;
     }
-  }, [open, initialStep, clearPendingPaymentState, restorePendingPayment]);
+  }, [open, initialStep, clearPendingPaymentState, restorePendingPayment, openSource]);
 
   const monthDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
@@ -242,6 +260,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       }
     } catch {
       setSlots([]);
+      trackFunnel('booking_error', { reason: 'slots_load' });
     }
     setLoading(false);
   };
@@ -382,6 +401,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         });
         if (error || data?.error) {
           const err = data?.error;
+          trackFunnel('booking_error', { reason: `guest_submit:${err || error?.message || 'unknown'}`.slice(0, 80) });
           if (err === 'duplicate_slot' || err === 'duplicate_pending') {
             const ex = data?.existing;
             const dateStr = ex ? new Date(`${ex.date}T12:00:00`).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { weekday: 'long', day: 'numeric', month: 'long' }) : '';
@@ -401,11 +421,12 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             });
           }
         } else {
-          trackFunnel('booking_done');
+          trackBookingDone();
           setStep('done');
         }
 
       } catch (e: any) {
+        trackFunnel('booking_error', { reason: `guest_exception:${e?.message || 'unknown'}`.slice(0, 80) });
         toast({ title: 'Error', description: e.message, variant: 'destructive' });
       }
       setLoading(false);
@@ -430,6 +451,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       });
       if (error || data?.error) {
         const msg = data?.error || error?.message || '';
+        trackFunnel('booking_error', { reason: `submit:${msg || 'unknown'}`.slice(0, 80) });
         if (msg.includes('Unauthorized') || msg.includes('401')) {
           toast({
             title: lang === 'en' ? 'Session expired' : 'Сессия истекла',
@@ -460,10 +482,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         if (options?.goToPaymentDoneAfter) {
           setCompletedPendingPayment(true);
         }
-        trackFunnel('booking_done');
+        trackBookingDone();
           setStep('done');
       }
     } catch (e: any) {
+      trackFunnel('booking_error', { reason: `exception:${e?.message || 'unknown'}`.slice(0, 80) });
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     }
     setLoading(false);
