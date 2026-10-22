@@ -20,6 +20,8 @@ interface BookingModalProps {
   initialStep?: 'date' | 'my-sessions';
   forceClientView?: boolean;
   restorePendingPayment?: boolean;
+  /** 'auto' = opened by a deep link (?book=1), not by a user click — tracked separately in the funnel */
+  openSource?: 'click' | 'auto';
 }
 
 interface TimeSlot {
@@ -86,7 +88,16 @@ const PACKAGES = [
   { id: 'pack20', sessions: 20, price: 1599, label: { en: '20 Sessions', ru: '20 занятий' } },
 ];
 
-const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false, restorePendingPayment = false }: BookingModalProps) => {
+const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, forceClientView = false, restorePendingPayment = false, openSource = 'click' }: BookingModalProps) => {
+  // Funnel guards: count each modal opening once and each successful booking once,
+  // so the daily report isn't inflated by re-renders or double submits.
+  const openTrackedRef = useRef(false);
+  const doneTrackedRef = useRef(false);
+  const trackBookingDone = () => {
+    if (doneTrackedRef.current) return;
+    doneTrackedRef.current = true;
+    trackFunnel('booking_done');
+  };
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
   const { toast } = useToast();
@@ -186,7 +197,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     }
     if (open) {
       const startStep = initialStep || 'date';
-      if (startStep !== 'my-sessions') trackFunnel('booking_open');
+      doneTrackedRef.current = false;
+      if (startStep !== 'my-sessions' && !openTrackedRef.current) {
+        openTrackedRef.current = true;
+        trackFunnel(openSource === 'auto' ? 'booking_open_auto' : 'booking_open');
+      }
       setStep(startStep);
       setCurrentMonth(new Date());
       setSelectedDate(null);
@@ -201,8 +216,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
       if (startStep === 'my-sessions') {
         fetchMySessions();
       }
+    } else {
+      // Next opening counts as a new visit in the funnel
+      openTrackedRef.current = false;
     }
-  }, [open, initialStep, clearPendingPaymentState, restorePendingPayment]);
+  }, [open, initialStep, clearPendingPaymentState, restorePendingPayment, openSource]);
 
   const monthDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
