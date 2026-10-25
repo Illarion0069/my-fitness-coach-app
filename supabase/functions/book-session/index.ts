@@ -444,13 +444,16 @@ Deno.serve(async (req) => {
 
         const { data: sameDayRecurring } = await supabase
           .from('scheduled_sessions')
-          .select('id, recurring_exceptions')
+          .select('id, recurring_exceptions, recurrence_end_date, session_date')
           .eq('user_id', user.id)
           .eq('is_recurring', true)
           .eq('recurrence_day', dayOfWeek);
 
         const hasRecurringToday = (sameDayRecurring || []).some(
-          (s: any) => !(s.recurring_exceptions || []).includes(date)
+          (s: any) =>
+            !(s.recurring_exceptions || []).includes(date) &&
+            (!s.session_date || s.session_date <= date) &&
+            (!s.recurrence_end_date || s.recurrence_end_date >= date)
         );
 
         if ((sameDayOneOff && sameDayOneOff.length > 0) || hasRecurringToday) {
