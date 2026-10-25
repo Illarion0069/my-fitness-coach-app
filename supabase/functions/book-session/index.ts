@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
       const { data: recurring } = await supabase
         .from('scheduled_sessions')
-        .select('recurrence_time, duration_minutes, recurring_exceptions')
+        .select('recurrence_time, duration_minutes, recurring_exceptions, recurrence_end_date, session_date')
         .eq('is_recurring', true)
         .eq('recurrence_day', dayOfWeek);
 
@@ -178,6 +178,9 @@ Deno.serve(async (req) => {
 
       (recurring || []).forEach((session) => {
         if (session.recurring_exceptions?.includes(date)) return;
+        // Skip recurrences that haven't started yet or have already ended
+        if (session.session_date && session.session_date > date) return;
+        if (session.recurrence_end_date && session.recurrence_end_date < date) return;
         if (session.recurrence_time) {
           booked.push({
             start: timeToMinutes(session.recurrence_time.slice(0, 5)),
@@ -441,13 +444,16 @@ Deno.serve(async (req) => {
 
         const { data: sameDayRecurring } = await supabase
           .from('scheduled_sessions')
-          .select('id, recurring_exceptions')
+          .select('id, recurring_exceptions, recurrence_end_date, session_date')
           .eq('user_id', user.id)
           .eq('is_recurring', true)
           .eq('recurrence_day', dayOfWeek);
 
         const hasRecurringToday = (sameDayRecurring || []).some(
-          (s: any) => !(s.recurring_exceptions || []).includes(date)
+          (s: any) =>
+            !(s.recurring_exceptions || []).includes(date) &&
+            (!s.session_date || s.session_date <= date) &&
+            (!s.recurrence_end_date || s.recurrence_end_date >= date)
         );
 
         if ((sameDayOneOff && sameDayOneOff.length > 0) || hasRecurringToday) {
