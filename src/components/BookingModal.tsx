@@ -97,6 +97,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     if (doneTrackedRef.current) return;
     doneTrackedRef.current = true;
     trackFunnel('booking_done');
+    trackBookingConversion();
   };
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();

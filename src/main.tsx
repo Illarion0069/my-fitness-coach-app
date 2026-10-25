@@ -4,10 +4,12 @@ import App from "./App.tsx";
 import "./index.css";
 import { installGlobalErrorReporting } from "@/lib/errorReporter";
 import { installClickTracking } from "@/lib/analytics";
+import { initGoogleAnalytics } from "@/lib/gtag";
 import AppErrorBoundary from "@/components/AppErrorBoundary";
 
 installGlobalErrorReporting();
 installClickTracking();
+void initGoogleAnalytics();
 
 createRoot(document.getElementById("root")!).render(
   <AppErrorBoundary>
