@@ -1,4 +1,6 @@
 # Desktop adaptation
+- [ ] Add fixed public desktop contact button while preserving avatar and mobile behavior; verify scrolling and messenger links.
+- [ ] Inspect Google Ads access and readiness; report any verification blocker.
 - [x] Redesign private body pilot with distinct male/female anatomy, fluid region interaction and streamlined controls; verify without data writes.
 - [x] Replace private body viewer with detailed interactive 2D muscular anatomy and verify phone use without data writes.
 - [x] Integrate private body viewer into Body Measurements with phone-friendly controls and smoother anatomy; verify without data writes.
