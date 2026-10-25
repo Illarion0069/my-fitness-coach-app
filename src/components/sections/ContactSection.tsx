@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+// Privacy note + cookie settings entry (reopens the consent banner).
 import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';

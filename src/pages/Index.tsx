@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
 import DesktopHeader from '@/components/DesktopHeader';
 import FloatingContactButton from '@/components/FloatingContactButton';
+import ConsentBanner from '@/components/ConsentBanner';
 import ConnectionSplash from '@/components/ConnectionSplash';
 // import ChatAssistant from '@/components/ChatAssistant'; // frozen: chat assistant is disabled for now
 
