@@ -8,7 +8,7 @@ const FloatingContactButton = () => {
   const label = lang === 'en' ? 'Contact Illarion' : 'Связаться с Илларионом';
 
   return (
-    <div className="fixed bottom-8 right-6 z-40 hidden md:block lg:right-8">
+    <div data-no-swipe className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom,0px))] right-4 z-40 md:bottom-8 md:right-6 lg:right-8">
       <Popover>
         <PopoverTrigger asChild>
           <Button

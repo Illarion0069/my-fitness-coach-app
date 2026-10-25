@@ -314,7 +314,7 @@ const AppContent = () => {
         </div>
       )}
       {!publicDesktop && <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />}
-      {singlePageDesktop && <FloatingContactButton />}
+      {!user && !optimisticIsTrainer && ['home', 'pricing', 'about'].includes(activeSection) && <FloatingContactButton />}
       {!showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}

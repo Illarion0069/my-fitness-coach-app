@@ -1,5 +1,5 @@
 # Architecture rules
-- Mount the desktop floating messenger contact outside the public page scroll container; use the shared popover and button components so contact access persists without altering mobile or authenticated workflows.
+- Mount the public floating messenger contact outside the page scroll container on desktop and mobile; offset it above mobile navigation and use shared popover/button components so scrolling and authenticated workflows remain unchanged.
 - Compose the desktop public website from the existing home, pricing and about sections with anchor navigation; retain section-based navigation for mobile and authenticated workflows to preserve app state and booking behavior.
 - Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.
 - Open the lazy-loaded body-model pilot through Body Measurements in the allowlisted trainer's own client view; use read-only measurement props and local-only demonstration state so no client rollout or data writes occur.
