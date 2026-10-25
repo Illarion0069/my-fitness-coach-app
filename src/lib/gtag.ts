@@ -37,9 +37,12 @@ let bannerPending = false;
 let bannerRequester: (() => void) | null = null;
 let lastRegion = "XX";
 
-function gtag(...args: unknown[]) {
+// gtag.js only takes over the queue when the helper forwards the raw `arguments`
+// object (rest parameters leave a plain array and the tag never sends anything).
+function gtag() {
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(args);
+  // eslint-disable-next-line prefer-rest-params -- gtag.js needs the Arguments object
+  window.dataLayer.push(arguments);
 }
 
 function applyConsent(choice: ConsentChoice) {
