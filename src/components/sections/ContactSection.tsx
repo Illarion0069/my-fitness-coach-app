@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+
+const openConsentSettings = () => window.dispatchEvent(new Event('open-consent-settings'));
 import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -107,6 +109,20 @@ const ContactSection = () => {
           ))}
         </div>
       </motion.div>
+
+      <div className="mt-10 border-t border-border/40 pt-6 space-y-3">
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {lang === 'en'
+            ? 'Privacy: we use Google Analytics and Google Ads to measure visits and ad performance. This involves cookies, device and page data, and booking actions. You can change your choice at any time.'
+            : 'Конфиденциальность: мы используем Google Analytics и Google Ads для статистики посещений и измерения рекламы. Это включает cookies, данные об устройстве и страницах, а также действия записи. Вы можете изменить свой выбор в любой момент.'}
+        </p>
+        <button
+          onClick={openConsentSettings}
+          className="text-xs font-semibold text-primary underline underline-offset-4"
+        >
+          {lang === 'en' ? 'Cookie settings' : 'Настройки cookies'}
+        </button>
+      </div>
     </section>
   );
 };

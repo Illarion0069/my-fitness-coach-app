@@ -9,6 +9,7 @@ import { format, addMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameD
 import { ru, enUS } from 'date-fns/locale';
 import PhoneInput from '@/components/PhoneInput';
 import { trackFunnel } from '@/lib/analytics';
+import { trackBookingConversion } from '@/lib/gtag';
 import LocalTimeLine from './LocalTimeLine';
 import { hoursUntilCyprus } from '@/lib/cyprusTime';
 
@@ -97,6 +98,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
     if (doneTrackedRef.current) return;
     doneTrackedRef.current = true;
     trackFunnel('booking_done');
+    trackBookingConversion();
   };
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
