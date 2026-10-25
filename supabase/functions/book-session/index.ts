@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
 
       const { data: recurring } = await supabase
         .from('scheduled_sessions')
-        .select('recurrence_time, duration_minutes, recurring_exceptions')
+        .select('recurrence_time, duration_minutes, recurring_exceptions, recurrence_end_date, session_date')
         .eq('is_recurring', true)
         .eq('recurrence_day', dayOfWeek);
 
