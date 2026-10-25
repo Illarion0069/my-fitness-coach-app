@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+
+const openConsentSettings = () => window.dispatchEvent(new Event('open-consent-settings'));
 import { Phone, MapPin, Facebook, Instagram, Send, MessageCircle, ArrowUpRight, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
