@@ -37,9 +37,9 @@ let bannerPending = false;
 let bannerRequester: (() => void) | null = null;
 let lastRegion = "XX";
 
-// gtag.js only takes over the queue when the helper forwards the raw `arguments`
-// object (rest parameters leave a plain array and the tag never sends anything).
-function gtag() {
+// The tag only sends anything while the helper forwards the raw `arguments`
+// object; pushing a rest-parameter array instead leaves the counter silent.
+function gtag(..._args: unknown[]) {
   window.dataLayer = window.dataLayer || [];
   // eslint-disable-next-line prefer-rest-params -- gtag.js needs the Arguments object
   window.dataLayer.push(arguments);
