@@ -37,9 +37,12 @@ let bannerPending = false;
 let bannerRequester: (() => void) | null = null;
 let lastRegion = "XX";
 
-function gtag(...args: unknown[]) {
+// The tag only sends anything while the helper forwards the raw `arguments`
+// object; pushing a rest-parameter array instead leaves the counter silent.
+function gtag(..._args: unknown[]) {
   window.dataLayer = window.dataLayer || [];
-  window.dataLayer.push(args);
+  // eslint-disable-next-line prefer-rest-params -- gtag.js needs the Arguments object
+  window.dataLayer.push(arguments);
 }
 
 function applyConsent(choice: ConsentChoice) {
