@@ -1,4 +1,6 @@
 # Desktop adaptation
+- [ ] Correct existing advertising measurement using approved regional consent banner; blocked on Google Analytics connection for the existing booking goal.
+- [ ] Verify live booking measurement before advertising correction/launch approval; preserve current budget unless explicitly approved otherwise.
 - [x] Diagnose contact-button visibility: present on public desktop preview, absent from published site; mobile remains unchanged under the standing restriction.
 - [x] Review current Google Ads spending, delivery, targeting and booking measurement; report evidence and next action.
 - [x] Add fixed public desktop contact button while preserving avatar and mobile behavior; verify scrolling and messenger links.
