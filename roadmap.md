@@ -1,5 +1,5 @@
 # Desktop adaptation
-- [ ] Add and verify approved mobile floating contact button above bottom navigation, preserving other mobile behavior.
+- [x] Add and verify approved mobile floating contact button above bottom navigation, preserving other mobile behavior.
 - [x] Explain contact-button visibility in the user's uploaded screenshot without changing mobile behavior.
 - [ ] Correct existing advertising measurement using approved regional consent banner; blocked on Google Analytics connection for the existing booking goal.
 - [ ] Verify live booking measurement before advertising correction/launch approval; preserve current budget unless explicitly approved otherwise.
