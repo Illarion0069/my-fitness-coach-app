@@ -1,5 +1,5 @@
 # Desktop adaptation
-- [ ] Explain contact-button visibility in the user's uploaded screenshot without changing mobile behavior.
+- [x] Explain contact-button visibility in the user's uploaded screenshot without changing mobile behavior.
 - [ ] Correct existing advertising measurement using approved regional consent banner; blocked on Google Analytics connection for the existing booking goal.
 - [ ] Verify live booking measurement before advertising correction/launch approval; preserve current budget unless explicitly approved otherwise.
 - [x] Diagnose contact-button visibility: present on public desktop preview, absent from published site; mobile remains unchanged under the standing restriction.
