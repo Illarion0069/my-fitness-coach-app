@@ -4,6 +4,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import BottomNav from '@/components/BottomNav';
 import DesktopHeader from '@/components/DesktopHeader';
+import FloatingContactButton from '@/components/FloatingContactButton';
 import ConnectionSplash from '@/components/ConnectionSplash';
 // import ChatAssistant from '@/components/ChatAssistant'; // frozen: chat assistant is disabled for now
 
@@ -313,6 +314,7 @@ const AppContent = () => {
         </div>
       )}
       {!publicDesktop && <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />}
+      {singlePageDesktop && <FloatingContactButton />}
       {!showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
