@@ -1,4 +1,6 @@
 # Desktop adaptation
+- [ ] Diagnose contact-button visibility on preview and published site; clarify mobile exception if needed.
+- [ ] Review current Google Ads spending, delivery, targeting and booking measurement; report evidence and next action.
 - [x] Add fixed public desktop contact button while preserving avatar and mobile behavior; verify scrolling and messenger links.
 - [x] Inspect Google Ads access and readiness; report live serving, rejected phone/logo assets and unverified conversion tracking.
 - [x] Redesign private body pilot with distinct male/female anatomy, fluid region interaction and streamlined controls; verify without data writes.
