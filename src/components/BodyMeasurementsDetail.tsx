@@ -495,6 +495,19 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
                   </div>
                 </div>
               ))}
+              {historyRows.length > HISTORY_PREVIEW && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllHistory(v => !v)}
+                  className="w-full rounded-xl border border-border/60 bg-secondary/20 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showAllHistory
+                    ? (lang === 'en' ? 'Show less' : 'Свернуть')
+                    : (lang === 'en'
+                        ? `Show all ${historyRows.length} entries`
+                        : `Показать все записи (${historyRows.length})`)}
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
