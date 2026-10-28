@@ -165,8 +165,12 @@ export const translations = {
     title: { en: 'ABOUT ME', ru: 'ОБО МНЕ' },
     name: { en: 'Illarion Ientin', ru: 'Илларион Ентин' },
     bio: {
-      en: 'Personal trainer in Limassol with 8+ years of hands-on coaching. I build precise, individual programs around your goals, schedule and body — blending strength work, mobility and recovery so progress actually sticks.',
-      ru: 'Персональный тренер в Лимассоле, 8+ лет практики. Строю точные индивидуальные программы под ваши цели, график и тело — сочетаю силовую работу, мобилити и восстановление, чтобы прогресс действительно закреплялся.',
+      en: 'Personal trainer in Limassol with 8+ years of hands-on coaching. I build precise, individual programs around your goals, schedule and body — blending strength work, mobility and recovery so progress actually sticks. I coach in Ukrainian, English and Russian.',
+      ru: 'Персональный тренер в Лимассоле, 8+ лет практики. Строю точные индивидуальные программы под ваши цели, график и тело — сочетаю силовую работу, мобилити и восстановление, чтобы прогресс действительно закреплялся. Тренирую на украинском, английском и русском.',
+    },
+    languages: {
+      label: { en: 'Languages', ru: 'Языки' },
+      items: ['Українська', 'English', 'Русский'],
     },
     certifications: {
       en: 'Certifications',
