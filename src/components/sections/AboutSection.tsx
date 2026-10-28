@@ -198,10 +198,8 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
             <div className="flex flex-wrap justify-center items-center gap-x-3.5 gap-y-2 border-y border-border py-4 my-5 w-full">
               {about.certs.map(cert => <span key={cert} className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-bold"><Award className="w-3.5 h-3.5 text-primary shrink-0" />{cert}</span>)}
             </div>
-            <div className="flex flex-wrap justify-center gap-3">
+            <div className="flex justify-center">
               <Button onClick={handleBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
-              <Button variant="outline" asChild><a href="https://wa.me/35795144819" target="_blank" rel="noopener noreferrer"><MessageCircle />WhatsApp</a></Button>
-              <Button variant="ghost" asChild><a href="https://t.me/fitnesslimassol" target="_blank" rel="noopener noreferrer"><Send />Telegram</a></Button>
             </div>
           </div>
         </div>
