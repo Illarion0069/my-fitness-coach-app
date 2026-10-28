@@ -198,10 +198,6 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
             <div className="flex flex-wrap justify-center items-center gap-x-3.5 gap-y-2 border-y border-border py-4 my-5 w-full">
               {about.certs.map(cert => <span key={cert} className="flex items-center gap-1.5 whitespace-nowrap text-[12px] font-bold"><Award className="w-3.5 h-3.5 text-primary shrink-0" />{cert}</span>)}
             </div>
-            <div className="flex flex-wrap justify-center items-center gap-x-2 gap-y-1 mb-5 text-[12px] font-bold">
-              <span className="flex items-center gap-1.5 text-primary uppercase tracking-wider"><Languages className="w-3.5 h-3.5" />{t(about.languages.label)}</span>
-              <span className="text-muted-foreground">{about.languages.items.join(' · ')}</span>
-            </div>
             <div className="flex justify-center">
               <Button onClick={handleBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
             </div>
@@ -342,10 +338,6 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
           <p className="text-[15px] text-muted-foreground leading-relaxed">
             {t(about.bio)}
           </p>
-          <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12px] font-bold">
-            <span className="flex items-center gap-1.5 text-primary uppercase tracking-wider"><Languages className="w-3.5 h-3.5" />{t(about.languages.label)}</span>
-            <span className="text-muted-foreground">{about.languages.items.join(' · ')}</span>
-          </div>
         </motion.div>
 
         {/* ── Philosophy ── */}
