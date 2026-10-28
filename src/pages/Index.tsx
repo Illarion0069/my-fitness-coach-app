@@ -75,8 +75,9 @@ const AppContent = () => {
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
   const publicWebsite = !user && !optimisticIsTrainer;
-  const publicDesktop = isDesktop && publicWebsite;
-  const singlePagePublic = publicWebsite && ['home', 'pricing', 'about'].includes(activeSection);
+  const websiteNavigation = publicWebsite || effectiveIsTrainer;
+  const publicDesktop = isDesktop && websiteNavigation;
+  const singlePagePublic = websiteNavigation && ['home', 'pricing', 'about'].includes(activeSection);
 
   useEffect(() => {
     const query = window.matchMedia('(min-width: 768px)');
@@ -108,7 +109,7 @@ const AppContent = () => {
 
   const handleNavigate = (section: string) => {
     if (!routableSections.includes(section)) section = 'home';
-    if (publicWebsite && ['home', 'pricing', 'about'].includes(section)) {
+    if (websiteNavigation && ['home', 'pricing', 'about'].includes(section)) {
       setPublicAnchor(section);
       setActiveSection('home');
       requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -124,7 +125,7 @@ const AppContent = () => {
   };
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
-    if (isDesktop || publicWebsite) return;
+    if (isDesktop || websiteNavigation) return;
     const currentIdx = sections.indexOf(activeSection);
     if (currentIdx === -1) return;
     if (direction === 'left' && currentIdx < sections.length - 1) {
@@ -134,7 +135,7 @@ const AppContent = () => {
       setSwipeDirection(-1);
       setActiveSection(sections[currentIdx - 1]);
     }
-  }, [activeSection, sections, isDesktop, publicWebsite]);
+  }, [activeSection, sections, isDesktop, websiteNavigation]);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -259,7 +260,7 @@ const AppContent = () => {
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
-      {publicDesktop && <DesktopHeader active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} onBook={() => setShowBooking(true)} onSignIn={() => setShowWelcome(true)} showShop={false} />}
+      {publicDesktop && <DesktopHeader active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} onBook={() => setShowBooking(true)} onSignIn={() => effectiveIsTrainer ? handleNavigate('admin') : setShowWelcome(true)} showAdmin={effectiveIsTrainer} showShop={false} />}
       <div
         ref={containerRef}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
@@ -292,7 +293,7 @@ const AppContent = () => {
             }>
               {singlePagePublic ? (
                 <main className="pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
-                  <div id="public-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} /></div>
+                  <div id="public-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => effectiveIsTrainer ? handleNavigate('admin') : setShowWelcome(true)} /></div>
                   <div id="public-pricing"><PricingSection integrated /></div>
                   <div id="public-about"><AboutSection compact onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} /></div>
                 </main>
