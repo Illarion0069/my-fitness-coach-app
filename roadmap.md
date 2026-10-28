@@ -1,4 +1,5 @@
 # Desktop adaptation
+- [x] Remove body model and simplify measurement entry to an inline selected metric; verify phone and desktop without live-client writes.
 - [x] Update mobile welcome guide for the single-page website and verify trainer website anchor navigation without changing calendar/client workflows.
 - [x] Combine public mobile Home, Pricing and compact About with anchor navigation; hide Shop everywhere without deleting data.
 - [x] Verify mobile scrolling, navigation, contact, booking opening and desktop regression without sending live bookings.

@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronDown, Plus, TrendingUp, TrendingDown, Minus, Pencil, Trash2, Check, Ruler } from 'lucide-react';
+import { X, ChevronLeft, TrendingUp, TrendingDown, Minus, Pencil, Trash2, Check } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 
 
 
@@ -56,23 +58,20 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
-const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId, initialAdd = false }: Props) => {
+const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId, initialAdd: _initialAdd = false }: Props) => {
   const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
   const [timeRange, setTimeRange] = useState('all');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [saving, setSaving] = useState(false);
-  const [allOpen, setAllOpen] = useState(false);
-  const [addOpen, setAddOpen] = useState(initialAdd);
-  const [newDate, setNewDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Nicosia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const [newDate, setNewDate] = useState(today);
   const [newValues, setNewValues] = useState<Record<string, string>>({});
 
-  const latest = useMemo(() => {
-    const sorted = [...measurements].sort(
-      (a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()
-    );
-    return { current: sorted[0], previous: sorted[1] };
+  const latestByMetric = useMemo(() => {
+    const sorted = [...measurements].sort((a, b) => b.measured_at.localeCompare(a.measured_at));
+    return Object.fromEntries(METRICS.map(m => [m.key, sorted.find(row => row[m.key] != null)])) as Partial<Record<MetricKey, Measurement>>;
   }, [measurements]);
 
   const addMeasurement = async () => {
@@ -80,15 +79,12 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
     const row: Record<string, any> = { user_id: userId, trainer_user_id: user.id, measured_at: newDate };
-    let has = false;
-    METRICS.forEach(m => {
-      const v = parseFloat((newValues[m.key] || '').replace(',', '.'));
-      if (!isNaN(v)) { row[m.key] = v; has = true; }
-    });
-    if (!has) {
-      toast({ title: lang === 'en' ? 'Enter at least one value' : 'Введите хотя бы одно значение', variant: 'destructive' });
+    const value = Number((newValues[activeMetric] || '').trim().replace(',', '.'));
+    if (!Number.isFinite(value) || value <= 0) {
+      toast({ title: lang === 'en' ? 'Enter a valid value' : 'Введите корректное значение', variant: 'destructive' });
       return;
     }
+    row[activeMetric] = value;
     setSaving(true);
     const { error } = await supabase.from('body_measurements').insert(row as any);
     setSaving(false);
@@ -97,14 +93,13 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
       return;
     }
     toast({ title: lang === 'en' ? 'Measurements saved' : 'Замеры сохранены' });
-    setNewValues({});
-    setAddOpen(false);
+    setNewValues(values => ({ ...values, [activeMetric]: '' }));
     onChanged?.();
   };
 
 
-  const metric = METRICS.find(m => m.key === activeMetric)!;
-  const range = TIME_RANGES.find(r => r.key === timeRange)!;
+  const metric = METRICS.find(m => m.key === activeMetric) ?? METRICS[0];
+  const range = TIME_RANGES.find(r => r.key === timeRange) ?? TIME_RANGES[3];
 
   const startEdit = (m: Measurement) => {
     const val = m[activeMetric as keyof Measurement] as number | null;
@@ -251,151 +246,59 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
             </button>
           </div>
 
-          {/* Metric tabs — horizontal scroll */}
-          <div className="flex gap-1.5 px-4 py-2.5 overflow-x-auto no-scrollbar" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
-            {METRICS.map(m => (
-              <button
-                key={m.key}
-                onClick={() => setActiveMetric(m.key)}
-                className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                  activeMetric === m.key
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary/40 text-muted-foreground hover:bg-secondary/60'
-                }`}
-              >
-                {lang === 'en' ? m.en : m.ru}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {/* ── All body params — expanding bubble ── */}
-            <div className="px-4 pb-3">
-              <button
-                onClick={() => setAllOpen(o => !o)}
-                className="w-full flex items-center gap-2 bg-secondary/40 hover:bg-secondary/60 rounded-2xl px-3.5 py-2.5 transition-colors"
-              >
-                <Ruler className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold">
-                  {lang === 'en' ? 'All body params' : 'Все параметры тела'}
-                </span>
-                {latest.current && (
-                  <span className="text-[10px] text-muted-foreground">
-                    {new Date(latest.current.measured_at).toLocaleDateString(lang === 'en' ? 'en-US' : 'ru-RU', { day: 'numeric', month: 'short' })}
-                  </span>
-                )}
-                <motion.span animate={{ rotate: allOpen ? 180 : 0 }} transition={{ duration: 0.25 }} className="ml-auto text-muted-foreground">
-                  <ChevronDown className="w-4 h-4" />
-                </motion.span>
-              </button>
-
-              <AnimatePresence initial={false}>
-                {allOpen && (
-                  <motion.div
-                    key="all-params"
-                    initial={{ height: 0, opacity: 0, scale: 0.97 }}
-                    animate={{ height: 'auto', opacity: 1, scale: 1 }}
-                    exit={{ height: 0, opacity: 0, scale: 0.97 }}
-                    transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.7 }}
-                    style={{ overflow: 'hidden', transformOrigin: 'top' }}
-                  >
-                    <div className="grid grid-cols-2 gap-2 mt-2">
-                      {METRICS.map(m => {
-                        const val = latest.current ? (latest.current[m.key as keyof Measurement] as number | null) : null;
-                        const prevVal = latest.previous ? (latest.previous[m.key as keyof Measurement] as number | null) : null;
-                        const diff = val != null && prevVal != null ? +(val - prevVal).toFixed(1) : null;
-                        return (
-                          <button
-                            key={m.key}
-                            onClick={() => setActiveMetric(m.key)}
-                            className={`text-left rounded-xl px-3 py-2 transition-colors border ${
-                              activeMetric === m.key ? 'border-primary/50 bg-primary/10' : 'border-border/40 bg-secondary/25 hover:bg-secondary/40'
-                            }`}
-                          >
-                            <p className="text-[10px] text-muted-foreground">{lang === 'en' ? m.en : m.ru}</p>
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-base font-extrabold font-heading">{val ?? '—'}</span>
-                              {val != null && <span className="text-[9px] text-muted-foreground">{m.unit}</span>}
-                              {diff != null && diff !== 0 && (
-                                <span className={`text-[9px] font-bold ml-auto ${diff < 0 ? 'text-green-400' : 'text-orange-400'}`}>
-                                  {diff > 0 ? '+' : ''}{diff}
-                                </span>
-                              )}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* ── Add measurement ── */}
+          <div className="flex-1 overflow-y-auto" onTouchStart={e => e.stopPropagation()} onTouchEnd={e => e.stopPropagation()}>
+            <div className="px-4 pt-3 pb-4 space-y-4">
+              <div className="grid grid-cols-4 gap-2">
+                {METRICS.map(m => {
+                  const previous = latestByMetric[m.key]?.[m.key];
+                  return (
+                    <Button
+                      key={m.key}
+                      variant={activeMetric === m.key ? 'default' : 'outline'}
+                      aria-pressed={activeMetric === m.key}
+                      aria-label={lang === 'en' ? m.en : m.ru}
+                      disabled={saving}
+                      onClick={() => { setActiveMetric(m.key); setEditingId(null); }}
+                      className="h-20 min-w-0 px-1 flex-col gap-1 whitespace-normal"
+                    >
+                      <span className="text-xs">{lang === 'en' ? m.en : m.ru}</span>
+                      <span className="text-lg font-bold leading-none">{previous ?? '—'}</span>
+                      <span className="text-xs opacity-70">{m.unit}</span>
+                    </Button>
+                  );
+                })}
+              </div>
               {userId && (
-                <>
-                  <button
-                    onClick={() => setAddOpen(o => !o)}
-                    className="mt-2 w-full flex items-center justify-center gap-1.5 rounded-2xl border border-primary/40 bg-primary/10 text-primary py-2.5 text-xs font-bold hover:bg-primary/20 transition-colors"
-                  >
-                    <Plus className={`w-4 h-4 transition-transform ${addOpen ? 'rotate-45' : ''}`} />
-                    {lang === 'en' ? 'Add measurement' : 'Добавить замер'}
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {addOpen && (
-                      <motion.div
-                        key="add-form"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.7 }}
-                        style={{ overflow: 'hidden' }}
-                      >
-                        <div className="mt-2 bg-secondary/30 rounded-2xl p-3 space-y-2">
-                          <div>
-                            <label className="text-[10px] text-muted-foreground mb-0.5 block">
-                              {lang === 'en' ? 'Date' : 'Дата'}
-                            </label>
-                            <input
-                              type="date"
-                              value={newDate}
-                              max={new Date().toISOString().split('T')[0]}
-                              onChange={e => setNewDate(e.target.value)}
-                              className="w-full bg-background border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            {METRICS.map(m => (
-                              <div key={m.key}>
-                                <label className="text-[10px] text-muted-foreground mb-0.5 block">
-                                  {lang === 'en' ? m.en : m.ru} ({m.unit})
-                                </label>
-                                <input
-                                  type="number"
-                                  step="0.1"
-                                  inputMode="decimal"
-                                  value={newValues[m.key] || ''}
-                                  onChange={e => setNewValues(v => ({ ...v, [m.key]: e.target.value }))}
-                                  className="w-full bg-background border border-border/50 rounded-lg px-2 py-1.5 text-xs focus:outline-none focus:border-primary/50"
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <button
-                            onClick={addMeasurement}
-                            disabled={saving}
-                            className="w-full rounded-xl bg-primary text-primary-foreground py-2.5 text-xs font-bold disabled:opacity-50"
-                          >
-                            {saving ? (lang === 'en' ? 'Saving…' : 'Сохраняем…') : (lang === 'en' ? 'Save measurement' : 'Сохранить замер')}
-                          </button>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </>
+                <form onSubmit={e => { e.preventDefault(); if (!saving) void addMeasurement(); }} className="space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <label htmlFor="measurement-value" className="text-base font-semibold">{lang === 'en' ? metric.en : metric.ru} · {metric.unit}</label>
+                    <span className="text-sm text-muted-foreground">
+                      {lang === 'en' ? 'Previous' : 'Предыдущий'}: {latestByMetric[activeMetric]?.[activeMetric] ?? '—'} {metric.unit}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      id="measurement-value"
+                      type="text"
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder="0.0"
+                      value={newValues[activeMetric] || ''}
+                      disabled={saving}
+                      onChange={e => setNewValues(v => ({ ...v, [activeMetric]: e.target.value }))}
+                      className="h-14 min-w-0 flex-1 text-2xl md:text-2xl font-semibold"
+                    />
+                    <Button type="submit" disabled={saving || !(newValues[activeMetric] || '').trim()} className="h-14 px-4">
+                      <Check />{saving ? (lang === 'en' ? 'Saving…' : 'Сохраняем…') : (lang === 'en' ? 'Save' : 'Сохранить')}
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <label htmlFor="measurement-date" className="text-sm text-muted-foreground">{lang === 'en' ? 'Date' : 'Дата'}</label>
+                    <Input id="measurement-date" type="date" value={newDate} max={today()} disabled={saving} onChange={e => setNewDate(e.target.value)} className="h-11 w-auto min-w-0 text-base md:text-base" />
+                  </div>
+                </form>
               )}
             </div>
-
 
             {/* Current value + trend */}
             {chartData.length > 0 && (
