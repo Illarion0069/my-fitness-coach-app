@@ -254,14 +254,14 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
                   return (
                     <Button
                       key={m.key}
-                      variant={activeMetric === m.key ? 'default' : 'outline'}
+                      variant="outline"
                       aria-pressed={activeMetric === m.key}
                       aria-label={lang === 'en' ? m.en : m.ru}
                       disabled={saving}
                       onClick={() => { setActiveMetric(m.key); setEditingId(null); }}
                       className={`h-16 min-w-0 px-1 flex-col gap-0.5 whitespace-normal rounded-2xl font-medium transition-all ${
                         activeMetric === m.key
-                          ? 'bg-primary/10 border-primary/50 text-primary hover:bg-primary/15'
+                          ? 'bg-primary/10 border-primary/50 text-primary hover:bg-primary/15 hover:text-primary'
                           : 'text-muted-foreground hover:text-foreground border-border/60'
                       }`}
                     >
@@ -307,7 +307,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
             {/* Current value + trend */}
             {chartData.length > 0 && (
               <div className="px-4 pb-2 flex items-end gap-2">
-                <span className="text-3xl font-extrabold font-heading">
+                <span className="text-2xl font-extrabold font-heading">
                   {chartData[chartData.length - 1].value}
                 </span>
                 <span className="text-sm text-muted-foreground mb-1">{metric.unit}</span>
