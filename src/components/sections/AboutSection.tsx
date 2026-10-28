@@ -209,12 +209,12 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
             <h2 className="font-heading text-3xl">{t(transformations.title)}</h2>
             <p className="text-sm text-muted-foreground mt-1">{t(transformations.subtitle)}</p>
           </div>
-          <div className="flex flex-wrap justify-center gap-5">
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory scrollbar-hide -mx-5 px-5 md:-mx-8 md:px-8 xl:-mx-14 xl:px-14 pb-2">
             {transformations.items.map((item, i) => {
               const photos = transformationPhotos[i];
               if (!photos) return null;
               return (
-                <article key={i} className="flex-none min-w-0 w-full md:w-[calc((100%-2.5rem)/3)] bg-card border border-border rounded-lg p-4">
+                <article key={i} className="snap-center shrink-0 w-[85%] md:w-[46%] xl:w-[31%] bg-card border border-border rounded-lg p-4">
                   <div className="grid grid-cols-2 gap-2">
                     {[{ src: photos.before, label: lang === 'en' ? 'Before' : 'До' }, { src: photos.after, label: lang === 'en' ? 'After' : 'После' }].map(photo => (
                       <figure key={photo.label} className="relative overflow-hidden rounded-md bg-muted">
@@ -223,14 +223,28 @@ const AboutSection = ({ onNavigate, onBookClick, compact = false }: AboutSection
                       </figure>
                     ))}
                   </div>
-                  <h3 className="font-heading text-xl mt-3">{t(item.name)}</h3>
+                  <div className="flex items-center justify-between gap-2 mt-3">
+                    <h3 className="font-heading text-xl">{t(item.name)}</h3>
+                    {item.metric && <span className="bg-primary/15 text-primary text-xs font-extrabold px-2.5 py-1 rounded-lg shrink-0">{item.metric}</span>}
+                  </div>
                   <p className="text-primary text-sm font-bold mt-1">{t(item.result)}</p>
-                  <p className="text-xs text-muted-foreground leading-relaxed mt-2 line-clamp-3">{t(item.desc)}</p>
-                  {(item.metric || t(item.duration)) && <p className="text-[11px] text-muted-foreground mt-2">{[item.metric, t(item.duration)].filter(Boolean).join(' · ')}</p>}
+                  {t(item.duration) && <p className="text-[11px] text-muted-foreground mt-1">{t(item.duration)}</p>}
+                  <details className="mt-2 group">
+                    <summary className="cursor-pointer list-none flex items-center gap-1 text-xs font-bold text-primary">
+                      {lang === 'en' ? 'Read the story' : 'Читать историю'}
+                      <ChevronDown className="w-3.5 h-3.5 transition-transform group-open:rotate-180" />
+                    </summary>
+                    <p className="text-xs text-muted-foreground leading-relaxed mt-2">{t(item.desc)}</p>
+                  </details>
                 </article>
               );
             })}
           </div>
+          <p className="flex items-center justify-center gap-2 text-[11px] text-muted-foreground mt-3 uppercase tracking-wider font-bold">
+            <ChevronDown className="w-3.5 h-3.5 rotate-90 text-primary" />
+            {lang === 'en' ? 'Swipe to see more' : 'Листайте, чтобы увидеть ещё'}
+            <ChevronDown className="w-3.5 h-3.5 -rotate-90 text-primary" />
+          </p>
         </div>
 
         <div className="mt-12 border-t border-border pt-8">
