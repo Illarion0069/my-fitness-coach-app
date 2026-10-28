@@ -254,16 +254,20 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
                   return (
                     <Button
                       key={m.key}
-                      variant={activeMetric === m.key ? 'default' : 'outline'}
+                      variant="outline"
                       aria-pressed={activeMetric === m.key}
                       aria-label={lang === 'en' ? m.en : m.ru}
                       disabled={saving}
                       onClick={() => { setActiveMetric(m.key); setEditingId(null); }}
-                      className="h-20 min-w-0 px-1 flex-col gap-1 whitespace-normal"
+                      className={`h-16 min-w-0 px-1 flex-col gap-0.5 whitespace-normal rounded-2xl font-medium transition-all ${
+                        activeMetric === m.key
+                          ? 'bg-primary/10 border-primary/50 text-primary hover:bg-primary/15 hover:text-primary'
+                          : 'text-muted-foreground hover:text-foreground border-border/60'
+                      }`}
                     >
-                      <span className="text-xs">{lang === 'en' ? m.en : m.ru}</span>
-                      <span className="text-lg font-bold leading-none">{previous ?? '—'}</span>
-                      <span className="text-xs opacity-70">{m.unit}</span>
+                      <span className="text-[11px] leading-none">{lang === 'en' ? m.en : m.ru}</span>
+                      <span className="text-base font-bold leading-none">{previous ?? '—'}</span>
+                      <span className="text-[10px] leading-none opacity-70">{m.unit}</span>
                     </Button>
                   );
                 })}
@@ -271,8 +275,8 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
               {userId && (
                 <form onSubmit={e => { e.preventDefault(); if (!saving) void addMeasurement(); }} className="space-y-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">
-                    <label htmlFor="measurement-value" className="text-base font-semibold">{lang === 'en' ? metric.en : metric.ru} · {metric.unit}</label>
-                    <span className="text-sm text-muted-foreground">
+                    <label htmlFor="measurement-value" className="text-sm font-semibold">{lang === 'en' ? metric.en : metric.ru} · {metric.unit}</label>
+                    <span className="text-xs text-muted-foreground">
                       {lang === 'en' ? 'Previous' : 'Предыдущий'}: {latestByMetric[activeMetric]?.[activeMetric] ?? '—'} {metric.unit}
                     </span>
                   </div>
@@ -286,15 +290,15 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
                       value={newValues[activeMetric] || ''}
                       disabled={saving}
                       onChange={e => setNewValues(v => ({ ...v, [activeMetric]: e.target.value }))}
-                      className="h-14 min-w-0 flex-1 text-2xl md:text-2xl font-semibold"
+                      className="h-12 min-w-0 flex-1 text-xl font-semibold rounded-xl"
                     />
-                    <Button type="submit" disabled={saving || !(newValues[activeMetric] || '').trim()} className="h-14 px-4">
+                    <Button type="submit" disabled={saving || !(newValues[activeMetric] || '').trim()} className="h-12 px-5 rounded-xl">
                       <Check />{saving ? (lang === 'en' ? 'Saving…' : 'Сохраняем…') : (lang === 'en' ? 'Save' : 'Сохранить')}
                     </Button>
                   </div>
                   <div className="flex items-center gap-3">
                     <label htmlFor="measurement-date" className="text-sm text-muted-foreground">{lang === 'en' ? 'Date' : 'Дата'}</label>
-                    <Input id="measurement-date" type="date" value={newDate} max={today()} disabled={saving} onChange={e => setNewDate(e.target.value)} className="h-11 w-auto min-w-0 text-base md:text-base" />
+                    <Input id="measurement-date" type="date" value={newDate} max={today()} disabled={saving} onChange={e => setNewDate(e.target.value)} className="h-10 w-auto min-w-0 text-sm rounded-xl" />
                   </div>
                 </form>
               )}
@@ -303,7 +307,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
             {/* Current value + trend */}
             {chartData.length > 0 && (
               <div className="px-4 pb-2 flex items-end gap-2">
-                <span className="text-3xl font-extrabold font-heading">
+                <span className="text-2xl font-extrabold font-heading">
                   {chartData[chartData.length - 1].value}
                 </span>
                 <span className="text-sm text-muted-foreground mb-1">{metric.unit}</span>
