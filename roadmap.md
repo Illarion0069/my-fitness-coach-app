@@ -1,4 +1,6 @@
 # Desktop adaptation
+- [ ] Combine public mobile Home, Pricing and compact About with anchor navigation; hide Shop everywhere without deleting data.
+- [ ] Verify mobile scrolling, navigation, contact, booking opening and desktop regression without sending live bookings.
 - [x] Add and verify approved mobile floating contact button above bottom navigation, preserving other mobile behavior.
 - [x] Explain contact-button visibility in the user's uploaded screenshot without changing mobile behavior.
 - [ ] Correct existing advertising measurement using approved regional consent banner; blocked on Google Analytics connection for the existing booking goal.
