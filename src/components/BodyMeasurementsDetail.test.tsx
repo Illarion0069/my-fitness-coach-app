@@ -60,9 +60,10 @@ describe('same-screen measurement entry', () => {
 
     render(<BodyMeasurementsDetail open onClose={vi.fn()} measurements={rows} lang="en" editable />);
 
-    // Only the 4 latest weight entries show; the chest-only row is not listed as "no value".
+    // The 4 latest weight entries show; the chest-only row is not listed as "no value".
     expect(screen.queryByText(/no value/i)).not.toBeInTheDocument();
-    expect(screen.getAllByText('90')).toHaveLength(1);
+    expect(screen.getByText('87')).toBeInTheDocument();
+    expect(screen.queryByText('86')).not.toBeInTheDocument();
     expect(screen.queryByText('85')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Show all 6 entries' })).toBeInTheDocument();
 
