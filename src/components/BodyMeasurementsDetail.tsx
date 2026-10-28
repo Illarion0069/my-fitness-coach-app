@@ -58,6 +58,8 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
+const HISTORY_PREVIEW = 4;
+
 const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId, initialAdd: _initialAdd = false }: Props) => {
   const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
