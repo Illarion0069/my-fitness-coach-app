@@ -1,5 +1,5 @@
 # Desktop adaptation
-- [ ] Update mobile welcome guide for the single-page website and verify trainer website anchor navigation without changing calendar/client workflows.
+- [x] Update mobile welcome guide for the single-page website and verify trainer website anchor navigation without changing calendar/client workflows.
 - [x] Combine public mobile Home, Pricing and compact About with anchor navigation; hide Shop everywhere without deleting data.
 - [x] Verify mobile scrolling, navigation, contact, booking opening and desktop regression without sending live bookings.
 - [x] Add and verify approved mobile floating contact button above bottom navigation, preserving other mobile behavior.
