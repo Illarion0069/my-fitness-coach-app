@@ -336,7 +336,7 @@ const MockupNavigate = ({ lang }: { lang: string }) => (
       </motion.div>
     </div>
 
-    {/* Swipe hint */}
+    {/* Navigation hint */}
     <div className="flex items-center justify-center gap-3 mt-14 text-primary">
       <motion.div animate={{ x: [-4, 0, -4] }} transition={{ duration: 1.2, repeat: Infinity }}>
         <ChevronLeft className="w-5 h-5" />
@@ -347,7 +347,7 @@ const MockupNavigate = ({ lang }: { lang: string }) => (
       </motion.div>
     </div>
     <div className="text-center text-[7.5px] text-muted-foreground mt-2 px-6">
-      {lang === 'en' ? 'Swipe left / right between sections' : 'Свайпай влево-вправо между разделами'}
+      {lang === 'en' ? 'Use the menu below to reach each section' : 'Переходи к разделам через меню внизу'}
     </div>
 
     {/* Buy sessions */}
@@ -401,8 +401,8 @@ const slides = [
     Mockup: MockupNavigate,
     title: { en: 'Find your way around', ru: 'Как ориентироваться' },
     description: {
-      en: 'Swipe between sections, switch language on top, top up sessions at the bottom',
-      ru: 'Свайпай между разделами, язык — сверху, докупить занятия — внизу',
+      en: 'Choose a section in the bottom menu; switch language at the top',
+      ru: 'Выбери раздел в нижнем меню; язык переключается сверху',
     },
   },
 ];
