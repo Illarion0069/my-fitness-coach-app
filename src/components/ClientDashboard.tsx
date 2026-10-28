@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CalendarDays, Activity, LogOut, ClipboardCheck, Camera,
@@ -30,9 +30,7 @@ import SessionLedgerHistory from './SessionLedgerHistory';
 import HintDot, { markHintSeen } from './HintDot';
 import ClientSettings from './ClientSettings';
 import { Button } from '@/components/ui/button';
-import { canViewBodyPilot } from '@/lib/bodyModel';
 
-const BodyModelPilot = lazy(() => import('./body-model/BodyModelPilot'));
 
 
 /* ──────────────────────── Sparkline ──────────────────────── */
@@ -273,8 +271,6 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
 
   // Fullscreen module states
   const [measurementsOpen, setMeasurementsOpen] = useState(false);
-  const [measurementsEditorOpen, setMeasurementsEditorOpen] = useState(false);
-  const bodyPilotAvailable = !authLoading && canViewBodyPilot(user?.id, isTrainer, forceClientView);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [testsOpen, setTestsOpen] = useState(false);
   const [testsInitial, setTestsInitial] = useState<null | 'baseline' | 'progress_2m'>(null);
@@ -1332,15 +1328,9 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
       </AnimatePresence>
 
       {/* ═══════════ Fullscreen Modules ═══════════ */}
-      {bodyPilotAvailable && measurementsOpen && (
-        <Suspense fallback={<div className="fixed inset-0 z-[220] bg-background flex items-center justify-center text-muted-foreground">{lang === 'en' ? 'Loading body…' : 'Загрузка модели…'}</div>}>
-          <BodyModelPilot gender={profile?.gender} measurements={measurements} lang={lang} name={profile?.full_name ?? ''} onClose={() => setMeasurementsOpen(false)} onAdd={() => setMeasurementsEditorOpen(true)} />
-        </Suspense>
-      )}
-      {(bodyPilotAvailable ? measurementsEditorOpen : measurementsOpen) && (
+      {measurementsOpen && (
         <BodyMeasurementsDetail
-          open={bodyPilotAvailable ? measurementsEditorOpen : measurementsOpen}
-          initialAdd={bodyPilotAvailable}
+          open={measurementsOpen}
           measurements={measurements}
           lang={lang}
           userId={user.id}
@@ -1355,7 +1345,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
             setMeasurements(data || []);
             setCalorieGoal((prof as any)?.daily_calorie_goal || null);
           }}
-          onClose={() => bodyPilotAvailable ? setMeasurementsEditorOpen(false) : setMeasurementsOpen(false)}
+          onClose={() => setMeasurementsOpen(false)}
         />
       )}
 
