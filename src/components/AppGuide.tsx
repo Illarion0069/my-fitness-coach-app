@@ -336,22 +336,18 @@ const MockupNavigate = ({ lang }: { lang: string }) => (
       </motion.div>
     </div>
 
-    {/* Navigation hint */}
-    <div className="flex items-center justify-center gap-3 mt-14 text-primary">
-      <motion.div animate={{ x: [-4, 0, -4] }} transition={{ duration: 1.2, repeat: Infinity }}>
-        <ChevronLeft className="w-5 h-5" />
-      </motion.div>
-      <div className="w-24 h-14 rounded-xl bg-card border border-border/40" />
-      <motion.div animate={{ x: [4, 0, 4] }} transition={{ duration: 1.2, repeat: Infinity }}>
-        <ChevronRight className="w-5 h-5" />
-      </motion.div>
+    <div className="px-4 mt-5 space-y-2">
+      {[lang === 'en' ? 'Training' : 'Тренировки', lang === 'en' ? 'Pricing' : 'Цены', lang === 'en' ? 'About me' : 'Обо мне'].map(label => (
+        <div key={label} className="border-b border-border/40 py-3 text-center text-[9px] font-bold text-foreground">{label}</div>
+      ))}
+      <DownArrow />
     </div>
     <div className="text-center text-[7.5px] text-muted-foreground mt-2 px-6">
-      {lang === 'en' ? 'Use the menu below to reach each section' : 'Переходи к разделам через меню внизу'}
+      {lang === 'en' ? 'Scroll down or jump to a section below' : 'Листай вниз или переходи к разделам через меню'}
     </div>
 
     {/* Buy sessions */}
-    <div className="flex justify-center mt-8">
+    <div className="flex justify-center mt-5">
       <Pulse>
         <div className="flex items-center gap-1.5 gradient-primary text-primary-foreground text-[9px] font-bold py-2 px-5 rounded-xl glow-primary">
           <Plus className="w-3 h-3" />
@@ -367,10 +363,10 @@ const MockupNavigate = ({ lang }: { lang: string }) => (
 const slides = [
   {
     Mockup: MockupBook,
-    title: { en: 'Book in 30 seconds', ru: 'Запишись за 30 секунд' },
+    title: { en: 'Quick booking', ru: 'Быстрая запись' },
     description: {
-      en: 'Just your name and phone — no registration needed',
-      ru: 'Только имя и телефон — регистрация не нужна',
+      en: 'Choose a date and time, enter your name and phone — no registration needed',
+      ru: 'Выбери дату и время, укажи имя и телефон — регистрация не нужна',
     },
   },
   {
@@ -382,27 +378,11 @@ const slides = [
     },
   },
   {
-    Mockup: MockupNutrition,
-    title: { en: 'Nutrition diary', ru: 'Дневник питания' },
-    description: {
-      en: 'Snap your meal — calories, macros and personal advice appear automatically',
-      ru: 'Сфотографируй еду — калории, БЖУ и персональные советы появятся сами',
-    },
-  },
-  {
-    Mockup: MockupProgress,
-    title: { en: 'Track your progress', ru: 'Следи за прогрессом' },
-    description: {
-      en: 'Weight, measurements and achievements — see how far you have come',
-      ru: 'Вес, замеры и достижения — видно, насколько ты продвинулся',
-    },
-  },
-  {
     Mockup: MockupNavigate,
-    title: { en: 'Find your way around', ru: 'Как ориентироваться' },
+    title: { en: 'Everything on one page', ru: 'Всё на одной странице' },
     description: {
-      en: 'Choose a section in the bottom menu; switch language at the top',
-      ru: 'Выбери раздел в нижнем меню; язык переключается сверху',
+      en: 'Training, pricing and client results — scroll down or use the bottom menu. Questions? Message me using the button on the right.',
+      ru: 'Тренировки, цены и результаты клиентов — листай вниз или используй меню. Есть вопросы? Кнопка связи справа.',
     },
   },
 ];

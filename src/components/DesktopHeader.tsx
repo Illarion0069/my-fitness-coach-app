@@ -12,9 +12,10 @@ interface DesktopHeaderProps {
   onBook: () => void;
   onSignIn: () => void;
   showShop: boolean;
+  showAdmin?: boolean;
 }
 
-const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: DesktopHeaderProps) => {
+const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop, showAdmin = false }: DesktopHeaderProps) => {
   const { lang } = useLanguage();
   const [contactsOpen, setContactsOpen] = useState(false);
   const links = [
@@ -22,6 +23,7 @@ const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: Deskt
     { id: 'pricing', label: lang === 'en' ? 'Pricing' : 'Цены' },
     { id: 'about', label: lang === 'en' ? 'About me' : 'Обо мне' },
     ...(showShop ? [{ id: 'shop', label: lang === 'en' ? 'Shop' : 'Магазин' }] : []),
+    ...(showAdmin ? [{ id: 'admin', label: lang === 'en' ? 'Admin' : 'Кабинет' }] : []),
   ];
   return (
     <header className="sticky top-0 z-50 hidden shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-border bg-background/95 px-6 py-3 backdrop-blur-xl md:flex lg:flex-nowrap lg:px-8 lg:py-4 xl:px-14">
@@ -35,7 +37,7 @@ const DesktopHeader = ({ active, onNavigate, onBook, onSignIn, showShop }: Deskt
       <div className="flex items-center gap-2">
         <ThemeToggle />
         <LanguageSwitch />
-        <Button variant="ghost" onClick={onSignIn} aria-label={lang === 'en' ? 'Sign In' : 'Войти'} title={lang === 'en' ? 'Sign In' : 'Войти'} size="icon"><UserRound /></Button>
+        <Button variant="ghost" onClick={onSignIn} aria-label={showAdmin ? (lang === 'en' ? 'My account' : 'Мой кабинет') : (lang === 'en' ? 'Sign In' : 'Войти')} title={showAdmin ? (lang === 'en' ? 'My account' : 'Мой кабинет') : (lang === 'en' ? 'Sign In' : 'Войти')} size="icon"><UserRound /></Button>
         <Button onClick={onBook}><Calendar />{lang === 'en' ? 'Book a session' : 'Записаться'}</Button>
       </div>
       <Dialog open={contactsOpen} onOpenChange={setContactsOpen}>
