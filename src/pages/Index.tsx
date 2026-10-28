@@ -14,7 +14,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
-import SwipeHint from '@/components/SwipeHint';
 import AppErrorDialog from '@/components/AppErrorDialog';
 // import DirectChat from '@/components/DirectChat'; // frozen: chat feature disabled for now
 
@@ -70,7 +69,7 @@ const AppContent = () => {
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
   const publicWebsite = !user && !optimisticIsTrainer;
-  const websiteNavigation = publicWebsite || effectiveIsTrainer;
+  const websiteNavigation = true; // single page for guests, clients and trainer
   const publicDesktop = isDesktop && websiteNavigation;
   const singlePagePublic = websiteNavigation && ['home', 'pricing', 'about'].includes(activeSection);
 
@@ -285,7 +284,7 @@ const AppContent = () => {
             }>
               {singlePagePublic ? (
                 <main className="pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
-                  <div id="public-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => effectiveIsTrainer ? handleNavigate('admin') : setShowWelcome(true)} /></div>
+                  <div id="public-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => effectiveIsTrainer ? handleNavigate('admin') : setShowWelcome(true)} clientPreview={clientPreview} /></div>
                   <div id="public-pricing"><PricingSection integrated /></div>
                   <div id="public-about"><AboutSection compact onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} /></div>
                 </main>
@@ -306,7 +305,7 @@ const AppContent = () => {
       {!publicDesktop && <BottomNav active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={false} />}
       {!effectiveIsTrainer && <FloatingContactButton />}
       <ConsentBanner />
-      {!publicWebsite && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
+      {/* swipe hint removed: single-page for everyone */}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
       {/* Frozen: chat feature disabled for now — DirectChat removed from UI, code kept for later */}
