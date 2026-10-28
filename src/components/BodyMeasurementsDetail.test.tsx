@@ -29,4 +29,46 @@ describe('same-screen measurement entry', () => {
     await waitFor(() => expect(onChanged).toHaveBeenCalledOnce());
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('keeps history to entries that carry a value for the selected metric and collapses the rest', () => {
+    const rows = Array.from({ length: 6 }, (_, i) => ({
+      id: `w${i}`,
+      measured_at: `2026-10-${String(20 - i).padStart(2, '0')}`,
+      weight_kg: 90 - i,
+      chest_cm: null,
+      waist_cm: null,
+      hips_cm: null,
+      left_arm_cm: null,
+      right_arm_cm: null,
+      left_leg_cm: null,
+      right_leg_cm: null,
+      notes: null,
+    }));
+    rows.push({
+      id: 'chest-only',
+      measured_at: '2026-10-13',
+      weight_kg: null,
+      chest_cm: 101,
+      waist_cm: null,
+      hips_cm: null,
+      left_arm_cm: null,
+      right_arm_cm: null,
+      left_leg_cm: null,
+      right_leg_cm: null,
+      notes: null,
+    });
+
+    render(<BodyMeasurementsDetail open onClose={vi.fn()} measurements={rows} lang="en" editable />);
+
+    // The 4 latest weight entries show; the chest-only row is not listed as "no value".
+    expect(screen.queryByText(/no value/i)).not.toBeInTheDocument();
+    expect(screen.getByText('87')).toBeInTheDocument();
+    expect(screen.queryByText('86')).not.toBeInTheDocument();
+    expect(screen.queryByText('85')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show all 6 entries' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Show all 6 entries' }));
+    expect(screen.getByText('85')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Show less' })).toBeInTheDocument();
+  });
 });

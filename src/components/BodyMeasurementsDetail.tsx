@@ -58,6 +58,8 @@ const TIME_RANGES = [
   { key: 'all', en: 'All', ru: 'Все', months: 999 },
 ];
 
+const HISTORY_PREVIEW = 4;
+
 const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = false, onChanged, userId, initialAdd: _initialAdd = false }: Props) => {
   const { toast } = useToast();
   const [activeMetric, setActiveMetric] = useState<MetricKey>('weight_kg');
@@ -68,6 +70,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
   const today = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Nicosia', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
   const [newDate, setNewDate] = useState(today);
   const [newValues, setNewValues] = useState<Record<string, string>>({});
+  const [showAllHistory, setShowAllHistory] = useState(false);
 
   const latestByMetric = useMemo(() => {
     const sorted = [...measurements].sort((a, b) => b.measured_at.localeCompare(a.measured_at));
@@ -181,10 +184,18 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
     });
   }, [filtered, activeMetric, lang]);
 
+  // History keeps only rows that actually carry a value for the selected metric,
+  // so partial saves for other body parts never clutter the list as "no value".
+  const historyRows = useMemo(
+    () =>
+      [...measurements]
+        .filter(m => (m[activeMetric as keyof Measurement] as number | null) != null)
+        .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime()),
+    [measurements, activeMetric],
+  );
+
   const grouped = useMemo(() => {
-    const sorted = [...measurements]
-      .filter(m => editable || (m[activeMetric as keyof Measurement] as number | null) != null)
-      .sort((a, b) => new Date(b.measured_at).getTime() - new Date(a.measured_at).getTime());
+    const sorted = showAllHistory ? historyRows : historyRows.slice(0, HISTORY_PREVIEW);
 
     const groups: { label: string; items: Measurement[] }[] = [];
     sorted.forEach(m => {
@@ -198,7 +209,7 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
       }
     });
     return groups;
-  }, [measurements, activeMetric, lang, editable]);
+  }, [historyRows, showAllHistory, lang]);
 
 
   // Min/max for Y axis
@@ -484,6 +495,19 @@ const BodyMeasurementsDetail = ({ open, onClose, measurements, lang, editable = 
                   </div>
                 </div>
               ))}
+              {historyRows.length > HISTORY_PREVIEW && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllHistory(v => !v)}
+                  className="w-full rounded-xl border border-border/60 bg-secondary/20 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showAllHistory
+                    ? (lang === 'en' ? 'Show less' : 'Свернуть')
+                    : (lang === 'en'
+                        ? `Show all ${historyRows.length} entries`
+                        : `Показать все записи (${historyRows.length})`)}
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
