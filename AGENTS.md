@@ -2,5 +2,5 @@
 - Mount the public floating messenger contact outside the page scroll container on desktop and mobile; offset it above mobile navigation and use shared popover/button components so scrolling and authenticated workflows remain unchanged.
 - Compose the guest and trainer-facing website on desktop and mobile from the existing home, pricing and compact about sections with anchor navigation; keep trainer administration, client dashboards/preview and health assessments separate to preserve app state and booking behavior.
 - Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.
-- Open the lazy-loaded body-model pilot through Body Measurements in the allowlisted trainer's own client view; use read-only measurement props and local-only demonstration state so no client rollout or data writes occur.
-- Render the body viewer with distinct locally bundled male/female 2D anatomy assets, profile-based initial selection and local-only overrides; animate regional circumference deformation and provide accessible hotspots because tape measurements cannot reconstruct exact physique.
+- Open Body Measurements directly in the shared detail view, without the archived anatomy pilot, so client and trainer-preview entry paths use the same interface.
+- Keep per-metric latest values and numeric entry inline in BodyMeasurementsDetail; save only the selected metric as a new history row so partial measurements never overwrite earlier results.
