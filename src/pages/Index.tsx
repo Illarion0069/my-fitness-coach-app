@@ -14,7 +14,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
-import SwipeHint from '@/components/SwipeHint';
 import AppErrorDialog from '@/components/AppErrorDialog';
 // import DirectChat from '@/components/DirectChat'; // frozen: chat feature disabled for now
 
