@@ -180,7 +180,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = f
               >
                 {/* Chat badge removed — keep only floating messenger icons hint */}
                 {/* Subtle hint — small messenger icons floating */}
-                <div className="absolute top-1/2 -translate-y-1/2 -right-[5.5rem] z-10 flex items-center gap-1 pointer-events-none">
+                <div className="absolute top-1/2 -translate-y-1/2 -right-16 md:-right-[5.5rem] z-10 flex items-center gap-1 pointer-events-none">
                   <motion.span
                     animate={{ x: [0, -3, 0] }}
                     transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
