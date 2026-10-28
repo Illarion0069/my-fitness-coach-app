@@ -14,7 +14,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import LanguageSwitch from '@/components/LanguageSwitch';
 import WelcomeModal from '@/components/WelcomeModal';
 import OnboardingModal from '@/components/OnboardingModal';
-import AppGuide from '@/components/AppGuide';
 import SwipeHint from '@/components/SwipeHint';
 import AppErrorDialog from '@/components/AppErrorDialog';
 // import DirectChat from '@/components/DirectChat'; // frozen: chat feature disabled for now
@@ -61,10 +60,6 @@ const AppContent = () => {
   const [clientPreview, setClientPreview] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 768px)').matches);
   const [publicAnchor, setPublicAnchor] = useState('home');
-  const [showGuide, setShowGuide] = useState(() => {
-    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) return false;
-    return !localStorage.getItem('app_guide_v2_seen') && !localStorage.getItem('user_role_hint');
-  });
   const containerRef = useRef<HTMLDivElement>(null);
   // Note: previously force-remounted the active section on visibilitychange/pageshow as a
   // workaround for an iOS Safari framer-motion black-screen bug. That wiped in-section state
@@ -180,7 +175,6 @@ const AppContent = () => {
       setClientPreview(false);
     } else {
       restorePendingConsentUrl(user.id);
-      setShowGuide(false);
       if (isTrainer) {
         localStorage.setItem('user_role_hint', 'trainer');
         setActiveSection('admin');
@@ -227,8 +221,6 @@ const AppContent = () => {
     if (bookParam) {
       setBookingAutoOpened(true);
       setShowBooking(true);
-      // Skip the onboarding guide so ad visitors land straight on the booking form
-      setShowGuide(false);
       const url = new URL(window.location.href);
       url.searchParams.delete('book');
       window.history.replaceState(null, '', url.pathname + url.search + url.hash);
@@ -314,11 +306,11 @@ const AppContent = () => {
       {!publicDesktop && <BottomNav active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={false} />}
       <FloatingContactButton />
       <ConsentBanner />
-      {!publicWebsite && !showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
+      {!publicWebsite && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
       {/* Frozen: chat feature disabled for now — DirectChat removed from UI, code kept for later */}
-      {/* {!loading && !showGuide && !(isTrainer && clientPreview) && (!user || isTrainer) && (
+      {/* {!loading && !(isTrainer && clientPreview) && (!user || isTrainer) && (
         <DirectChat key={isTrainer ? 't' : 'g'} asTrainer={!!user && isTrainer} />
       )} */}
 
@@ -342,15 +334,6 @@ const AppContent = () => {
           >
             {clientPreview ? '← Тренер' : '👁 Клиент'}
           </button>
-          {!clientPreview && (
-            <button
-              onClick={() => setShowGuide(true)}
-              className="px-2 py-3 rounded-l-xl text-[10px] font-bold shadow-lg transition-all active:scale-95 bg-muted/90 text-muted-foreground border border-r-0 border-border/50 backdrop-blur-sm"
-              style={{ writingMode: 'vertical-lr' }}
-            >
-              👋 Визит
-            </button>
-          )}
         </div>
       )}
       
@@ -386,12 +369,6 @@ const AppContent = () => {
         openSource={bookingAutoOpened ? 'auto' : 'click'}
       />
 
-      {showGuide && (
-        <AppGuide onComplete={() => {
-          setShowGuide(false);
-          localStorage.setItem('app_guide_v2_seen', '1');
-        }} />
-      )}
     </div>
   );
 };
