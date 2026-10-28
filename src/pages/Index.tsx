@@ -304,7 +304,7 @@ const AppContent = () => {
         </div>
       )}
       {!publicDesktop && <BottomNav active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={false} />}
-      <FloatingContactButton />
+      {!effectiveIsTrainer && <FloatingContactButton />}
       <ConsentBanner />
       {!publicWebsite && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
