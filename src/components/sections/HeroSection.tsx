@@ -87,7 +87,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = f
   }
 
   return (
-    <section className="desktop-home relative min-h-screen md:min-h-0 flex flex-col bg-background">
+    <section className={`desktop-home relative ${integrated ? 'min-h-0' : 'min-h-screen'} md:min-h-0 flex flex-col bg-background`}>
       {/* Top bar */}
       <div className={`flex ${integrated ? 'md:hidden' : ''} items-center justify-between px-5 pt-safe pb-2`} style={{ paddingTop: 'max(env(safe-area-inset-top, 16px), 16px)' }}>
         <span className="font-heading uppercase text-base tracking-[0.18em] text-foreground">Limassol Fitness</span>
@@ -180,7 +180,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = f
               >
                 {/* Chat badge removed — keep only floating messenger icons hint */}
                 {/* Subtle hint — small messenger icons floating */}
-                <div className="absolute top-1/2 -translate-y-1/2 -right-[5.5rem] z-10 flex items-center gap-1 pointer-events-none">
+                <div className="absolute top-1/2 -translate-y-1/2 -right-16 md:-right-[5.5rem] z-10 flex items-center gap-1 pointer-events-none">
                   <motion.span
                     animate={{ x: [0, -3, 0] }}
                     transition={{ repeat: Infinity, duration: 1.2, ease: 'easeInOut' }}
@@ -269,7 +269,7 @@ const HeroSection = ({ onNavigate, onProfileClick, clientPreview, integrated = f
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.65, duration: 0.5 }}
-          className="w-full pb-28 md:pb-12 mt-12 md:mt-8"
+          className={`w-full ${integrated ? 'pb-8' : 'pb-28'} md:pb-12 mt-12 md:mt-8`}
         >
           <div className="flex items-baseline justify-between mb-4">
             <h2 className="text-xs md:text-xl font-extrabold text-muted-foreground uppercase tracking-normal">

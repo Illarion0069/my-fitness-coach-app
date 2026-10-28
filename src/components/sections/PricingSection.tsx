@@ -8,7 +8,7 @@ const PricingSection = ({ integrated = false }: { integrated?: boolean }) => {
   const pricing = translations.pricing;
 
   return (
-    <section className={integrated ? 'px-8 py-12 xl:px-14 border-t border-border' : 'min-h-screen px-5 pb-28 md:px-8 md:pb-12 md:min-h-0'} style={integrated ? undefined : { paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
+    <section className={integrated ? 'px-5 py-8 md:px-8 md:py-12 xl:px-14 border-t border-border' : 'min-h-screen px-5 pb-28 md:px-8 md:pb-12 md:min-h-0'} style={integrated ? undefined : { paddingTop: 'max(env(safe-area-inset-top, 32px), 32px)' }}>
       <motion.h2
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -41,8 +41,7 @@ const PricingSection = ({ integrated = false }: { integrated?: boolean }) => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
-              style={integrated ? { width: 'calc((100% - 2rem) / 3)' } : undefined}
-              className={`bg-card rounded-2xl md:rounded-lg p-5 md:p-6 relative overflow-hidden border flex flex-col ${
+              className={`${integrated ? 'w-full md:w-[calc((100%-2rem)/3)]' : ''} bg-card rounded-2xl md:rounded-lg p-5 md:p-6 relative overflow-hidden border flex flex-col ${
                 'popular' in pkg && pkg.popular ? 'border-primary/50 glow-primary' : 'border-border/50'
               }`}
             >

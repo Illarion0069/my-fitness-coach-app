@@ -22,7 +22,6 @@ import AppErrorDialog from '@/components/AppErrorDialog';
 
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminSection from '@/components/sections/AdminSection';
-import { SHOP_PUBLIC } from '@/config/features';
 
 function restorePendingConsentUrl(userId: string | undefined) {
   try {
@@ -42,7 +41,6 @@ function restorePendingConsentUrl(userId: string | undefined) {
 const PricingSection = lazy(() => import('@/components/sections/PricingSection'));
 const AboutSection = lazy(() => import('@/components/sections/AboutSection'));
 const TestSection = lazy(() => import('@/components/sections/TestSection'));
-const ShopSection = lazy(() => import('@/components/sections/ShopSection'));
 
 const getInitialSection = () => {
   const hint = localStorage.getItem('user_role_hint');
@@ -62,7 +60,7 @@ const AppContent = () => {
   const [bookingJustCompleted, setBookingJustCompleted] = useState(false);
   const [clientPreview, setClientPreview] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => window.matchMedia('(min-width: 768px)').matches);
-  const [desktopAnchor, setDesktopAnchor] = useState('home');
+  const [publicAnchor, setPublicAnchor] = useState('home');
   const [showGuide, setShowGuide] = useState(() => {
     if (typeof window !== 'undefined' && window.matchMedia('(min-width: 768px)').matches) return false;
     return !localStorage.getItem('app_guide_v2_seen') && !localStorage.getItem('user_role_hint');
@@ -76,10 +74,9 @@ const AppContent = () => {
   const optimisticIsTrainer = isTrainer || (loading && roleHint === 'trainer');
   const effectiveIsTrainer = optimisticIsTrainer && !clientPreview;
 
-  const canSeeShop = SHOP_PUBLIC || optimisticIsTrainer;
-  const showShopInNav = canSeeShop && !clientPreview;
-  const publicDesktop = isDesktop && !user && !optimisticIsTrainer;
-  const singlePageDesktop = publicDesktop && ['home', 'pricing', 'about'].includes(activeSection);
+  const publicWebsite = !user && !optimisticIsTrainer;
+  const publicDesktop = isDesktop && publicWebsite;
+  const singlePagePublic = publicWebsite && ['home', 'pricing', 'about'].includes(activeSection);
 
   useEffect(() => {
     const query = window.matchMedia('(min-width: 768px)');
@@ -89,33 +86,33 @@ const AppContent = () => {
   }, []);
 
   useEffect(() => {
-    if (!singlePageDesktop) return;
+    if (!singlePagePublic) return;
     const container = containerRef.current;
     if (!container) return;
     const update = () => {
       const top = container.getBoundingClientRect().top;
       let current = 'home';
       for (const section of ['home', 'pricing', 'about']) {
-        const element = document.getElementById(`desktop-${section}`);
+        const element = document.getElementById(`public-${section}`);
         if (element && element.getBoundingClientRect().top <= top + 160) current = section;
       }
-      setDesktopAnchor(current);
+      setPublicAnchor(current);
     };
     container.addEventListener('scroll', update, { passive: true });
     update();
     return () => container.removeEventListener('scroll', update);
-  }, [singlePageDesktop]);
+  }, [singlePagePublic]);
 
-  const sections = ['home', 'pricing', ...(showShopInNav ? ['shop'] : []), 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
-  const routableSections = [...sections, 'test', ...(canSeeShop && !showShopInNav ? ['shop'] : [])];
+  const sections = ['home', 'pricing', 'about', ...(effectiveIsTrainer ? ['admin'] : [])];
+  const routableSections = [...sections, 'test'];
 
   const handleNavigate = (section: string) => {
     if (!routableSections.includes(section)) section = 'home';
-    if (publicDesktop && ['home', 'pricing', 'about'].includes(section)) {
-      setDesktopAnchor(section);
+    if (publicWebsite && ['home', 'pricing', 'about'].includes(section)) {
+      setPublicAnchor(section);
       setActiveSection('home');
       requestAnimationFrame(() => requestAnimationFrame(() => {
-        document.getElementById(`desktop-${section}`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+        document.getElementById(`public-${section}`)?.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
       }));
       return;
     }
@@ -127,7 +124,7 @@ const AppContent = () => {
   };
 
   const handleSwipe = useCallback((direction: 'left' | 'right') => {
-    if (isDesktop) return;
+    if (isDesktop || publicWebsite) return;
     const currentIdx = sections.indexOf(activeSection);
     if (currentIdx === -1) return;
     if (direction === 'left' && currentIdx < sections.length - 1) {
@@ -137,7 +134,7 @@ const AppContent = () => {
       setSwipeDirection(-1);
       setActiveSection(sections[currentIdx - 1]);
     }
-  }, [activeSection, sections, isDesktop]);
+  }, [activeSection, sections, isDesktop, publicWebsite]);
 
   const touchStartX = useRef(0);
   const touchStartY = useRef(0);
@@ -254,7 +251,6 @@ const AppContent = () => {
         );
       case 'pricing': return <PricingSection />;
       case 'about': return <AboutSection onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} />;
-      case 'shop': return canSeeShop ? <ShopSection /> : null;
       case 'admin': return effectiveIsTrainer ? <AdminSection /> : null;
       case 'test': return <TestSection onLoginClick={() => setShowWelcome(true)} />;
       default: return null;
@@ -263,20 +259,20 @@ const AppContent = () => {
 
   return (
     <div className="h-screen bg-background text-foreground flex flex-col">
-      {publicDesktop && <DesktopHeader active={singlePageDesktop ? desktopAnchor : activeSection} onNavigate={handleNavigate} onBook={() => setShowBooking(true)} onSignIn={() => setShowWelcome(true)} showShop={showShopInNav} />}
+      {publicDesktop && <DesktopHeader active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} onBook={() => setShowBooking(true)} onSignIn={() => setShowWelcome(true)} showShop={false} />}
       <div
         ref={containerRef}
-        className="flex-1 overflow-y-auto overflow-x-hidden"
+        className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden"
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
         <AnimatePresence mode="wait" custom={swipeDirection}>
           <motion.div
-            key={singlePageDesktop ? 'desktop-public' : activeSection}
+            key={singlePagePublic ? 'public-website' : activeSection}
             custom={swipeDirection}
             variants={slideVariants}
-            initial={singlePageDesktop ? false : 'enter'}
+            initial={singlePagePublic ? false : 'enter'}
             animate="center"
             exit="exit"
             transition={{ type: 'tween', duration: 0.25, ease: 'easeInOut' }}
@@ -294,11 +290,11 @@ const AppContent = () => {
                 <div className="h-40 rounded-2xl bg-muted/20 animate-pulse mt-3" />
               </div>
             }>
-              {singlePageDesktop ? (
-                <main>
-                  <div id="desktop-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} /></div>
-                  <div id="desktop-pricing"><PricingSection integrated /></div>
-                  <div id="desktop-about"><AboutSection compact onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} /></div>
+              {singlePagePublic ? (
+                <main className="pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-0">
+                  <div id="public-home"><HeroSection integrated onNavigate={handleNavigate} onProfileClick={() => setShowWelcome(true)} /></div>
+                  <div id="public-pricing"><PricingSection integrated /></div>
+                  <div id="public-about"><AboutSection compact onNavigate={handleNavigate} onBookClick={() => setShowBooking(true)} /></div>
                 </main>
               ) : renderSection()}
             </Suspense>
@@ -314,10 +310,10 @@ const AppContent = () => {
           <LanguageSwitch />
         </div>
       )}
-      {!publicDesktop && <BottomNav active={activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={showShopInNav} />}
+      {!publicDesktop && <BottomNav active={singlePagePublic ? publicAnchor : activeSection} onNavigate={handleNavigate} showAdmin={effectiveIsTrainer} showShop={false} />}
       <FloatingContactButton />
       <ConsentBanner />
-      {!showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
+      {!publicWebsite && !showGuide && !effectiveIsTrainer && <div className="md:hidden"><SwipeHint /></div>}
 
       {/* {activeSection !== 'admin' && <ChatAssistant />} */}
       {/* Frozen: chat feature disabled for now — DirectChat removed from UI, code kept for later */}
