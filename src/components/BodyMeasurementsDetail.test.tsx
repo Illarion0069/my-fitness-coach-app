@@ -1,4 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import BodyMeasurementsDetail from './BodyMeasurementsDetail';
 
@@ -19,9 +20,9 @@ describe('same-screen measurement entry', () => {
     const onClose = vi.fn();
     const onChanged = vi.fn();
     render(<BodyMeasurementsDetail open onClose={onClose} measurements={[]} lang="en" userId="test-client" onChanged={onChanged} />);
-    fireEvent.click(screen.getByRole('button', { name: 'Chest', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Chest' }));
     fireEvent.change(screen.getByLabelText('Chest · cm'), { target: { value: '101,5' } });
-    fireEvent.click(screen.getByRole('button', { name: 'Save', exact: true }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() => expect(insert).toHaveBeenCalledOnce());
     expect(insert.mock.calls[0][0]).toMatchObject({ user_id: 'test-client', chest_cm: 101.5 });
     expect(insert.mock.calls[0][0]).not.toHaveProperty('weight_kg');
