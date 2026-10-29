@@ -682,18 +682,20 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
                     return (
                       <button
                         key={day.toISOString()}
-                        disabled={past || !inMonth || isDayOff || isBlocked}
+                        disabled={past || isDayOff || isBlocked}
                         onClick={() => handleDateSelect(day)}
                         className={`aspect-square md:aspect-auto md:h-12 rounded-xl flex items-center justify-center text-sm font-medium transition-all ${
                           selected
                             ? 'bg-primary text-primary-foreground shadow-md'
                             : today && !isDayOff
                               ? 'bg-primary/10 text-primary font-bold'
-                              : past || !inMonth || isDayOff
+                              : past || isDayOff || isBlocked
                                 ? 'text-muted-foreground/30 cursor-not-allowed'
                                 : isWeekend && trainerOverride
                                   ? 'hover:bg-secondary text-foreground/70 ring-1 ring-dashed ring-border'
-                                  : 'hover:bg-secondary text-foreground'
+                                  : !inMonth
+                                    ? 'hover:bg-secondary text-foreground/60'
+                                    : 'hover:bg-secondary text-foreground'
                         }`}
                       >
                         {format(day, 'd')}
