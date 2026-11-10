@@ -212,6 +212,22 @@ const AppContent = () => {
     }
   }, []);
 
+  // Deep link: /#pricing or /#about (ad sitelinks) scrolls to that section.
+  useEffect(() => {
+    const target = window.location.hash.replace('#', '');
+    if (!['pricing', 'about'].includes(target)) return;
+    let tries = 0;
+    const timer = window.setInterval(() => {
+      const el = document.getElementById(`public-${target}`);
+      if (el) {
+        window.clearInterval(timer);
+        handleNavigate(target);
+      } else if (++tries > 40) window.clearInterval(timer);
+    }, 150);
+    return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [websiteNavigation]);
+
   // Deep link: ?book=1 opens the BookingModal immediately. Used for the
   // "Website" link in Google Business Profile so visitors land on booking.
   useEffect(() => {
