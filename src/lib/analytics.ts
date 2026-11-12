@@ -64,6 +64,7 @@ function categorizeSource(raw: string | null, utmSource: string | null): string 
     if (h.includes("t.me") || h.includes("telegram")) return "Telegram";
     if (h.includes("wa.me") || h.includes("whatsapp")) return "WhatsApp";
     if (h.includes("tiktok")) return "TikTok";
+    if (h.includes("youtube") || h === "youtu.be") return "YouTube";
     return h.replace(/^www\./, "");
   } catch {
     return null;
@@ -77,7 +78,15 @@ function getReferrer(): string | null {
 
     const params = new URLSearchParams(window.location.search);
     const utmSource = params.get("utm_source");
-    const source = categorizeSource(document.referrer, utmSource);
+    const isAd = params.has("gclid") || params.has("gbraid") || params.has("wbraid");
+    let source = categorizeSource(document.referrer, utmSource);
+    if (isAd) {
+      const r = (document.referrer || "").toLowerCase();
+      source = r.includes("youtube") ? "Google Ads · YouTube"
+        : r.includes("maps") ? "Google Ads · Maps"
+        : r.includes("google") ? "Google Ads · Поиск"
+        : "Google Ads";
+    }
     const value = source || "Прямой заход";
     sessionStorage.setItem(REF_KEY, value);
     return value;

@@ -403,6 +403,34 @@ serve(async (req) => {
       `• Заявок гостей: <b>${guests.length}</b>  •  Регистраций: <b>${signupDone || newProfiles.length}</b>`,
     );
 
+    // Источники переходов: по одному на визитёра
+    const SOURCE_LABEL = (r: string | null): string => {
+      const v = (r || "Прямой заход").trim();
+      const k = v.toLowerCase();
+      if (k.startsWith("google ads")) return "📢 " + v;
+      if (k === "gbp" || k === "google maps") return "📍 Google Maps (ваша карточка)";
+      if (k.includes("youtube")) return "▶️ YouTube (реклама Google на YouTube)";
+      if (k === "google") return "🔎 Google поиск";
+      if (k === "ig" || k.includes("instagram")) return "📸 Instagram";
+      if (k.includes("facebook") || k === "fb") return "📘 Facebook";
+      if (k.includes("telegram")) return "✈️ Telegram";
+      if (k.includes("whatsapp")) return "💬 WhatsApp";
+      if (k.includes("tiktok")) return "🎵 TikTok";
+      if (k.includes("bing")) return "🔎 Bing";
+      if (k.includes("chatgpt")) return "🤖 ChatGPT";
+      if (k === "прямой заход") return "🔗 Прямой заход (ссылка, закладка, QR)";
+      return "🌐 " + v;
+    };
+    const srcCount = new Map<string, number>();
+    for (const s of stories.values()) {
+      if ((s.referrer || "").includes("lovable")) continue;
+      const lbl = SOURCE_LABEL(s.referrer);
+      srcCount.set(lbl, (srcCount.get(lbl) || 0) + 1);
+    }
+    if (srcCount.size) {
+      L.push("", "<b>🧭 Откуда пришли</b>", ...[...srcCount].sort((a, b) => b[1] - a[1]).map(([l, c]) => `• ${esc(l)} — ${c}`));
+    }
+
     if (deviceLines.length) {
       L.push("", "<b>💻 Устройства</b>", ...deviceLines);
     }
@@ -451,7 +479,7 @@ serve(async (req) => {
       );
     } else if (bookingOpen > 0) {
       verdict.push(
-        `Люди ${bookingOpen} раз нажимали кнопку записи, но до конца бронирование не дошёл никто — они бросали форму на шаге выбора даты/времени или заполнения данных. Стоит упростить форму записи.`,
+        `Люди ${bookingOpen} раз нажимали кнопку записи, но до конца бронирование не дошёл никто — подробности по каждому человеку — выше. `,
       );
     } else if (newVisitors.size > 0) {
       verdict.push(
