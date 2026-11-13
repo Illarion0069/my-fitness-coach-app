@@ -107,6 +107,24 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_feed_tokens: {
+        Row: {
+          created_at: string
+          token: string
+          trainer_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          token?: string
+          trainer_user_id: string
+        }
+        Update: {
+          created_at?: string
+          token?: string
+          trainer_user_id?: string
+        }
+        Relationships: []
+      }
       client_achievements: {
         Row: {
           achievement_key: string
