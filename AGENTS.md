@@ -4,4 +4,3 @@
 - Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.
 - Open Body Measurements directly in the shared detail view, without the archived anatomy pilot, so client and trainer-preview entry paths use the same interface.
 - Keep per-metric latest values and numeric entry inline in BodyMeasurementsDetail; save only the selected metric as a new history row so partial measurements never overwrite earlier results.
-- Trainer calendar is exposed to phone calendars as a private token-protected iCalendar feed (calendar-feed function) expanded from scheduled_sessions and guest_bookings, because calendar apps cannot send auth headers.

@@ -5,7 +5,6 @@ import { CalendarDays, ChevronLeft, ChevronRight, Ban, Search, X } from 'lucide-
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import TrainerBlockModal from './TrainerBlockModal';
-import IphoneCalendarSubscribe from './trainer-calendar/IphoneCalendarSubscribe';
 import DayTimeline, { type TimelineEntry } from './trainer-calendar/DayTimeline';
 import { sessionAdded, sessionCancelled, sessionMoved, type BiText } from '@/lib/scheduleNotifications';
 
@@ -601,7 +600,6 @@ const TrainerCalendar = ({ lang, clients, onSessionChange }: Props) => {
 
   return (
     <div className="space-y-4">
-      <IphoneCalendarSubscribe lang={lang} />
       <div className="rounded-2xl border border-border bg-card p-4 space-y-4">
         <div className="flex items-center justify-between gap-3">
           <button

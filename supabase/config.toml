@@ -54,6 +54,3 @@ verify_jwt = false
 
 [functions.usage-digest]
 verify_jwt = false
-
-[functions.calendar-feed]
-verify_jwt = false
