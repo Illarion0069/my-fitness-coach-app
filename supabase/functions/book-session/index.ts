@@ -763,7 +763,7 @@ Deno.serve(async (req) => {
 
 
 
-      const { error: insertError } = await supabase
+      const { data: guestRow, error: insertError } = await supabase
         .from('guest_bookings')
         .insert({
           guest_name: guest_name.trim(),
@@ -773,7 +773,9 @@ Deno.serve(async (req) => {
           trainer_user_id: trainer.trainerId,
           status: 'pending',
           notes: kindLabel,
-        });
+        })
+        .select('id')
+        .single();
 
 
       if (insertError) {
@@ -799,7 +801,7 @@ Deno.serve(async (req) => {
         console.error('Telegram notification failed:', e);
       }
 
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ success: true, booking_id: guestRow?.id }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

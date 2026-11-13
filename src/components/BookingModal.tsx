@@ -94,11 +94,11 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
   // so the daily report isn't inflated by re-renders or double submits.
   const openTrackedRef = useRef(false);
   const doneTrackedRef = useRef(false);
-  const trackBookingDone = () => {
+  const trackBookingDone = (bookingId?: string) => {
     if (doneTrackedRef.current) return;
     doneTrackedRef.current = true;
     trackFunnel('booking_done');
-    trackBookingConversion();
+    trackBookingConversion(bookingId);
   };
   const { user, isTrainer } = useAuth();
   const { lang } = useLanguage();
@@ -423,7 +423,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
             });
           }
         } else {
-          trackBookingDone();
+          trackBookingDone(data?.booking_id ? `guest_${data.booking_id}` : undefined);
           setStep('done');
         }
 
@@ -484,7 +484,7 @@ const BookingModal = ({ open, onClose, onLoginRequest, onBooked, initialStep, fo
         if (options?.goToPaymentDoneAfter) {
           setCompletedPendingPayment(true);
         }
-        trackBookingDone();
+        trackBookingDone(data?.session_id ? `session_${data.session_id}` : undefined);
           setStep('done');
       }
     } catch (e: any) {

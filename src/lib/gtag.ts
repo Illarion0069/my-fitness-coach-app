@@ -13,6 +13,9 @@ const CONSENT_REGIONS = new Set([
   "SI", "ES", "SE", "GB", "CH", "IS", "LI", "NO",
 ]);
 
+const ADS_ID = "AW-16662095581";
+export const ADS_BOOKING_SEND_TO = "AW-16662095581/YM_pCKD05LcdEN3NjYk-";
+
 const CONSENT_KEY = "ads_consent_v1";
 const NOTICE_VERSION = "2026-10-25";
 
@@ -128,6 +131,7 @@ export async function initGoogleAnalytics() {
     wait_for_update: 500,
   });
   gtag("config", MEASUREMENT_ID);
+  gtag("config", ADS_ID);
 
   // SPA navigation: this app switches sections via hash, count those as page views.
   window.addEventListener("hashchange", () => {
@@ -153,7 +157,20 @@ export async function initGoogleAnalytics() {
 }
 
 /** Fires the GA4 key event that Google Ads imports as the "Запись на встречу" conversion. */
-export function trackBookingConversion() {
+export function trackBookingConversion(bookingId?: string) {
   if (!initialized || !window.gtag) return;
+  // One conversion per saved booking: remember sent IDs across reloads.
+  const SENT_KEY = "ads_conv_sent_v1";
+  let sent: string[] = [];
+  try { sent = JSON.parse(localStorage.getItem(SENT_KEY) || "[]"); } catch { /* ignore */ }
+  if (bookingId && sent.includes(bookingId)) return;
   window.gtag("event", "ads_conversion___1");
+  // Google Ads "booking completed" conversion (manual Google Tag snippet).
+  window.gtag("event", "conversion", {
+    send_to: ADS_BOOKING_SEND_TO,
+    ...(bookingId ? { transaction_id: bookingId } : {}),
+  });
+  if (bookingId) {
+    try { localStorage.setItem(SENT_KEY, JSON.stringify([...sent, bookingId].slice(-50))); } catch { /* ignore */ }
+  }
 }
