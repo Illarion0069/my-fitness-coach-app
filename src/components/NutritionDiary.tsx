@@ -795,7 +795,6 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     const key = `${date}::${photoIdsKey}::${manualIdsKey}::${liquidsKey}::sched:${trainingDayKey}`;
     if (autoAnalyzeKeyRef.current === key) return;
     const firstRun = autoAnalyzeKeyRef.current === '';
-    autoAnalyzeKeyRef.current = key;
     const fb = (log?.ai_feedback || '') as string;
     const analysisFailed = /Не удалось обработать|Failed to process/i.test(fb);
 
@@ -816,6 +815,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
     ])).sort().join(',');
 
     const remember = () => {
+      autoAnalyzeKeyRef.current = key;
       lastAnalyzedRef.current = { kcal: currentKcal, meals: mealsKey };
       if (effectiveUserId) writeFingerprint(effectiveUserId, date, { kcal: currentKcal, meals: mealsKey, key });
     };
