@@ -1,4 +1,5 @@
 # Architecture rules
+- Calculate nutrition targets in a pure shared Edge/browser policy and load identical profile, latest non-null weight and baseline answers in every nutrition view; this prevents UI and AI budgets from diverging.
 - Resolve localized nutrition first-name forms in a shared server-side policy with UUID-specific overrides and a global AI fallback for unfamiliar names; this preserves personal overrides while applying the general communication style consistently.
 - Mount the public floating messenger contact outside the page scroll container on desktop and mobile; offset it above mobile navigation and use shared popover/button components so scrolling and authenticated workflows remain unchanged.
 - Compose the guest and trainer-facing website on desktop and mobile from the existing home, pricing and compact about sections with anchor navigation; keep trainer administration, client dashboards/preview and health assessments separate to preserve app state and booking behavior.

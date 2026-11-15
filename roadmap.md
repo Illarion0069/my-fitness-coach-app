@@ -1,4 +1,5 @@
 # Desktop adaptation
+- [x] Unify personalized nutrition targets and AI advice from profile, latest weight and baseline questionnaire; verified shared calculations and trainer own dashboard/diary without live-client writes.
 - [x] Extend affectionate localized first-name addresses to every nutrition client, preserving serious advice and personal overrides; verify without generating live-client reports.
 - [x] Apply Eugene Valuev's approved playful first-name address only to his profile, keeping nutrition advice serious; verify policy isolation without generating live-client reports.
 - [x] Remove body model and simplify measurement entry to an inline selected metric; verify phone and desktop without live-client writes.

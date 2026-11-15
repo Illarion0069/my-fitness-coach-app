@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNutritionTargets } from '@/hooks/useNutritionTargets';
 
 interface Props {
   userId: string;
@@ -60,62 +61,12 @@ export default function NutritionCalcInfo({ userId }: Props) {
   const { lang } = useLanguage();
   const en = lang === 'en';
 
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [measurement, setMeasurement] = useState<MeasurementData | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const [{ data: p }, { data: m }] = await Promise.all([
-        supabase.from('profiles')
-          .select('full_name, height_cm, birth_date, gender, nutrition_goal')
-          .eq('user_id', userId)
-          .maybeSingle(),
-        supabase.from('body_measurements')
-          .select('weight_kg, measured_at')
-          .eq('user_id', userId)
-          .not('weight_kg', 'is', null)
-          .order('measured_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
-      if (cancelled) return;
-      setProfile(p as ProfileData | null);
-      setMeasurement(m as MeasurementData | null);
-      setLoading(false);
-    })();
-    return () => { cancelled = true; };
-  }, [userId]);
-
-  const heightCm = profile?.height_cm || 0;
-  const weightKg = measurement?.weight_kg || 0;
-  const gender = (profile?.gender || '').toLowerCase();
-  let age = 0;
-  if (profile?.birth_date) {
-    const bd = new Date(profile.birth_date + 'T12:00:00');
-    if (!isNaN(bd.getTime())) {
-      const now = new Date();
-      age = now.getFullYear() - bd.getFullYear();
-      const m = now.getMonth() - bd.getMonth();
-      if (m < 0 || (m === 0 && now.getDate() < bd.getDate())) age--;
-    }
-  }
-  const bmi = heightCm > 0 && weightKg > 0
-    ? Math.round((weightKg / Math.pow(heightCm / 100, 2)) * 10) / 10
-    : 0;
-  let bmr = 0;
-  if (heightCm > 0 && weightKg > 0 && age > 0) {
-    const base = 10 * weightKg + 6.25 * heightCm - 5 * age;
-    bmr = Math.round(gender === 'male' ? base + 5 : gender === 'female' ? base - 161 : base - 78);
-  }
-  const tdee = bmr > 0 ? Math.round(bmr * 1.5) : 0;
-  const goal = profile?.nutrition_goal === 'muscle_gain' ? 'muscle_gain' : 'fat_loss';
-  const targetKcal = tdee > 0
-    ? Math.round((goal === 'muscle_gain' ? tdee * 1.1 : tdee * 0.85) / 10) * 10
-    : 0;
-  const proteinTarget = weightKg > 0 ? Math.round(weightKg * (goal === 'muscle_gain' ? 1.8 : 1.6)) : 0;
-  const waterTargetMl = weightKg > 0 ? Math.round((weightKg * 33) / 50) * 50 : 0;
+  const targets = useNutritionTargets(userId);
+  const { heightCm, weightKg, gender, age, bmi, bmr, tdee, goal, activityFactor } = targets;
+  const targetKcal = targets.calories;
+  const proteinTarget = targets.protein;
+  const waterTargetMl = targets.water;
+  const loading = false;
 
   const t = {
     title: en ? 'How we calculate calories' : 'Как мы считаем калории',
@@ -130,16 +81,16 @@ export default function NutritionCalcInfo({ userId }: Props) {
       : 'Это количество калорий, которое ваше тело сжигает в полном покое. Мы используем формулу Миффлина — Сан Жеора — одну из самых точных для взрослых.',
     tdeeTitle: en ? '2. Total daily energy expenditure (TDEE)' : '2. Общий расход энергии (TDEE)',
     tdeeText: en
-      ? 'We multiply BMR by an activity factor of 1.5. This matches personal training 2–3 times per week plus normal daily movement.'
-      : 'Мы умножаем BMR на коэффициент активности 1,5. Это соответствует тренировкам 2–3 раза в неделю плюс обычная дневная активность.',
+      ? 'The activity estimate uses your questionnaire answers about exercise and daily steps. Without answers, the estimated factor is 1.5.'
+      : 'Активность оценивается по ответам анкеты о тренировках и ежедневных шагах. Без ответов используется ориентировочный коэффициент 1,5.',
     targetTitle: en ? '3. Your personal calorie target' : '3. Ваша цель по калориям',
     targetText: en
-      ? 'From TDEE we adjust for your selected goal. Fat loss uses a moderate 15% deficit. Muscle gain uses a 10% surplus.'
-      : 'От TDEE мы корректируем в зависимости от выбранной цели. Похудение — умеренный дефицит 15%. Набор мышц — профицит 10%.',
+      ? 'Your trainer’s personal calorie target takes priority. In automatic mode: a 15% deficit for fat loss or a 10% surplus for muscle gain.'
+      : 'Индивидуальная норма, установленная тренером, имеет приоритет. В автоматическом режиме: дефицит 15% для снижения веса или профицит 10% для набора мышц.',
     macrosTitle: en ? '4. Macros & water' : '4. БЖУ и вода',
     macrosText: en
-      ? 'Protein is set at 1.6–1.8 g per kg of body weight to protect muscle. Carbs and fats are split from the remaining calories: ~30% protein, 40% carbs, 30% fat. Water target is 33 ml per kg.'
-      : 'Белок — 1,6–1,8 г на кг веса, чтобы сохранить мышцы. Углеводы и жиры делят оставшиеся калории: ~30% белка, 40% углеводов, 30% жиров. Норма воды — 33 мл на кг.',
+      ? 'Protein is 1.6 g/kg for fat loss or 1.8 g/kg for muscle gain. Fat is 28% of your calorie target; carbs use the remaining calories. Water is 33 ml/kg. Missing body data is not invented.'
+      : 'Белок — 1,6 г/кг для снижения веса или 1,8 г/кг для набора мышц. Жиры — 28% нормы калорий; углеводы — оставшиеся калории. Вода — 33 мл/кг. Отсутствующие параметры не выдумываются.',
     analysisTitle: en ? '5. From numbers to advice' : '5. От цифр к советам',
     analysisText: en
       ? 'Every time you post a meal, the AI compares your day against your personal targets: calories, protein, portions, meal timing, vegetables, processed food and late-night carbs. Recommendations are based on your body data, not generic templates.'
@@ -252,7 +203,7 @@ export default function NutritionCalcInfo({ userId }: Props) {
       <Section icon={<Activity className="w-4 h-4" />} title={t.tdeeTitle}>
         <p>{t.tdeeText}</p>
         <FormulaBox label={en ? 'Formula' : 'Формула'}>
-          TDEE = BMR × 1.5
+          TDEE = BMR × {activityFactor}
         </FormulaBox>
       </Section>
 
@@ -272,9 +223,9 @@ export default function NutritionCalcInfo({ userId }: Props) {
         <p>{t.macrosText}</p>
         <FormulaBox label={en ? 'Example split' : 'Пример распределения'}>
           <div className="space-y-1">
-            <p>{en ? 'Protein = 30% of target kcal ÷ 4' : 'Белок = 30% целевых ккал ÷ 4'}</p>
-            <p>{en ? 'Carbs = 40% of target kcal ÷ 4' : 'Углеводы = 40% целевых ккал ÷ 4'}</p>
-            <p>{en ? 'Fat = 30% of target kcal ÷ 9' : 'Жиры = 30% целевых ккал ÷ 9'}</p>
+            <p>{en ? 'Protein = weight × 1.6 / 1.8' : 'Белок = вес × 1,6 / 1,8'}</p>
+            <p>{en ? 'Carbs = (kcal − protein × 4 − fat × 9) ÷ 4' : 'Углеводы = (ккал − белок × 4 − жиры × 9) ÷ 4'}</p>
+            <p>{en ? 'Fat = 28% of target kcal ÷ 9' : 'Жиры = 28% целевых ккал ÷ 9'}</p>
           </div>
         </FormulaBox>
       </Section>

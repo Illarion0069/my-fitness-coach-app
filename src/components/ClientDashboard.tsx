@@ -20,6 +20,7 @@ import ClientTestHistory from './ClientTestHistory';
 import BookingModal from './BookingModal';
 import NutritionDiary from './NutritionDiary';
 import NutritionCalcInfo from './NutritionCalcInfo';
+import { useNutritionTargets } from '@/hooks/useNutritionTargets';
 import FaceHint from './FaceHint';
 import LanguageSwitch from './LanguageSwitch';
 import { UtensilsCrossed, ArrowRight } from 'lucide-react';
@@ -244,7 +245,8 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
   const { toast } = useToast();
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [calorieGoal, setCalorieGoal] = useState<number | null>(null);
+  const nutritionTargets = useNutritionTargets(user?.id);
+  const calorieGoal = nutritionTargets.calories || null;
   const [nutritionGoal, setNutritionGoal] = useState<string | null>(null);
   const [macroUnit, setMacroUnit] = useState<'g' | 'pct'>('g');
 
@@ -301,7 +303,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
     const loadAvatar = async () => {
       const { data } = await supabase.from('profiles').select('avatar_url, daily_calorie_goal, nutrition_goal').eq('user_id', user.id).maybeSingle();
       setAvatarUrl(data?.avatar_url || null);
-      setCalorieGoal((data as any)?.daily_calorie_goal || null);
+
       setNutritionGoal((data as any)?.nutrition_goal || null);
 
     };
@@ -1063,15 +1065,9 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               {/* Macro grid */}
               <div className="flex-1 min-w-0 grid grid-cols-2 gap-2">
                 {(() => {
-                  // Macro targets: protein from body weight (g/kg), fat 25% of kcal goal, carbs = remainder
-                  const bodyWeight = weightTrend?.current || 0;
-                  const gain = nutritionGoal === 'muscle_gain';
-                  const pFromWeight = bodyWeight > 0 ? Math.round(bodyWeight * (gain ? 1.8 : 1.6)) : 0;
-                  const pTarget = pFromWeight || (calorieGoal ? Math.round((calorieGoal * 0.30) / 4) : 0);
-                  const fTarget = calorieGoal ? Math.round((calorieGoal * 0.25) / 9) : 0;
-                  const cTarget = calorieGoal
-                    ? Math.max(0, Math.round((calorieGoal - pTarget * 4 - fTarget * 9) / 4))
-                    : 0;
+                  const pTarget = nutritionTargets.protein;
+                  const fTarget = nutritionTargets.fat;
+                  const cTarget = nutritionTargets.carbs;
                   const g = lang === 'en' ? 'g' : 'г';
                   const fmt = (val: number, target: number) => {
                     if (!target) return `${val} ${g}`;
@@ -1343,7 +1339,7 @@ const ClientDashboard = ({ forceClientView = false, onNavigate }: ClientDashboar
               supabase.from('profiles').select('daily_calorie_goal').eq('user_id', user.id).maybeSingle(),
             ]);
             setMeasurements(data || []);
-            setCalorieGoal((prof as any)?.daily_calorie_goal || null);
+
           }}
           onClose={() => setMeasurementsOpen(false)}
         />

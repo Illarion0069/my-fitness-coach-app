@@ -8,6 +8,7 @@ import { showAppError } from '@/components/AppErrorDialog';
 import { useTrainingDayKey } from '@/hooks/useTrainingDayKey';
 import { motion, AnimatePresence } from 'framer-motion';
 import NutritionCalcInfo from './NutritionCalcInfo';
+import { useNutritionTargets } from '@/hooks/useNutritionTargets';
 import HintDot from './HintDot';
 import { compressImage } from '@/lib/imageCompress';
 import { withSignedFoodPhotos, signFoodPhotoPath, foodPhotoPath } from '@/lib/foodPhotoUrl';
@@ -187,11 +188,13 @@ const MacroRing = ({ value, max, color, size = 40, strokeWidth = 3.5 }: { value:
   );
 };
 
-const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false, calorieGoal, autoOpenAdd = false }, ref) => {
+const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrainer = false, calorieGoal: _legacyCalorieGoal, autoOpenAdd = false }, ref) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const effectiveUserId = userId || user?.id;
   const isReadOnly = !!userId && !isTrainer;
+  const targets = useNutritionTargets(effectiveUserId);
+  const calorieGoal = targets.calories || null;
 
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   // Training slots for this date (recalculated live on cancel / reschedule)
@@ -1355,10 +1358,10 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
   const photosAtLimit = photos.length >= MAX_PHOTOS_PER_DAY;
 
   const macros = [
-    { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: lang === 'en' ? 'P' : 'Б', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', macroRatio: 0.30 },
-    { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: lang === 'en' ? 'C' : 'У', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', macroRatio: 0.40 },
-    { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: lang === 'en' ? 'F' : 'Ж', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', macroRatio: 0.30 },
-    { key: 'fiber', label: lang === 'en' ? 'Fiber' : 'Клетчатка', short: lang === 'en' ? 'FIB' : 'КЛ', value: totals.fiber, unit: 'g', color: 'hsl(160, 60%, 40%)', macroRatio: 0, fixedGoal: FIBER_GOAL_G },
+    { key: 'protein', label: lang === 'en' ? 'Protein' : 'Белки', short: lang === 'en' ? 'P' : 'Б', value: totals.protein, unit: 'g', color: 'hsl(142, 71%, 45%)', goal: targets.protein },
+    { key: 'carbs', label: lang === 'en' ? 'Carbs' : 'Углеводы', short: lang === 'en' ? 'C' : 'У', value: totals.carbs, unit: 'g', color: 'hsl(45, 93%, 47%)', goal: targets.carbs },
+    { key: 'fat', label: lang === 'en' ? 'Fat' : 'Жиры', short: lang === 'en' ? 'F' : 'Ж', value: totals.fat, unit: 'g', color: 'hsl(280, 65%, 60%)', goal: targets.fat },
+    { key: 'fiber', label: lang === 'en' ? 'Fiber' : 'Клетчатка', short: lang === 'en' ? 'FIB' : 'КЛ', value: totals.fiber, unit: 'g', color: 'hsl(160, 60%, 40%)', goal: targets.fiber, fixedGoal: FIBER_GOAL_G },
   ];
 
   const liquidItems = [
@@ -1486,9 +1489,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           {/* Macro rings — Cal AI style thin rings around/below the main ring */}
           <div className="flex items-center justify-center gap-4 mt-6">
             {macros.map(m => {
-              const goal = (m as any).fixedGoal
-                ? (m as any).fixedGoal as number
-                : ((calorieGoal && calorieGoal > 0) ? Math.round((calorieGoal * m.macroRatio) / (m.key === 'fat' ? 9 : 4)) : null);
+              const goal = m.goal || null;
               const ringMax = goal && goal > 0 ? goal : Math.max(m.value, 1);
               const ringValue = goal && goal > 0 ? Math.min(m.value, goal) : m.value;
               const centerValue = !isToday ? m.value : (goal && goal > 0 ? Math.max(0, goal - m.value) : m.value);
@@ -1523,6 +1524,7 @@ const NutritionDiary = forwardRef<HTMLDivElement, Props>(({ userId, lang, isTrai
           >
             <span className="relative flex items-center justify-center">
               <HelpCircle className="w-4 h-4" />
+              <HintDot id="individual-nutrition-targets-v1" en="Personal targets from your profile and questionnaire" ru="Личные нормы по профилю и анкете" className="-top-1 -right-1" />
               {showCalcInfoHint && (
                 <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-primary rounded-full animate-ping" />
               )}
