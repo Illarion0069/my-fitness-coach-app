@@ -1,4 +1,5 @@
 # Desktop adaptation
+- [x] Apply Eugene Valuev's approved playful first-name address only to his profile, keeping nutrition advice serious; verify policy isolation without generating live-client reports.
 - [x] Remove body model and simplify measurement entry to an inline selected metric; verify phone and desktop without live-client writes.
 - [x] Update mobile welcome guide for the single-page website and verify trainer website anchor navigation without changing calendar/client workflows.
 - [x] Combine public mobile Home, Pricing and compact About with anchor navigation; hide Shop everywhere without deleting data.
