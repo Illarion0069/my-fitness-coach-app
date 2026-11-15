@@ -11,4 +11,12 @@ describe("personal nutrition address policy", () => {
     expect(nutritionAddressPolicy("aa9a11b5-b1ab-423c-8889-c55d2ccf3f12")).toBeUndefined();
     expect(nutritionAddressPolicy("Eugene Valuev")).toBeUndefined();
   });
+  it("applies affectionate localized forms to other users too", () => {
+    expect(nutritionAddressPolicy("another-client", "Anna")).toEqual({ ru: "Анечка", en: "Annie", seriousAdvice: true });
+    expect(nutritionAddressPolicy("another-client", "Дмитрий")).toEqual({ ru: "Димочка", en: "Dima", seriousAdvice: true });
+    expect(nutritionAddressPolicy("another-client", "Eugene")).toEqual({ ru: "Женчик", en: "Eugene", seriousAdvice: true });
+  });
+  it("does not invent a diminutive for an unknown name", () => {
+    expect(nutritionAddressPolicy("another-client", "UnknownName")).toBeUndefined();
+  });
 });

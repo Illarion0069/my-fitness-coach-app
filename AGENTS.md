@@ -1,5 +1,5 @@
 # Architecture rules
-- Resolve exceptional nutrition address policies server-side by immutable profile UUID, and enforce localized summary prefixes; this prevents a same-named client from inheriting another client's communication style.
+- Resolve localized nutrition first-name forms in a shared server-side policy with UUID-specific overrides and a global AI fallback for unfamiliar names; this preserves personal overrides while applying the general communication style consistently.
 - Mount the public floating messenger contact outside the page scroll container on desktop and mobile; offset it above mobile navigation and use shared popover/button components so scrolling and authenticated workflows remain unchanged.
 - Compose the guest and trainer-facing website on desktop and mobile from the existing home, pricing and compact about sections with anchor navigation; keep trainer administration, client dashboards/preview and health assessments separate to preserve app state and booking behavior.
 - Keep compact About content as a presentation mode of AboutSection, sharing translations and transformation assets with its detailed view to avoid divergent client stories.

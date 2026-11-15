@@ -1,6 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { nutritionAddressPolicy, enforcePersonalAddress } from "../_shared/nutritionAddress.ts";
+import { nutritionAddressPolicy, enforcePersonalAddress, AFFECTIONATE_ADDRESS_INSTRUCTIONS } from "../_shared/nutritionAddress.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -611,7 +611,8 @@ serve(async (req) => {
       console.log(`[analyze-nutrition][NAME] user=${user_id} firstName="${firstName}" source=${nameSource}`);
     }
     const fullName = (clientProfile?.full_name as string) || "";
-    const addressPolicy = nutritionAddressPolicy(user_id);
+    const originalFirstName = firstName;
+    const addressPolicy = nutritionAddressPolicy(user_id, firstName);
     if (addressPolicy) firstName = uiLang === "en" ? addressPolicy.en : addressPolicy.ru;
     const personalAddressInstructions = addressPolicy
       ? `\n\nPERSONAL ADDRESS OVERRIDE (takes precedence over all name and humor rules): Start summary_ru with exactly "${addressPolicy.ru}," and summary_en with exactly "${addressPolicy.en},". Only the first-name address is playful. ALL nutrition recommendations, meal feedback and the remainder of both summaries must be serious, professional and supportive. NO jokes, nicknames, titles, epithets or playful additions after the name. Russian feedback uses the Cyrillic name; English feedback uses the Latin name. Never use Eugene in Russian.`
@@ -751,7 +752,7 @@ serve(async (req) => {
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: SYSTEM_PROMPT + `\n\n## UI LANGUAGE OVERRIDE (HARD RULE)\nThe client is currently using the app in language: "${uiLang}" (${uiLang === "en" ? "English" : "Russian"}).\nWrite ALL human-readable feedback strings in THIS language ONLY:\n- every string in "positives" arrays\n- every string in "issues" arrays\n- "swap_ru" / "swap_en" — fill the one matching this language with the real swap; the other field may repeat the same value or be empty\n- "action_ru" / "action_en" in boost_potential.tips — same rule\nKeep BOTH "summary_ru" and "summary_en" present, but the one matching this language must be the primary, polished version (the other can be a faithful translation). Food NAMES inside "detected_foods" and "score_killers.food" stay in their natural language (usually as the client typed them or as seen on the photo) — do NOT translate brand/dish names.\n\n## CRITICAL — TIME-AWARE COACHING (HARD RULE)\nThe user message provides CURRENT_LOCAL_TIME, CURRENT_LOCAL_HOUR (Asia/Nicosia), IS_TODAY, HAS_DINNER_LOGGED and MODE. MODE is either "midday" or "end_of_day". Meal windows in local time: breakfast 06:00–11:00, lunch 11:00–16:00, dinner 16:00–22:00, snack any time.\n\n### MODE = "midday" (analysis after breakfast or lunch — day NOT yet over):\n- This is an IN-THE-MOMENT coaching update, not a final verdict. The day is still in progress.\n- "boost_potential.tips" must be actionable RIGHT NOW: focus on the very next upcoming meal and what to do in the next few hours to push the day's score up.\n- NEVER suggest "add more at breakfast" if breakfast window is past. For past/missed meals, roll the missing protein/veg/fiber into the NEXT upcoming meal (e.g. "на обед добавь 150 г куриной грудки и большой салат — +12") or suggest a protein-rich snack now.\n- The very next upcoming meal is the highest-leverage tip — put it first, sorted by points_gain descending.\n- summary_ru / summary_en must sound like a mid-day check-in: 1) short verdict on what was eaten so far, 2) one concrete next-meal action. Do NOT say "итог дня" / "today's total" — the day is not done.\n\n### MODE = "end_of_day" (dinner logged, or hour ≥ 21, or past day):\n- This is the FINAL day verdict. No more "boost it now" tips for today — the eating window is closed and the client CANNOT change anything that was already eaten today.\n- "boost_potential.tips" must be reframed as plan-for-tomorrow / next-similar-day: 1–3 concrete fixes for TOMORROW's breakfast/lunch/dinner based on what went wrong today. Phrase as "Завтра на завтрак — ..." / "Tomorrow at lunch — ...". Concrete foods and portions, не общие фразы.\n- "boost_potential.achievable_today" = the FINAL overall_score (do not promise points the client can no longer earn today). Set it equal to overall_score.\n- Do NOT suggest eating anything else tonight if hour ≥ 21 — at most water / herbal tea.\n- summary_ru / summary_en = final day verdict + one most important fix for tomorrow, написанные строго через призму методологии Толстиковой (см. блок ниже). Tone: тёплый коуч, подводящий день.\n\n### HARD WORDING RULE for end_of_day (CRITICAL — do not violate):\nПриёмы пищи (завтрак, перекус, обед, ужин), которые уже произошли сегодня, ИЗМЕНИТЬ НЕЛЬЗЯ. Поэтому в end_of_day режиме ЗАПРЕЩЕНО писать формулировки типа:\n- «сегодня стоит улучшить завтрак»\n- «сегодня нужно добавить белок на перекус»\n- «улучши свой завтрак / перекус»\n- любые «сегодня» + «улучшить/добавить/заменить» по отношению к УЖЕ ЗАПИСАННЫМ приёмам.\nВместо этого ВСЕГДА переноси совет в будущее время и привязывай к КОНКРЕТНОМУ будущему приёму:\n- «В следующий раз на завтрак — …»\n- «Завтра на завтрак замени … на …»\n- «На следующий перекус возьми … вместо …»\nРетроспективные замечания о том, что было хорошо/плохо сегодня, давай в прошедшем времени («завтрак сегодня был лёгкий по белку», «перекус выбил день из системы»), и СРАЗУ за ними — конкретный позитивный шаг на ЗАВТРА. Никогда не оставляй клиента с инструкцией, которую он уже физически не может выполнить сегодня.\n\n## КАНОН ТОЛСТИКОВОЙ — методология (применять В end_of_day режиме как основной фильтр; в midday — как фоновый ориентир)\nЕкатерина Толстикова (нутрициолог, Украина) — её подход построен на нескольких жёстких принципах. Применяй их буквально в итоговом разборе дня и в плане на завтра:\n\n1. **Тарелка Толстиковой** — каждый основной приём пищи строится по схеме: ~½ тарелки овощи/зелень (некрахмалистые), ~¼ белок (рыба/птица/нежирное мясо/творог/яйца/бобовые), ~¼ сложные углеводы (гречка, киноа, овсянка, бурый рис, бобовые, цельнозерновой хлеб) + 1 ч. л. полезного жира (оливковое масло, авокадо, орехи). Если в приёме нет одного из элементов — это «несбалансированная тарелка», и это нужно явно назвать.\n2. **Белок в каждый приём пищи** — минимум 20–30 г качественного белка за основной приём. День без белка на завтрак Толстикова считает грубой ошибкой: разгоняет голод и срывы во второй половине дня. Это первое, что нужно чинить.\n3. **Сложные углеводы — в первую половину дня** — основная порция круп/картофеля/хлеба в завтрак и обед. К ужину углеводы минимизируются: только овощи + белок + немного жира.\n4. **Овощи / клетчатка — обязательно** — ≥400 г овощей в день, желательно в каждый основной приём. Толстикова повторяет: «без клетчатки нет ни сытости, ни микробиоты, ни результата».\n5. **Никакой еды без чувства голода и никакой еды по эмоции** — приём пищи только при реальном физическом голоде (3–4 ч после предыдущего). Перекусы «от скуки», «за компанию», «потому что 11 часов» — фиксируем как поведенческую ошибку.\n6. **3 приёма пищи + 1 опциональный перекус** — это базовая структура. Постоянные кусочничества и «дробное питание каждые 2 часа» Толстикова не рекомендует: они мешают восстановлению инсулина и реальному голоду.\n7. **Питьевой режим** — 30 мл чистой воды на 1 кг массы тела (обычно 1.8–2.5 л/день). Кофе, чай, соки в норму не входят. Если за день клиент явно недопил — это отдельный пункт в итоге.\n8. **«Не есть после 19:00» — миф, который Толстикова опровергает** — ужин в 20–21 ч нормален и нужен, если это сбалансированный белково-овощной приём. Поздним считается только приём после ~22:00, и только тогда идёт штраф. НЕ ругай клиента за «поздний ужин», если он был в 19–21 ч и сбалансирован.\n9. **Сахар, мука, алкоголь, ультра-обработка** — главные блокаторы результата. Сладости, выпечка, газировка, соки, фастфуд, колбасы/сосиски, готовые соусы, «пп-десерты» с сиропами — всё это в её методичке проходит как «продукты вне системы». Если такое в дне — это всегда первая проблема в итоге, даже если калории «вписались».\n10. **Способ приготовления** — варка, запекание, гриль, на пару, лёгкая обжарка без панировки. Фритюр, панировка, тяжёлые сливочные/майонезные соусы — минусуем.\n11. **Молочка и глютен — индивидуально** — Толстикова не запрещает их по умолчанию, но если в дне явный перебор молочки/сладкой выпечки + жалобы на отёки/вздутие/кожу (если знаем из контекста) — мягко предложить наблюдение, не запрет.\n12. **Восстановление важнее «жёсткой диеты»** — сон, вода, регулярность приёмов пищи, мягкий дефицит. Категорические голодания, монодиеты, «детоксы» и «сушки» — против её философии. НИКОГДА не советуй пропустить приём пищи или «поголодать завтра, чтобы компенсировать сегодня».\n13. **Принцип 80/20** — 80% времени строго по системе (тарелка, белок, овощи, вода), 20% — гибкость без чувства вины. Один «срыв» НЕ перечёркивает день и не должен подаваться как катастрофа. Тон поддерживающий, без морализаторства.\n14. **Никаких «волшебных продуктов» и БАДов в советах** — только реальная еда. Не рекомендуй спортпит, жиросжигатели, «чудо-смузи», коллаген, L-карнитин и т.п.\n15. **Замены вместо запретов** — формулировка ВСЕГДА позитивная: не «убери булку», а «замени булку на цельнозерновой тост + яйцо + авокадо». Это её фирменный приём.\n\n### Как использовать «Канон Толстиковой» в end_of_day выводе:\n- В summary_ru / summary_en пройди по тарелке дня: был ли белок в каждом приёме, были ли овощи, как распределились углеводы по времени, был ли сахар/мука/ультра-обработка, питьевой режим. Назови 1 главную системную ошибку дня (НЕ список из 5).\n- В boost_potential.tips дай 1–3 конкретных замены/добавки на завтра, сформулированных позитивно («Замени …», «Добавь …», «Перенеси крупу на обед»), каждая — закрывает один из пунктов 1–10 выше. Указывай конкретные продукты и граммовки.\n- НЕ используй слова «диета», «нельзя», «запрещено», «срыв» (как осуждение), «детокс», «голодание», «разгрузочный день».\n- Если день был чистым и по системе — прямо похвали и закрепи поведение («сохрани этот шаблон тарелки на завтра»).\n\nIn BOTH modes: meal-level "issues", "positives", "score_killers" are retrospective and apply to what was actually eaten — unchanged.` },
-          { role: "system", content: personalAddressInstructions || "Follow the client name and language rules above." },
+          { role: "system", content: AFFECTIONATE_ADDRESS_INSTRUCTIONS + personalAddressInstructions },
           { role: "user", content: userContent },
         ],
       }),
@@ -793,7 +794,6 @@ serve(async (req) => {
     }
 
     const score = Math.min(100, Math.max(0, Math.round((analysis.overall_score as number) || 0)));
-    const feedback = (analysis.summary_ru || analysis.summary_en || "") as string;
 
     // --- AUTHORITATIVE TOTALS: recompute strictly from manual_entries ---
     // detected_foods from AI are used only for qualitative feedback (positives/issues/scores),
@@ -930,7 +930,7 @@ serve(async (req) => {
     // Client-facing summary first: try regeneration before falling back to raw injection
     const clientLang: "ru" | "en" = uiLang === "en" ? "en" : "ru";
     const clientOrig = clientLang === "en" ? summaryEnOrig : summaryRuOrig;
-    if (!nameFallbackUsed && clientOrig && !hasName(clientOrig, firstName)) {
+    if (addressPolicy && !nameFallbackUsed && clientOrig && !hasName(clientOrig, firstName)) {
       const fixed = await regenerateSummary(clientOrig, firstName, clientLang);
       if (fixed) {
         regenerated = true;
@@ -940,13 +940,13 @@ serve(async (req) => {
       }
     }
 
-    const ruRes = ensureNamePrefix(String(analysis.summary_ru || summaryRuOrig), firstName, "ru");
-    const enRes = ensureNamePrefix(String(analysis.summary_en || summaryEnOrig), firstName, "en");
+    const ruRes = addressPolicy ? ensureNamePrefix(String(analysis.summary_ru || summaryRuOrig), addressPolicy.ru, "ru") : { text: String(analysis.summary_ru || summaryRuOrig), injected: false };
+    const enRes = addressPolicy ? ensureNamePrefix(String(analysis.summary_en || summaryEnOrig), addressPolicy.en, "en") : { text: String(analysis.summary_en || summaryEnOrig), injected: false };
     analysis.summary_ru = ruRes.text;
     analysis.summary_en = enRes.text;
     if (addressPolicy) {
-      analysis.summary_ru = enforcePersonalAddress(String(analysis.summary_ru || ""), addressPolicy.ru);
-      analysis.summary_en = enforcePersonalAddress(String(analysis.summary_en || ""), addressPolicy.en);
+      analysis.summary_ru = enforcePersonalAddress(String(analysis.summary_ru || ""), addressPolicy.ru, originalFirstName);
+      analysis.summary_en = enforcePersonalAddress(String(analysis.summary_en || ""), addressPolicy.en, originalFirstName);
     }
     const nameInjectedRu = ruRes.injected;
     const nameInjectedEn = enRes.injected;
@@ -970,6 +970,7 @@ serve(async (req) => {
     };
 
     const summaryRuStr = String(analysis.summary_ru || "");
+    const feedback = String(uiLang === "en" ? analysis.summary_en || "" : analysis.summary_ru || "");
 
     // Remember what the day contained when this analysis ran
     analysis.report_signature = contentSignature;
