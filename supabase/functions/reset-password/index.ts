@@ -399,6 +399,38 @@ serve(async (req) => {
       return json({ success: true });
     }
 
+    // ACTION: trainer_login_link — trainer gets a one-time sign-in link to send to a client
+    if (action === "trainer_login_link") {
+      const authHeader = req.headers.get("Authorization");
+      if (!authHeader) return json({ error: "Unauthorized" }, 401);
+      const authClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await authClient.auth.getUser();
+      if (!user) return json({ error: "Unauthorized" }, 401);
+      const { data: roleData } = await adminClient
+        .from("user_roles").select("role").eq("user_id", user.id).eq("role", "trainer").maybeSingle();
+      if (!roleData) return json({ error: "Forbidden" }, 403);
+
+      const clientId = String(body.client_user_id || "");
+      if (!/^[0-9a-f-]{36}$/i.test(clientId)) return json({ error: "invalid_client" }, 400);
+      const allowed = ["https://limassol-fitness.com", "https://www.limassol-fitness.com", "https://my-fitness-coach-app.lovable.app"];
+      const origin = String(body.redirect_origin || "");
+      const redirectTo = (allowed.includes(origin) || /^https:\/\/[a-z0-9-]+\.lovable\.app$/.test(origin) || origin.startsWith("http://localhost"))
+        ? origin + "/" : allowed[0] + "/";
+
+      const { data: target } = await adminClient.auth.admin.getUserById(clientId);
+      const email = target?.user?.email;
+      if (!email) return json({ error: "no_email" }, 400);
+      const { data: link, error } = await adminClient.auth.admin.generateLink({
+        type: "magiclink", email, options: { redirectTo },
+      });
+      if (error || !link?.properties?.action_link) {
+        return json({ error: "link_failed", message: error?.message }, 500);
+      }
+      return json({ success: true, link: link.properties.action_link });
+    }
+
     // ACTION: change_password — authenticated user changes their own password
     if (action === "change_password") {
       const authHeader = req.headers.get("Authorization");

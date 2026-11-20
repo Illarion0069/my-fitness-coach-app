@@ -336,6 +336,13 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
         throw new Error(t('Failed to send Telegram message. Try again.', 'Не удалось отправить в Telegram. Попробуйте ещё раз.'));
       }
       if (payload?.error) throw new Error(payload.message || payload.error);
+      if (forgotMode === 'email' && !payload?.delivered_via && !identifier.endsWith('@phone.fitness.local')) {
+        // No Telegram: email a one-tap sign-in link instead
+        await supabase.auth.signInWithOtp({
+          email: identifier,
+          options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
+        });
+      }
       setForgotDeliveredTo(identifier);
       setAutoLoginCreds(payload?.auto_login ?? null);
       setStep('forgot-done');
@@ -643,10 +650,15 @@ const WelcomeModal = ({ open, onClose, consultationFlow, onRegistered }: Welcome
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
                   </div>
                   <p className="text-sm text-foreground">
-                    {t(
-                      'A new password has been sent to your Telegram. Open the bot, copy the password, and sign in.',
-                      'Новый пароль отправлен в ваш Telegram. Откройте бота, скопируйте пароль и войдите.'
-                    )}
+                    {forgotMode === 'email'
+                      ? t(
+                        'We sent a new password to your Telegram or a one-tap sign-in link to your email. If nothing arrives, ask your trainer for a sign-in link.',
+                        'Мы отправили новый пароль в Telegram или ссылку для входа на почту. Если ничего не пришло — попросите у тренера ссылку для входа.'
+                      )
+                      : t(
+                        'A new password has been sent to your Telegram. If nothing arrives, ask your trainer for a sign-in link.',
+                        'Новый пароль отправлен в ваш Telegram. Если ничего не пришло — попросите у тренера ссылку для входа.'
+                      )}
                   </p>
                   {forgotDeliveredTo && (
                     <p className="text-[11px] text-muted-foreground">

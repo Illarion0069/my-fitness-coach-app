@@ -231,6 +231,27 @@ const ClientDetailAccordion = ({
     setNewPkgPrice('');
   };
 
+  const [creatingLink, setCreatingLink] = useState(false);
+  const handleLoginLink = async () => {
+    setCreatingLink(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('reset-password', {
+        body: { action: 'trainer_login_link', client_user_id: client.user_id, redirect_origin: window.location.origin },
+      });
+      if (error || !data?.link) throw new Error(data?.error || (error as any)?.message || 'error');
+      const text = (lang === 'en'
+        ? 'Your one-time sign-in link to Limassol Fitness (valid 1 hour): '
+        : 'Ваша одноразовая ссылка для входа в Limassol Fitness (действует 1 час): ') + data.link;
+      try { await navigator.clipboard.writeText(data.link); } catch {}
+      const phone = (client.phone || '').replace(/\D/g, '');
+      window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text)}`, '_blank');
+      toast({ title: lang === 'en' ? 'Link copied — send it to the client' : 'Ссылка скопирована — отправьте клиенту' });
+    } catch (e: any) {
+      toast({ title: lang === 'en' ? 'Error' : 'Ошибка', description: e?.message, variant: 'destructive' });
+    }
+    setCreatingLink(false);
+  };
+
   const handleResetPassword = async () => {
     if (resetPw.length < 8) {
       toast({ title: lang === 'en' ? 'Min 8 characters' : 'Минимум 8 символов', variant: 'destructive' });
@@ -329,6 +350,16 @@ const ClientDetailAccordion = ({
               >
                 <KeyRound className="w-3 h-3" />
                 {lang === 'en' ? 'Reset password' : 'Сбросить пароль'}
+              </button>
+            ) : null}
+            {!showResetPw ? (
+              <button
+                onClick={handleLoginLink}
+                disabled={creatingLink}
+                className="flex items-center gap-1.5 text-[11px] text-primary hover:text-primary/80 transition-colors disabled:opacity-50"
+              >
+                {creatingLink ? <Loader2 className="w-3 h-3 animate-spin" /> : <KeyRound className="w-3 h-3" />}
+                {lang === 'en' ? 'Send sign-in link' : 'Ссылка для входа'}
               </button>
             ) : (
               <div className="flex gap-2 items-center">
