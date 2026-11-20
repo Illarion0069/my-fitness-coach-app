@@ -219,15 +219,6 @@ serve(async (req) => {
         console.warn("getUserById failed:", e);
       }
 
-      // Fetch the auth email so the client can auto-login with one tap
-      let authEmail: string | null = null;
-      try {
-        const { data: userRes } = await adminClient.auth.admin.getUserById(profile.user_id);
-        authEmail = userRes?.user?.email ?? null;
-      } catch (e) {
-        console.warn("getUserById failed:", e);
-      }
-
       await logAttempt(identifier, true);
 
       return json({
